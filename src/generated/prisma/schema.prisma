@@ -1,0 +1,253 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Définition des énumérations
+enum UserRole {
+  admin
+  member
+  personal // Nouveau rôle pour les utilisateurs avec entreprise personnelle
+}
+
+enum TaskStatus {
+  todo
+  doing
+  done
+}
+
+enum TaskType {
+  maintenance
+  inspection
+  reparation
+  nettoyage
+  remplacement
+  verification
+  autre
+}
+
+enum ShapeType {
+  circle
+  rectangle
+}
+
+// Modèle User étendu pour NextAuth
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  entrepriseId Int      @map("entreprise_id")
+  role         UserRole @default(member)
+  isPersonal   Boolean  @default(false) @map("is_personal")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations applicatives
+  entreprise  Entreprise       @relation(fields: [entrepriseId], references: [id], onDelete: Cascade)
+  permissions UserPermission[]
+  secteurs    Secteur[]
+  articles    Article[]
+  tasks       Task[]           @relation("TaskExecutant")
+  attachments Attachment[]
+
+  // Relations NextAuth
+  sessions Session[]
+  accounts Account[]
+
+  @@index([entrepriseId])
+  @@map("User")
+}
+
+model Entreprise {
+  id         Int      @id @default(autoincrement())
+  name       String
+  address    String
+  stripeId   String?  @map("stripe_id")
+  isPersonal Boolean  @default(false) @map("is_personal")
+  ownerId    Int?     @map("owner_id")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  users  User[]
+  objets EntrepriseObjet[]
+
+  @@index([ownerId])
+  @@map("Entreprise")
+}
+
+model EntrepriseObjet {
+  entrepriseId Int      @map("entreprise_id")
+  objetId      Int      @map("objet_id")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  entreprise Entreprise @relation(fields: [entrepriseId], references: [id], onDelete: Cascade)
+  objet      Objet      @relation(fields: [objetId], references: [id], onDelete: Cascade)
+
+  @@id([entrepriseId, objetId])
+  @@map("EntrepriseObjet")
+}
+
+model UserPermission {
+  userId    Int      @map("user_id")
+  objetId   Int      @map("objet_id")
+  canEdit   Boolean  @map("can_edit")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  objet Objet @relation(fields: [objetId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, objetId])
+  @@map("UserPermission")
+}
+
+model Objet {
+  id        Int      @id @default(autoincrement())
+  name      String
+  address   String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  entreprises EntrepriseObjet[]
+  permissions UserPermission[]
+  secteurs    Secteur[]
+
+  @@map("Objet")
+}
+
+model Secteur {
+  id        Int      @id @default(autoincrement())
+  name      String
+  floor     Int
+  objetId   Int      @map("objet_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  objet    Objet     @relation(fields: [objetId], references: [id], onDelete: Cascade)
+  articles Article[]
+  User     User?     @relation(fields: [userId], references: [id])
+  userId   Int?
+
+  @@index([objetId])
+  @@map("Secteur")
+}
+
+model Article {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String    @db.Text
+  shapeType   ShapeType @map("shape_type")
+  posX        Decimal   @map("pos_x") @db.Decimal(10, 6)
+  posY        Decimal   @map("pos_y") @db.Decimal(10, 6)
+  width       Decimal   @db.Decimal(10, 6)
+  height      Decimal   @db.Decimal(10, 6)
+  radius      Decimal   @db.Decimal(10, 6)
+  secteurId   Int       @map("secteur_id")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  secteur Secteur @relation(fields: [secteurId], references: [id])
+  tasks   Task[]
+  User    User?   @relation(fields: [userId], references: [id])
+  userId  Int?
+
+  @@index([secteurId])
+  @@map("Article")
+}
+
+model Task {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String     @db.Text
+  status      TaskStatus
+  type        TaskType
+  rrule       String     @db.Text
+  scheduledAt DateTime?  @map("scheduled_at") @db.Timestamptz()
+  completedAt DateTime?  @map("completed_at") @db.Timestamptz()
+  articleId   Int        @map("article_id")
+  executantId Int        @map("executant_id")
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  article     Article      @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  executant   User         @relation("TaskExecutant", fields: [executantId], references: [id], onDelete: Cascade)
+  attachments Attachment[]
+
+  @@index([scheduledAt])
+  @@index([executantId])
+  @@map("Task")
+}
+
+model Attachment {
+  id         Int      @id @default(autoincrement())
+  url        String
+  entityType String   @map("entity_type")
+  entityId   Int      @map("entity_id")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  User       User?    @relation(fields: [userId], references: [id])
+  userId     Int?
+  Task       Task?    @relation(fields: [taskId], references: [id])
+  taskId     Int?
+
+  @@index([entityType, entityId])
+  @@map("Attachment")
+}
+
+// ======== NextAuth Models ========
+model Account {
+  id                Int     @id @default(autoincrement())
+  userId            Int     @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @map("refresh_token")
+  access_token      String? @map("access_token")
+  expires_at        Int?    @map("expires_at")
+  token_type        String? @map("token_type")
+  scope             String?
+  id_token          String? @map("id_token")
+  session_state     String? @map("session_state")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("Account")
+}
+
+model Session {
+  id           Int      @id @default(autoincrement())
+  sessionToken String   @unique @map("session_token")
+  userId       Int      @map("user_id")
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("Session")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("VerificationToken")
+}

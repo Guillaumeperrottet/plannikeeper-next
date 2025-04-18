@@ -10,7 +10,17 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  // ta config Next.js existante
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+
+  // override pour src/lib/prisma.ts
+  {
+    files: ["src/lib/prisma.ts"],
+    rules: {
+      "no-var": "off",
+      "@typescript-eslint/ban-ts-comment": "off",
+    },
+  },
 ];
 
 export default eslintConfig;
