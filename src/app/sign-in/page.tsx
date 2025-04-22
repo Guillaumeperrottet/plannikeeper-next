@@ -21,7 +21,7 @@ export default function SignInPage() {
     const data = await res.json();
     if (res.ok) {
       // Redirige vers la page d'accueil ou dashboard après connexion
-      router.push("/");
+      router.push("/dashboard");
     } else {
       setError(data.message || "Erreur lors de la connexion");
     }
