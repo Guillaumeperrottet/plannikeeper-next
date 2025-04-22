@@ -1,5 +1,6 @@
 import { getUser } from "@/lib/auth-session";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 export default async function ProfilePage() {
   const user = await getUser();
@@ -8,6 +9,14 @@ export default async function ProfilePage() {
   return (
     <div className="max-w-2xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
       <h1 className="text-2xl font-bold mb-6">Mon profil</h1>
+      <div className="mt-8 flex justify-end">
+        <Link
+          href="/profile/edit"
+          className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-900 transition"
+        >
+          Gestion des utilisateurs
+        </Link>
+      </div>
       <div className="flex flex-col sm:flex-row items-center gap-6">
         {/* Avatar */}
         <div className="flex-shrink-0">

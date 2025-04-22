@@ -10,7 +10,7 @@ export default function SignOutPage() {
     authClient.signOut({
       fetchOptions: {
         onSuccess: () => {
-          router.push("/signin");
+          router.push("/");
         },
       },
     });

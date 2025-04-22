@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-
+import { authClient } from "@/lib/auth-client";
 
 
 export default function SignInForm() {
@@ -11,23 +11,29 @@ export default function SignInForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    const submitButton = e.currentTarget.querySelector('button[type="submit"]') as HTMLButtonElement;
     setIsLoading(true);
     setError(null);
+    submitButton.disabled = true;
+    submitButton.textContent = 'Signing in...';
 
-    try {
-      // Add your authentication logic here
-      // Example: await signIn(email, password);
-      console.log("Signing in with:", email, password);
-
-      // Redirect after successful sign in
-      // router.push("/dashboard");
-    } catch {
-      setError("Invalid email or password");
-    } finally {
-      setIsLoading(false);
-    }
+    await authClient.signIn.email({
+      email,
+      password,
+      callbackURL: '/dashboard', // optionnel
+    }, {
+      onSuccess: () => {
+        window.location.href = '/dashboard';
+      },
+      onError: (err: any) => {
+        setError("Invalid email or password");
+        submitButton.disabled = false;
+        submitButton.textContent = 'Sign In';
+      },
+    });
   };
 
   return (
@@ -80,7 +86,7 @@ export default function SignInForm() {
 
       <div className="mt-4 text-center text-sm">
         <p>
-          Don&apos;t have an account?{" "}
+          Don t have an account?{" "}
           <Link href="/signup" className="text-blue-600 hover:underline">
             Sign Up
           </Link>
