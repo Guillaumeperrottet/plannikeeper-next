@@ -81,6 +81,20 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   users     User[]
+  Objet     Objet[]
 
   @@map("organization")
+}
+
+model Objet {
+  id             String       @id @default(uuid())
+  nom            String
+  adresse        String
+  secteur        String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@map("objet")
 }
