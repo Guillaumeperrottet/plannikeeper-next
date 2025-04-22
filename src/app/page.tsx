@@ -20,7 +20,7 @@ export default function Home() {
           Gérez vos objets, tâches et équipes en toute simplicité.
         </p>
         <Link
-          href="/sign-up"
+          href="/signup"
           className="mt-4 px-6 py-3 rounded-full bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
         >
           Créer un compte
