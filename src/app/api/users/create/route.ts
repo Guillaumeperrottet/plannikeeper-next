@@ -53,7 +53,6 @@ export async function POST(req: NextRequest) {
       });
 
       // 2. Créer le compte avec le mot de passe
-      // Note: Pour better-auth, providerId doit être "email" et accountId doit contenir l'email
       await tx.account.create({
         data: {
           id: uuidv4(),
