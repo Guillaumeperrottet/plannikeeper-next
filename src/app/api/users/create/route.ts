@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
         data: {
           id: uuidv4(),
           userId: user.id,
-          providerId: "credentials", // Changé de "email" à "credentials" car better-auth utilise ce terme pour l'authentification par mot de passe
+          providerId: "email",
           accountId: email,
           password: hashedPassword,
           createdAt: new Date(),
