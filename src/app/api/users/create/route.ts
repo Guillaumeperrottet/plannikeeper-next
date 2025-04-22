@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
 
   // Générer un hash du mot de passe
   const hashedPassword = await bcrypt.hash(password, 10);
+  const userId = uuidv4();
 
   try {
     // Transaction pour créer l'utilisateur et ajouter à l'organisation
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
       // 1. Créer l'utilisateur
       const user = await tx.user.create({
         data: {
-          id: uuidv4(),
+          id: userId,
           name,
           email,
           emailVerified: false,
@@ -53,13 +54,14 @@ export async function POST(req: NextRequest) {
       });
 
       // 2. Créer le compte avec le mot de passe
+      // Assurez-vous que ça correspond exactement à ce que Better Auth attend
       await tx.account.create({
         data: {
           id: uuidv4(),
-          userId: user.id,
-          providerId: "email",
-          accountId: email,
-          password: hashedPassword,
+          userId: userId,
+          providerId: "email",      // Better Auth s'attend à ce que ce soit "email"
+          accountId: email,         // L'email de l'utilisateur
+          password: hashedPassword, // Le mot de passe hashé
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -68,8 +70,8 @@ export async function POST(req: NextRequest) {
       // 3. Associer l'utilisateur à l'organisation avec le rôle "member"
       await tx.organizationUser.create({
         data: {
-          id: uuidv4(), // Assurez-vous d'avoir un ID unique
-          userId: user.id,
+          id: uuidv4(),
+          userId: userId,
           organizationId: userWithRole.organizationId,
           role: "member",
           createdAt: new Date(),

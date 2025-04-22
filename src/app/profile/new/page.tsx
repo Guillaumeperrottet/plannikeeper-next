@@ -1,97 +1,105 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getUser } from "@/lib/auth-session";
-import bcrypt from "bcryptjs";
-import { v4 as uuidv4 } from "uuid";
+"use client";
 
-export async function POST(req: NextRequest) {
-  // Vérifier que l'utilisateur est connecté et est admin
-  const currentUser = await getUser();
-  if (!currentUser) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
-  }
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
-  // Vérifier que l'utilisateur est admin
-  const userWithRole = await prisma.organizationUser.findFirst({
-    where: { userId: currentUser.id },
-    select: { role: true, organizationId: true },
-  });
+export default function NewUserPage() {
+  const router = useRouter();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!userWithRole || userWithRole.role !== "admin") {
-    return NextResponse.json({ error: "Accès restreint aux administrateurs" }, { status: 403 });
-  }
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
 
-  // Récupérer les données de la requête
-  const { name, email, password } = await req.json();
-
-  // Vérifier que l'email n'est pas déjà utilisé
-  const existingUser = await prisma.user.findUnique({
-    where: { email },
-  });
-
-  if (existingUser) {
-    return NextResponse.json({ error: "Cet email est déjà utilisé" }, { status: 400 });
-  }
-
-  // Générer un hash du mot de passe
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  try {
-    // Transaction pour créer l'utilisateur et ajouter à l'organisation
-    const newUser = await prisma.$transaction(async (tx) => {
-      // 1. Créer l'utilisateur
-      const user = await tx.user.create({
-        data: {
-          id: uuidv4(),
+    try {
+      const response = await fetch('/api/users/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           name,
           email,
-          emailVerified: false,
-          organizationId: userWithRole.organizationId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
+          password: '123456789' // Mot de passe par défaut
+        }),
       });
 
-      // 2. Créer le compte avec le mot de passe
-      // Correction pour Better Auth: accountId doit être l'email
-      await tx.account.create({
-        data: {
-          id: uuidv4(),
-          userId: user.id,
-          providerId: "email", // Ce champ est correct
-          accountId: email,    // Garder l'email comme accountId
-          password: hashedPassword,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      });
+      const data = await response.json();
 
-      // 3. Associer l'utilisateur à l'organisation avec le rôle "member"
-      await tx.organizationUser.create({
-        data: {
-          id: uuidv4(),
-          userId: user.id,
-          organizationId: userWithRole.organizationId,
-          role: "member",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      });
+      if (!response.ok) {
+        throw new Error(data.error || 'Une erreur est survenue');
+      }
 
-      return user;
-    });
+      // Redirection vers la page de gestion des utilisateurs
+      router.push('/profile/edit');
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    return NextResponse.json({
-      success: true,
-      user: {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-      },
-    });
+  return (
+    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
+      <h1 className="text-2xl font-bold mb-6">Ajouter un utilisateur</h1>
 
-  } catch (error) {
-    console.error("Erreur lors de la création de l'utilisateur:", error);
-    return NextResponse.json({ error: "Erreur lors de la création de l'utilisateur" }, { status: 500 });
-  }
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit}>
+        <div className="mb-4">
+          <label htmlFor="name" className="block text-gray-700 font-medium mb-2">
+            Nom complet
+          </label>
+          <input
+            id="name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            required
+          />
+        </div>
+
+        <div className="mb-6">
+          <label htmlFor="email" className="block text-gray-700 font-medium mb-2">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+            required
+          />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50"
+          >
+            {isLoading ? 'Création...' : 'Créer l\'utilisateur'}
+          </button>
+
+          <Link
+            href="/profile/edit"
+            className="text-gray-600 hover:text-gray-800"
+          >
+            Annuler
+          </Link>
+        </div>
+      </form>
+    </div>
+  );
 }
