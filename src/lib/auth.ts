@@ -25,6 +25,14 @@ export const auth = betterAuth({
         const organization = await prisma.organization.create({
           data: { name: "Mon Organisation" },
         });
+      // Ajoute l'utilisateur comme admin de l'organisation
+        await prisma.organizationUser.create({
+          data: {
+            userId,
+            organizationId: organization.id,
+            role: "admin",
+          },
+        });
         await prisma.user.update({
           where: { id: userId },
           data: { organizationId: organization.id },
