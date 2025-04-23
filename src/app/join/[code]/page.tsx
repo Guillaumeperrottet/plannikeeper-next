@@ -8,7 +8,7 @@ export default async function JoinPage({
 }: {
   params: { code: string };
 }) {
-  const code = params.code;
+  const { code } = params;
   const user = await getUser();
 
   // Vérifiez si le code est valide
@@ -27,15 +27,17 @@ export default async function JoinPage({
   if (!invitation) {
     return (
       <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md text-center">
-        <h1 className="text-2xl font-bold text-red-600 mb-4">Code d invitation invalide</h1>
+        <h1 className="text-2xl font-bold text-red-600 mb-4">
+          Code d'invitation invalide
+        </h1>
         <p className="mb-6 text-gray-600">
-          Ce code d invitation est invalide, a expiré ou a déjà été utilisé.
+          Ce code d'invitation est invalide, a expiré ou a déjà été utilisé.
         </p>
         <Link
           href="/"
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
         >
-          Retour à l accueil
+          Retour à l'accueil
         </Link>
       </div>
     );
@@ -45,9 +47,12 @@ export default async function JoinPage({
   if (!user) {
     return (
       <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md text-center">
-        <h1 className="text-2xl font-bold mb-4">Rejoindre {invitation.organization.name}</h1>
+        <h1 className="text-2xl font-bold mb-4">
+          Rejoindre {invitation.organization.name}
+        </h1>
         <p className="mb-6 text-gray-600">
-          Vous avez été invité à rejoindre {invitation.organization.name}. Veuillez vous connecter ou créer un compte pour continuer.
+          Vous avez été invité à rejoindre {invitation.organization.name}.
+          Veuillez vous connecter ou créer un compte pour continuer.
         </p>
         <div className="flex justify-center gap-4">
           <Link
@@ -57,7 +62,7 @@ export default async function JoinPage({
             Se connecter
           </Link>
           <Link
-            href={`/signup?redirect=/join/${code}`}
+            href={`/signup?code=${code}`}
             className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
           >
             Créer un compte
@@ -92,6 +97,19 @@ export default async function JoinPage({
     );
   }
 
+  // Vérifier et supprimer toute appartenance existante à une organisation
+  // (résout l'erreur de contrainte unique)
+  const currentOrgUser = await prisma.organizationUser.findFirst({
+    where: { userId: user.id },
+  });
+
+  if (currentOrgUser) {
+    // Supprimer l'association existante
+    await prisma.organizationUser.delete({
+      where: { id: currentOrgUser.id },
+    });
+  }
+
   // Ajoutez l'utilisateur à l'organisation avec le rôle spécifié
   await prisma.organizationUser.create({
     data: {
@@ -99,6 +117,12 @@ export default async function JoinPage({
       organizationId: invitation.organizationId,
       role: invitation.role,
     },
+  });
+
+  // Mettez à jour l'organisation principale de l'utilisateur
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { organizationId: invitation.organizationId },
   });
 
   // Marquez le code comme utilisé

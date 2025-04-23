@@ -22,21 +22,31 @@ export const auth = betterAuth({
       // Vérifie que l'utilisateur vient d'être créé
       if (ctx.path === "/sign-up/email" && ctx.context.newSession) {
         const userId = ctx.context.newSession.user.id;
-        const organization = await prisma.organization.create({
-          data: { name: "Mon Organisation" },
-        });
-      // Ajoute l'utilisateur comme admin de l'organisation
-        await prisma.organizationUser.create({
-          data: {
-            userId,
-            organizationId: organization.id,
-            role: "admin",
-          },
-        });
-        await prisma.user.update({
-          where: { id: userId },
-          data: { organizationId: organization.id },
-        });
+
+        // Vérifier si l'inscription vient d'une invitation
+        const inviteCode = ctx.context.meta?.inviteCode as string | undefined;
+
+        if (!inviteCode) {
+          // Si pas d'invitation, créer une nouvelle organisation pour l'utilisateur
+          const organization = await prisma.organization.create({
+            data: { name: "Mon Organisation" },
+          });
+
+          // Ajoute l'utilisateur comme admin de l'organisation
+          await prisma.organizationUser.create({
+            data: {
+              userId,
+              organizationId: organization.id,
+              role: "admin",
+            },
+          });
+
+          await prisma.user.update({
+            where: { id: userId },
+            data: { organizationId: organization.id },
+          });
+        }
+        // Ne rien faire si inviteCode est présent - la page /join/[code] s'occupera de l'association
       }
     }),
   },
