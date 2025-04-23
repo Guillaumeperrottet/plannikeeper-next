@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -16,6 +16,8 @@ type Sector = {
   id: string;
   name: string;
   image: string;
+  imageWidth?: number | null;
+  imageHeight?: number | null;
   objectId: string;
 };
 
@@ -42,6 +44,13 @@ export default function SectorViewer({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const [imageDisplaySize, setImageDisplaySize] = useState({
+    width: 0,
+    height: 0,
+  });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
 
   // Sélectionner le premier secteur au chargement si aucun n'est sélectionné
   useEffect(() => {
@@ -56,6 +65,86 @@ export default function SectorViewer({
       fetchArticles(selectedSector.id);
     }
   }, [selectedSector]);
+
+  // Surveiller les changements de dimensions du conteneur et de l'image
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        setContainerSize({
+          width: containerRef.current.offsetWidth,
+          height: containerRef.current.offsetHeight,
+        });
+      }
+
+      if (imageRef.current) {
+        setImageDisplaySize({
+          width: imageRef.current.offsetWidth,
+          height: imageRef.current.offsetHeight,
+        });
+      }
+    };
+
+    // Initialiser
+    updateDimensions();
+
+    // Observer les changements de taille
+    const resizeObserver = new ResizeObserver(updateDimensions);
+
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    if (imageRef.current) {
+      resizeObserver.observe(imageRef.current);
+    }
+
+    // Observer le redimensionnement de la fenêtre
+    window.addEventListener("resize", updateDimensions);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updateDimensions);
+    };
+  }, [selectedSector, isFullscreen]);
+
+  // Fonction pour calculer l'échelle qui maintient le rapport d'aspect
+  const calculateAspectRatio = useCallback(() => {
+    if (
+      !selectedSector?.imageWidth ||
+      !selectedSector?.imageHeight ||
+      !imageDisplaySize.width ||
+      !imageDisplaySize.height
+    ) {
+      return 1;
+    }
+
+    // Calculer les proportions des dimensions réelles et affichées
+    const originalAspectRatio =
+      selectedSector.imageWidth / selectedSector.imageHeight;
+    const displayAspectRatio = imageDisplaySize.width / imageDisplaySize.height;
+
+    // Déterminer s'il y a des différences significatives
+    return originalAspectRatio / displayAspectRatio;
+  }, [selectedSector, imageDisplaySize]);
+
+  // Fonction pour ajuster la position des articles en fonction
+  // des dimensions réelles et affichées de l'image
+  const getAdjustedPosition = useCallback(
+    (posX: number, posY: number) => {
+      if (
+        !selectedSector ||
+        !selectedSector.imageWidth ||
+        !selectedSector.imageHeight
+      ) {
+        return { x: posX, y: posY };
+      }
+
+      // Les positions sont déjà en pourcentages, donc pas besoin d'ajustement supplémentaire
+      // si l'image est affichée avec le même rapport hauteur/largeur
+      return { x: posX, y: posY };
+    },
+    [selectedSector, imageDisplaySize]
+  );
 
   const fetchArticles = async (sectorId: string) => {
     try {
@@ -177,7 +266,10 @@ export default function SectorViewer({
         }`}
       >
         {selectedSector ? (
-          <div className="relative max-w-full max-h-full w-auto h-auto">
+          <div
+            ref={containerRef}
+            className="relative max-w-full max-h-full w-auto h-auto"
+          >
             {sectors.length > 1 && (
               <>
                 <button
@@ -201,57 +293,67 @@ export default function SectorViewer({
               className="cursor-pointer relative"
               onClick={() => setIsFullscreen(!isFullscreen)}
             >
-              <Image
-                src={selectedSector.image}
-                alt={selectedSector.name}
-                width={1200}
-                height={900}
-                className={`object-contain ${
-                  isFullscreen ? "max-h-screen" : "max-h-[calc(100vh-150px)]"
-                } rounded-md shadow-md`}
-                priority
-              />
+              <div className="relative">
+                <Image
+                  ref={imageRef as any}
+                  src={selectedSector.image}
+                  alt={selectedSector.name}
+                  width={selectedSector.imageWidth || 1200}
+                  height={selectedSector.imageHeight || 900}
+                  className={`object-contain ${
+                    isFullscreen ? "max-h-screen" : "max-h-[calc(100vh-150px)]"
+                  } rounded-md shadow-md`}
+                  priority
+                />
+              </div>
 
-              {/* Articles placés sur l'image avec le nouveau style transparent */}
-              {articles.map(
-                (article) =>
-                  article.positionX !== null &&
-                  article.positionY !== null && (
-                    <div
-                      key={article.id}
-                      className="absolute border border-white rounded-md z-20 transition-all duration-200 ease-in-out cursor-pointer"
-                      style={{
-                        left: `${article.positionX}%`,
-                        top: `${article.positionY}%`,
-                        width: `${article.width || 20}%`,
-                        height: `${article.height || 20}%`,
-                        transform: "translate(-50%, -50%)",
-                        backgroundColor: "rgba(0, 0, 0, 0.2)",
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                      }}
-                      onMouseEnter={() => setHoveredArticleId(article.id)}
-                      onMouseLeave={() => setHoveredArticleId(null)}
-                    >
-                      {/* Tooltip qui apparaît au survol */}
-                      {hoveredArticleId === article.id && (
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 bg-black bg-opacity-80 text-white p-2 rounded shadow-lg z-30">
-                          <div className="font-bold text-sm truncate">
-                            {article.title}
-                          </div>
-                          {article.description && (
-                            <div className="text-xs mt-1 opacity-80 max-h-20 overflow-y-auto">
-                              {article.description}
-                            </div>
-                          )}
-                          {/* Petit triangle en bas du tooltip */}
-                          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black border-opacity-80"></div>
+              {/* Articles placés sur l'image */}
+              {articles.map((article) => {
+                if (article.positionX === null || article.positionY === null)
+                  return null;
+
+                // Ajuster les positions pour l'affichage
+                const { x, y } = getAdjustedPosition(
+                  article.positionX,
+                  article.positionY
+                );
+
+                return (
+                  <div
+                    key={article.id}
+                    className="absolute border border-white rounded-md z-20 transition-all duration-200 ease-in-out cursor-pointer"
+                    style={{
+                      left: `${x}%`,
+                      top: `${y}%`,
+                      width: `${article.width || 20}%`,
+                      height: `${article.height || 20}%`,
+                      transform: "translate(-50%, -50%)",
+                      backgroundColor: "rgba(0, 0, 0, 0.2)",
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                    onMouseEnter={() => setHoveredArticleId(article.id)}
+                    onMouseLeave={() => setHoveredArticleId(null)}
+                  >
+                    {/* Tooltip qui apparaît au survol */}
+                    {hoveredArticleId === article.id && (
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 bg-black bg-opacity-80 text-white p-2 rounded shadow-lg z-30">
+                        <div className="font-bold text-sm truncate">
+                          {article.title}
                         </div>
-                      )}
-                    </div>
-                  )
-              )}
+                        {article.description && (
+                          <div className="text-xs mt-1 opacity-80 max-h-20 overflow-y-auto">
+                            {article.description}
+                          </div>
+                        )}
+                        {/* Petit triangle en bas du tooltip */}
+                        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black border-opacity-80"></div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-80 px-4 py-2 rounded-full shadow-md z-10">

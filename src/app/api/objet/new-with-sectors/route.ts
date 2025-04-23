@@ -1,3 +1,4 @@
+// src/app/api/objet/new-with-sectors/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
@@ -5,6 +6,7 @@ import { writeFile } from "fs/promises";
 import { mkdir } from "fs/promises";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
+import sharp from "sharp"; // Ajoutez Sharp pour manipuler les images
 
 export async function POST(req: NextRequest) {
   try {
@@ -72,14 +74,23 @@ export async function POST(req: NextRequest) {
       const filePath = path.join(uploadDir, fileName);
       const publicPath = `/uploads/${fileName}`;
 
-      // Lire l'image et l'écrire dans le dossier public/uploads
+      // Lire l'image et obtenir ses dimensions
       const buffer = Buffer.from(await sectorImage.arrayBuffer());
+
+      // Obtenir les dimensions de l'image avec sharp
+      const imageMetadata = await sharp(buffer).metadata();
+      const imageWidth = imageMetadata.width || 0;
+      const imageHeight = imageMetadata.height || 0;
+
+      // Écrire l'image dans le dossier public/uploads
       await writeFile(filePath, buffer);
 
       // Ajouter le secteur aux données à créer
       sectorsData.push({
         name: sectorName,
         image: publicPath,
+        imageWidth,
+        imageHeight,
         objectId: objet.id,
       });
     }

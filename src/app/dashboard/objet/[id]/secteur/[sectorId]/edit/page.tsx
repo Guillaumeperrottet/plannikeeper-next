@@ -71,13 +71,15 @@ export default async function EditSectorPage({
             positionX: article.positionX,
             positionY: article.positionY,
           }))}
+          imageWidth={sector.imageWidth}
+          imageHeight={sector.imageHeight}
         >
           {sector.image ? (
             <Image
               src={sector.image}
               alt={sector.name}
-              width={1200}
-              height={900} // Utiliser les mêmes proportions
+              width={sector.imageWidth || 1200}
+              height={sector.imageHeight || 900}
               className="object-contain max-h-[calc(100vh-150px)] w-full"
               priority
             />
