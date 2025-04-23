@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { toast } from "sonner";
 import {
   ChevronDown,
   Plus,
@@ -19,6 +20,16 @@ type Sector = {
   objectId: string;
 };
 
+type Article = {
+  id: string;
+  title: string;
+  description: string | null;
+  positionX: number | null;
+  positionY: number | null;
+  width: number | null;
+  height: number | null;
+};
+
 export default function SectorViewer({
   sectors,
   objetId,
@@ -26,6 +37,10 @@ export default function SectorViewer({
   sectors: Sector[];
   objetId: string;
 }) {
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [showArticleDetails, setShowArticleDetails] = useState<string | null>(
+    null
+  );
   const [selectedSector, setSelectedSector] = useState<Sector | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -38,6 +53,26 @@ export default function SectorViewer({
       setSelectedIndex(0);
     }
   }, [sectors, selectedSector]);
+
+  useEffect(() => {
+    if (selectedSector) {
+      fetchArticles(selectedSector.id);
+    }
+  }, [selectedSector]);
+
+  const fetchArticles = async (sectorId: string) => {
+    try {
+      const response = await fetch(`/api/sectors/${sectorId}/articles`);
+      if (response.ok) {
+        const data = await response.json();
+        setArticles(data);
+      } else {
+        console.error("Erreur lors du chargement des articles");
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+    }
+  };
 
   const handleSectorChange = (sector: Sector) => {
     const newIndex = sectors.findIndex((s) => s.id === sector.id);
@@ -165,7 +200,7 @@ export default function SectorViewer({
               </>
             )}
             <div
-              className="cursor-pointer"
+              className="cursor-pointer relative"
               onClick={() => setIsFullscreen(!isFullscreen)}
             >
               <Image
@@ -178,6 +213,47 @@ export default function SectorViewer({
                 } rounded-md shadow-md`}
                 priority
               />
+
+              {/* Articles placés sur l'image */}
+              {articles.map(
+                (article) =>
+                  article.positionX !== null &&
+                  article.positionY !== null && (
+                    <div
+                      key={article.id}
+                      className={`absolute border-2 ${
+                        showArticleDetails === article.id
+                          ? "border-blue-500 bg-blue-50 z-30"
+                          : "border-yellow-500 bg-yellow-50 z-20"
+                      } rounded-md shadow-md overflow-hidden transition-all`}
+                      style={{
+                        left: `${article.positionX}%`,
+                        top: `${article.positionY}%`,
+                        width: `${article.width || 20}%`,
+                        height: `${article.height || 20}%`,
+                        transform: "translate(-50%, -50%)",
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowArticleDetails(
+                          article.id === showArticleDetails ? null : article.id
+                        );
+                      }}
+                    >
+                      <div className="p-2">
+                        <div className="font-bold truncate">
+                          {article.title}
+                        </div>
+                        {showArticleDetails === article.id &&
+                          article.description && (
+                            <div className="text-sm text-gray-600 mt-1">
+                              {article.description}
+                            </div>
+                          )}
+                      </div>
+                    </div>
+                  )
+              )}
             </div>
 
             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-80 px-4 py-2 rounded-full shadow-md z-10">
