@@ -30,12 +30,20 @@ export default async function ProfileEditPage() {
     <div className="max-w-3xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Gestion des Utilisateurs</h1>
-        <Link
-          href="/profile/new"
-          className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-900 transition"
-        >
-          Ajouter un utilisateur
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/profile/invitations"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+          >
+            Gérer les invitations
+          </Link>
+          <Link
+            href="/profile"
+            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition"
+          >
+            Retour au profil
+          </Link>
+        </div>
       </div>
       <table className="w-full border">
         <thead>

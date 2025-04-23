@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 
 
@@ -10,6 +11,9 @@ export default function SignInForm() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const searchParams = useSearchParams();
+  const redirectPath = searchParams.get("redirect") || "/dashboard";
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -23,10 +27,10 @@ export default function SignInForm() {
     await authClient.signIn.email({
       email,
       password,
-      callbackURL: '/dashboard', // optionnel
+      callbackURL: redirectPath, // Utilisez le chemin de redirection
     }, {
       onSuccess: () => {
-        window.location.href = '/dashboard';
+        window.location.href = redirectPath;
       },
       onError: (err: any) => {
         setError("Invalid email or password");
@@ -35,6 +39,7 @@ export default function SignInForm() {
       },
     });
   };
+
 
   return (
     <div className="max-w-md mx-auto p-6 bg-white rounded shadow-md">
