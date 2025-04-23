@@ -1,3 +1,4 @@
+// src/app/dashboard/objet/[id]/view/page.tsx
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";

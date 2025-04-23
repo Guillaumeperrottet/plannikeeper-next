@@ -29,10 +29,14 @@ export default function ArticleEditor({
   sectorId,
   initialArticles = [],
   children,
+  imageWidth = null,
+  imageHeight = null,
 }: {
   sectorId: string;
   initialArticles?: Article[];
   children?: React.ReactNode;
+  imageWidth?: number | null;
+  imageHeight?: number | null;
 }) {
   const [articles, setArticles] = useState<Article[]>(initialArticles);
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(
@@ -56,6 +60,7 @@ export default function ArticleEditor({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const [aspectRatio, setAspectRatio] = useState(1);
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -76,19 +81,62 @@ export default function ArticleEditor({
     height: 10,
   });
 
+  // Calculer le ratio d'aspect entre l'image originale et le conteneur
+  const calculateAspectRatio = useCallback(() => {
+    if (!imageWidth || !imageHeight || !containerRef.current) return 1;
+
+    const containerWidth = containerRef.current.offsetWidth;
+    const containerHeight = containerRef.current.offsetHeight;
+
+    // Si l'image est plus large que haute
+    if (imageWidth / imageHeight > containerWidth / containerHeight) {
+      // La largeur est limitative
+      return containerWidth / imageWidth;
+    } else {
+      // La hauteur est limitative
+      return containerHeight / imageHeight;
+    }
+  }, [imageWidth, imageHeight]);
+
+  // Recalculer la position (x, y) d'un article en fonction du ratio d'aspect
+  const adjustPositionForDisplay = useCallback((x: number, y: number) => {
+    // Dans ce cas, x et y sont des pourcentages (0-100)
+    // Les pourcentages sont déjà normalisés, donc pas besoin d'ajuster
+    return { x, y };
+  }, []);
+
   useEffect(() => {
-    const updateSize = () => {
+    const updateContainerSize = () => {
       if (containerRef.current) {
-        setContainerSize({
-          width: containerRef.current.offsetWidth,
-          height: containerRef.current.offsetHeight,
-        });
+        const width = containerRef.current.offsetWidth;
+        const height = containerRef.current.offsetHeight;
+        setContainerSize({ width, height });
+
+        // Recalculer le ratio d'aspect basé sur les nouvelles dimensions
+        const newAspectRatio = calculateAspectRatio();
+        setAspectRatio(newAspectRatio);
       }
     };
-    updateSize();
-    window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
-  }, []);
+
+    // Initialiser
+    updateContainerSize();
+
+    // Observer les changements de taille
+    const resizeObserver = new ResizeObserver(updateContainerSize);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    // Observer le redimensionnement de la fenêtre
+    window.addEventListener("resize", updateContainerSize);
+
+    return () => {
+      if (containerRef.current) {
+        resizeObserver.unobserve(containerRef.current);
+      }
+      window.removeEventListener("resize", updateContainerSize);
+    };
+  }, [calculateAspectRatio, imageWidth, imageHeight]);
 
   const fetchArticles = useCallback(async () => {
     try {
@@ -497,6 +545,13 @@ export default function ArticleEditor({
           {articles.map((article) => {
             if (article.positionX == null || article.positionY == null)
               return null;
+
+            // Ajuster la position si nécessaire pour la cohérence d'affichage
+            const { x, y } = adjustPositionForDisplay(
+              article.positionX,
+              article.positionY
+            );
+
             return (
               <div
                 key={article.id}
@@ -506,8 +561,8 @@ export default function ArticleEditor({
                     : "border-white"
                 } rounded-md shadow-md overflow-hidden`}
                 style={{
-                  left: `${article.positionX}%`,
-                  top: `${article.positionY}%`,
+                  left: `${x}%`,
+                  top: `${y}%`,
                   width: `${article.width || 20}%`,
                   height: `${article.height || 20}%`,
                   transform: "translate(-50%, -50%)",
