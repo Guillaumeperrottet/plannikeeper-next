@@ -196,6 +196,7 @@ export default function SectorViewer({
                 </button>
               </>
             )}
+
             <div
               className="cursor-pointer relative"
               onClick={() => setIsFullscreen(!isFullscreen)}
