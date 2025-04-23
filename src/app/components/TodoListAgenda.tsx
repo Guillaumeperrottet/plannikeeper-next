@@ -223,18 +223,24 @@ export default function TodoListAgenda() {
       data-todo-list-agenda
     >
       {/* Barre de titre avec poignée de drag */}
-      <div className="relative flex justify-between items-center bg-gray-800 text-white p-3">
-        {/* Poignée de drag au milieu du header */}
-        <div
-          className="absolute top-0 left-0 right-0 flex justify-center items-center h-8 cursor-grab"
-          onMouseDown={handleDragStart}
-          onTouchStart={handleDragStart}
-        >
-          <GripHorizontal size={20} className="text-gray-400" />
+      <div className="flex justify-between items-center bg-gray-800 text-white p-3 relative">
+        {/* Colonne gauche (vide ou avec d'autres contrôles si nécessaire) */}
+        <div className="w-1/4"></div>
+
+        {/* Titre centré avec poignée de drag au-dessus */}
+        <div className="flex-1 flex justify-center items-center relative">
+          <div
+            className="absolute -top-4 w-16 h-6 flex justify-center items-center cursor-grab z-10"
+            onMouseDown={handleDragStart}
+            onTouchStart={handleDragStart}
+          >
+            <GripHorizontal size={20} className="text-gray-400" />
+          </div>
+          <h2 className="text-xl font-semibold">Agenda todo list</h2>
         </div>
 
-        <h2 className="text-xl font-semibold">Agenda todo list</h2>
-        <div className="flex items-center gap-2">
+        {/* Colonne droite avec les contrôles */}
+        <div className="flex items-center gap-2 w-1/4 justify-end">
           <select
             className="bg-white text-gray-800 px-3 py-1 rounded border-none text-sm mr-2"
             value={selectedObjectId}
