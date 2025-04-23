@@ -1,9 +1,13 @@
-// ...existing code...
+import { Toaster } from "sonner";
 import Navbar from "./components/Navbar";
 import { getUser } from "../lib/auth-session";
 import "./globals.css";
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const user = await getUser();
 
   return (
@@ -11,6 +15,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <Navbar user={user} />
         {children}
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   );

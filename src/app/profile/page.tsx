@@ -1,8 +1,8 @@
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-
 import Link from "next/link";
+import EditName from "./edit-name";
 
 export default async function ProfilePage() {
   const user = await getUser();
@@ -44,12 +44,10 @@ export default async function ProfilePage() {
             <label className="block text-gray-700 font-semibold mb-1">
               Nom
             </label>
-            <input
-              type="text"
-              value={user.name ?? ""}
-              disabled
-              className="w-full border rounded px-3 py-2 bg-gray-100"
-            />
+            <EditName initialName={user.name ?? ""} />
+            <p className="mt-1 text-sm text-gray-500">
+              Cliquez sur le nom pour le modifier
+            </p>
           </div>
           <div className="mb-4">
             <label className="block text-gray-700 font-semibold mb-1">
@@ -62,10 +60,6 @@ export default async function ProfilePage() {
               className="w-full border rounded px-3 py-2 bg-gray-100"
             />
           </div>
-          {/* Ajoute ici d'autres champs à éditer si besoin */}
-          <button className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-            Modifier mon profil
-          </button>
         </div>
       </div>
     </div>
