@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
-import { Plus, Move, X } from "lucide-react";
+import { Plus, Move, X, Edit, Trash } from "lucide-react";
 
 type Article = {
   id: string;
@@ -52,6 +52,7 @@ export default function ArticleEditor({
   });
   const [newArticleStart, setNewArticleStart] = useState({ x: 0, y: 0 });
   const [newArticleSize, setNewArticleSize] = useState({ width: 0, height: 0 });
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
@@ -84,7 +85,6 @@ export default function ArticleEditor({
         });
       }
     };
-
     updateSize();
     window.addEventListener("resize", updateSize);
     return () => window.removeEventListener("resize", updateSize);
@@ -112,23 +112,17 @@ export default function ArticleEditor({
   };
 
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Si on est en mode ajout mais pas en train de dessiner, on désélectionne
     if (isAddingArticle && !isDraggingNew) {
-      // Ne rien faire, on attend le mousedown pour commencer à dessiner
       return;
     }
-
-    // Clic sur le fond = désélection
     setSelectedArticleId(null);
   };
 
   const handleContainerMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Si on est en mode ajout, on commence à dessiner
     if (isAddingArticle && containerRef.current && !isDraggingNew) {
       const rect = containerRef.current.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * 100;
       const y = ((e.clientY - rect.top) / rect.height) * 100;
-
       setNewArticleStart({ x, y });
       setNewArticleSize({ width: 0, height: 0 });
       setIsDraggingNew(true);
@@ -140,10 +134,8 @@ export default function ArticleEditor({
       const rect = containerRef.current.getBoundingClientRect();
       const currentX = ((e.clientX - rect.left) / rect.width) * 100;
       const currentY = ((e.clientY - rect.top) / rect.height) * 100;
-
       const width = Math.abs(currentX - newArticleStart.x);
       const height = Math.abs(currentY - newArticleStart.y);
-
       setNewArticleSize({ width, height });
     } else if (isDragging || isResizing) {
       handleMouseMove(e);
@@ -155,18 +147,14 @@ export default function ArticleEditor({
       const rect = containerRef.current.getBoundingClientRect();
       const currentX = ((e.clientX - rect.left) / rect.width) * 100;
       const currentY = ((e.clientY - rect.top) / rect.height) * 100;
-
-      // Calculer la position centrale et les dimensions
       const minX = Math.min(newArticleStart.x, currentX);
       const minY = Math.min(newArticleStart.y, currentY);
       const width = Math.abs(currentX - newArticleStart.x);
       const height = Math.abs(currentY - newArticleStart.y);
 
-      // Si l'article est trop petit, on utilise une taille minimale
       if (width < 3 || height < 3) {
         const centerX = (newArticleStart.x + currentX) / 2;
         const centerY = (newArticleStart.y + currentY) / 2;
-
         setModalArticle({
           ...modalArticle,
           positionX: centerX,
@@ -177,13 +165,12 @@ export default function ArticleEditor({
       } else {
         const centerX = minX + width / 2;
         const centerY = minY + height / 2;
-
         setModalArticle({
           ...modalArticle,
           positionX: centerX,
           positionY: centerY,
-          width: width,
-          height: height,
+          width,
+          height,
         });
       }
 
@@ -199,16 +186,14 @@ export default function ArticleEditor({
     e.stopPropagation();
     setSelectedArticleId(article.id);
     setIsDragging(true);
-
     if (
       containerRef.current &&
-      article.positionX !== null &&
-      article.positionY !== null
+      article.positionX != null &&
+      article.positionY != null
     ) {
       const rect = containerRef.current.getBoundingClientRect();
       const articleX = (article.positionX / 100) * rect.width;
       const articleY = (article.positionY / 100) * rect.height;
-
       setDragOffset({
         x: e.clientX - rect.left - articleX,
         y: e.clientY - rect.top - articleY,
@@ -223,11 +208,9 @@ export default function ArticleEditor({
   ) => {
     e.stopPropagation();
     e.preventDefault();
-
     setSelectedArticleId(article.id);
     setIsResizing(true);
     setResizeType(type);
-
     setResizeStart({
       x: article.positionX ?? 0,
       y: article.positionY ?? 0,
@@ -241,10 +224,8 @@ export default function ArticleEditor({
       const rect = containerRef.current.getBoundingClientRect();
       const x = e.clientX - rect.left - dragOffset.x;
       const y = e.clientY - rect.top - dragOffset.y;
-
       const posX = (x / rect.width) * 100;
       const posY = (y / rect.height) * 100;
-
       setArticles(
         articles.map((article) =>
           article.id === selectedArticleId
@@ -266,10 +247,6 @@ export default function ArticleEditor({
       const rect = containerRef.current.getBoundingClientRect();
       const mouseX = ((e.clientX - rect.left) / rect.width) * 100;
       const mouseY = ((e.clientY - rect.top) / rect.height) * 100;
-
-      const selectedArticle = articles.find((a) => a.id === selectedArticleId);
-      if (!selectedArticle) return;
-
       let newWidth = resizeStart.width;
       let newHeight = resizeStart.height;
       let newPosX = resizeStart.x;
@@ -323,19 +300,15 @@ export default function ArticleEditor({
         }
       }
     }
-
     setIsDragging(false);
     setIsResizing(false);
     setResizeType(null);
-    // Ne plus désélectionner ici, la sélection reste active
   };
 
   const saveArticle = async (article: Article) => {
     const response = await fetch("/api/articles", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         id: article.id,
         title: article.title,
@@ -347,23 +320,15 @@ export default function ArticleEditor({
         sectorId,
       }),
     });
-
-    if (!response.ok) {
+    if (!response.ok)
       throw new Error("Erreur lors de la sauvegarde de l'article");
-    }
-
     return await response.json();
   };
 
   const handleSaveModal = async () => {
     try {
-      const articleData = {
-        ...modalArticle,
-        sectorId,
-      };
-
+      const articleData = { ...modalArticle, sectorId };
       const savedArticle = await saveArticle(articleData as Article);
-
       if (modalArticle.id) {
         setArticles(
           articles.map((a) => (a.id === modalArticle.id ? savedArticle : a))
@@ -371,7 +336,6 @@ export default function ArticleEditor({
       } else {
         setArticles([...articles, savedArticle]);
       }
-
       setShowModal(false);
       toast.success("Article sauvegardé avec succès");
     } catch (error) {
@@ -393,17 +357,46 @@ export default function ArticleEditor({
     setShowModal(true);
   };
 
-  const renderResizeHandles = (article: Article) => {
-    const isSelected = selectedArticleId === article.id;
-    if (!isSelected) return null;
+  const handleDeleteArticle = async (article: Article) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cet article ?")) return;
+    try {
+      const response = await fetch(`/api/articles/${article.id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok)
+        throw new Error("Erreur lors de la suppression de l'article");
+      setArticles(articles.filter((a) => a.id !== article.id));
+      setSelectedArticleId(null);
+      toast.success("Article supprimé avec succès");
+    } catch (error) {
+      console.error("Error deleting article:", error);
+      toast.error("Erreur lors de la suppression de l'article");
+    }
+  };
 
+  const handleArticleClick = (e: React.MouseEvent, article: Article) => {
+    e.stopPropagation();
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const articleCenterX = ((article.positionX ?? 0) / 100) * rect.width;
+      const articleTopY =
+        (((article.positionY ?? 0) - (article.height ?? 20) / 2) / 100) *
+        rect.height;
+      setTooltipPosition({
+        x: articleCenterX,
+        y: Math.max(20, articleTopY - 10),
+      });
+    }
+    setSelectedArticleId(article.id);
+  };
+
+  const renderResizeHandles = (article: Article) => {
+    if (selectedArticleId !== article.id) return null;
     const handleStyle =
       "absolute w-3 h-3 bg-blue-500 border border-white rounded-full z-10";
     const edgeStyle = "absolute bg-transparent z-10";
-
     return (
       <>
-        {/* edges for resize */}
         <div
           className={`${edgeStyle} top-0 left-0 right-0 h-2 cursor-ns-resize`}
           onMouseDown={(e) => {
@@ -432,7 +425,6 @@ export default function ArticleEditor({
             startResizing(e, article, "right");
           }}
         />
-        {/* corners */}
         <div
           className={`${handleStyle} top-0 left-0 -mt-1.5 -ml-1.5 cursor-nwse-resize`}
           onMouseDown={(e) => {
@@ -461,29 +453,13 @@ export default function ArticleEditor({
             startResizing(e, article, "bottomRight");
           }}
         />
-        {/* mid-edge handles */}
-        <div
-          className={`${handleStyle} top-0 left-1/2 -mt-1.5 -translate-x-1/2 cursor-ns-resize`}
-          onMouseDown={(e) => startResizing(e, article, "top")}
-        />
-        <div
-          className={`${handleStyle} top-1/2 right-0 -mt-1.5 -mr-1.5 cursor-ew-resize`}
-          onMouseDown={(e) => startResizing(e, article, "right")}
-        />
-        <div
-          className={`${handleStyle} bottom-0 left-1/2 -mb-1.5 -translate-x-1/2 cursor-ns-resize`}
-          onMouseDown={(e) => startResizing(e, article, "bottom")}
-        />
-        <div
-          className={`${handleStyle} top-1/2 left-0 -mt-1.5 -ml-1.5 cursor-ew-resize`}
-          onMouseDown={(e) => startResizing(e, article, "left")}
-        />
       </>
     );
   };
 
   return (
     <div className="relative">
+      {/* Toolbar */}
       <div className="sticky top-0 z-10 p-2 bg-white border-b">
         <button
           onClick={() => {
@@ -504,6 +480,7 @@ export default function ArticleEditor({
         </button>
       </div>
 
+      {/* Drawing area */}
       <div
         ref={containerRef}
         className={`relative overflow-hidden ${
@@ -517,62 +494,95 @@ export default function ArticleEditor({
         <div className="relative">
           <div className="w-full min-h-[500px] bg-gray-200">{children}</div>
 
-          {/* Articles existants */}
-          {articles.map(
-            (article) =>
-              article.positionX !== null &&
-              article.positionY !== null && (
+          {articles.map((article) => {
+            if (article.positionX == null || article.positionY == null)
+              return null;
+            return (
+              <div
+                key={article.id}
+                className={`absolute border ${
+                  selectedArticleId === article.id
+                    ? "border-blue-500"
+                    : "border-white"
+                } rounded-md shadow-md overflow-hidden`}
+                style={{
+                  left: `${article.positionX}%`,
+                  top: `${article.positionY}%`,
+                  width: `${article.width || 20}%`,
+                  height: `${article.height || 20}%`,
+                  transform: "translate(-50%, -50%)",
+                  zIndex: selectedArticleId === article.id ? 10 : 5,
+                  backgroundColor: "rgba(0, 0, 0, 0.2)",
+                  cursor: "pointer",
+                }}
+                onClick={(e) => handleArticleClick(e, article)}
+              >
+                {renderResizeHandles(article)}
+              </div>
+            );
+          })}
+
+          {selectedArticleId &&
+            (() => {
+              const article = articles.find((a) => a.id === selectedArticleId);
+              if (!article) return null;
+              return (
                 <div
-                  key={article.id}
-                  className={`absolute border-2 ${
-                    selectedArticleId === article.id
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-yellow-500 bg-yellow-50"
-                  } rounded-md shadow-md overflow-hidden`}
+                  className="absolute z-30 bg-white border shadow-lg rounded-md p-2 flex flex-col gap-2 w-48"
                   style={{
-                    left: `${article.positionX}%`,
-                    top: `${article.positionY}%`,
-                    width: `${article.width || 20}%`,
-                    height: `${article.height || 20}%`,
-                    transform: "translate(-50%, -50%)",
-                    zIndex: selectedArticleId === article.id ? 10 : 5,
+                    top: `${tooltipPosition.y}px`,
+                    left: `${tooltipPosition.x}px`,
+                    transform: "translate(-50%, -100%)",
                   }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedArticleId(article.id);
-                  }}
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <div
-                    className="flex justify-between items-center mb-1 p-2 cursor-move"
-                    onMouseDown={(e) => startDragging(e, article)}
-                  >
-                    <div className="font-bold truncate">{article.title}</div>
-                    <Move size={16} className="text-gray-500" />
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-bold text-sm truncate">
+                      {article.title}
+                    </span>
                   </div>
                   {article.description && (
-                    <div className="text-xs text-gray-600 truncate px-2">
+                    <div className="text-xs mb-2 text-gray-600 max-h-20 overflow-y-auto">
                       {article.description}
                     </div>
                   )}
-                  <button
-                    onClick={() => handleEditArticle(article)}
-                    className="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-white border flex items-center justify-center"
-                  >
-                    <span className="sr-only">Modifier</span>
-                    <svg width="10" height="10" viewBox="0 0 24 24">
-                      <path
-                        fill="currentColor"
-                        d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
-                      />
-                    </svg>
-                  </button>
-
-                  {renderResizeHandles(article)}
+                  <div className="flex justify-between">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        startDragging(e, article);
+                      }}
+                      className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
+                    >
+                      <Move size={14} />
+                      <span>Déplacer</span>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditArticle(article);
+                      }}
+                      className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
+                    >
+                      <Edit size={14} />
+                      <span>Modifier</span>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteArticle(article);
+                      }}
+                      className="flex items-center gap-1 text-sm text-red-600 hover:text-red-800"
+                    >
+                      <Trash size={14} />
+                      <span>Supprimer</span>
+                    </button>
+                  </div>
+                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white" />
                 </div>
-              )
-          )}
+              );
+            })()}
 
-          {/* Article en cours de création par drag */}
           {isDraggingNew && isAddingArticle && (
             <div
               className="absolute border-2 border-blue-500 bg-blue-100 bg-opacity-50 rounded-md z-20"
@@ -588,7 +598,7 @@ export default function ArticleEditor({
                 width: `${newArticleSize.width}%`,
                 height: `${newArticleSize.height}%`,
               }}
-            ></div>
+            />
           )}
         </div>
       </div>
@@ -607,7 +617,6 @@ export default function ArticleEditor({
                 <X size={20} />
               </button>
             </div>
-
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Titre</label>
@@ -620,7 +629,6 @@ export default function ArticleEditor({
                   className="w-full border rounded px-3 py-2"
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium mb-1">
                   Description
@@ -637,7 +645,6 @@ export default function ArticleEditor({
                   rows={3}
                 />
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">
@@ -645,8 +652,8 @@ export default function ArticleEditor({
                   </label>
                   <input
                     type="number"
-                    min="2"
-                    max="50"
+                    min={2}
+                    max={50}
                     value={modalArticle.width}
                     onChange={(e) =>
                       setModalArticle({
@@ -657,15 +664,14 @@ export default function ArticleEditor({
                     className="w-full border rounded px-3 py-2"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium mb-1">
                     Hauteur (%)
                   </label>
                   <input
                     type="number"
-                    min="2"
-                    max="50"
+                    min={2}
+                    max={50}
                     value={modalArticle.height}
                     onChange={(e) =>
                       setModalArticle({
@@ -678,7 +684,6 @@ export default function ArticleEditor({
                 </div>
               </div>
             </div>
-
             <div className="mt-6 flex justify-end gap-2">
               <button
                 onClick={() => setShowModal(false)}
