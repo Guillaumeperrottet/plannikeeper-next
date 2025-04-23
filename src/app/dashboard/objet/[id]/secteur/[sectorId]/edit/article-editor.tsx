@@ -39,6 +39,7 @@ export default function ArticleEditor({
     null
   );
   const [isAddingArticle, setIsAddingArticle] = useState(false);
+  const [isDraggingNew, setIsDraggingNew] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [resizeType, setResizeType] = useState<ResizeType>(null);
@@ -49,7 +50,8 @@ export default function ArticleEditor({
     width: 0,
     height: 0,
   });
-  const [newArticlePosition, setNewArticlePosition] = useState({ x: 0, y: 0 });
+  const [newArticleStart, setNewArticleStart] = useState({ x: 0, y: 0 });
+  const [newArticleSize, setNewArticleSize] = useState({ width: 0, height: 0 });
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
@@ -69,8 +71,8 @@ export default function ArticleEditor({
     description: "",
     positionX: 0,
     positionY: 0,
-    width: 20,
-    height: 20,
+    width: 10,
+    height: 10,
   });
 
   useEffect(() => {
@@ -110,25 +112,87 @@ export default function ArticleEditor({
   };
 
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Si on est en mode ajout, on place un nouvel article
-    if (isAddingArticle && containerRef.current) {
+    // Si on est en mode ajout mais pas en train de dessiner, on désélectionne
+    if (isAddingArticle && !isDraggingNew) {
+      // Ne rien faire, on attend le mousedown pour commencer à dessiner
+      return;
+    }
+
+    // Clic sur le fond = désélection
+    setSelectedArticleId(null);
+  };
+
+  const handleContainerMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Si on est en mode ajout, on commence à dessiner
+    if (isAddingArticle && containerRef.current && !isDraggingNew) {
       const rect = containerRef.current.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * 100;
       const y = ((e.clientY - rect.top) / rect.height) * 100;
 
-      setNewArticlePosition({ x, y });
-      setModalArticle({
-        ...modalArticle,
-        positionX: x,
-        positionY: y,
-      });
-      setShowModal(true);
-      setIsAddingArticle(false);
-      return;
+      setNewArticleStart({ x, y });
+      setNewArticleSize({ width: 0, height: 0 });
+      setIsDraggingNew(true);
     }
+  };
 
-    // Sinon, clic sur le fond = désélection
-    setSelectedArticleId(null);
+  const handleContainerMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isDraggingNew && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const currentX = ((e.clientX - rect.left) / rect.width) * 100;
+      const currentY = ((e.clientY - rect.top) / rect.height) * 100;
+
+      const width = Math.abs(currentX - newArticleStart.x);
+      const height = Math.abs(currentY - newArticleStart.y);
+
+      setNewArticleSize({ width, height });
+    } else if (isDragging || isResizing) {
+      handleMouseMove(e);
+    }
+  };
+
+  const handleContainerMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isDraggingNew && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const currentX = ((e.clientX - rect.left) / rect.width) * 100;
+      const currentY = ((e.clientY - rect.top) / rect.height) * 100;
+
+      // Calculer la position centrale et les dimensions
+      const minX = Math.min(newArticleStart.x, currentX);
+      const minY = Math.min(newArticleStart.y, currentY);
+      const width = Math.abs(currentX - newArticleStart.x);
+      const height = Math.abs(currentY - newArticleStart.y);
+
+      // Si l'article est trop petit, on utilise une taille minimale
+      if (width < 3 || height < 3) {
+        const centerX = (newArticleStart.x + currentX) / 2;
+        const centerY = (newArticleStart.y + currentY) / 2;
+
+        setModalArticle({
+          ...modalArticle,
+          positionX: centerX,
+          positionY: centerY,
+          width: 5,
+          height: 5,
+        });
+      } else {
+        const centerX = minX + width / 2;
+        const centerY = minY + height / 2;
+
+        setModalArticle({
+          ...modalArticle,
+          positionX: centerX,
+          positionY: centerY,
+          width: width,
+          height: height,
+        });
+      }
+
+      setIsDraggingNew(false);
+      setIsAddingArticle(false);
+      setShowModal(true);
+    } else if (isDragging || isResizing) {
+      stopDraggingOrResizing();
+    }
   };
 
   const startDragging = (e: React.MouseEvent, article: Article) => {
@@ -422,7 +486,11 @@ export default function ArticleEditor({
     <div className="relative">
       <div className="sticky top-0 z-10 p-2 bg-white border-b">
         <button
-          onClick={() => setIsAddingArticle(!isAddingArticle)}
+          onClick={() => {
+            setIsAddingArticle(!isAddingArticle);
+            setIsDraggingNew(false);
+            setSelectedArticleId(null);
+          }}
           className={`flex items-center gap-2 px-3 py-2 rounded ${
             isAddingArticle ? "bg-blue-100 text-blue-700" : "bg-gray-100"
           }`}
@@ -430,7 +498,7 @@ export default function ArticleEditor({
           <Plus size={16} />
           <span>
             {isAddingArticle
-              ? "Cliquez sur l'image pour placer l'article"
+              ? "Dessinez pour placer un article"
               : "Ajouter un article"}
           </span>
         </button>
@@ -438,15 +506,18 @@ export default function ArticleEditor({
 
       <div
         ref={containerRef}
-        className="relative overflow-hidden"
+        className={`relative overflow-hidden ${
+          isAddingArticle ? "cursor-crosshair" : ""
+        }`}
         onClick={handleContainerClick}
-        onMouseMove={handleMouseMove}
-        onMouseUp={stopDraggingOrResizing}
-        onMouseLeave={stopDraggingOrResizing}
+        onMouseDown={handleContainerMouseDown}
+        onMouseMove={handleContainerMouseMove}
+        onMouseUp={handleContainerMouseUp}
       >
         <div className="relative">
           <div className="w-full min-h-[500px] bg-gray-200">{children}</div>
 
+          {/* Articles existants */}
           {articles.map(
             (article) =>
               article.positionX !== null &&
@@ -499,6 +570,25 @@ export default function ArticleEditor({
                   {renderResizeHandles(article)}
                 </div>
               )
+          )}
+
+          {/* Article en cours de création par drag */}
+          {isDraggingNew && isAddingArticle && (
+            <div
+              className="absolute border-2 border-blue-500 bg-blue-100 bg-opacity-50 rounded-md z-20"
+              style={{
+                left: `${Math.min(
+                  newArticleStart.x,
+                  newArticleStart.x + newArticleSize.width
+                )}%`,
+                top: `${Math.min(
+                  newArticleStart.y,
+                  newArticleStart.y + newArticleSize.height
+                )}%`,
+                width: `${newArticleSize.width}%`,
+                height: `${newArticleSize.height}%`,
+              }}
+            ></div>
           )}
         </div>
       </div>
@@ -555,7 +645,7 @@ export default function ArticleEditor({
                   </label>
                   <input
                     type="number"
-                    min="5"
+                    min="2"
                     max="50"
                     value={modalArticle.width}
                     onChange={(e) =>
@@ -574,7 +664,7 @@ export default function ArticleEditor({
                   </label>
                   <input
                     type="number"
-                    min="5"
+                    min="2"
                     max="50"
                     value={modalArticle.height}
                     onChange={(e) =>

@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { toast } from "sonner";
 import {
   ChevronDown,
   Plus,
@@ -38,9 +37,7 @@ export default function SectorViewer({
   objetId: string;
 }) {
   const [articles, setArticles] = useState<Article[]>([]);
-  const [showArticleDetails, setShowArticleDetails] = useState<string | null>(
-    null
-  );
+  const [hoveredArticleId, setHoveredArticleId] = useState<string | null>(null);
   const [selectedSector, setSelectedSector] = useState<Sector | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -214,43 +211,43 @@ export default function SectorViewer({
                 priority
               />
 
-              {/* Articles placés sur l'image */}
+              {/* Articles placés sur l'image avec le nouveau style transparent */}
               {articles.map(
                 (article) =>
                   article.positionX !== null &&
                   article.positionY !== null && (
                     <div
                       key={article.id}
-                      className={`absolute border-2 ${
-                        showArticleDetails === article.id
-                          ? "border-blue-500 bg-blue-50 z-30"
-                          : "border-yellow-500 bg-yellow-50 z-20"
-                      } rounded-md shadow-md overflow-hidden transition-all`}
+                      className="absolute border border-white rounded-md z-20 transition-all duration-200 ease-in-out cursor-pointer"
                       style={{
                         left: `${article.positionX}%`,
                         top: `${article.positionY}%`,
                         width: `${article.width || 20}%`,
                         height: `${article.height || 20}%`,
                         transform: "translate(-50%, -50%)",
+                        backgroundColor: "rgba(0, 0, 0, 0.2)",
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        setShowArticleDetails(
-                          article.id === showArticleDetails ? null : article.id
-                        );
                       }}
+                      onMouseEnter={() => setHoveredArticleId(article.id)}
+                      onMouseLeave={() => setHoveredArticleId(null)}
                     >
-                      <div className="p-2">
-                        <div className="font-bold truncate">
-                          {article.title}
-                        </div>
-                        {showArticleDetails === article.id &&
-                          article.description && (
-                            <div className="text-sm text-gray-600 mt-1">
+                      {/* Tooltip qui apparaît au survol */}
+                      {hoveredArticleId === article.id && (
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 bg-black bg-opacity-80 text-white p-2 rounded shadow-lg z-30">
+                          <div className="font-bold text-sm truncate">
+                            {article.title}
+                          </div>
+                          {article.description && (
+                            <div className="text-xs mt-1 opacity-80 max-h-20 overflow-y-auto">
                               {article.description}
                             </div>
                           )}
-                      </div>
+                          {/* Petit triangle en bas du tooltip */}
+                          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black border-opacity-80"></div>
+                        </div>
+                      )}
                     </div>
                   )
               )}

@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { ArrowLeft, Edit } from "lucide-react";
 import SectorViewer from "@/app/dashboard/objet/[id]/view/sector-viewer";
 
 export default async function ObjetViewPage({
