@@ -48,7 +48,7 @@ export default function TodoListAgenda() {
   useEffect(() => {
     const fetchObjects = async (): Promise<void> => {
       try {
-        const response = await fetch("/api/objects");
+        const response = await fetch("/api/objet");
         if (response.ok) {
           const data: AppObject[] = await response.json();
           setObjects(data);
