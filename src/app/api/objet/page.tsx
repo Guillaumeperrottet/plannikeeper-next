@@ -4,18 +4,19 @@ import { getUser } from "@/lib/auth-session";
 
 export async function POST(req: NextRequest) {
   const user = await getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { nom, adresse, secteur } = await req.json();
 
   // On récupère l'organisation de l'utilisateur
   const userDb = await prisma.user.findUnique({
     where: { id: user.id },
-    include: { organization: true },
+    include: { Organization: true },
   });
 
-  if (!userDb?.organization) {
-    return NextResponse.json({ error: "No organization" }, { status: 400 });
+  if (!userDb?.Organization) {
+    return NextResponse.json({ error: "No Organization" }, { status: 400 });
   }
 
   const objet = await prisma.objet.create({
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
       nom,
       adresse,
       secteur,
-      organizationId: userDb.organization.id,
+      organizationId: userDb.Organization.id,
     },
   });
 
