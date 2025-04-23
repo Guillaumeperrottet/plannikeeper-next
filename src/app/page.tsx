@@ -11,10 +11,9 @@ export default function Home() {
           width={180}
           height={38}
           className="dark:invert"
-          priority
         />
         <h1 className="text-3xl font-bold text-center mb-2">
-          Bienvenue sur PlanniKeeper
+          Bienvenue sur PlanniKeeper 
         </h1>
         <p className="text-lg text-center text-gray-600 dark:text-gray-300 max-w-xl">
           Gérez vos objets, tâches et équipes en toute simplicité.
