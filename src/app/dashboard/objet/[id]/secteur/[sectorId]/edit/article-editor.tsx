@@ -152,15 +152,15 @@ export default function ArticleEditor({
       const width = Math.abs(currentX - newArticleStart.x);
       const height = Math.abs(currentY - newArticleStart.y);
 
-      if (width < 3 || height < 3) {
+      if (width < 2 || height < 2) {
         const centerX = (newArticleStart.x + currentX) / 2;
         const centerY = (newArticleStart.y + currentY) / 2;
         setModalArticle({
           ...modalArticle,
           positionX: centerX,
           positionY: centerY,
-          width: 5,
-          height: 5,
+          width: 2,
+          height: 2,
         });
       } else {
         const centerX = minX + width / 2;
@@ -253,19 +253,19 @@ export default function ArticleEditor({
       let newPosY = resizeStart.y;
 
       if (["right", "topRight", "bottomRight"].includes(resizeType)) {
-        newWidth = Math.max(5, mouseX - newPosX + resizeStart.width / 2);
+        newWidth = Math.max(2, mouseX - newPosX + resizeStart.width / 2);
       }
       if (["left", "topLeft", "bottomLeft"].includes(resizeType)) {
         const rightEdge = resizeStart.x + resizeStart.width;
-        newWidth = Math.max(5, rightEdge - mouseX);
+        newWidth = Math.max(2, rightEdge - mouseX);
         newPosX = mouseX;
       }
       if (["bottom", "bottomLeft", "bottomRight"].includes(resizeType)) {
-        newHeight = Math.max(5, mouseY - newPosY + resizeStart.height / 2);
+        newHeight = Math.max(2, mouseY - newPosY + resizeStart.height / 2);
       }
       if (["top", "topLeft", "topRight"].includes(resizeType)) {
         const bottomEdge = resizeStart.y + resizeStart.height;
-        newHeight = Math.max(5, bottomEdge - mouseY);
+        newHeight = Math.max(2, bottomEdge - mouseY);
         newPosY = mouseY;
       }
 
