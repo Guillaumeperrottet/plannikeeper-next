@@ -26,6 +26,7 @@ model User {
   accounts         Account[]
   OrganizationUser OrganizationUser[]
   Organization     Organization?      @relation(fields: [organizationId], references: [id])
+  objectAccess     ObjectAccess[]
 
   @@unique([email])
   @@map("user")
@@ -98,6 +99,7 @@ model Objet {
   organization   Organization @relation(fields: [organizationId], references: [id])
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+  objectAccess   ObjectAccess[]
 
   @@map("objet")
 }
@@ -127,4 +129,18 @@ model InvitationCode {
   isUsed         Boolean      @default(false)
 
   @@map("invitation_code")
+}
+
+model ObjectAccess {
+  id             String   @id @default(uuid())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  object         Objet    @relation(fields: [objectId], references: [id], onDelete: Cascade)
+  objectId       String
+  accessLevel    String   // "none", "read", "write", "admin"
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([userId, objectId])
+  @@map("object_access")
 }
