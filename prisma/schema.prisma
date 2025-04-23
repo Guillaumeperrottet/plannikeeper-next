@@ -151,7 +151,7 @@ model Sector {
   id             String    @id @default(uuid())
   name           String
   image          String?   // URL or path to the image
-    imageWidth     Int?      // Nouvelle propriété: largeur originale de l'image
+  imageWidth     Int?      // Nouvelle propriété: largeur originale de l'image
   imageHeight    Int?      // Nouvelle propriété: hauteur originale de l'image
   objectId       String    // Foreign key to Object
   object         Objet     @relation(fields: [objectId], references: [id], onDelete: Cascade)
