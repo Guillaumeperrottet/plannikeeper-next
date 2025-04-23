@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { ChevronUp, ChevronDown, Printer } from "lucide-react";
+import { ChevronUp, ChevronDown, Printer, GripHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 type Task = {
@@ -12,10 +12,10 @@ type Task = {
   realizationDate: string | null;
   status: string;
   article: {
-    id: string; // ajouté
+    id: string;
     title: string;
     sector: {
-      id: string; // ajouté
+      id: string;
       name: string;
       object: {
         id: string;
@@ -36,13 +36,20 @@ type AppObject = {
 
 export default function TodoListAgenda() {
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const [agendaHeight, setAgendaHeight] = useState<number>(48); // Hauteur en px
   const [startY, setStartY] = useState<number>(0);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [objects, setObjects] = useState<AppObject[]>([]);
   const [selectedObjectId, setSelectedObjectId] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const agendaRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  // Constantes pour les limites de hauteur
+  const MIN_HEIGHT = 48; // Hauteur minimale (fermé)
+  const MAX_HEIGHT = window.innerHeight * 0.8; // Hauteur maximale (80% de la fenêtre)
+  const EXPANDED_THRESHOLD = 100; // Seuil à partir duquel on considère l'agenda comme développé
 
   // Récupération des objets
   useEffect(() => {
@@ -63,7 +70,7 @@ export default function TodoListAgenda() {
     fetchObjects();
   }, []);
 
-  // Récupération des tâches quand on change d’objet
+  // Récupération des tâches quand on change d'objet
   useEffect(() => {
     const fetchTasks = async (): Promise<void> => {
       if (!selectedObjectId) return;
@@ -83,36 +90,78 @@ export default function TodoListAgenda() {
     fetchTasks();
   }, [selectedObjectId]);
 
-  // Glissement pour ouvrir/fermer
-  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>): void => {
-    setStartY(e.touches[0].clientY);
+  // Gestion du drag pour régler la hauteur
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent): void => {
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+    setStartY(clientY);
+    setIsDragging(true);
   };
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>): void => {
-    const deltaY = startY - e.touches[0].clientY;
-    if (deltaY > 50 && !isExpanded) setIsExpanded(true);
-    else if (deltaY < -50 && isExpanded) setIsExpanded(false);
+
+  const handleDragMove = (e: MouseEvent | TouchEvent): void => {
+    if (!isDragging) return;
+
+    const clientY =
+      "touches" in e
+        ? (e as TouchEvent).touches[0].clientY
+        : (e as MouseEvent).clientY;
+    const deltaY = startY - clientY;
+
+    // Calculer la nouvelle hauteur en fonction du mouvement
+    let newHeight = agendaHeight + deltaY;
+
+    // Appliquer les limites de hauteur
+    newHeight = Math.max(MIN_HEIGHT, Math.min(newHeight, MAX_HEIGHT));
+
+    setAgendaHeight(newHeight);
+    setIsExpanded(newHeight > EXPANDED_THRESHOLD);
+    setStartY(clientY);
   };
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>): void => {
-    setStartY(e.clientY);
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-  };
-  const handleMouseMove = (e: MouseEvent): void => {
-    const deltaY = startY - e.clientY;
-    if (deltaY > 50 && !isExpanded) {
-      setIsExpanded(true);
-      removeMouseListeners();
-    } else if (deltaY < -50 && isExpanded) {
+
+  const handleDragEnd = (): void => {
+    setIsDragging(false);
+
+    // Snap à la hauteur minimale si on est proche
+    if (agendaHeight < 70) {
+      setAgendaHeight(MIN_HEIGHT);
       setIsExpanded(false);
-      removeMouseListeners();
     }
   };
-  const handleMouseUp = (): void => {
-    removeMouseListeners();
+
+  useEffect(() => {
+    // Ajouter les écouteurs d'événements pour le drag
+    if (isDragging) {
+      window.addEventListener("mousemove", handleDragMove);
+      window.addEventListener("touchmove", handleDragMove);
+      window.addEventListener("mouseup", handleDragEnd);
+      window.addEventListener("touchend", handleDragEnd);
+    }
+
+    return () => {
+      // Nettoyer les écouteurs
+      window.removeEventListener("mousemove", handleDragMove);
+      window.removeEventListener("touchmove", handleDragMove);
+      window.removeEventListener("mouseup", handleDragEnd);
+      window.removeEventListener("touchend", handleDragEnd);
+    };
+  }, [isDragging, agendaHeight]);
+
+  // Boutons pour ouvrir/fermer complètement
+  const handleMinimize = (): void => {
+    setAgendaHeight(MIN_HEIGHT);
+    setIsExpanded(false);
   };
-  const removeMouseListeners = (): void => {
-    document.removeEventListener("mousemove", handleMouseMove);
-    document.removeEventListener("mouseup", handleMouseUp);
+
+  const handleMaximize = (): void => {
+    setAgendaHeight(MAX_HEIGHT);
+    setIsExpanded(true);
+  };
+
+  const toggleExpanded = (): void => {
+    if (isExpanded) {
+      handleMinimize();
+    } else {
+      handleMaximize();
+    }
   };
 
   // Formatage de date
@@ -148,6 +197,7 @@ export default function TodoListAgenda() {
 
     return { thisWeekTasks, upcomingTasks };
   };
+
   const { thisWeekTasks, upcomingTasks } = groupTasksByPeriod();
 
   const handlePrint = (): void => {
@@ -165,19 +215,24 @@ export default function TodoListAgenda() {
   return (
     <div
       ref={agendaRef}
-      className="fixed bottom-0 left-0 right-0 bg-gray-200 transition-all duration-300 shadow-lg print:shadow-none print:relative print:h-auto"
+      className="fixed bottom-0 left-0 right-0 bg-gray-200 transition-height duration-200 shadow-lg print:shadow-none print:relative print:h-auto"
       style={{
-        height: isExpanded ? "60vh" : "48px",
+        height: `${agendaHeight}px`,
         zIndex: 40,
       }}
+      data-todo-list-agenda
     >
-      {/* Barre de titre */}
-      <div
-        className="flex justify-between items-center bg-gray-800 text-white p-3 cursor-grab print:cursor-default"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onMouseDown={handleMouseDown}
-      >
+      {/* Barre de titre avec poignée de drag */}
+      <div className="relative flex justify-between items-center bg-gray-800 text-white p-3">
+        {/* Poignée de drag au milieu du header */}
+        <div
+          className="absolute top-0 left-0 right-0 flex justify-center items-center h-8 cursor-grab"
+          onMouseDown={handleDragStart}
+          onTouchStart={handleDragStart}
+        >
+          <GripHorizontal size={20} className="text-gray-400" />
+        </div>
+
         <h2 className="text-xl font-semibold">Agenda todo list</h2>
         <div className="flex items-center gap-2">
           <select
@@ -196,12 +251,14 @@ export default function TodoListAgenda() {
           <button
             onClick={handlePrint}
             className="p-1 rounded hover:bg-gray-700 print:hidden"
+            title="Imprimer"
           >
             <Printer size={20} />
           </button>
           <button
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={toggleExpanded}
             className="print:hidden"
+            title={isExpanded ? "Réduire" : "Agrandir"}
           >
             {isExpanded ? <ChevronDown size={24} /> : <ChevronUp size={24} />}
           </button>
@@ -209,7 +266,7 @@ export default function TodoListAgenda() {
       </div>
 
       {/* Contenu */}
-      <div className="overflow-y-auto h-[calc(100%-48px)] print:h-auto">
+      <div className="overflow-y-auto" style={{ height: `calc(100% - 48px)` }}>
         {isLoading ? (
           <div className="p-4 text-center">Chargement des tâches...</div>
         ) : (
