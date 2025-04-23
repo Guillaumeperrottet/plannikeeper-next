@@ -27,6 +27,7 @@ model User {
   OrganizationUser OrganizationUser[]
   Organization     Organization?      @relation(fields: [organizationId], references: [id])
   objectAccess     ObjectAccess[]
+  assignedTasks   Task[]
 
   @@unique([email])
   @@map("user")
@@ -100,6 +101,7 @@ model Objet {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   objectAccess   ObjectAccess[]
+  sectors         Sector[]
 
   @@map("objet")
 }
@@ -143,4 +145,61 @@ model ObjectAccess {
 
   @@unique([userId, objectId])
   @@map("object_access")
+}
+
+model Sector {
+  id             String    @id @default(uuid())
+  name           String
+  image          String?   // URL or path to the image
+  objectId       String    // Foreign key to Object
+  object         Objet     @relation(fields: [objectId], references: [id], onDelete: Cascade)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  articles       Article[] // Relation to articles in this sector
+
+  @@map("sector")
+}
+
+model Article {
+  id             String    @id @default(uuid())
+  title          String
+  description    String?
+  // Coordinates and dimensions for UI display
+  positionX      Float?
+  positionY      Float?
+  width          Float?
+  height         Float?
+  sectorId       String    // Foreign key to Sector
+  sector         Sector    @relation(fields: [sectorId], references: [id], onDelete: Cascade)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  tasks          Task[]    // Relation to tasks for this article
+
+  @@map("article")
+}
+
+model Task {
+  id                    String    @id @default(uuid())
+  name                  String
+  description           String?
+  executantComment      String?
+  done                  Boolean   @default(false)
+  realizationDate       DateTime?
+  status                String    @default("pending") // pending, in_progress, completed, etc.
+  taskType              String?
+  color                 String?
+  // Recurrence fields
+  recurring             Boolean   @default(false)
+  period                String?   // daily, weekly, monthly, etc.
+  endDate               DateTime?
+  recurrenceReminderDate DateTime?
+  // Relations
+  articleId             String    // Foreign key to Article
+  article               Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  assignedToId          String?   // Optional foreign key to User
+  assignedTo            User?     @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("task")
 }
