@@ -84,6 +84,7 @@ model Organization {
   users            User[]
   Objet            Objet[]
   OrganizationUser OrganizationUser[]
+  invitationCodes  InvitationCode[]
 
   @@map("organization")
 }
@@ -112,4 +113,18 @@ model OrganizationUser {
   updatedAt      DateTime     @updatedAt
 
   @@map("organization_user")
+}
+
+model InvitationCode {
+  id             String       @id @default(uuid())
+  code           String       @unique // Un code court et facile à partager
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  role           String // "admin" ou "member"
+  createdBy      String // ID de l'utilisateur qui a créé l'invitation
+  createdAt      DateTime     @default(now())
+  expiresAt      DateTime
+  isUsed         Boolean      @default(false)
+
+  @@map("invitation_code")
 }
