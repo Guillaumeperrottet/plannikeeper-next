@@ -1,24 +1,78 @@
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth-session";
+import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { PlusCircle } from "lucide-react";
+import ObjetCard from "@/app/components/ObjetCard";
 
 export default async function DashboardPage() {
   const session = await getUser();
 
   if (!session) {
-    redirect("/sign-in");
+    redirect("/signin");
   }
 
+  // Récupérer l'organisation de l'utilisateur
+  const userWithOrg = await prisma.user.findUnique({
+    where: { id: session.id },
+    include: { Organization: true },
+  });
+
+  if (!userWithOrg?.Organization) {
+    return (
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+          <p className="text-amber-800">
+            Vous n&apos;appartenez à aucune organisation. Veuillez en créer une
+            ou rejoindre une existante.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Récupérer tous les objets de l'organisation
+  const objets = await prisma.objet.findMany({
+    where: { organizationId: userWithOrg.Organization.id },
+    orderBy: { nom: "asc" },
+  });
+
   return (
-    <div>
-      <h1>Dashboard</h1>
-      <p>Bienvenue, {session.email} !</p>
-      <Link
-      href="/dashboard/objet/new"
-      className="mt-8 inline-block bg-blue-600 text-white px-4 py-2 rounded"
-    >
-      Créer un objet
-    </Link>
+    <div className="max-w-6xl mx-auto p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <Link
+          href="/dashboard/objet/new"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+        >
+          <PlusCircle size={20} />
+          <span>Nouvel objet</span>
+        </Link>
+      </div>
+
+      {objets.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
+          <h2 className="text-xl font-medium text-gray-600 mb-2">
+            Aucun objet trouvé
+          </h2>
+          <p className="text-gray-500 mb-6">
+            Commencez par créer votre premier objet pour le voir apparaître ici.
+          </p>
+          <Link
+            href="/dashboard/objet/new"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+          >
+            <PlusCircle size={18} />
+            <span>Créer un objet</span>
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {objets.map((objet) => (
+            <ObjetCard key={objet.id} objet={objet} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
