@@ -1,6 +1,35 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Styles d'impression pour l'agenda todo list */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  [data-todo-list-agenda],
+  [data-todo-list-agenda] * {
+    visibility: visible !important;
+  }
+
+  [data-todo-list-agenda] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: auto;
+    background-color: white !important;
+    color: black !important;
+  }
+
+  .print-hide {
+    display: none !important;
+  }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
