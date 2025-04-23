@@ -332,6 +332,7 @@ export default function SectorViewer({
                     }}
                     onClick={(e) => {
                       e.stopPropagation();
+                      window.location.href = `/dashboard/objet/${objetId}/secteur/${selectedSector?.id}/article/${article.id}`;
                     }}
                     onMouseEnter={() => setHoveredArticleId(article.id)}
                     onMouseLeave={() => setHoveredArticleId(null)}
@@ -347,6 +348,11 @@ export default function SectorViewer({
                             {article.description}
                           </div>
                         )}
+                        <div className="mt-2 text-xs text-center">
+                          <span className="text-blue-300">
+                            Cliquez pour gérer les tâches
+                          </span>
+                        </div>
                         {/* Petit triangle en bas du tooltip */}
                         <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black border-opacity-80"></div>
                       </div>
