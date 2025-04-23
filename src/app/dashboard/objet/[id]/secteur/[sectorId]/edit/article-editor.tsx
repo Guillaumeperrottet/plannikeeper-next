@@ -1,4 +1,3 @@
-// src/app/dashboard/objet/[id]/secteur/[sectorId]/edit/article-editor.tsx
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -15,14 +14,25 @@ type Article = {
   height: number | null;
 };
 
+type ResizeType =
+  | "top"
+  | "right"
+  | "bottom"
+  | "left"
+  | "topLeft"
+  | "topRight"
+  | "bottomLeft"
+  | "bottomRight"
+  | null;
+
 export default function ArticleEditor({
   sectorId,
   initialArticles = [],
-  children, // Ajout de la prop children qui remplacera <slot />
+  children,
 }: {
   sectorId: string;
   initialArticles?: Article[];
-  children?: React.ReactNode; // Typage pour la prop children
+  children?: React.ReactNode;
 }) {
   const [articles, setArticles] = useState<Article[]>(initialArticles);
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(
@@ -30,7 +40,15 @@ export default function ArticleEditor({
   );
   const [isAddingArticle, setIsAddingArticle] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeType, setResizeType] = useState<ResizeType>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [resizeStart, setResizeStart] = useState({
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+  });
   const [newArticlePosition, setNewArticlePosition] = useState({ x: 0, y: 0 });
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -51,12 +69,11 @@ export default function ArticleEditor({
     description: "",
     positionX: 0,
     positionY: 0,
-    width: 20, // default width in percentage
-    height: 20, // default height in percentage
+    width: 20,
+    height: 20,
   });
 
   useEffect(() => {
-    // Update container size on window resize
     const updateSize = () => {
       if (containerRef.current) {
         setContainerSize({
@@ -71,7 +88,6 @@ export default function ArticleEditor({
     return () => window.removeEventListener("resize", updateSize);
   }, []);
 
-  // Load articles if not provided
   useEffect(() => {
     if (initialArticles.length === 0) {
       fetchArticles();
@@ -94,6 +110,7 @@ export default function ArticleEditor({
   };
 
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Si on est en mode ajout, on place un nouvel article
     if (isAddingArticle && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -107,7 +124,11 @@ export default function ArticleEditor({
       });
       setShowModal(true);
       setIsAddingArticle(false);
+      return;
     }
+
+    // Sinon, clic sur le fond = désélection
+    setSelectedArticleId(null);
   };
 
   const startDragging = (e: React.MouseEvent, article: Article) => {
@@ -131,17 +152,35 @@ export default function ArticleEditor({
     }
   };
 
+  const startResizing = (
+    e: React.MouseEvent,
+    article: Article,
+    type: ResizeType
+  ) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    setSelectedArticleId(article.id);
+    setIsResizing(true);
+    setResizeType(type);
+
+    setResizeStart({
+      x: article.positionX ?? 0,
+      y: article.positionY ?? 0,
+      width: article.width ?? 20,
+      height: article.height ?? 20,
+    });
+  };
+
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isDragging && selectedArticleId && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const x = e.clientX - rect.left - dragOffset.x;
       const y = e.clientY - rect.top - dragOffset.y;
 
-      // Convert to percentage
       const posX = (x / rect.width) * 100;
       const posY = (y / rect.height) * 100;
 
-      // Update article position
       setArticles(
         articles.map((article) =>
           article.id === selectedArticleId
@@ -153,26 +192,78 @@ export default function ArticleEditor({
             : article
         )
       );
+    } else if (
+      isResizing &&
+      selectedArticleId &&
+      resizeType &&
+      containerRef.current
+    ) {
+      e.preventDefault();
+      const rect = containerRef.current.getBoundingClientRect();
+      const mouseX = ((e.clientX - rect.left) / rect.width) * 100;
+      const mouseY = ((e.clientY - rect.top) / rect.height) * 100;
+
+      const selectedArticle = articles.find((a) => a.id === selectedArticleId);
+      if (!selectedArticle) return;
+
+      let newWidth = resizeStart.width;
+      let newHeight = resizeStart.height;
+      let newPosX = resizeStart.x;
+      let newPosY = resizeStart.y;
+
+      if (["right", "topRight", "bottomRight"].includes(resizeType)) {
+        newWidth = Math.max(5, mouseX - newPosX + resizeStart.width / 2);
+      }
+      if (["left", "topLeft", "bottomLeft"].includes(resizeType)) {
+        const rightEdge = resizeStart.x + resizeStart.width;
+        newWidth = Math.max(5, rightEdge - mouseX);
+        newPosX = mouseX;
+      }
+      if (["bottom", "bottomLeft", "bottomRight"].includes(resizeType)) {
+        newHeight = Math.max(5, mouseY - newPosY + resizeStart.height / 2);
+      }
+      if (["top", "topLeft", "topRight"].includes(resizeType)) {
+        const bottomEdge = resizeStart.y + resizeStart.height;
+        newHeight = Math.max(5, bottomEdge - mouseY);
+        newPosY = mouseY;
+      }
+
+      setArticles(
+        articles.map((article) =>
+          article.id === selectedArticleId
+            ? {
+                ...article,
+                width: Math.min(newWidth, 50),
+                height: Math.min(newHeight, 50),
+                positionX: Math.max(0, Math.min(newPosX, 100)),
+                positionY: Math.max(0, Math.min(newPosY, 100)),
+              }
+            : article
+        )
+      );
     }
   };
 
-  const stopDragging = async () => {
-    if (isDragging && selectedArticleId) {
-      // Save the new position
+  const stopDraggingOrResizing = async () => {
+    if ((isDragging || isResizing) && selectedArticleId) {
       const article = articles.find((a) => a.id === selectedArticleId);
       if (article) {
         try {
           await saveArticle(article);
-          toast.success("Position mise à jour");
+          toast.success(
+            isDragging ? "Position mise à jour" : "Dimensions mises à jour"
+          );
         } catch (error) {
-          console.error("Error updating position:", error);
-          toast.error("Erreur lors de la mise à jour de la position");
+          console.error("Error updating article:", error);
+          toast.error("Erreur lors de la mise à jour de l'article");
         }
       }
     }
 
     setIsDragging(false);
-    setSelectedArticleId(null);
+    setIsResizing(false);
+    setResizeType(null);
+    // Ne plus désélectionner ici, la sélection reste active
   };
 
   const saveArticle = async (article: Article) => {
@@ -210,12 +301,10 @@ export default function ArticleEditor({
       const savedArticle = await saveArticle(articleData as Article);
 
       if (modalArticle.id) {
-        // Update existing article
         setArticles(
           articles.map((a) => (a.id === modalArticle.id ? savedArticle : a))
         );
       } else {
-        // Add new article
         setArticles([...articles, savedArticle]);
       }
 
@@ -238,6 +327,95 @@ export default function ArticleEditor({
       height: article.height || 20,
     });
     setShowModal(true);
+  };
+
+  const renderResizeHandles = (article: Article) => {
+    const isSelected = selectedArticleId === article.id;
+    if (!isSelected) return null;
+
+    const handleStyle =
+      "absolute w-3 h-3 bg-blue-500 border border-white rounded-full z-10";
+    const edgeStyle = "absolute bg-transparent z-10";
+
+    return (
+      <>
+        {/* edges for resize */}
+        <div
+          className={`${edgeStyle} top-0 left-0 right-0 h-2 cursor-ns-resize`}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            startResizing(e, article, "top");
+          }}
+        />
+        <div
+          className={`${edgeStyle} bottom-0 left-0 right-0 h-2 cursor-ns-resize`}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            startResizing(e, article, "bottom");
+          }}
+        />
+        <div
+          className={`${edgeStyle} left-0 top-2 bottom-2 w-2 cursor-ew-resize`}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            startResizing(e, article, "left");
+          }}
+        />
+        <div
+          className={`${edgeStyle} right-0 top-2 bottom-2 w-2 cursor-ew-resize`}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            startResizing(e, article, "right");
+          }}
+        />
+        {/* corners */}
+        <div
+          className={`${handleStyle} top-0 left-0 -mt-1.5 -ml-1.5 cursor-nwse-resize`}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            startResizing(e, article, "topLeft");
+          }}
+        />
+        <div
+          className={`${handleStyle} top-0 right-0 -mt-1.5 -mr-1.5 cursor-nesw-resize`}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            startResizing(e, article, "topRight");
+          }}
+        />
+        <div
+          className={`${handleStyle} bottom-0 left-0 -mb-1.5 -ml-1.5 cursor-nesw-resize`}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            startResizing(e, article, "bottomLeft");
+          }}
+        />
+        <div
+          className={`${handleStyle} bottom-0 right-0 -mb-1.5 -mr-1.5 cursor-nwse-resize`}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            startResizing(e, article, "bottomRight");
+          }}
+        />
+        {/* mid-edge handles */}
+        <div
+          className={`${handleStyle} top-0 left-1/2 -mt-1.5 -translate-x-1/2 cursor-ns-resize`}
+          onMouseDown={(e) => startResizing(e, article, "top")}
+        />
+        <div
+          className={`${handleStyle} top-1/2 right-0 -mt-1.5 -mr-1.5 cursor-ew-resize`}
+          onMouseDown={(e) => startResizing(e, article, "right")}
+        />
+        <div
+          className={`${handleStyle} bottom-0 left-1/2 -mb-1.5 -translate-x-1/2 cursor-ns-resize`}
+          onMouseDown={(e) => startResizing(e, article, "bottom")}
+        />
+        <div
+          className={`${handleStyle} top-1/2 left-0 -mt-1.5 -ml-1.5 cursor-ew-resize`}
+          onMouseDown={(e) => startResizing(e, article, "left")}
+        />
+      </>
+    );
   };
 
   return (
@@ -263,17 +441,12 @@ export default function ArticleEditor({
         className="relative overflow-hidden"
         onClick={handleContainerClick}
         onMouseMove={handleMouseMove}
-        onMouseUp={stopDragging}
-        onMouseLeave={stopDragging}
+        onMouseUp={stopDraggingOrResizing}
+        onMouseLeave={stopDraggingOrResizing}
       >
-        {/* Image container */}
         <div className="relative">
-          <div className="w-full min-h-[500px] bg-gray-200">
-            {/* Utilisation de children à la place de slot */}
-            {children}
-          </div>
+          <div className="w-full min-h-[500px] bg-gray-200">{children}</div>
 
-          {/* Articles */}
           {articles.map(
             (article) =>
               article.positionX !== null &&
@@ -284,23 +457,29 @@ export default function ArticleEditor({
                     selectedArticleId === article.id
                       ? "border-blue-500 bg-blue-50"
                       : "border-yellow-500 bg-yellow-50"
-                  } rounded-md shadow-md cursor-move p-2 overflow-hidden`}
+                  } rounded-md shadow-md overflow-hidden`}
                   style={{
                     left: `${article.positionX}%`,
                     top: `${article.positionY}%`,
                     width: `${article.width || 20}%`,
                     height: `${article.height || 20}%`,
                     transform: "translate(-50%, -50%)",
+                    zIndex: selectedArticleId === article.id ? 10 : 5,
                   }}
-                  onMouseDown={(e) => startDragging(e, article)}
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedArticleId(article.id);
+                  }}
                 >
-                  <div className="flex justify-between items-center mb-1">
+                  <div
+                    className="flex justify-between items-center mb-1 p-2 cursor-move"
+                    onMouseDown={(e) => startDragging(e, article)}
+                  >
                     <div className="font-bold truncate">{article.title}</div>
                     <Move size={16} className="text-gray-500" />
                   </div>
                   {article.description && (
-                    <div className="text-xs text-gray-600 truncate">
+                    <div className="text-xs text-gray-600 truncate px-2">
                       {article.description}
                     </div>
                   )}
@@ -316,13 +495,14 @@ export default function ArticleEditor({
                       />
                     </svg>
                   </button>
+
+                  {renderResizeHandles(article)}
                 </div>
               )
           )}
         </div>
       </div>
 
-      {/* Modal for adding/editing articles */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">

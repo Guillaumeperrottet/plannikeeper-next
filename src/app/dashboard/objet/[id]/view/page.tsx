@@ -48,27 +48,7 @@ export default async function ObjetViewPage({
 
   return (
     <div className="h-screen flex flex-col">
-      <div className="p-4 border-b bg-white flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard"
-            className="p-2 rounded-full hover:bg-gray-100"
-          >
-            <ArrowLeft size={20} />
-          </Link>
-          <h1 className="text-xl font-bold">{objet.nom}</h1>
-        </div>
-        <div className="flex gap-2">
-          <Link
-            href={`/dashboard/objet/${objetId}/edit`}
-            className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            <Edit size={16} />
-            <span>Modifier</span>
-          </Link>
-        </div>
-      </div>
-
+      {/* Content */}
       {objet.sectors.length === 0 ? (
         <div className="flex-1 flex items-center justify-center bg-gray-50">
           <div className="text-center p-6">

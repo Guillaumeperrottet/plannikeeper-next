@@ -52,7 +52,7 @@ export default async function EditSectorPage({
       <div className="p-4 border-b bg-white flex justify-between items-center">
         <div className="flex items-center gap-3">
           <Link
-            href={`/dashboard/objet/${objetId}/edit`}
+            href={`/dashboard/objet/${objetId}/view`}
             className="p-2 rounded-full hover:bg-gray-100"
           >
             <ArrowLeft size={20} />
