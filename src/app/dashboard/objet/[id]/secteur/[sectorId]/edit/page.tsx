@@ -64,7 +64,14 @@ export default async function EditSectorPage({
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <ArticleEditor sectorId={sectorId} initialArticles={sector.articles}>
+        <ArticleEditor
+          sectorId={sectorId}
+          initialArticles={sector.articles.map((article) => ({
+            ...article,
+            positionX: article.positionX,
+            positionY: article.positionY,
+          }))}
+        >
           {sector.image ? (
             <Image
               src={sector.image}

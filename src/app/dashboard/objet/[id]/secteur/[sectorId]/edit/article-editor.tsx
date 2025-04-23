@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { Plus, Move, X, Edit, Trash } from "lucide-react";
 
@@ -90,13 +90,7 @@ export default function ArticleEditor({
     return () => window.removeEventListener("resize", updateSize);
   }, []);
 
-  useEffect(() => {
-    if (initialArticles.length === 0) {
-      fetchArticles();
-    }
-  }, [initialArticles, sectorId]);
-
-  const fetchArticles = async () => {
+  const fetchArticles = useCallback(async () => {
     try {
       const response = await fetch(`/api/sectors/${sectorId}/articles`);
       if (response.ok) {
@@ -109,7 +103,13 @@ export default function ArticleEditor({
       console.error("Erreur:", error);
       toast.error("Erreur lors du chargement des articles");
     }
-  };
+  }, [sectorId]);
+
+  useEffect(() => {
+    if (initialArticles.length === 0) {
+      fetchArticles();
+    }
+  }, [initialArticles, fetchArticles]);
 
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isAddingArticle && !isDraggingNew) {

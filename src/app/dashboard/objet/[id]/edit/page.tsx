@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { ArrowLeft, Edit, MapPin, Briefcase, Plus, Trash } from "lucide-react";
+import { ArrowLeft, Edit, MapPin, Briefcase, Plus } from "lucide-react";
 import Image from "next/image";
 import DeleteObjectButton from "@/app/dashboard/objet/[id]/edit/delete-object-button";
 
@@ -151,7 +151,7 @@ export default async function ObjetEditPage({
             {objet.sectors.map((sector) => (
               <Link
                 key={sector.id}
-                href={`/dashboard/objet/${objetId}/secteur/${sector.id}`}
+                href={`/dashboard/objet/${objetId}/view`}
                 className="block bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition"
               >
                 <div className="relative w-full h-40">

@@ -22,15 +22,21 @@ export default function Navbar({ user }: { user?: User | null }) {
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       // Vérifie si le clic est en dehors des menus et des boutons
-      const isOutsideUserMenu = userMenuRef.current && !userMenuRef.current.contains(event.target as Node);
-      const isOutsideMobileMenu = mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node);
+      const isOutsideUserMenu =
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target as Node);
+      const isOutsideMobileMenu =
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(event.target as Node);
       const isOutsideButtons =
         !avatarButtonRef.current?.contains(event.target as Node) &&
         !hamburgerButtonRef.current?.contains(event.target as Node);
 
-      if ((isOutsideUserMenu || !userMenuRef.current) &&
-          (isOutsideMobileMenu || !mobileMenuRef.current) &&
-          isOutsideButtons) {
+      if (
+        (isOutsideUserMenu || !userMenuRef.current) &&
+        (isOutsideMobileMenu || !mobileMenuRef.current) &&
+        isOutsideButtons
+      ) {
         setMenuOpen(false);
       }
     }
@@ -47,7 +53,7 @@ export default function Navbar({ user }: { user?: User | null }) {
 
   return (
     <nav className="w-full bg-white border-b px-4 py-2 flex justify-between items-center">
-      <Link href="/" className="font-bold text-2xl font-serif italic">
+      <Link href="/dashboard" className="font-bold text-2xl font-serif italic">
         PlanniKeeper
       </Link>
       <div className="flex items-center gap-4">
@@ -78,7 +84,10 @@ export default function Navbar({ user }: { user?: User | null }) {
               </svg>
             </button>
             {menuOpen && (
-              <div ref={userMenuRef} className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg z-50">
+              <div
+                ref={userMenuRef}
+                className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg z-50"
+              >
                 <div className="px-4 py-2 border-b">{user.name}</div>
                 <Link
                   href="/profile"
@@ -116,7 +125,10 @@ export default function Navbar({ user }: { user?: User | null }) {
       </div>
       {/* Menu mobile */}
       {menuOpen && (
-        <div ref={mobileMenuRef} className="sm:hidden absolute top-16 right-4 bg-white border rounded-lg shadow-lg z-50 w-48">
+        <div
+          ref={mobileMenuRef}
+          className="sm:hidden absolute top-16 right-4 bg-white border rounded-lg shadow-lg z-50 w-48"
+        >
           {user ? (
             <>
               <div className="px-4 py-2 border-b">{user.name}</div>
