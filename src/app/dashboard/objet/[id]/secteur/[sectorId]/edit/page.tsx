@@ -65,14 +65,20 @@ export default async function EditSectorPage({
 
       <div className="flex-1 overflow-y-auto">
         <ArticleEditor sectorId={sectorId} initialArticles={sector.articles}>
-          <Image
-            src={sector.image || "/placeholder-image.jpg"}
-            alt={sector.name}
-            width={1200}
-            height={800}
-            className="w-full h-auto"
-            priority
-          />
+          {sector.image ? (
+            <Image
+              src={sector.image}
+              alt={sector.name}
+              width={1200}
+              height={800}
+              className="w-full h-auto"
+              priority
+            />
+          ) : (
+            <div className="w-full h-64 flex items-center justify-center bg-gray-200 text-gray-500">
+              Aucune image disponible pour ce secteur
+            </div>
+          )}
         </ArticleEditor>
       </div>
     </div>

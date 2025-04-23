@@ -18,9 +18,11 @@ type Article = {
 export default function ArticleEditor({
   sectorId,
   initialArticles = [],
+  children, // Ajout de la prop children qui remplacera <slot />
 }: {
   sectorId: string;
   initialArticles?: Article[];
+  children?: React.ReactNode; // Typage pour la prop children
 }) {
   const [articles, setArticles] = useState<Article[]>(initialArticles);
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(
@@ -267,8 +269,8 @@ export default function ArticleEditor({
         {/* Image container */}
         <div className="relative">
           <div className="w-full min-h-[500px] bg-gray-200">
-            {/* La véritable image du secteur sera ici */}
-            <slot />
+            {/* Utilisation de children à la place de slot */}
+            {children}
           </div>
 
           {/* Articles */}
