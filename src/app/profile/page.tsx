@@ -6,6 +6,15 @@ export default async function ProfilePage() {
   const user = await getUser();
   if (!user) redirect("/signin");
 
+  const orgUser = await prisma.organizationUser.findFirst({
+    where: {
+      userId: user.id,
+    },
+    include: {
+      organization: true,
+    },
+  });
+
   return (
     <div className="max-w-2xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
       <h1 className="text-2xl font-bold mb-6">Mon profil</h1>
@@ -40,6 +49,15 @@ export default async function ProfilePage() {
             <input
               type="email"
               value={user.email ?? ""}
+              disabled
+              className="w-full border rounded px-3 py-2 bg-gray-100"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-gray-700 font-semibold mb-1">Organisation</label>
+            <input
+              type="text"
+              value={orgUser.organization.name ?? ""}
               disabled
               className="w-full border rounded px-3 py-2 bg-gray-100"
             />
