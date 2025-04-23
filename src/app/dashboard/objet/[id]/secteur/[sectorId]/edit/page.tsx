@@ -77,8 +77,8 @@ export default async function EditSectorPage({
               src={sector.image}
               alt={sector.name}
               width={1200}
-              height={800}
-              className="w-full h-auto"
+              height={900} // Utiliser les mêmes proportions
+              className="object-contain max-h-[calc(100vh-150px)] w-full"
               priority
             />
           ) : (
