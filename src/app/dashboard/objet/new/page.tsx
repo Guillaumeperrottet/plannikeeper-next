@@ -15,12 +15,16 @@ export default async function NewObjetPage() {
     const adresse = formData.get("adresse") as string;
     const secteur = formData.get("secteur") as string;
 
+    if (!session) {
+      redirect("/sign-in");
+    }
+
     const userDb = await prisma.user.findUnique({
       where: { id: session.id },
-      include: { organization: true },
+      include: { Organization: true },
     });
 
-    if (!userDb?.organization) {
+    if (!userDb?.Organization) {
       throw new Error("Aucune organisation trouvée");
     }
 
@@ -29,7 +33,7 @@ export default async function NewObjetPage() {
         nom,
         adresse,
         secteur,
-        organizationId: userDb.organization.id,
+        organizationId: userDb.Organization.id,
       },
     });
 
@@ -40,10 +44,30 @@ export default async function NewObjetPage() {
     <div>
       <h1>Créer un objet</h1>
       <form action={handleCreateObjet} className="mt-8 space-y-4">
-        <input name="nom" placeholder="Nom de l'objet" required className="border p-2 rounded w-full" />
-        <input name="adresse" placeholder="Adresse" required className="border p-2 rounded w-full" />
-        <input name="secteur" placeholder="Secteur" required className="border p-2 rounded w-full" />
-        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Créer l objet</button>
+        <input
+          name="nom"
+          placeholder="Nom de l'objet"
+          required
+          className="border p-2 rounded w-full"
+        />
+        <input
+          name="adresse"
+          placeholder="Adresse"
+          required
+          className="border p-2 rounded w-full"
+        />
+        <input
+          name="secteur"
+          placeholder="Secteur"
+          required
+          className="border p-2 rounded w-full"
+        />
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          Créer l objet
+        </button>
       </form>
     </div>
   );
