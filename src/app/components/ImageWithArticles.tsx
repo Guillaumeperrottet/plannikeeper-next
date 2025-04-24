@@ -50,6 +50,29 @@ export default function ImageWithArticles({
     aspectRatio: originalWidth / originalHeight,
   });
 
+  // État pour le tooltip
+  const [tooltipInfo, setTooltipInfo] = useState<{
+    visible: boolean;
+    content: {
+      title: string;
+      description: string | null;
+    };
+    position: {
+      x: number;
+      y: number;
+    };
+  }>({
+    visible: false,
+    content: {
+      title: "",
+      description: null,
+    },
+    position: {
+      x: 0,
+      y: 0,
+    },
+  });
+
   // Fonction pour mettre à jour les dimensions - extraite pour pouvoir l'appeler à différents moments
   const updateDimensions = useCallback(() => {
     if (!containerRef.current || !imageRef.current) return;
@@ -212,6 +235,28 @@ export default function ImageWithArticles({
     [imageSize]
   );
 
+  // Gérer le survol d'un article
+  const handleArticleMouseEnter = (e: React.MouseEvent, article: Article) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setTooltipInfo({
+      visible: true,
+      content: {
+        title: article.title,
+        description: article.description,
+      },
+      position: {
+        x: rect.left + rect.width / 2,
+        y: rect.top,
+      },
+    });
+    if (onArticleHover) onArticleHover(article.id);
+  };
+
+  const handleArticleMouseLeave = () => {
+    setTooltipInfo((prev) => ({ ...prev, visible: false }));
+    if (onArticleHover) onArticleHover(null);
+  };
+
   // Ne rien afficher pendant le premier rendu côté client
   if (!mounted) {
     return null;
@@ -256,38 +301,55 @@ export default function ImageWithArticles({
               backgroundColor: "rgba(0, 0, 0, 0.2)",
             }}
             onClick={() => onArticleClick && onArticleClick(article.id)}
-            onMouseEnter={() => onArticleHover && onArticleHover(article.id)}
-            onMouseLeave={() => onArticleHover && onArticleHover(null)}
+            onMouseEnter={(e) => handleArticleMouseEnter(e, article)}
+            onMouseLeave={handleArticleMouseLeave}
           >
             {/* Contenu de l'article ici, si nécessaire */}
-            {hoveredArticleId === article.id && (
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 bg-black bg-opacity-80 text-white p-2 rounded shadow-lg z-30">
-                <div className="font-bold text-sm truncate">
-                  {article.title}
-                </div>
-                {article.description && (
-                  <div className="text-xs mt-1 opacity-80 max-h-20 overflow-y-auto">
-                    {article.description}
-                  </div>
-                )}
-                <div className="mt-2 text-xs text-center">
-                  <span className="text-blue-300">
-                    Cliquez pour gérer les tâches
-                  </span>
-                </div>
-                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black border-opacity-80"></div>
-              </div>
-            )}
           </div>
         );
       })}
 
-      {/* Option de débogage pour voir les dimensions réelles (uniquement en développement) */}
-      {process.env.NODE_ENV !== "production" && false && (
-        <div className="absolute bottom-0 right-0 bg-black bg-opacity-70 text-white p-2 text-xs">
-          Display: {Math.round(imageSize.displayWidth)}x
-          {Math.round(imageSize.displayHeight)} | Scale:{" "}
-          {imageSize.scaleX.toFixed(2)}
+      {/* Tooltip global détaché du flux DOM */}
+      {tooltipInfo.visible && (
+        <div
+          className="fixed w-64 bg-black bg-opacity-90 text-white p-3 rounded-md shadow-lg"
+          style={{
+            left: tooltipInfo.position.x,
+            top: tooltipInfo.position.y - 10,
+            transform: "translate(-50%, -100%)",
+            zIndex: 9999,
+            pointerEvents: "none",
+            maxWidth: "250px",
+          }}
+        >
+          <div className="font-bold text-sm truncate">
+            {tooltipInfo.content.title}
+          </div>
+
+          {tooltipInfo.content.description && (
+            <div className="text-xs mt-1 text-gray-300 max-h-20 overflow-auto">
+              {tooltipInfo.content.description}
+            </div>
+          )}
+
+          <div className="mt-2 text-xs text-center">
+            <span className="text-blue-300">Cliquez pour gérer les tâches</span>
+          </div>
+
+          {/* Flèche pointant vers l'élément */}
+          <div
+            style={{
+              position: "absolute",
+              left: "50%",
+              bottom: "-8px",
+              transform: "translateX(-50%)",
+              width: 0,
+              height: 0,
+              borderLeft: "8px solid transparent",
+              borderRight: "8px solid transparent",
+              borderTop: "8px solid rgba(0, 0, 0, 0.9)",
+            }}
+          ></div>
         </div>
       )}
     </div>
