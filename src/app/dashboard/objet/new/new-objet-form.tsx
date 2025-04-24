@@ -209,7 +209,7 @@ export default function NewObjectForm() {
               htmlFor="secteur"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Secteur principal *
+              Acticité *
             </label>
             <input
               type="text"
@@ -217,7 +217,7 @@ export default function NewObjectForm() {
               name="secteur"
               value={secteurPrincipal}
               onChange={(e) => setSecteurPrincipal(e.target.value)}
-              placeholder="Entrez le secteur principal de l'objet"
+              placeholder="Entrez l'activité' de l'objet ex: Camping, Immobilier..."
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />

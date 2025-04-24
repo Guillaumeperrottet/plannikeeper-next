@@ -1,8 +1,10 @@
+// src/app/dashboard/objet/[id]/secteur/[sectorId]/edit/article-editor.tsx
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { Plus, Move, X, Edit, Trash } from "lucide-react";
+import ImageWithArticles from "@/app/components/ImageWithArticles";
 
 type Article = {
   id: string;
@@ -36,15 +38,17 @@ type ResizeType =
 export default function ArticleEditor({
   sectorId,
   initialArticles = [],
-  children,
   imageWidth = null,
   imageHeight = null,
+  imageSrc,
+  imageAlt,
 }: {
   sectorId: string;
   initialArticles?: Article[];
-  children?: React.ReactNode;
   imageWidth?: number | null;
   imageHeight?: number | null;
+  imageSrc: string;
+  imageAlt: string;
 }) {
   const [articles, setArticles] = useState<Article[]>(initialArticles);
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(
@@ -65,11 +69,14 @@ export default function ArticleEditor({
   const [newArticleStart, setNewArticleStart] = useState({ x: 0, y: 0 });
   const [newArticleSize, setNewArticleSize] = useState({ width: 0, height: 0 });
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [hoveredArticleId, setHoveredArticleId] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+  const [imageSize, setImageSize] = useState({
+    width: 0,
+    height: 0,
+    ratio: 1,
+  });
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -90,45 +97,77 @@ export default function ArticleEditor({
     height: 10,
   });
 
-  // Surveillez les dimensions du conteneur et de l'image
+  // Obtenir les dimensions de l'image
   useEffect(() => {
-    const updateSize = () => {
-      if (containerRef.current) {
-        setContainerSize({
-          width: containerRef.current.offsetWidth,
-          height: containerRef.current.offsetHeight,
-        });
-      }
+    const handleImageLoaded = (event: Event) => {
+      const img = event.target as HTMLImageElement;
+      const { width, height } = img.getBoundingClientRect();
+      setImageSize({
+        width,
+        height,
+        ratio: (imageWidth || width) / width,
+      });
+    };
 
-      // Trouver l'élément image réelle à l'intérieur du conteneur
-      const imageElement = containerRef.current?.querySelector("img");
-      if (imageElement) {
-        setImageSize({
-          width: imageElement.offsetWidth,
-          height: imageElement.offsetHeight,
-        });
+    const updateImageSize = () => {
+      if (containerRef.current) {
+        const imageElement = containerRef.current.querySelector("img");
+        if (imageElement) {
+          const { width, height } = imageElement.getBoundingClientRect();
+          setImageSize({
+            width,
+            height,
+            ratio: (imageWidth || width) / width,
+          });
+        }
       }
     };
 
-    updateSize();
+    // Observer les changements de taille
+    const resizeObserver = new ResizeObserver(updateImageSize);
 
-    // Observer les changements de taille avec ResizeObserver
-    const resizeObserver = new ResizeObserver(updateSize);
     if (containerRef.current) {
       resizeObserver.observe(containerRef.current);
+      const imageElement = containerRef.current.querySelector("img");
+      if (imageElement) {
+        imageElement.addEventListener("load", handleImageLoaded);
+      }
     }
 
-    window.addEventListener("resize", updateSize);
-
-    // Mettre à jour après un court délai pour permettre au rendu de l'image de se terminer
-    const timeoutId = setTimeout(updateSize, 300);
+    window.addEventListener("resize", updateImageSize);
 
     return () => {
+      if (containerRef.current) {
+        const imageElement = containerRef.current.querySelector("img");
+        if (imageElement) {
+          imageElement.removeEventListener("load", handleImageLoaded);
+        }
+      }
       resizeObserver.disconnect();
-      window.removeEventListener("resize", updateSize);
-      clearTimeout(timeoutId);
+      window.removeEventListener("resize", updateImageSize);
     };
-  }, [children]);
+  }, [imageWidth]);
+
+  const fetchArticles = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/sectors/${sectorId}/articles`);
+      if (response.ok) {
+        const data = await response.json();
+        setArticles(data);
+      } else {
+        toast.error("Erreur lors du chargement des articles");
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+      toast.error("Erreur lors du chargement des articles");
+    }
+  }, [sectorId]);
+
+  useEffect(() => {
+    if (initialArticles.length === 0) {
+      fetchArticles();
+    }
+  }, [initialArticles, fetchArticles]);
 
   // Convertir les coordonnées de pourcentage en pixels
   const percentToPixels = useCallback(
@@ -175,27 +214,6 @@ export default function ArticleEditor({
     [imageSize]
   );
 
-  const fetchArticles = useCallback(async () => {
-    try {
-      const response = await fetch(`/api/sectors/${sectorId}/articles`);
-      if (response.ok) {
-        const data = await response.json();
-        setArticles(data);
-      } else {
-        toast.error("Erreur lors du chargement des articles");
-      }
-    } catch (error) {
-      console.error("Erreur:", error);
-      toast.error("Erreur lors du chargement des articles");
-    }
-  }, [sectorId]);
-
-  useEffect(() => {
-    if (initialArticles.length === 0) {
-      fetchArticles();
-    }
-  }, [initialArticles, fetchArticles]);
-
   // Obtenir les coordonnées réelles de la souris par rapport à l'image
   const getMouseCoordinates = useCallback(
     (e: React.MouseEvent): { x: number; y: number } => {
@@ -212,16 +230,12 @@ export default function ArticleEditor({
         return { x: 0, y: 0 };
       }
 
-      // Tenir compte de l'offset potentiel de l'image dans le conteneur
-      const offsetX = imageRect.left - rect.left;
-      const offsetY = imageRect.top - rect.top;
-
       return {
         x: e.clientX - imageRect.left,
         y: e.clientY - imageRect.top,
       };
     },
-    [containerRef, imageSize]
+    [imageSize]
   );
 
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -622,6 +636,22 @@ export default function ArticleEditor({
     );
   };
 
+  const handleArticleSelection = (articleId: string) => {
+    const article = articles.find((a) => a.id === articleId);
+    if (article) {
+      setSelectedArticleId(articleId);
+
+      // Position du tooltip basée sur la position de l'article
+      if (containerRef.current) {
+        const articlePos = percentToPixels(article);
+        setTooltipPosition({
+          x: articlePos.x,
+          y: Math.max(20, articlePos.y - articlePos.height / 2 - 10),
+        });
+      }
+    }
+  };
+
   return (
     <div className="relative">
       {/* Toolbar */}
@@ -657,7 +687,11 @@ export default function ArticleEditor({
         onMouseUp={handleContainerMouseUp}
       >
         <div className="relative">
-          <div className="w-full min-h-[500px] bg-gray-200">{children}</div>
+          <img
+            src={imageSrc}
+            alt={imageAlt}
+            className="block w-full object-contain max-h-[calc(100vh-150px)]"
+          />
 
           {/* Articles */}
           {articles.map((article) => {
@@ -671,7 +705,7 @@ export default function ArticleEditor({
                   selectedArticleId === article.id
                     ? "border-blue-500"
                     : "border-white"
-                } rounded-md shadow-md overflow-hidden`}
+                } rounded-md shadow-md overflow-hidden pointer-events-auto`}
                 style={{
                   left: `${article.positionX}%`,
                   top: `${article.positionY}%`,
@@ -683,6 +717,8 @@ export default function ArticleEditor({
                   cursor: "pointer",
                 }}
                 onClick={(e) => handleArticleClick(e, article)}
+                onMouseEnter={() => setHoveredArticleId(article.id)}
+                onMouseLeave={() => setHoveredArticleId(null)}
               >
                 {renderResizeHandles(article)}
               </div>
@@ -694,9 +730,6 @@ export default function ArticleEditor({
             (() => {
               const article = articles.find((a) => a.id === selectedArticleId);
               if (!article) return null;
-
-              // Dimensions en pixels pour le positionner correctement
-              const articlePos = percentToPixels(article);
 
               return (
                 <div

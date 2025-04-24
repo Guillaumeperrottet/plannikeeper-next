@@ -100,7 +100,7 @@ export default async function ObjetEditPage({
                   <Briefcase size={18} className="text-gray-500" />
                 </div>
                 <div>
-                  <p className="font-medium">Secteur principal</p>
+                  <p className="font-medium">Activité</p>
                   <p className="text-gray-600">{objet.secteur}</p>
                 </div>
               </div>
