@@ -828,22 +828,6 @@ export default function ArticleEditor({
         </button>
       </div>
 
-      {/* Panel de débogage - visible uniquement en mode développement */}
-      {process.env.NODE_ENV !== "production" && (
-        <div className="text-xs bg-gray-50 p-2 border-b overflow-hidden">
-          <details>
-            <summary className="cursor-pointer">
-              Infos du redimensionnement (pour le débogage)
-            </summary>
-            <p>
-              Image: {Math.round(imageInfo.displayWidth)}x
-              {Math.round(imageInfo.displayHeight)} px | Offset:{" "}
-              {Math.round(imageInfo.offsetX)}x{Math.round(imageInfo.offsetY)} px
-            </p>
-          </details>
-        </div>
-      )}
-
       {/* Espace de dessin */}
       <div
         ref={containerRef}
