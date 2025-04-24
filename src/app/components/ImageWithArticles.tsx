@@ -148,7 +148,23 @@ export default function ImageWithArticles({
   // Effectuer une mise à jour supplémentaire si la source de l'image change
   useEffect(() => {
     if (imageRef.current && imageRef.current.complete) {
+      // Mise à jour immédiate
       updateDimensions();
+
+      // Mise à jour différée pour s'assurer que le navigateur a bien terminé le rendu
+      const timer1 = setTimeout(() => {
+        updateDimensions();
+      }, 50);
+
+      // Deuxième mise à jour différée au cas où
+      const timer2 = setTimeout(() => {
+        updateDimensions();
+      }, 300);
+
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+      };
     }
   }, [imageSrc, updateDimensions]);
 

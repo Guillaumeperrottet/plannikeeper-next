@@ -212,24 +212,40 @@ export default function ArticleEditor({
   // Gestion du chargement de l'image
   useEffect(() => {
     const handleImageLoad = () => {
+      // Mise à jour immédiate
       updateImageDimensions();
+
+      // Mises à jour différées pour garantir un rendu complet
+      setTimeout(updateImageDimensions, 50);
+      setTimeout(updateImageDimensions, 200);
+      setTimeout(updateImageDimensions, 500);
     };
 
     if (imageRef.current) {
       imageRef.current.addEventListener("load", handleImageLoad);
 
       if (imageRef.current.complete) {
-        updateImageDimensions();
+        handleImageLoad(); // Utiliser la même logique avec délais
       }
     }
 
-    window.addEventListener("resize", updateImageDimensions);
+    // Enregistrer le gestionnaire pour les redimensionnements de fenêtre
+    const handleResize = () => {
+      updateImageDimensions();
+      // Ajouter un délai pour s'assurer que le navigateur a terminé le redimensionnement
+      setTimeout(updateImageDimensions, 100);
+    };
+    window.addEventListener("resize", handleResize);
+
+    // Force une mise à jour après un court délai au montage du composant
+    const initialTimer = setTimeout(updateImageDimensions, 100);
 
     return () => {
       if (imageRef.current) {
         imageRef.current.removeEventListener("load", handleImageLoad);
       }
-      window.removeEventListener("resize", updateImageDimensions);
+      window.removeEventListener("resize", handleResize);
+      clearTimeout(initialTimer);
     };
   }, [updateImageDimensions]);
 
