@@ -16,6 +16,7 @@ export default async function ObjetViewPage({
     redirect("/signin");
   }
 
+  // Assurez-vous que params.id est disponible avant de l'utiliser
   const objetId = params.id;
 
   // Récupérer l'objet avec ses secteurs

@@ -1,10 +1,8 @@
-// src/app/dashboard/objet/[id]/secteur/[sectorId]/edit/article-editor.tsx
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { Plus, Move, X, Edit, Trash } from "lucide-react";
-import ImageWithArticles from "@/app/components/ImageWithArticles";
 
 type Article = {
   id: string;
@@ -34,6 +32,18 @@ type ResizeType =
   | "bottomLeft"
   | "bottomRight"
   | null;
+
+type ImageInfo = {
+  displayWidth: number; // Largeur d'affichage effective en pixels
+  displayHeight: number; // Hauteur d'affichage effective en pixels
+  originalWidth: number; // Largeur originale de l'image
+  originalHeight: number; // Hauteur originale de l'image
+  scaleX: number; // Facteur d'échelle en X
+  scaleY: number; // Facteur d'échelle en Y
+  aspectRatio: number; // Rapport hauteur/largeur original
+  offsetX: number; // Décalage X pour centrer l'image
+  offsetY: number; // Décalage Y pour centrer l'image
+};
 
 export default function ArticleEditor({
   sectorId,
@@ -72,10 +82,19 @@ export default function ArticleEditor({
   const [hoveredArticleId, setHoveredArticleId] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const [imageSize, setImageSize] = useState({
-    width: 0,
-    height: 0,
-    ratio: 1,
+  const imageRef = useRef<HTMLImageElement>(null);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
+
+  const [imageInfo, setImageInfo] = useState<ImageInfo>({
+    displayWidth: 0,
+    displayHeight: 0,
+    originalWidth: imageWidth || 1200, // Valeur par défaut si null
+    originalHeight: imageHeight || 900, // Valeur par défaut si null
+    scaleX: 1,
+    scaleY: 1,
+    aspectRatio: (imageWidth || 1200) / (imageHeight || 900),
+    offsetX: 0,
+    offsetY: 0,
   });
 
   // Modal state
@@ -97,59 +116,129 @@ export default function ArticleEditor({
     height: 10,
   });
 
-  // Obtenir les dimensions de l'image
-  useEffect(() => {
-    const handleImageLoaded = (event: Event) => {
-      const img = event.target as HTMLImageElement;
-      const { width, height } = img.getBoundingClientRect();
-      setImageSize({
-        width,
-        height,
-        ratio: (imageWidth || width) / width,
+  // Fonction pour mettre à jour les dimensions de l'image
+  const updateImageDimensions = useCallback(() => {
+    if (!containerRef.current || !imageRef.current) return;
+
+    const container = containerRef.current;
+    const image = imageRef.current;
+
+    // S'assurer que l'image est chargée
+    if (!image.complete) return;
+
+    // Dimensions réelles du conteneur
+    const containerRect = container.getBoundingClientRect();
+    const containerWidth = containerRect.width;
+    const containerHeight = containerRect.height;
+
+    // Dimensions réelles de l'image affichée
+    const imageRect = image.getBoundingClientRect();
+    const displayWidth = imageRect.width;
+    const displayHeight = imageRect.height;
+
+    // Dimensions originales de l'image
+    const originalWidth = imageWidth || image.naturalWidth;
+    const originalHeight = imageHeight || image.naturalHeight;
+    const originalAspectRatio = originalWidth / originalHeight;
+
+    // Déterminer comment l'image est contrainte (par largeur ou hauteur)
+    let effectiveWidth, effectiveHeight;
+
+    if (displayWidth / displayHeight > originalAspectRatio) {
+      // Contrainte par la hauteur
+      effectiveHeight = displayHeight;
+      effectiveWidth = effectiveHeight * originalAspectRatio;
+    } else {
+      // Contrainte par la largeur
+      effectiveWidth = displayWidth;
+      effectiveHeight = effectiveWidth / originalAspectRatio;
+    }
+
+    // Calcul des facteurs d'échelle
+    const scaleX = originalWidth / effectiveWidth;
+    const scaleY = originalHeight / effectiveHeight;
+
+    // Calcul des offsets pour centrer l'image
+    const offsetX = (containerWidth - effectiveWidth) / 2;
+    const offsetY = (containerHeight - effectiveHeight) / 2;
+
+    setImageInfo({
+      displayWidth: effectiveWidth,
+      displayHeight: effectiveHeight,
+      originalWidth,
+      originalHeight,
+      scaleX,
+      scaleY,
+      aspectRatio: originalAspectRatio,
+      offsetX,
+      offsetY,
+    });
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log("Editor image dimensions updated:", {
+        container: { width: containerWidth, height: containerHeight },
+        display: { width: displayWidth, height: displayHeight },
+        effective: { width: effectiveWidth, height: effectiveHeight },
+        original: { width: originalWidth, height: originalHeight },
+        scale: { x: scaleX, y: scaleY },
+        offset: { x: offsetX, y: offsetY },
       });
-    };
+    }
+  }, [imageWidth, imageHeight]);
 
-    const updateImageSize = () => {
-      if (containerRef.current) {
-        const imageElement = containerRef.current.querySelector("img");
-        if (imageElement) {
-          const { width, height } = imageElement.getBoundingClientRect();
-          setImageSize({
-            width,
-            height,
-            ratio: Math.max(
-              (imageWidth || width) / width,
-              (imageHeight || height) / height
-            ),
-          });
-        }
-      }
-    };
+  // Configuration du ResizeObserver
+  useEffect(() => {
+    if (resizeObserverRef.current) {
+      resizeObserverRef.current.disconnect();
+    }
 
-    // Observer les changements de taille
-    const resizeObserver = new ResizeObserver(updateImageSize);
+    resizeObserverRef.current = new ResizeObserver(() => {
+      window.requestAnimationFrame(() => {
+        updateImageDimensions();
+      });
+    });
 
     if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-      const imageElement = containerRef.current.querySelector("img");
-      if (imageElement) {
-        imageElement.addEventListener("load", handleImageLoaded);
+      resizeObserverRef.current.observe(containerRef.current);
+    }
+
+    return () => {
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect();
+      }
+    };
+  }, [updateImageDimensions]);
+
+  // Gestion du chargement de l'image
+  useEffect(() => {
+    const handleImageLoad = () => {
+      updateImageDimensions();
+    };
+
+    if (imageRef.current) {
+      imageRef.current.addEventListener("load", handleImageLoad);
+
+      if (imageRef.current.complete) {
+        updateImageDimensions();
       }
     }
 
-    window.addEventListener("resize", updateImageSize);
+    window.addEventListener("resize", updateImageDimensions);
 
     return () => {
-      if (containerRef.current) {
-        const imageElement = containerRef.current.querySelector("img");
-        if (imageElement) {
-          imageElement.removeEventListener("load", handleImageLoaded);
-        }
+      if (imageRef.current) {
+        imageRef.current.removeEventListener("load", handleImageLoad);
       }
-      resizeObserver.disconnect();
-      window.removeEventListener("resize", updateImageSize);
+      window.removeEventListener("resize", updateImageDimensions);
     };
-  }, [imageWidth]);
+  }, [updateImageDimensions]);
+
+  // Mettre à jour quand imageSrc change
+  useEffect(() => {
+    if (imageRef.current && imageRef.current.complete) {
+      updateImageDimensions();
+    }
+  }, [imageSrc, updateImageDimensions]);
 
   const fetchArticles = useCallback(async () => {
     try {
@@ -172,27 +261,33 @@ export default function ArticleEditor({
     }
   }, [initialArticles, fetchArticles]);
 
-  // Convertir les coordonnées de pourcentage en pixels
+  // Convertir les coordonnées pourcentage en pixels absolus (avec décalages)
   const percentToPixels = useCallback(
     (article: Article): AbsolutePosition => {
-      if (!imageSize.width || !imageSize.height) {
+      if (!imageInfo.displayWidth || !imageInfo.displayHeight) {
         return { x: 0, y: 0, width: 0, height: 0 };
       }
 
+      const xPercent = article.positionX || 0;
+      const yPercent = article.positionY || 0;
+      const widthPercent = article.width || 20;
+      const heightPercent = article.height || 20;
+
+      // Conversion en tenant compte du décalage pour centrer l'image
       return {
-        x: imageSize.width * ((article.positionX || 0) / 100),
-        y: imageSize.height * ((article.positionY || 0) / 100),
-        width: imageSize.width * ((article.width || 20) / 100),
-        height: imageSize.height * ((article.height || 20) / 100),
+        x: (xPercent / 100) * imageInfo.displayWidth + imageInfo.offsetX,
+        y: (yPercent / 100) * imageInfo.displayHeight + imageInfo.offsetY,
+        width: (widthPercent / 100) * imageInfo.displayWidth,
+        height: (heightPercent / 100) * imageInfo.displayHeight,
       };
     },
-    [imageSize]
+    [imageInfo]
   );
 
-  // Convertir les coordonnées de pixels en pourcentage
+  // Convertir les coordonnées de pixels en pourcentage (avec compensation de décalage)
   const pixelsToPercent = useCallback(
     (position: AbsolutePosition): Article => {
-      if (!imageSize.width || !imageSize.height) {
+      if (!imageInfo.displayWidth || !imageInfo.displayHeight) {
         return {
           id: "",
           title: "",
@@ -204,41 +299,56 @@ export default function ArticleEditor({
         };
       }
 
+      // Convertir en pourcentages en compensant le décalage
       return {
         id: "",
         title: "",
         description: "",
-        positionX: (position.x / imageSize.width) * 100,
-        positionY: (position.y / imageSize.height) * 100,
-        width: (position.width / imageSize.width) * 100,
-        height: (position.height / imageSize.height) * 100,
+        positionX:
+          ((position.x - imageInfo.offsetX) / imageInfo.displayWidth) * 100,
+        positionY:
+          ((position.y - imageInfo.offsetY) / imageInfo.displayHeight) * 100,
+        width: (position.width / imageInfo.displayWidth) * 100,
+        height: (position.height / imageInfo.displayHeight) * 100,
       };
     },
-    [imageSize]
+    [imageInfo]
   );
 
-  // Obtenir les coordonnées réelles de la souris par rapport à l'image
+  // Obtenir les coordonnées de la souris relatives à l'image
   const getMouseCoordinates = useCallback(
     (e: React.MouseEvent): { x: number; y: number } => {
-      if (!containerRef.current || !imageSize.width || !imageSize.height) {
+      if (!containerRef.current) {
         return { x: 0, y: 0 };
       }
 
-      const rect = containerRef.current.getBoundingClientRect();
-      const imageRect = containerRef.current
-        .querySelector("img")
-        ?.getBoundingClientRect();
+      const containerRect = containerRef.current.getBoundingClientRect();
 
-      if (!imageRect) {
-        return { x: 0, y: 0 };
-      }
-
+      // Position relative au conteneur
       return {
-        x: e.clientX - imageRect.left,
-        y: e.clientY - imageRect.top,
+        x: e.clientX - containerRect.left,
+        y: e.clientY - containerRect.top,
       };
     },
-    [imageSize]
+    []
+  );
+
+  // Vérifier si les coordonnées sont dans les limites de l'image
+  const isInImageBounds = useCallback(
+    (x: number, y: number): boolean => {
+      if (!imageInfo.displayWidth || !imageInfo.displayHeight) return false;
+
+      // Vérifier si le point (x, y) est à l'intérieur de l'image (en tenant compte du décalage)
+      const imageLeft = imageInfo.offsetX;
+      const imageRight = imageInfo.offsetX + imageInfo.displayWidth;
+      const imageTop = imageInfo.offsetY;
+      const imageBottom = imageInfo.offsetY + imageInfo.displayHeight;
+
+      return (
+        x >= imageLeft && x <= imageRight && y >= imageTop && y <= imageBottom
+      );
+    },
+    [imageInfo]
   );
 
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -251,6 +361,10 @@ export default function ArticleEditor({
   const handleContainerMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isAddingArticle && !isDraggingNew && containerRef.current) {
       const { x, y } = getMouseCoordinates(e);
+
+      // Vérifier si le clic est dans les limites de l'image
+      if (!isInImageBounds(x, y)) return;
+
       setNewArticleStart({ x, y });
       setNewArticleSize({ width: 0, height: 0 });
       setIsDraggingNew(true);
@@ -285,7 +399,7 @@ export default function ArticleEditor({
         height: Math.max(height, 20), // Minimum 20px de haut
       };
 
-      // Convertir en pourcentages
+      // Convertir en pourcentages (en compensant pour le décalage)
       const articleInPercent = pixelsToPercent(articleInPixels);
 
       setModalArticle({
@@ -354,25 +468,33 @@ export default function ArticleEditor({
       const halfWidth = articleSize.width / 2;
       const halfHeight = articleSize.height / 2;
 
-      // Limites
-      const minX = halfWidth;
-      const maxX = imageSize.width - halfWidth;
-      const minY = halfHeight;
-      const maxY = imageSize.height - halfHeight;
+      // Limites de l'image (en tenant compte du décalage)
+      const minX = imageInfo.offsetX + halfWidth;
+      const maxX = imageInfo.offsetX + imageInfo.displayWidth - halfWidth;
+      const minY = imageInfo.offsetY + halfHeight;
+      const maxY = imageInfo.offsetY + imageInfo.displayHeight - halfHeight;
 
       // Position contrainte
       const constrainedX = Math.max(minX, Math.min(newX, maxX));
       const constrainedY = Math.max(minY, Math.min(newY, maxY));
 
-      // Convertir en pourcentages
-      const xPercent = (constrainedX / imageSize.width) * 100;
-      const yPercent = (constrainedY / imageSize.height) * 100;
+      // Convertir en pourcentages, en tenant compte du décalage
+      const percentPosition = pixelsToPercent({
+        x: constrainedX,
+        y: constrainedY,
+        width: articleSize.width,
+        height: articleSize.height,
+      });
 
       // Mettre à jour l'article
       setArticles(
         articles.map((a) =>
           a.id === selectedArticleId
-            ? { ...a, positionX: xPercent, positionY: yPercent }
+            ? {
+                ...a,
+                positionX: percentPosition.positionX,
+                positionY: percentPosition.positionY,
+              }
             : a
         )
       );
@@ -423,25 +545,27 @@ export default function ArticleEditor({
       const halfNewWidth = newWidth / 2;
       const halfNewHeight = newHeight / 2;
 
+      // Limites de l'image (en tenant compte du décalage)
+      const minX = imageInfo.offsetX + halfNewWidth;
+      const maxX = imageInfo.offsetX + imageInfo.displayWidth - halfNewWidth;
+      const minY = imageInfo.offsetY + halfNewHeight;
+      const maxY = imageInfo.offsetY + imageInfo.displayHeight - halfNewHeight;
+
       // Ajuster la position si nécessaire pour éviter de sortir des limites
-      newX = Math.max(
-        halfNewWidth,
-        Math.min(newX, imageSize.width - halfNewWidth)
-      );
-      newY = Math.max(
-        halfNewHeight,
-        Math.min(newY, imageSize.height - halfNewHeight)
-      );
+      newX = Math.max(minX, Math.min(newX, maxX));
+      newY = Math.max(minY, Math.min(newY, maxY));
 
-      // Convertir en pourcentages
-      const xPercent = (newX / imageSize.width) * 100;
-      const yPercent = (newY / imageSize.height) * 100;
-      const widthPercent = (newWidth / imageSize.width) * 100;
-      const heightPercent = (newHeight / imageSize.height) * 100;
+      // Convertir en pourcentages, en tenant compte du décalage
+      const percentPosition = pixelsToPercent({
+        x: newX,
+        y: newY,
+        width: newWidth,
+        height: newHeight,
+      });
 
-      // Maximum 50% de l'image
-      const maxWidthPercent = Math.min(widthPercent, 50);
-      const maxHeightPercent = Math.min(heightPercent, 50);
+      // Maximum 50% de l'image (en pourcentage)
+      const maxWidthPercent = Math.min(percentPosition.width!, 50);
+      const maxHeightPercent = Math.min(percentPosition.height!, 50);
 
       // Mettre à jour l'article
       setArticles(
@@ -449,8 +573,8 @@ export default function ArticleEditor({
           a.id === selectedArticleId
             ? {
                 ...a,
-                positionX: xPercent,
-                positionY: yPercent,
+                positionX: percentPosition.positionX,
+                positionY: percentPosition.positionY,
                 width: maxWidthPercent,
                 height: maxHeightPercent,
               }
@@ -554,13 +678,8 @@ export default function ArticleEditor({
     if (containerRef.current) {
       // Position du tooltip basée sur la position de l'article
       const articlePos = percentToPixels(article);
-      const imageRect = containerRef.current
-        .querySelector("img")
-        ?.getBoundingClientRect();
 
-      if (!imageRect) return;
-
-      // Positionnement du tooltip au-dessus de l'article
+      // Positionner le tooltip au-dessus de l'article
       const tooltipX = articlePos.x;
       const tooltipY = articlePos.y - articlePos.height / 2 - 10;
 
@@ -639,21 +758,36 @@ export default function ArticleEditor({
     );
   };
 
-  const handleArticleSelection = (articleId: string) => {
-    const article = articles.find((a) => a.id === articleId);
-    if (article) {
-      setSelectedArticleId(articleId);
-
-      // Position du tooltip basée sur la position de l'article
-      if (containerRef.current) {
-        const articlePos = percentToPixels(article);
-        setTooltipPosition({
-          x: articlePos.x,
-          y: Math.max(20, articlePos.y - articlePos.height / 2 - 10),
-        });
+  // Calculer la position et les dimensions d'un article
+  const calculateArticleStyle = useCallback(
+    (article: Article) => {
+      if (
+        !article.positionX ||
+        !article.positionY ||
+        !imageInfo.displayWidth ||
+        !imageInfo.displayHeight
+      ) {
+        return {};
       }
-    }
-  };
+
+      // Convertir les pourcentages en pixels en tenant compte du décalage
+      const xPos =
+        (article.positionX / 100) * imageInfo.displayWidth + imageInfo.offsetX;
+      const yPos =
+        (article.positionY / 100) * imageInfo.displayHeight + imageInfo.offsetY;
+      const width = ((article.width || 20) / 100) * imageInfo.displayWidth;
+      const height = ((article.height || 20) / 100) * imageInfo.displayHeight;
+
+      return {
+        left: `${xPos}px`,
+        top: `${yPos}px`,
+        width: `${width}px`,
+        height: `${height}px`,
+        transform: "translate(-50%, -50%)",
+      };
+    },
+    [imageInfo]
+  );
 
   return (
     <div className="relative">
@@ -678,7 +812,23 @@ export default function ArticleEditor({
         </button>
       </div>
 
-      {/* Drawing area */}
+      {/* Panel de débogage - visible uniquement en mode développement */}
+      {process.env.NODE_ENV !== "production" && (
+        <div className="text-xs bg-gray-50 p-2 border-b overflow-hidden">
+          <details>
+            <summary className="cursor-pointer">
+              Infos du redimensionnement (pour le débogage)
+            </summary>
+            <p>
+              Image: {Math.round(imageInfo.displayWidth)}x
+              {Math.round(imageInfo.displayHeight)} px | Offset:{" "}
+              {Math.round(imageInfo.offsetX)}x{Math.round(imageInfo.offsetY)} px
+            </p>
+          </details>
+        </div>
+      )}
+
+      {/* Espace de dessin */}
       <div
         ref={containerRef}
         className={`relative overflow-hidden ${
@@ -691,15 +841,19 @@ export default function ArticleEditor({
       >
         <div className="relative">
           <img
+            ref={imageRef}
             src={imageSrc}
             alt={imageAlt}
-            className="block w-full object-contain max-h-[calc(100vh-150px)]"
+            className="block w-full h-auto max-h-[calc(100vh-150px)]"
+            style={{ objectFit: "contain" }}
           />
 
           {/* Articles */}
           {articles.map((article) => {
             if (article.positionX == null || article.positionY == null)
               return null;
+
+            const articleStyle = calculateArticleStyle(article);
 
             return (
               <div
@@ -710,11 +864,7 @@ export default function ArticleEditor({
                     : "border-white"
                 } rounded-md shadow-md overflow-hidden pointer-events-auto`}
                 style={{
-                  left: `${article.positionX}%`,
-                  top: `${article.positionY}%`,
-                  width: `${article.width || 20}%`,
-                  height: `${article.height || 20}%`,
-                  transform: "translate(-50%, -50%)",
+                  ...articleStyle,
                   zIndex: selectedArticleId === article.id ? 10 : 5,
                   backgroundColor: "rgba(0, 0, 0, 0.2)",
                   cursor: "pointer",

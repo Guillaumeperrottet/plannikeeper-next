@@ -1,7 +1,6 @@
-// src/app/dashboard/objet/[id]/view/sector-viewer.tsx
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
   ChevronDown,
@@ -10,6 +9,8 @@ import {
   ChevronRight,
   Edit,
   Layers,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import ImageWithArticles from "@/app/components/ImageWithArticles";
 
@@ -45,6 +46,8 @@ export default function SectorViewer({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const viewerRef = useRef<HTMLDivElement>(null);
 
   // Sélectionner le premier secteur au chargement si aucun n'est sélectionné
   useEffect(() => {
@@ -54,6 +57,7 @@ export default function SectorViewer({
     }
   }, [sectors, selectedSector]);
 
+  // Charger les articles lorsque le secteur sélectionné change
   useEffect(() => {
     if (selectedSector) {
       fetchArticles(selectedSector.id);
@@ -62,6 +66,7 @@ export default function SectorViewer({
 
   const fetchArticles = async (sectorId: string) => {
     try {
+      setIsLoading(true);
       const response = await fetch(`/api/sectors/${sectorId}/articles`);
       if (response.ok) {
         const data = await response.json();
@@ -71,6 +76,8 @@ export default function SectorViewer({
       }
     } catch (error) {
       console.error("Erreur:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -101,6 +108,23 @@ export default function SectorViewer({
     }
   };
 
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+
+    // En mode plein écran, nous voulons maximiser l'espace d'affichage
+    if (!isFullscreen && viewerRef.current) {
+      try {
+        if (viewerRef.current.requestFullscreen) {
+          viewerRef.current.requestFullscreen();
+        }
+      } catch (err) {
+        console.log("Fullscreen API not supported or enabled");
+      }
+    } else if (document.fullscreenElement) {
+      document.exitFullscreen();
+    }
+  };
+
   // Gestion des touches clavier pour la navigation
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -111,7 +135,7 @@ export default function SectorViewer({
       } else if (event.key === "Escape") {
         setIsFullscreen(false);
       } else if (event.key === "f" || event.key === "F") {
-        setIsFullscreen(!isFullscreen);
+        toggleFullscreen();
       }
     };
 
@@ -121,8 +145,23 @@ export default function SectorViewer({
     };
   }, [navigateToNextSector, navigateToPreviousSector, isFullscreen]);
 
+  // Gestion de la sortie du mode plein écran via l'API Fullscreen
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, [isFullscreen]);
+
   return (
     <div
+      ref={viewerRef}
       className={`flex-1 flex flex-col ${
         isFullscreen ? "fixed inset-0 z-50 bg-black" : ""
       }`}
@@ -206,32 +245,48 @@ export default function SectorViewer({
               </>
             )}
 
-            <div
-              className="cursor-pointer"
-              onClick={() => setIsFullscreen(!isFullscreen)}
-            >
-              <ImageWithArticles
-                imageSrc={selectedSector.image}
-                imageAlt={selectedSector.name}
-                originalWidth={selectedSector.imageWidth || 1200}
-                originalHeight={selectedSector.imageHeight || 900}
-                articles={articles}
-                onArticleClick={handleArticleClick}
-                onArticleHover={setHoveredArticleId}
-                hoveredArticleId={hoveredArticleId}
-                className={`rounded-md shadow-md ${
-                  isFullscreen ? "max-h-screen" : "max-h-[calc(100vh-150px)]"
-                }`}
-              />
-            </div>
+            {isLoading ? (
+              <div className="flex items-center justify-center h-64 w-full">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+              </div>
+            ) : (
+              <div>
+                <ImageWithArticles
+                  imageSrc={selectedSector.image}
+                  imageAlt={selectedSector.name}
+                  originalWidth={selectedSector.imageWidth || 1200}
+                  originalHeight={selectedSector.imageHeight || 900}
+                  articles={articles}
+                  onArticleClick={handleArticleClick}
+                  onArticleHover={setHoveredArticleId}
+                  hoveredArticleId={hoveredArticleId}
+                  className={`rounded-md shadow-md ${
+                    isFullscreen ? "max-h-screen" : "max-h-[calc(100vh-150px)]"
+                  }`}
+                />
+              </div>
+            )}
 
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-80 px-4 py-2 rounded-full shadow-md z-10">
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-80 px-4 py-2 rounded-full shadow-md z-10 flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Layers size={16} />
                 <span>
                   {selectedIndex + 1} / {sectors.length}: {selectedSector.name}
                 </span>
               </div>
+              <button
+                onClick={toggleFullscreen}
+                className="p-1 rounded hover:bg-gray-200"
+                title={
+                  isFullscreen ? "Quitter le plein écran" : "Mode plein écran"
+                }
+              >
+                {isFullscreen ? (
+                  <Minimize2 size={16} />
+                ) : (
+                  <Maximize2 size={16} />
+                )}
+              </button>
             </div>
           </div>
         ) : (

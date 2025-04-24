@@ -1,7 +1,6 @@
-// Modification du composant ImageWithArticles.tsx
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 
 type Article = {
   id: string;
@@ -48,40 +47,85 @@ export default function ImageWithArticles({
     displayHeight: 0,
     scaleX: 1,
     scaleY: 1,
+    aspectRatio: originalWidth / originalHeight,
   });
+
+  // Fonction pour mettre à jour les dimensions - extraite pour pouvoir l'appeler à différents moments
+  const updateDimensions = useCallback(() => {
+    if (!containerRef.current || !imageRef.current) return;
+
+    const image = imageRef.current;
+
+    // Obtenir les dimensions réelles de l'élément img affiché
+    const rect = image.getBoundingClientRect();
+    const displayWidth = rect.width;
+    const displayHeight = rect.height;
+
+    // L'aspect ratio original de l'image
+    const originalAspectRatio = originalWidth / originalHeight;
+
+    // L'aspect ratio de l'affichage actuel
+    const displayAspectRatio = displayWidth / displayHeight;
+
+    // Déterminer comment l'image est contrainte (par largeur ou hauteur)
+    // C'est crucial pour le calcul correct des coordonnées
+    let effectiveWidth, effectiveHeight;
+
+    if (displayAspectRatio > originalAspectRatio) {
+      // L'image est contrainte par la hauteur
+      effectiveHeight = displayHeight;
+      effectiveWidth = effectiveHeight * originalAspectRatio;
+    } else {
+      // L'image est contrainte par la largeur
+      effectiveWidth = displayWidth;
+      effectiveHeight = effectiveWidth / originalAspectRatio;
+    }
+
+    // Calculer les facteurs d'échelle pour transformer les coordonnées
+    const scaleX = originalWidth / effectiveWidth;
+    const scaleY = originalHeight / effectiveHeight;
+
+    setImageSize({
+      displayWidth: effectiveWidth,
+      displayHeight: effectiveHeight,
+      scaleX,
+      scaleY,
+      aspectRatio: originalAspectRatio,
+    });
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log("Image dimensions updated:", {
+        display: { width: displayWidth, height: displayHeight },
+        effective: { width: effectiveWidth, height: effectiveHeight },
+        original: { width: originalWidth, height: originalHeight },
+        scales: { x: scaleX, y: scaleY },
+      });
+    }
+  }, [originalWidth, originalHeight]);
 
   // Gérer le redimensionnement et le montage initial
   useEffect(() => {
     setMounted(true);
 
-    const updateDimensions = () => {
-      if (!containerRef.current || !imageRef.current) return;
-
-      const image = imageRef.current;
-      const { width: displayWidth, height: displayHeight } =
-        image.getBoundingClientRect();
-
-      // Calculer les ratios de mise à l'échelle entre les dimensions originales et affichées
-      const scaleX = originalWidth / displayWidth;
-      const scaleY = originalHeight / displayHeight;
-
-      setImageSize({
-        displayWidth,
-        displayHeight,
-        scaleX,
-        scaleY,
-      });
-    };
-
     // Observer les changements de taille
-    const resizeObserver = new ResizeObserver(updateDimensions);
+    const resizeObserver = new ResizeObserver(() => {
+      // Utiliser requestAnimationFrame pour limiter les appels
+      window.requestAnimationFrame(() => {
+        updateDimensions();
+      });
+    });
+
     if (containerRef.current) {
       resizeObserver.observe(containerRef.current);
     }
 
     // S'assurer que les dimensions sont mises à jour lorsque l'image est chargée
+    const handleImageLoad = () => {
+      updateDimensions();
+    };
+
     if (imageRef.current) {
-      imageRef.current.onload = updateDimensions;
+      imageRef.current.addEventListener("load", handleImageLoad);
 
       // Si l'image est déjà chargée (depuis le cache), exécuter updateDimensions
       if (imageRef.current.complete) {
@@ -93,20 +137,68 @@ export default function ImageWithArticles({
     window.addEventListener("resize", updateDimensions);
 
     return () => {
+      if (imageRef.current) {
+        imageRef.current.removeEventListener("load", handleImageLoad);
+      }
       resizeObserver.disconnect();
       window.removeEventListener("resize", updateDimensions);
     };
-  }, [originalWidth, originalHeight]);
+  }, [updateDimensions]);
 
+  // Effectuer une mise à jour supplémentaire si la source de l'image change
+  useEffect(() => {
+    if (imageRef.current && imageRef.current.complete) {
+      updateDimensions();
+    }
+  }, [imageSrc, updateDimensions]);
+
+  // Calculer la position et les dimensions d'un article en tenant compte des contraintes
+  const calculateArticleStyle = useCallback(
+    (article: Article) => {
+      if (!article.positionX || !article.positionY) {
+        return {};
+      }
+
+      // Espace potentiellement non utilisé à cause du maintien du ratio d'aspect
+      const unusedWidth = containerRef.current?.clientWidth
+        ? containerRef.current.clientWidth - imageSize.displayWidth
+        : 0;
+      const unusedHeight = containerRef.current?.clientHeight
+        ? containerRef.current.clientHeight - imageSize.displayHeight
+        : 0;
+
+      // Compensation pour centrer l'image dans son conteneur
+      const offsetX = unusedWidth / 2;
+      const offsetY = unusedHeight / 2;
+
+      // Convertir les pourcentages en pixels dans le système de coordonnées de l'image
+      const xPos = (article.positionX / 100) * imageSize.displayWidth + offsetX;
+      const yPos =
+        (article.positionY / 100) * imageSize.displayHeight + offsetY;
+      const width = ((article.width || 20) / 100) * imageSize.displayWidth;
+      const height = ((article.height || 20) / 100) * imageSize.displayHeight;
+
+      return {
+        left: `${xPos}px`,
+        top: `${yPos}px`,
+        width: `${width}px`,
+        height: `${height}px`,
+        transform: "translate(-50%, -50%)",
+      };
+    },
+    [imageSize]
+  );
+
+  // Ne rien afficher pendant le premier rendu côté client
   if (!mounted) {
-    return null; // Éviter le rendu côté serveur pour ce composant
+    return null;
   }
 
   return (
     <div
       ref={containerRef}
       className={`relative overflow-hidden ${className}`}
-      style={{ width: "100%", height: "auto" }}
+      style={{ width: "100%", position: "relative" }}
     >
       <img
         ref={imageRef}
@@ -119,6 +211,8 @@ export default function ImageWithArticles({
       {articles.map((article) => {
         if (!article.positionX || !article.positionY) return null;
 
+        const articleStyle = calculateArticleStyle(article);
+
         return (
           <div
             key={article.id}
@@ -126,13 +220,11 @@ export default function ImageWithArticles({
               selectedArticleId === article.id
                 ? "border-blue-500"
                 : "border-white"
-            } rounded-md shadow-md overflow-hidden cursor-pointer pointer-events-auto`}
+            } rounded-md shadow-md overflow-hidden cursor-pointer pointer-events-auto ${
+              isEditable ? "z-10" : ""
+            }`}
             style={{
-              left: `${article.positionX}%`,
-              top: `${article.positionY}%`,
-              width: `${article.width || 20}%`,
-              height: `${article.height || 20}%`,
-              transform: "translate(-50%, -50%)",
+              ...articleStyle,
               zIndex:
                 hoveredArticleId === article.id ||
                 selectedArticleId === article.id
@@ -166,6 +258,15 @@ export default function ImageWithArticles({
           </div>
         );
       })}
+
+      {/* Option de débogage pour voir les dimensions réelles (uniquement en développement) */}
+      {process.env.NODE_ENV !== "production" && false && (
+        <div className="absolute bottom-0 right-0 bg-black bg-opacity-70 text-white p-2 text-xs">
+          Display: {Math.round(imageSize.displayWidth)}x
+          {Math.round(imageSize.displayHeight)} | Scale:{" "}
+          {imageSize.scaleX.toFixed(2)}
+        </div>
+      )}
     </div>
   );
 }
