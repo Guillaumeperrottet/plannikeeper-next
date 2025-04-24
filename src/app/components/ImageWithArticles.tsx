@@ -124,6 +124,12 @@ export default function ImageWithArticles({
       updateDimensions();
     };
 
+    const timers = [
+      setTimeout(() => updateDimensions(), 100),
+      setTimeout(() => updateDimensions(), 500),
+      setTimeout(() => updateDimensions(), 1000),
+    ];
+
     if (imageRef.current) {
       imageRef.current.addEventListener("load", handleImageLoad);
 
@@ -140,6 +146,7 @@ export default function ImageWithArticles({
       if (imageRef.current) {
         imageRef.current.removeEventListener("load", handleImageLoad);
       }
+      timers.forEach(clearTimeout);
       resizeObserver.disconnect();
       window.removeEventListener("resize", updateDimensions);
     };
