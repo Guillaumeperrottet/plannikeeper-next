@@ -25,10 +25,18 @@ type Article = {
   id: string;
   title: string;
   description: string | null;
-  positionX: number | null;
-  positionY: number | null;
-  width: number | null;
-  height: number | null;
+  positionX: number | null; // Stocké en pourcentage
+  positionY: number | null; // Stocké en pourcentage
+  width: number | null; // Stocké en pourcentage
+  height: number | null; // Stocké en pourcentage
+};
+
+// Coordonnées en pixels pour utilisation interne
+type AbsolutePosition = {
+  x: number; // Position X en pixels
+  y: number; // Position Y en pixels
+  width: number; // Largeur en pixels
+  height: number; // Hauteur en pixels
 };
 
 export default function SectorViewer({
@@ -44,13 +52,10 @@ export default function SectorViewer({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-  const [imageDisplaySize, setImageDisplaySize] = useState({
-    width: 0,
-    height: 0,
-  });
+  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+
   const containerRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
+  const imageRef = useRef<HTMLImageElement | null>(null);
 
   // Sélectionner le premier secteur au chargement si aucun n'est sélectionné
   useEffect(() => {
@@ -66,84 +71,91 @@ export default function SectorViewer({
     }
   }, [selectedSector]);
 
-  // Surveiller les changements de dimensions du conteneur et de l'image
+  // Surveiller les dimensions de l'image
   useEffect(() => {
-    const updateDimensions = () => {
-      if (containerRef.current) {
-        setContainerSize({
-          width: containerRef.current.offsetWidth,
-          height: containerRef.current.offsetHeight,
+    const updateImageSize = () => {
+      const imageElement = containerRef.current?.querySelector("img");
+      if (imageElement) {
+        setImageSize({
+          width: imageElement.offsetWidth,
+          height: imageElement.offsetHeight,
         });
-      }
-
-      if (imageRef.current) {
-        setImageDisplaySize({
-          width: imageRef.current.offsetWidth,
-          height: imageRef.current.offsetHeight,
-        });
+        imageRef.current = imageElement as HTMLImageElement;
       }
     };
 
-    // Initialiser
-    updateDimensions();
+    // Mettre à jour après chargement de l'image
+    const handleImageLoad = () => {
+      updateImageSize();
+    };
+
+    // Attendre un peu que l'image soit chargée
+    const timeoutId = setTimeout(updateImageSize, 300);
 
     // Observer les changements de taille
-    const resizeObserver = new ResizeObserver(updateDimensions);
+    const resizeObserver = new ResizeObserver(updateImageSize);
 
     if (containerRef.current) {
       resizeObserver.observe(containerRef.current);
-    }
 
-    if (imageRef.current) {
-      resizeObserver.observe(imageRef.current);
+      // Ajouter un écouteur d'événement pour le chargement de l'image
+      const imageElement = containerRef.current.querySelector("img");
+      if (imageElement) {
+        imageElement.addEventListener("load", handleImageLoad);
+        imageRef.current = imageElement as HTMLImageElement;
+      }
     }
 
     // Observer le redimensionnement de la fenêtre
-    window.addEventListener("resize", updateDimensions);
+    window.addEventListener("resize", updateImageSize);
 
     return () => {
+      if (imageRef.current) {
+        imageRef.current.removeEventListener("load", handleImageLoad);
+      }
       resizeObserver.disconnect();
-      window.removeEventListener("resize", updateDimensions);
+      window.removeEventListener("resize", updateImageSize);
+      clearTimeout(timeoutId);
     };
   }, [selectedSector, isFullscreen]);
 
-  // Fonction pour calculer l'échelle qui maintient le rapport d'aspect
-  const calculateAspectRatio = useCallback(() => {
-    if (
-      !selectedSector?.imageWidth ||
-      !selectedSector?.imageHeight ||
-      !imageDisplaySize.width ||
-      !imageDisplaySize.height
-    ) {
-      return 1;
-    }
-
-    // Calculer les proportions des dimensions réelles et affichées
-    const originalAspectRatio =
-      selectedSector.imageWidth / selectedSector.imageHeight;
-    const displayAspectRatio = imageDisplaySize.width / imageDisplaySize.height;
-
-    // Déterminer s'il y a des différences significatives
-    return originalAspectRatio / displayAspectRatio;
-  }, [selectedSector, imageDisplaySize]);
-
-  // Fonction pour ajuster la position des articles en fonction
-  // des dimensions réelles et affichées de l'image
-  const getAdjustedPosition = useCallback(
-    (posX: number, posY: number) => {
-      if (
-        !selectedSector ||
-        !selectedSector.imageWidth ||
-        !selectedSector.imageHeight
-      ) {
-        return { x: posX, y: posY };
+  // Convertir les coordonnées de pourcentage en pixels
+  const percentToPixels = useCallback(
+    (article: Article): AbsolutePosition => {
+      if (!imageSize.width || !imageSize.height) {
+        return { x: 0, y: 0, width: 0, height: 0 };
       }
 
-      // Les positions sont déjà en pourcentages, donc pas besoin d'ajustement supplémentaire
-      // si l'image est affichée avec le même rapport hauteur/largeur
-      return { x: posX, y: posY };
+      return {
+        x: imageSize.width * ((article.positionX || 0) / 100),
+        y: imageSize.height * ((article.positionY || 0) / 100),
+        width: imageSize.width * ((article.width || 20) / 100),
+        height: imageSize.height * ((article.height || 20) / 100),
+      };
     },
-    [selectedSector, imageDisplaySize]
+    [imageSize]
+  );
+
+  // Convertir les coordonnées de pixels en pourcentage
+  const pixelsToPercent = useCallback(
+    (position: AbsolutePosition): Partial<Article> => {
+      if (!imageSize.width || !imageSize.height) {
+        return {
+          positionX: 0,
+          positionY: 0,
+          width: 20,
+          height: 20,
+        };
+      }
+
+      return {
+        positionX: (position.x / imageSize.width) * 100,
+        positionY: (position.y / imageSize.height) * 100,
+        width: (position.width / imageSize.width) * 100,
+        height: (position.height / imageSize.height) * 100,
+      };
+    },
+    [imageSize]
   );
 
   const fetchArticles = async (sectorId: string) => {
@@ -293,38 +305,29 @@ export default function SectorViewer({
               className="cursor-pointer relative"
               onClick={() => setIsFullscreen(!isFullscreen)}
             >
-              <div className="relative">
-                <Image
-                  ref={imageRef as any}
-                  src={selectedSector.image}
-                  alt={selectedSector.name}
-                  width={selectedSector.imageWidth || 1200}
-                  height={selectedSector.imageHeight || 900}
-                  className={`object-contain ${
-                    isFullscreen ? "max-h-screen" : "max-h-[calc(100vh-150px)]"
-                  } rounded-md shadow-md`}
-                  priority
-                />
-              </div>
+              <Image
+                src={selectedSector.image}
+                alt={selectedSector.name}
+                width={selectedSector.imageWidth || 1200}
+                height={selectedSector.imageHeight || 900}
+                className={`object-contain ${
+                  isFullscreen ? "max-h-screen" : "max-h-[calc(100vh-150px)]"
+                } rounded-md shadow-md`}
+                priority
+              />
 
               {/* Articles placés sur l'image */}
               {articles.map((article) => {
                 if (article.positionX === null || article.positionY === null)
                   return null;
 
-                // Ajuster les positions pour l'affichage
-                const { x, y } = getAdjustedPosition(
-                  article.positionX,
-                  article.positionY
-                );
-
                 return (
                   <div
                     key={article.id}
                     className="absolute border border-white rounded-md z-20 transition-all duration-200 ease-in-out cursor-pointer"
                     style={{
-                      left: `${x}%`,
-                      top: `${y}%`,
+                      left: `${article.positionX}%`,
+                      top: `${article.positionY}%`,
                       width: `${article.width || 20}%`,
                       height: `${article.height || 20}%`,
                       transform: "translate(-50%, -50%)",
@@ -332,6 +335,7 @@ export default function SectorViewer({
                     }}
                     onClick={(e) => {
                       e.stopPropagation();
+                      window.location.href = `/dashboard/objet/${objetId}/secteur/${selectedSector?.id}/article/${article.id}`;
                     }}
                     onMouseEnter={() => setHoveredArticleId(article.id)}
                     onMouseLeave={() => setHoveredArticleId(null)}
@@ -347,6 +351,11 @@ export default function SectorViewer({
                             {article.description}
                           </div>
                         )}
+                        <div className="mt-2 text-xs text-center">
+                          <span className="text-blue-300">
+                            Cliquez pour gérer les tâches
+                          </span>
+                        </div>
                         {/* Petit triangle en bas du tooltip */}
                         <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black border-opacity-80"></div>
                       </div>

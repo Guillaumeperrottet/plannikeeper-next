@@ -8,10 +8,18 @@ type Article = {
   id: string;
   title: string;
   description: string | null;
-  positionX: number | null;
-  positionY: number | null;
-  width: number | null;
-  height: number | null;
+  positionX: number | null; // Stocké en pourcentage
+  positionY: number | null; // Stocké en pourcentage
+  width: number | null; // Stocké en pourcentage
+  height: number | null; // Stocké en pourcentage
+};
+
+// Coordonnées en pixels pour utilisation interne
+type AbsolutePosition = {
+  x: number; // Position X en pixels
+  y: number; // Position Y en pixels
+  width: number; // Largeur en pixels
+  height: number; // Hauteur en pixels
 };
 
 type ResizeType =
@@ -48,7 +56,7 @@ export default function ArticleEditor({
   const [isResizing, setIsResizing] = useState(false);
   const [resizeType, setResizeType] = useState<ResizeType>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [resizeStart, setResizeStart] = useState({
+  const [resizeStart, setResizeStart] = useState<AbsolutePosition>({
     x: 0,
     y: 0,
     width: 0,
@@ -59,8 +67,9 @@ export default function ArticleEditor({
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-  const [aspectRatio, setAspectRatio] = useState(1);
+  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -81,62 +90,90 @@ export default function ArticleEditor({
     height: 10,
   });
 
-  // Calculer le ratio d'aspect entre l'image originale et le conteneur
-  const calculateAspectRatio = useCallback(() => {
-    if (!imageWidth || !imageHeight || !containerRef.current) return 1;
-
-    const containerWidth = containerRef.current.offsetWidth;
-    const containerHeight = containerRef.current.offsetHeight;
-
-    // Si l'image est plus large que haute
-    if (imageWidth / imageHeight > containerWidth / containerHeight) {
-      // La largeur est limitative
-      return containerWidth / imageWidth;
-    } else {
-      // La hauteur est limitative
-      return containerHeight / imageHeight;
-    }
-  }, [imageWidth, imageHeight]);
-
-  // Recalculer la position (x, y) d'un article en fonction du ratio d'aspect
-  const adjustPositionForDisplay = useCallback((x: number, y: number) => {
-    // Dans ce cas, x et y sont des pourcentages (0-100)
-    // Les pourcentages sont déjà normalisés, donc pas besoin d'ajuster
-    return { x, y };
-  }, []);
-
+  // Surveillez les dimensions du conteneur et de l'image
   useEffect(() => {
-    const updateContainerSize = () => {
+    const updateSize = () => {
       if (containerRef.current) {
-        const width = containerRef.current.offsetWidth;
-        const height = containerRef.current.offsetHeight;
-        setContainerSize({ width, height });
+        setContainerSize({
+          width: containerRef.current.offsetWidth,
+          height: containerRef.current.offsetHeight,
+        });
+      }
 
-        // Recalculer le ratio d'aspect basé sur les nouvelles dimensions
-        const newAspectRatio = calculateAspectRatio();
-        setAspectRatio(newAspectRatio);
+      // Trouver l'élément image réelle à l'intérieur du conteneur
+      const imageElement = containerRef.current?.querySelector("img");
+      if (imageElement) {
+        setImageSize({
+          width: imageElement.offsetWidth,
+          height: imageElement.offsetHeight,
+        });
       }
     };
 
-    // Initialiser
-    updateContainerSize();
+    updateSize();
 
-    // Observer les changements de taille
-    const resizeObserver = new ResizeObserver(updateContainerSize);
+    // Observer les changements de taille avec ResizeObserver
+    const resizeObserver = new ResizeObserver(updateSize);
     if (containerRef.current) {
       resizeObserver.observe(containerRef.current);
     }
 
-    // Observer le redimensionnement de la fenêtre
-    window.addEventListener("resize", updateContainerSize);
+    window.addEventListener("resize", updateSize);
+
+    // Mettre à jour après un court délai pour permettre au rendu de l'image de se terminer
+    const timeoutId = setTimeout(updateSize, 300);
 
     return () => {
-      if (containerRef.current) {
-        resizeObserver.unobserve(containerRef.current);
-      }
-      window.removeEventListener("resize", updateContainerSize);
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updateSize);
+      clearTimeout(timeoutId);
     };
-  }, [calculateAspectRatio, imageWidth, imageHeight]);
+  }, [children]);
+
+  // Convertir les coordonnées de pourcentage en pixels
+  const percentToPixels = useCallback(
+    (article: Article): AbsolutePosition => {
+      if (!imageSize.width || !imageSize.height) {
+        return { x: 0, y: 0, width: 0, height: 0 };
+      }
+
+      return {
+        x: imageSize.width * ((article.positionX || 0) / 100),
+        y: imageSize.height * ((article.positionY || 0) / 100),
+        width: imageSize.width * ((article.width || 20) / 100),
+        height: imageSize.height * ((article.height || 20) / 100),
+      };
+    },
+    [imageSize]
+  );
+
+  // Convertir les coordonnées de pixels en pourcentage
+  const pixelsToPercent = useCallback(
+    (position: AbsolutePosition): Article => {
+      if (!imageSize.width || !imageSize.height) {
+        return {
+          id: "",
+          title: "",
+          description: "",
+          positionX: 0,
+          positionY: 0,
+          width: 20,
+          height: 20,
+        };
+      }
+
+      return {
+        id: "",
+        title: "",
+        description: "",
+        positionX: (position.x / imageSize.width) * 100,
+        positionY: (position.y / imageSize.height) * 100,
+        width: (position.width / imageSize.width) * 100,
+        height: (position.height / imageSize.height) * 100,
+      };
+    },
+    [imageSize]
+  );
 
   const fetchArticles = useCallback(async () => {
     try {
@@ -159,6 +196,34 @@ export default function ArticleEditor({
     }
   }, [initialArticles, fetchArticles]);
 
+  // Obtenir les coordonnées réelles de la souris par rapport à l'image
+  const getMouseCoordinates = useCallback(
+    (e: React.MouseEvent): { x: number; y: number } => {
+      if (!containerRef.current || !imageSize.width || !imageSize.height) {
+        return { x: 0, y: 0 };
+      }
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const imageRect = containerRef.current
+        .querySelector("img")
+        ?.getBoundingClientRect();
+
+      if (!imageRect) {
+        return { x: 0, y: 0 };
+      }
+
+      // Tenir compte de l'offset potentiel de l'image dans le conteneur
+      const offsetX = imageRect.left - rect.left;
+      const offsetY = imageRect.top - rect.top;
+
+      return {
+        x: e.clientX - imageRect.left,
+        y: e.clientY - imageRect.top,
+      };
+    },
+    [containerRef, imageSize]
+  );
+
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isAddingArticle && !isDraggingNew) {
       return;
@@ -167,23 +232,20 @@ export default function ArticleEditor({
   };
 
   const handleContainerMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isAddingArticle && containerRef.current && !isDraggingNew) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 100;
-      const y = ((e.clientY - rect.top) / rect.height) * 100;
+    if (isAddingArticle && !isDraggingNew && containerRef.current) {
+      const { x, y } = getMouseCoordinates(e);
       setNewArticleStart({ x, y });
       setNewArticleSize({ width: 0, height: 0 });
       setIsDraggingNew(true);
+      e.preventDefault(); // Empêcher la sélection de texte
     }
   };
 
   const handleContainerMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isDraggingNew && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const currentX = ((e.clientX - rect.left) / rect.width) * 100;
-      const currentY = ((e.clientY - rect.top) / rect.height) * 100;
-      const width = Math.abs(currentX - newArticleStart.x);
-      const height = Math.abs(currentY - newArticleStart.y);
+    if (isDraggingNew) {
+      const { x, y } = getMouseCoordinates(e);
+      const width = Math.abs(x - newArticleStart.x);
+      const height = Math.abs(y - newArticleStart.y);
       setNewArticleSize({ width, height });
     } else if (isDragging || isResizing) {
       handleMouseMove(e);
@@ -191,36 +253,32 @@ export default function ArticleEditor({
   };
 
   const handleContainerMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isDraggingNew && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const currentX = ((e.clientX - rect.left) / rect.width) * 100;
-      const currentY = ((e.clientY - rect.top) / rect.height) * 100;
-      const minX = Math.min(newArticleStart.x, currentX);
-      const minY = Math.min(newArticleStart.y, currentY);
-      const width = Math.abs(currentX - newArticleStart.x);
-      const height = Math.abs(currentY - newArticleStart.y);
+    if (isDraggingNew) {
+      const { x, y } = getMouseCoordinates(e);
+      const minX = Math.min(newArticleStart.x, x);
+      const minY = Math.min(newArticleStart.y, y);
+      const width = Math.abs(x - newArticleStart.x);
+      const height = Math.abs(y - newArticleStart.y);
 
-      if (width < 2 || height < 2) {
-        const centerX = (newArticleStart.x + currentX) / 2;
-        const centerY = (newArticleStart.y + currentY) / 2;
-        setModalArticle({
-          ...modalArticle,
-          positionX: centerX,
-          positionY: centerY,
-          width: 2,
-          height: 2,
-        });
-      } else {
-        const centerX = minX + width / 2;
-        const centerY = minY + height / 2;
-        setModalArticle({
-          ...modalArticle,
-          positionX: centerX,
-          positionY: centerY,
-          width,
-          height,
-        });
-      }
+      // Créer l'article en pixels puis convertir en pourcentages
+      const articleInPixels: AbsolutePosition = {
+        x: minX + width / 2, // Centre X
+        y: minY + height / 2, // Centre Y
+        width: Math.max(width, 20), // Minimum 20px de large
+        height: Math.max(height, 20), // Minimum 20px de haut
+      };
+
+      // Convertir en pourcentages
+      const articleInPercent = pixelsToPercent(articleInPixels);
+
+      setModalArticle({
+        title: "",
+        description: "",
+        positionX: articleInPercent.positionX || 0,
+        positionY: articleInPercent.positionY || 0,
+        width: articleInPercent.width || 10,
+        height: articleInPercent.height || 10,
+      });
 
       setIsDraggingNew(false);
       setIsAddingArticle(false);
@@ -234,17 +292,16 @@ export default function ArticleEditor({
     e.stopPropagation();
     setSelectedArticleId(article.id);
     setIsDragging(true);
-    if (
-      containerRef.current &&
-      article.positionX != null &&
-      article.positionY != null
-    ) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const articleX = (article.positionX / 100) * rect.width;
-      const articleY = (article.positionY / 100) * rect.height;
+
+    if (containerRef.current) {
+      // Convertir les coordonnées en pourcentage en pixels
+      const articleInPixels = percentToPixels(article);
+
+      // Calculer l'offset du drag
+      const { x, y } = getMouseCoordinates(e);
       setDragOffset({
-        x: e.clientX - rect.left - articleX,
-        y: e.clientY - rect.top - articleY,
+        x: x - articleInPixels.x,
+        y: y - articleInPixels.y,
       });
     }
   };
@@ -259,30 +316,47 @@ export default function ArticleEditor({
     setSelectedArticleId(article.id);
     setIsResizing(true);
     setResizeType(type);
-    setResizeStart({
-      x: article.positionX ?? 0,
-      y: article.positionY ?? 0,
-      width: article.width ?? 20,
-      height: article.height ?? 20,
-    });
+
+    // Convertir les coordonnées en pourcentage en pixels pour le début du resize
+    setResizeStart(percentToPixels(article));
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isDragging && selectedArticleId && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left - dragOffset.x;
-      const y = e.clientY - rect.top - dragOffset.y;
-      const posX = (x / rect.width) * 100;
-      const posY = (y / rect.height) * 100;
+      const { x, y } = getMouseCoordinates(e);
+      const article = articles.find((a) => a.id === selectedArticleId);
+
+      if (!article) return;
+
+      // Position absolue du nouvel emplacement (en pixels)
+      const newX = x - dragOffset.x;
+      const newY = y - dragOffset.y;
+
+      // Vérifier que l'article ne sort pas des limites de l'image
+      const articleSize = percentToPixels(article);
+      const halfWidth = articleSize.width / 2;
+      const halfHeight = articleSize.height / 2;
+
+      // Limites
+      const minX = halfWidth;
+      const maxX = imageSize.width - halfWidth;
+      const minY = halfHeight;
+      const maxY = imageSize.height - halfHeight;
+
+      // Position contrainte
+      const constrainedX = Math.max(minX, Math.min(newX, maxX));
+      const constrainedY = Math.max(minY, Math.min(newY, maxY));
+
+      // Convertir en pourcentages
+      const xPercent = (constrainedX / imageSize.width) * 100;
+      const yPercent = (constrainedY / imageSize.height) * 100;
+
+      // Mettre à jour l'article
       setArticles(
-        articles.map((article) =>
-          article.id === selectedArticleId
-            ? {
-                ...article,
-                positionX: Math.max(0, Math.min(posX, 100)),
-                positionY: Math.max(0, Math.min(posY, 100)),
-              }
-            : article
+        articles.map((a) =>
+          a.id === selectedArticleId
+            ? { ...a, positionX: xPercent, positionY: yPercent }
+            : a
         )
       );
     } else if (
@@ -292,42 +366,78 @@ export default function ArticleEditor({
       containerRef.current
     ) {
       e.preventDefault();
-      const rect = containerRef.current.getBoundingClientRect();
-      const mouseX = ((e.clientX - rect.left) / rect.width) * 100;
-      const mouseY = ((e.clientY - rect.top) / rect.height) * 100;
+      const { x: mouseX, y: mouseY } = getMouseCoordinates(e);
+      const article = articles.find((a) => a.id === selectedArticleId);
+
+      if (!article) return;
+
       let newWidth = resizeStart.width;
       let newHeight = resizeStart.height;
-      let newPosX = resizeStart.x;
-      let newPosY = resizeStart.y;
+      let newX = resizeStart.x;
+      let newY = resizeStart.y;
 
+      // Calcul des nouvelles dimensions selon le type de redimensionnement
       if (["right", "topRight", "bottomRight"].includes(resizeType)) {
-        newWidth = Math.max(2, mouseX - newPosX + resizeStart.width / 2);
+        newWidth = Math.max(
+          20,
+          mouseX - (resizeStart.x - resizeStart.width / 2)
+        );
       }
       if (["left", "topLeft", "bottomLeft"].includes(resizeType)) {
-        const rightEdge = resizeStart.x + resizeStart.width;
-        newWidth = Math.max(2, rightEdge - mouseX);
-        newPosX = mouseX;
+        const rightEdge = resizeStart.x + resizeStart.width / 2;
+        const newLeftEdge = Math.min(mouseX, rightEdge - 20);
+        newWidth = (rightEdge - newLeftEdge) * 2;
+        newX = (rightEdge + newLeftEdge) / 2;
       }
       if (["bottom", "bottomLeft", "bottomRight"].includes(resizeType)) {
-        newHeight = Math.max(2, mouseY - newPosY + resizeStart.height / 2);
+        newHeight = Math.max(
+          20,
+          mouseY - (resizeStart.y - resizeStart.height / 2)
+        );
       }
       if (["top", "topLeft", "topRight"].includes(resizeType)) {
-        const bottomEdge = resizeStart.y + resizeStart.height;
-        newHeight = Math.max(2, bottomEdge - mouseY);
-        newPosY = mouseY;
+        const bottomEdge = resizeStart.y + resizeStart.height / 2;
+        const newTopEdge = Math.min(mouseY, bottomEdge - 20);
+        newHeight = (bottomEdge - newTopEdge) * 2;
+        newY = (bottomEdge + newTopEdge) / 2;
       }
 
+      // Contraintes pour que l'article reste dans l'image
+      const halfNewWidth = newWidth / 2;
+      const halfNewHeight = newHeight / 2;
+
+      // Ajuster la position si nécessaire pour éviter de sortir des limites
+      newX = Math.max(
+        halfNewWidth,
+        Math.min(newX, imageSize.width - halfNewWidth)
+      );
+      newY = Math.max(
+        halfNewHeight,
+        Math.min(newY, imageSize.height - halfNewHeight)
+      );
+
+      // Convertir en pourcentages
+      const xPercent = (newX / imageSize.width) * 100;
+      const yPercent = (newY / imageSize.height) * 100;
+      const widthPercent = (newWidth / imageSize.width) * 100;
+      const heightPercent = (newHeight / imageSize.height) * 100;
+
+      // Maximum 50% de l'image
+      const maxWidthPercent = Math.min(widthPercent, 50);
+      const maxHeightPercent = Math.min(heightPercent, 50);
+
+      // Mettre à jour l'article
       setArticles(
-        articles.map((article) =>
-          article.id === selectedArticleId
+        articles.map((a) =>
+          a.id === selectedArticleId
             ? {
-                ...article,
-                width: Math.min(newWidth, 50),
-                height: Math.min(newHeight, 50),
-                positionX: Math.max(0, Math.min(newPosX, 100)),
-                positionY: Math.max(0, Math.min(newPosY, 100)),
+                ...a,
+                positionX: xPercent,
+                positionY: yPercent,
+                width: maxWidthPercent,
+                height: maxHeightPercent,
               }
-            : article
+            : a
         )
       );
     }
@@ -425,14 +535,21 @@ export default function ArticleEditor({
   const handleArticleClick = (e: React.MouseEvent, article: Article) => {
     e.stopPropagation();
     if (containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const articleCenterX = ((article.positionX ?? 0) / 100) * rect.width;
-      const articleTopY =
-        (((article.positionY ?? 0) - (article.height ?? 20) / 2) / 100) *
-        rect.height;
+      // Position du tooltip basée sur la position de l'article
+      const articlePos = percentToPixels(article);
+      const imageRect = containerRef.current
+        .querySelector("img")
+        ?.getBoundingClientRect();
+
+      if (!imageRect) return;
+
+      // Positionnement du tooltip au-dessus de l'article
+      const tooltipX = articlePos.x;
+      const tooltipY = articlePos.y - articlePos.height / 2 - 10;
+
       setTooltipPosition({
-        x: articleCenterX,
-        y: Math.max(20, articleTopY - 10),
+        x: tooltipX,
+        y: Math.max(20, tooltipY),
       });
     }
     setSelectedArticleId(article.id);
@@ -542,15 +659,10 @@ export default function ArticleEditor({
         <div className="relative">
           <div className="w-full min-h-[500px] bg-gray-200">{children}</div>
 
+          {/* Articles */}
           {articles.map((article) => {
             if (article.positionX == null || article.positionY == null)
               return null;
-
-            // Ajuster la position si nécessaire pour la cohérence d'affichage
-            const { x, y } = adjustPositionForDisplay(
-              article.positionX,
-              article.positionY
-            );
 
             return (
               <div
@@ -561,8 +673,8 @@ export default function ArticleEditor({
                     : "border-white"
                 } rounded-md shadow-md overflow-hidden`}
                 style={{
-                  left: `${x}%`,
-                  top: `${y}%`,
+                  left: `${article.positionX}%`,
+                  top: `${article.positionY}%`,
                   width: `${article.width || 20}%`,
                   height: `${article.height || 20}%`,
                   transform: "translate(-50%, -50%)",
@@ -577,10 +689,15 @@ export default function ArticleEditor({
             );
           })}
 
+          {/* Tooltip pour l'article sélectionné */}
           {selectedArticleId &&
             (() => {
               const article = articles.find((a) => a.id === selectedArticleId);
               if (!article) return null;
+
+              // Dimensions en pixels pour le positionner correctement
+              const articlePos = percentToPixels(article);
+
               return (
                 <div
                   className="absolute z-30 bg-white border shadow-lg rounded-md p-2 flex flex-col gap-2 w-48"
@@ -638,6 +755,7 @@ export default function ArticleEditor({
               );
             })()}
 
+          {/* Rectangle de sélection pour nouvel article */}
           {isDraggingNew && isAddingArticle && (
             <div
               className="absolute border-2 border-blue-500 bg-blue-100 bg-opacity-50 rounded-md z-20"
@@ -645,19 +763,21 @@ export default function ArticleEditor({
                 left: `${Math.min(
                   newArticleStart.x,
                   newArticleStart.x + newArticleSize.width
-                )}%`,
+                )}px`,
                 top: `${Math.min(
                   newArticleStart.y,
                   newArticleStart.y + newArticleSize.height
-                )}%`,
-                width: `${newArticleSize.width}%`,
-                height: `${newArticleSize.height}%`,
+                )}px`,
+                width: `${newArticleSize.width}px`,
+                height: `${newArticleSize.height}px`,
+                transform: "none", // Pas de transformation ici car on utilise des coordonnées absolues
               }}
             />
           )}
         </div>
       </div>
 
+      {/* Modal pour éditer/créer un article */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
