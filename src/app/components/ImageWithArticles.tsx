@@ -1,8 +1,7 @@
-// src/components/ImageWithArticles.tsx
+// Modification du composant ImageWithArticles.tsx
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import Image from "next/image";
 
 type Article = {
   id: string;
@@ -44,10 +43,11 @@ export default function ImageWithArticles({
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const [mounted, setMounted] = useState(false);
-  const [containerSize, setContainerSize] = useState({
-    width: 0,
-    height: 0,
-    ratio: 1,
+  const [imageSize, setImageSize] = useState({
+    displayWidth: 0,
+    displayHeight: 0,
+    scaleX: 1,
+    scaleY: 1,
   });
 
   // Gérer le redimensionnement et le montage initial
@@ -57,21 +57,19 @@ export default function ImageWithArticles({
     const updateDimensions = () => {
       if (!containerRef.current || !imageRef.current) return;
 
-      const container = containerRef.current;
       const image = imageRef.current;
-
-      // Obtenir les dimensions réelles de l'image affichée
       const { width: displayWidth, height: displayHeight } =
         image.getBoundingClientRect();
 
-      // Calculer le ratio entre les dimensions originales et les dimensions affichées
-      const widthRatio = originalWidth / displayWidth;
-      const heightRatio = originalHeight / displayHeight;
+      // Calculer les ratios de mise à l'échelle entre les dimensions originales et affichées
+      const scaleX = originalWidth / displayWidth;
+      const scaleY = originalHeight / displayHeight;
 
-      setContainerSize({
-        width: displayWidth,
-        height: displayHeight,
-        ratio: Math.max(widthRatio, heightRatio),
+      setImageSize({
+        displayWidth,
+        displayHeight,
+        scaleX,
+        scaleY,
       });
     };
 

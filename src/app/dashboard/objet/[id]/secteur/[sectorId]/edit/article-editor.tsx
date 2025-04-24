@@ -117,7 +117,10 @@ export default function ArticleEditor({
           setImageSize({
             width,
             height,
-            ratio: (imageWidth || width) / width,
+            ratio: Math.max(
+              (imageWidth || width) / width,
+              (imageHeight || height) / height
+            ),
           });
         }
       }
