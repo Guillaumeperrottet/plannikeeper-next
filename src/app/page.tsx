@@ -268,7 +268,7 @@ const ModernLandingPage = () => {
       </section>
 
       {/* Notre produit slaps */}
-      <section className="h-screen py-20 bg-gradient-to-b from-white to-gray-50 w-full">
+      <section className="h-screen bg-gradient-to-b from-white to-gray-50 w-full flex items-center justify-center">
         <div className="inset-0 flex flex-col justify-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -289,12 +289,12 @@ const ModernLandingPage = () => {
           >
             {/* Intégration du carousel */}
             <TiltedCarousel
+              className="h-full"
               images={carouselImages}
-              speed={40}
+              speed={41}
               tiltAngle={-8}
-              scale={1.2}
+              scale={1}
               imageWidth={280}
-              imageHeight={180}
               borderWidth={3}
               pauseOnHover={true}
             />

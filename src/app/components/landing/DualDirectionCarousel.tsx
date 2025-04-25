@@ -103,7 +103,7 @@ const TiltedCarousel = ({
     >
       {/* Wrapper avec transformation de tilt et scale */}
       <div
-        className="w-full h-full py-12"
+        className="w-full h-full"
         style={{
           transform: `scale(${scale}) rotate(${tiltAngle}deg)`,
           transformOrigin: "center center",
