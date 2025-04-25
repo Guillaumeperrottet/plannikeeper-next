@@ -41,7 +41,7 @@ const TiltedCarousel = ({
   const lastTimeRef = useRef<number | null>(null);
   const [isPaused, setIsPaused] = useState(false);
 
-  // Effet d'animation pour le déplacement continu
+  // Dans le useEffect d'animation
   useEffect(() => {
     const animate = (timestamp: number) => {
       if (!carouselRef.current) return;
@@ -61,21 +61,29 @@ const TiltedCarousel = ({
       const deltaTime = (timestamp - lastTimeRef.current) / 1000;
       lastTimeRef.current = timestamp;
 
-      // Utiliser le facteur de direction pour inverser le mouvement si nécessaire
-      const directionFactor = direction === "right" ? 1 : -1;
-      offsetRef.current += speed * deltaTime * directionFactor;
+      // Valeur totale que le carousel doit parcourir avant de se réinitialiser
+      const totalWidth = carouselRef.current.scrollWidth / 2;
 
-      const slideWidth = carouselRef.current.scrollWidth / 2;
+      // Mettre à jour la position en fonction de la direction
+      if (direction === "left") {
+        // Déplacement vers la gauche (valeurs négatives)
+        offsetRef.current -= speed * deltaTime;
 
-      // Gestion du déplacement infini dans les deux directions
-      if (direction === "left" && Math.abs(offsetRef.current) >= slideWidth) {
-        offsetRef.current += slideWidth;
-      } else if (direction === "right" && offsetRef.current >= slideWidth) {
-        offsetRef.current -= slideWidth;
+        // Réinitialiser lorsque nous avons dépassé la limite
+        if (offsetRef.current <= -totalWidth) {
+          offsetRef.current = 0;
+        }
+      } else {
+        // Déplacement vers la droite (valeurs positives)
+        offsetRef.current += speed * deltaTime;
+
+        // Réinitialiser lorsque nous avons dépassé la limite
+        if (offsetRef.current >= totalWidth) {
+          offsetRef.current = 0;
+        }
       }
 
       carouselRef.current.style.transform = `translateX(${offsetRef.current}px) translateZ(0)`;
-
       animationRef.current = requestAnimationFrame(animate);
     };
 
