@@ -268,6 +268,7 @@ const ModernLandingPage = () => {
       </section>
 
       {/* Section Carousel */}
+      {/* Section Carousels parallèles avec positionnement absolu */}
       <section className="py-24 w-full overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
           <motion.div
@@ -275,37 +276,48 @@ const ModernLandingPage = () => {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true, amount: 0.3 }}
-            className="text-center mb-16 space-y-6"
+            className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold">Quelques Snippets</h2>
+            <h2 className="text-4xl font-bold mb-4">Quelques Snippets</h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Découvrez notre plateforme à travers ces aperçus.
+            </p>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true, amount: 0.3 }}
-            className="mb-16"
-          >
-            {/* Carousel amélioré avec les spécifications demandées */}
-            <TiltedCarousel
-              className="h-auto"
-              images={carouselImages}
-              speed={40}
-              tiltAngle={-10}
-              scale={1.25}
-              imageWidth={320}
-              imageHeight={256} // h-64 sur mobile
-              borderWidth={3}
-              pauseOnHover={true}
-              gap={24} // Espace entre les images
-            />
-          </motion.div>
-
-          <div className="text-center mt-16 space-y-6">
-            <button className="px-8 py-3 bg-black text-white rounded-xl font-semibold">
-              Explorer toutes nos fonctionnalités
-            </button>
+          {/* Conteneur des deux carousels avec hauteur fixe */}
+          <div className="relative" style={{ height: "700px" }}>
+            {/* Premier carousel - positionné en haut */}
+            <div className="absolute top-0 left-0 w-full">
+              <TiltedCarousel
+                className="h-auto"
+                images={carouselImages}
+                speed={40}
+                tiltAngle={-10}
+                scale={1.1} // Échelle légèrement réduite
+                imageWidth={300}
+                imageHeight={220}
+                borderWidth={3}
+                pauseOnHover={false}
+                gap={24}
+                direction="left"
+              />
+            </div>
+            {/* Second carousel - positionné plus bas */}
+            <div className="absolute top-[300px] left-0 w-full">
+              <TiltedCarousel
+                className="h-auto"
+                images={carouselImages.slice().reverse()}
+                speed={30}
+                tiltAngle={-10}
+                scale={1.1}
+                imageWidth={300}
+                imageHeight={220}
+                borderWidth={3}
+                pauseOnHover={false}
+                gap={24}
+                direction="right"
+              />
+            </div>
           </div>
         </div>
       </section>

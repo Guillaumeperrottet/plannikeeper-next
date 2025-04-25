@@ -19,6 +19,7 @@ interface TiltedCarouselProps {
   className?: string;
   borderWidth?: number;
   pauseOnHover?: boolean;
+  direction?: "left" | "right"; // Nouvelle propriété pour la direction
 }
 
 const TiltedCarousel = ({
@@ -32,6 +33,7 @@ const TiltedCarousel = ({
   className = "",
   borderWidth = 4,
   pauseOnHover = true,
+  direction = "left", // Par défaut, déplacement vers la gauche
 }: TiltedCarouselProps) => {
   const carouselRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number | null>(null);
@@ -59,12 +61,17 @@ const TiltedCarousel = ({
       const deltaTime = (timestamp - lastTimeRef.current) / 1000;
       lastTimeRef.current = timestamp;
 
-      offsetRef.current -= speed * deltaTime;
+      // Utiliser le facteur de direction pour inverser le mouvement si nécessaire
+      const directionFactor = direction === "right" ? 1 : -1;
+      offsetRef.current += speed * deltaTime * directionFactor;
 
       const slideWidth = carouselRef.current.scrollWidth / 2;
 
-      if (Math.abs(offsetRef.current) >= slideWidth) {
+      // Gestion du déplacement infini dans les deux directions
+      if (direction === "left" && Math.abs(offsetRef.current) >= slideWidth) {
         offsetRef.current += slideWidth;
+      } else if (direction === "right" && offsetRef.current >= slideWidth) {
+        offsetRef.current -= slideWidth;
       }
 
       carouselRef.current.style.transform = `translateX(${offsetRef.current}px) translateZ(0)`;
@@ -79,7 +86,7 @@ const TiltedCarousel = ({
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [speed, isPaused, pauseOnHover]);
+  }, [speed, isPaused, pauseOnHover, direction]);
 
   // Duplicate images pour créer un effet de boucle infinie
   const duplicatedImages = [...images, ...images];
