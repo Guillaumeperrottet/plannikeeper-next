@@ -8,13 +8,15 @@ import {
   useInView,
   AnimatePresence,
 } from "framer-motion";
+import Header from "@/app/components/landing/Header"; // Assurez-vous d'ajuster le chemin si nécessaire
+import DualDirectionCarousel from "@/app/components/landing/DualDirectionCarousel"; // Assurez-vous d'ajuster le chemin si nécessaire
+import { carouselData } from "@/app/components/landing/carouselData"; // Assurez-vous d'ajuster le chemin si nécessaire
 
 const ModernLandingPage = () => {
   const [activeSection, setActiveSection] = useState("hero");
   const heroRef = useRef(null);
   const featuresRef = useRef(null);
   const pricingRef = useRef(null);
-  const headerRef = useRef(null);
 
   const isHeroInView = useInView(heroRef, { amount: 0.5 });
   const isFeaturesInView = useInView(featuresRef, { amount: 0.5 });
@@ -29,13 +31,7 @@ const ModernLandingPage = () => {
     else if (isPricingInView) setActiveSection("pricing");
   }, [isHeroInView, isFeaturesInView, isPricingInView]);
 
-  const navItems = [
-    { id: "hero", label: "Accueil", icon: "🏠" },
-    { id: "features", label: "Fonctionnalités", icon: "🚀" },
-    { id: "pricing", label: "Tarifs", icon: "💲" },
-  ];
-
-  const scrollToSection = (id: string) => {
+  const scrollToSection = (id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     setActiveSection(id);
   };
@@ -97,62 +93,8 @@ const ModernLandingPage = () => {
 
   return (
     <div className="min-h-screen bg-white text-black overflow-hidden">
-      {/* Header */}
-      <motion.header
-        ref={headerRef}
-        style={{ opacity: headerOpacity }}
-        className="fixed top-0 left-0 right-0 z-50 py-6 px-8"
-      >
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-3xl font-bold tracking-widest font-mono"
-          >
-            plannikeeper
-          </motion.div>
-
-          <motion.nav
-            className="fixed left-1/2 transform -translate-x-1/2 z-50 top-6"
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-          >
-            <div className="flex items-center gap-4 bg-white/90 backdrop-blur-sm rounded-full px-6 py-2 shadow-lg">
-              {navItems.map(({ id, icon }) => (
-                <button
-                  key={id}
-                  onClick={() => scrollToSection(id)}
-                  className={`p-2 rounded-full transition duration-300 ${
-                    activeSection === id
-                      ? "bg-black text-white"
-                      : "text-gray-500 hover:bg-gray-100"
-                  }`}
-                >
-                  <span className="h-6 w-6 block text-center">{icon}</span>
-                </button>
-              ))}
-            </div>
-          </motion.nav>
-
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <button
-              onClick={() => scrollToSection("pricing")}
-              className="flex items-center gap-2 bg-black text-white px-6 py-2 rounded-lg font-bold text-xl transition-all duration-300 hover:bg-gray-800 hover:scale-105"
-            >
-              start
-              <span className="inline-block transform transition-transform group-hover:translate-x-1 group-hover:translate-y-1">
-                ↗
-              </span>
-            </button>
-          </motion.div>
-        </div>
-      </motion.header>
+      {/* Nouveau Header avec effet de scroll */}
+      <Header />
 
       {/* Hero Section */}
       <section
@@ -160,8 +102,7 @@ const ModernLandingPage = () => {
         ref={heroRef}
         className="min-h-screen relative flex items-center overflow-hidden"
         style={{
-          background:
-            "radial-gradient(ellipse at 60% 60%, #ffd6cf 60%, #ffb48a 100%)",
+          background: "linear-gradient(to bottom, #ffffff 0%, #C74A12 100%)",
         }}
       >
         <div className="container mx-auto px-6 pt-24 z-10">
@@ -171,7 +112,7 @@ const ModernLandingPage = () => {
             transition={{ duration: 0.8 }}
             className="text-left w-full md:w-2/3"
           >
-            <h1 className="text-[5rem] md:text-[6rem] font-extrabold leading-none text-black mb-6">
+            <h1 className="text-[5rem] md:text-[6rem] font-extrabold leading-none text-gray-900 mb-6">
               <motion.span
                 initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -227,7 +168,7 @@ const ModernLandingPage = () => {
             >
               <button
                 onClick={() => scrollToSection("features")}
-                className="px-8 py-3 bg-black text-white rounded-xl font-semibold text-lg transition-all duration-300 hover:bg-gray-800 hover:shadow-lg transform hover:scale-105"
+                className="px-8 py-3 bg-[#C74A12] text-white rounded-xl font-semibold text-lg transition-all duration-300 hover:bg-orange-800 hover:shadow-lg transform hover:scale-105"
               >
                 Découvrir
               </button>
@@ -238,15 +179,21 @@ const ModernLandingPage = () => {
         {/* Animated blobs */}
         <motion.div
           initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 0.7, scale: 1 }}
+          animate={{ opacity: 0.2, scale: 1 }}
           transition={{ duration: 1.5, delay: 0.3 }}
-          className="absolute -right-32 top-1/3 w-96 h-96 rounded-full bg-gradient-to-br from-orange-200 to-pink-200 blur-3xl z-0"
+          className="absolute -right-32 top-1/3 w-96 h-96 rounded-full bg-gradient-to-br from-white to-orange-200 blur-3xl z-0"
         />
         <motion.div
           initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 0.5, scale: 1 }}
+          animate={{ opacity: 0.3, scale: 1 }}
           transition={{ duration: 1.5, delay: 0.6 }}
-          className="absolute right-1/3 bottom-1/4 w-64 h-64 rounded-full bg-gradient-to-br from-orange-300 to-amber-100 blur-3xl z-0"
+          className="absolute left-1/4 bottom-1/4 w-72 h-72 rounded-full bg-gradient-to-br from-orange-100 to-orange-300 blur-3xl z-0"
+        />
+        <motion.div
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 0.2, scale: 1 }}
+          transition={{ duration: 1.5, delay: 0.9 }}
+          className="absolute right-1/3 top-1/4 w-64 h-64 rounded-full bg-white blur-3xl z-0"
         />
       </section>
 
@@ -321,6 +268,24 @@ const ModernLandingPage = () => {
             className="text-center mb-16"
           >
             <h2 className="text-4xl font-bold mb-4">Our Work Slaps</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Explorez notre portfolio de designs organiques et de solutions
+              créatives
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true, amount: 0.3 }}
+            className="mb-16"
+          >
+            <DualDirectionCarousel
+              topImages={carouselData.topImages}
+              bottomImages={carouselData.bottomImages}
+              speed={30}
+            />
           </motion.div>
 
           <motion.div
@@ -584,13 +549,3 @@ const FaqItem = ({ question, answer }: FaqItemProps) => {
 };
 
 export default ModernLandingPage;
-
-// Add this to your CSS (styles.css)
-/*
-.dot-pattern {
-  background-image: radial-gradient(circle, #000 2px, transparent 2px);
-  background-size: 10px 10px;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-*/
