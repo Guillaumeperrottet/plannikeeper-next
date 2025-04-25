@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import Header from "@/app/components/landing/Header"; // Assurez-vous d'ajuster le chemin si nécessaire
 import TiltedCarousel from "@/app/components/landing/DualDirectionCarousel";
+import { CardContainer, CardBody, CardItem } from "@/app/components/ui/3d-card";
 
 const ModernLandingPage = () => {
   const [activeSection, setActiveSection] = useState("hero");
