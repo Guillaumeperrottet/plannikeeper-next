@@ -19,7 +19,7 @@ interface TiltedCarouselProps {
   className?: string;
   borderWidth?: number;
   pauseOnHover?: boolean;
-  direction?: "left" | "right"; // Nouvelle propriété pour la direction
+  direction?: "left" | "right"; // Propriété pour la direction
 }
 
 const TiltedCarousel = ({
@@ -71,7 +71,8 @@ const TiltedCarousel = ({
 
         // Réinitialiser lorsque nous avons dépassé la limite
         if (offsetRef.current <= -totalWidth) {
-          offsetRef.current = 0;
+          // Au lieu de réinitialiser à 0, ajouter totalWidth pour créer une boucle fluide
+          offsetRef.current += totalWidth;
         }
       } else {
         // Déplacement vers la droite (valeurs positives)
@@ -79,7 +80,8 @@ const TiltedCarousel = ({
 
         // Réinitialiser lorsque nous avons dépassé la limite
         if (offsetRef.current >= totalWidth) {
-          offsetRef.current = 0;
+          // Au lieu de réinitialiser à 0, soustraire totalWidth pour créer une boucle fluide
+          offsetRef.current -= totalWidth;
         }
       }
 
