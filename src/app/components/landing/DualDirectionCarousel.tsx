@@ -19,7 +19,7 @@ interface TiltedCarouselProps {
   className?: string;
   borderWidth?: number;
   pauseOnHover?: boolean;
-  direction?: "left" | "right"; // Propriété pour la direction
+  direction?: "left" | "right";
 }
 
 const TiltedCarousel = ({
@@ -33,7 +33,7 @@ const TiltedCarousel = ({
   className = "",
   borderWidth = 4,
   pauseOnHover = true,
-  direction = "left", // Par défaut, déplacement vers la gauche
+  direction = "left",
 }: TiltedCarouselProps) => {
   const carouselRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number | null>(null);
@@ -41,8 +41,18 @@ const TiltedCarousel = ({
   const lastTimeRef = useRef<number | null>(null);
   const [isPaused, setIsPaused] = useState(false);
 
-  // Dans le useEffect d'animation
+  // Dupliquer les images pour créer un effet de boucle infinie
+  const duplicatedImages = [...images, ...images, ...images];
+
+  // Calculer la largeur totale d'une séquence d'images
+  const calculateSequenceWidth = () => {
+    if (!carouselRef.current) return 0;
+    const itemWidth = imageWidth + gap;
+    return images.length * itemWidth;
+  };
+
   useEffect(() => {
+    // Fonction d'animation
     const animate = (timestamp: number) => {
       if (!carouselRef.current) return;
 
@@ -61,27 +71,25 @@ const TiltedCarousel = ({
       const deltaTime = (timestamp - lastTimeRef.current) / 1000;
       lastTimeRef.current = timestamp;
 
-      // Valeur totale que le carousel doit parcourir avant de se réinitialiser
-      const totalWidth = carouselRef.current.scrollWidth / 2;
+      // Calculer la largeur d'une séquence complète d'images
+      const sequenceWidth = calculateSequenceWidth();
 
       // Mettre à jour la position en fonction de la direction
       if (direction === "left") {
         // Déplacement vers la gauche (valeurs négatives)
         offsetRef.current -= speed * deltaTime;
 
-        // Réinitialiser lorsque nous avons dépassé la limite
-        if (offsetRef.current <= -totalWidth) {
-          // Au lieu de réinitialiser à 0, ajouter totalWidth pour créer une boucle fluide
-          offsetRef.current += totalWidth;
+        // Réinitialiser quand une séquence complète a défilé
+        if (offsetRef.current <= -sequenceWidth) {
+          offsetRef.current += sequenceWidth;
         }
       } else {
         // Déplacement vers la droite (valeurs positives)
         offsetRef.current += speed * deltaTime;
 
-        // Réinitialiser lorsque nous avons dépassé la limite
-        if (offsetRef.current >= totalWidth) {
-          // Au lieu de réinitialiser à 0, soustraire totalWidth pour créer une boucle fluide
-          offsetRef.current -= totalWidth;
+        // Réinitialiser quand une séquence complète a défilé
+        if (offsetRef.current >= sequenceWidth) {
+          offsetRef.current -= sequenceWidth;
         }
       }
 
@@ -89,17 +97,16 @@ const TiltedCarousel = ({
       animationRef.current = requestAnimationFrame(animate);
     };
 
+    // Démarrer l'animation
     animationRef.current = requestAnimationFrame(animate);
 
+    // Nettoyer l'animation quand le composant est démonté
     return () => {
       if (animationRef.current !== null) {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [speed, isPaused, pauseOnHover, direction]);
-
-  // Duplicate images pour créer un effet de boucle infinie
-  const duplicatedImages = [...images, ...images];
+  }, [speed, isPaused, pauseOnHover, direction, images.length, gap]);
 
   return (
     <div

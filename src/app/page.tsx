@@ -124,7 +124,7 @@ const ModernLandingPage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                Update
+                Organisation
               </motion.span>
               <br />
               <motion.span
@@ -133,7 +133,7 @@ const ModernLandingPage = () => {
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className="font-normal"
               >
-                your
+                Gestion
               </motion.span>{" "}
               <motion.span
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -153,7 +153,7 @@ const ModernLandingPage = () => {
                   display: "inline-block",
                 }}
               >
-                brand
+                Planification
               </motion.span>
             </h1>
 
@@ -217,7 +217,9 @@ const ModernLandingPage = () => {
             viewport={{ once: true, amount: 0.3 }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold mb-4">Everything you need</h2>
+            <h2 className="text-4xl font-bold mb-4">
+              Tout ce dont vous avez besoin
+            </h2>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
               Notre application offre tous les outils nécessaires pour gérer
               efficacement vos projets immobiliers, vos tâches et vos documents.
@@ -264,7 +266,6 @@ const ModernLandingPage = () => {
       </section>
 
       {/* Section Carousel */}
-      {/* Section Carousels parallèles avec positionnement absolu */}
       <section className="py-24 w-full overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
           <motion.div
@@ -311,7 +312,7 @@ const ModernLandingPage = () => {
                 borderWidth={3}
                 pauseOnHover={false}
                 gap={30}
-                direction="right"
+                direction="left"
               />
             </div>
           </div>
