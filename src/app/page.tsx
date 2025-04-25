@@ -1,16 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import {
-  motion,
-  useScroll,
-  useTransform,
-  useInView,
-  AnimatePresence,
-} from "framer-motion";
+import { motion, useInView, AnimatePresence } from "framer-motion";
 import Header from "@/app/components/landing/Header"; // Assurez-vous d'ajuster le chemin si nécessaire
-import DualDirectionCarousel from "@/app/components/landing/DualDirectionCarousel"; // Assurez-vous d'ajuster le chemin si nécessaire
-import { carouselData } from "@/app/components/landing/carouselData"; // Assurez-vous d'ajuster le chemin si nécessaire
+import TiltedCarousel from "@/app/components/landing/DualDirectionCarousel";
 
 const ModernLandingPage = () => {
   const [activeSection, setActiveSection] = useState("hero");
@@ -22,16 +15,13 @@ const ModernLandingPage = () => {
   const isFeaturesInView = useInView(featuresRef, { amount: 0.5 });
   const isPricingInView = useInView(pricingRef, { amount: 0.5 });
 
-  const { scrollYProgress } = useScroll();
-  const headerOpacity = useTransform(scrollYProgress, [0, 0.05], [0, 1]);
-
   useEffect(() => {
     if (isHeroInView) setActiveSection("hero");
     else if (isFeaturesInView) setActiveSection("features");
     else if (isPricingInView) setActiveSection("pricing");
   }, [isHeroInView, isFeaturesInView, isPricingInView]);
 
-  const scrollToSection = (id) => {
+  const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     setActiveSection(id);
   };
@@ -89,6 +79,26 @@ const ModernLandingPage = () => {
       buttonColor: "bg-gray-900 hover:bg-gray-800",
       popular: true,
     },
+  ];
+
+  const carouselImages = [
+    {
+      src: "/images/plannikeeper1copy4.png",
+      alt: "Feature 1",
+    },
+    {
+      src: "/images/plannikeeper1copy5.png",
+      alt: "Feature 2",
+    },
+    {
+      src: "/images/plannikeeper1copy 6.png",
+      alt: "Feature 3",
+    },
+    {
+      src: "/images/plannikeeper1copy.png",
+      alt: "Feature 4",
+    },
+    // Vous pouvez ajouter plus d'images ici
   ];
 
   return (
@@ -281,48 +291,17 @@ const ModernLandingPage = () => {
             viewport={{ once: true, amount: 0.3 }}
             className="mb-16"
           >
-            <DualDirectionCarousel
-              topImages={carouselData.topImages}
-              bottomImages={carouselData.bottomImages}
-              speed={30}
+            {/* Intégration du carousel */}
+            <TiltedCarousel
+              images={carouselImages}
+              speed={40}
+              tiltAngle={-8}
+              scale={1.2}
+              imageWidth={280}
+              imageHeight={180}
+              borderWidth={3}
+              pauseOnHover={true}
             />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            viewport={{ once: true, amount: 0.3 }}
-            className="max-w-3xl mx-auto text-center bg-white p-8 rounded-2xl shadow-xl"
-          >
-            <p className="text-lg mb-6">
-              Rune offers design engineering as a service. This means we can
-              solve your SaaS needs from design through database. Bring the idea
-              and watch as it comes to light.
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-10">
-              <div className="p-4 text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-2xl mx-auto mb-3">
-                  🛠️
-                </div>
-                <h3 className="font-semibold">Design</h3>
-              </div>
-
-              <div className="p-4 text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-2xl mx-auto mb-3">
-                  💾
-                </div>
-                <h3 className="font-semibold">Database</h3>
-              </div>
-
-              <div className="p-4 text-center">
-                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 text-2xl mx-auto mb-3">
-                  💡
-                </div>
-                <h3 className="font-semibold">Idéation</h3>
-              </div>
-            </div>
           </motion.div>
         </div>
       </section>
