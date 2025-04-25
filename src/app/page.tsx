@@ -281,7 +281,7 @@ const ModernLandingPage = () => {
           </motion.div>
 
           {/* Conteneur des deux carousels avec hauteur fixe */}
-          <div className="relative" style={{ height: "700px" }}>
+          <div className="relative" style={{ height: "850px" }}>
             {/* Premier carousel - positionné en haut */}
             <div className="absolute top-0 left-0 w-full">
               <TiltedCarousel
@@ -289,28 +289,28 @@ const ModernLandingPage = () => {
                 images={firstCarouselImages}
                 speed={40}
                 tiltAngle={-10}
-                scale={1.1} // Échelle légèrement réduite
-                imageWidth={300}
-                imageHeight={220}
+                scale={1.3} // Échelle légèrement réduite
+                imageWidth={330}
+                imageHeight={250}
                 borderWidth={3}
                 pauseOnHover={false}
-                gap={24}
+                gap={30}
                 direction="left"
               />
             </div>
             {/* Second carousel - positionné plus bas */}
-            <div className="absolute top-[300px] left-0 w-full">
+            <div className="absolute top-[400px] left-0 w-full">
               <TiltedCarousel
                 className="h-auto"
-                images={secondCarouselImages.slice().reverse()}
+                images={secondCarouselImages}
                 speed={30}
                 tiltAngle={-10}
-                scale={1.1}
-                imageWidth={300}
-                imageHeight={220}
+                scale={1.3}
+                imageWidth={330}
+                imageHeight={250}
                 borderWidth={3}
                 pauseOnHover={false}
-                gap={24}
+                gap={30}
                 direction="right"
               />
             </div>
