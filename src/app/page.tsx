@@ -81,24 +81,20 @@ const ModernLandingPage = () => {
     },
   ];
 
-  const carouselImages = [
-    {
-      src: "/images/plannikeeper1copy4.png",
-      alt: "Feature 1",
-    },
-    {
-      src: "/images/plannikeeper1copy5.png",
-      alt: "Feature 2",
-    },
-    {
-      src: "/images/plannikeeper1copy 6.png",
-      alt: "Feature 3",
-    },
-    {
-      src: "/images/plannikeeper1copy.png",
-      alt: "Feature 4",
-    },
-    // Vous pouvez ajouter plus d'images ici
+  const firstCarouselImages = [
+    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
+    { src: "/images/plannikeeper1copy5.png", alt: "Feature 2" },
+    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
+    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
+    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
+  ];
+
+  const secondCarouselImages = [
+    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
+    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
+    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
+    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
+    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
   ];
 
   return (
@@ -290,7 +286,7 @@ const ModernLandingPage = () => {
             <div className="absolute top-0 left-0 w-full">
               <TiltedCarousel
                 className="h-auto"
-                images={carouselImages}
+                images={firstCarouselImages}
                 speed={40}
                 tiltAngle={-10}
                 scale={1.1} // Échelle légèrement réduite
@@ -306,7 +302,7 @@ const ModernLandingPage = () => {
             <div className="absolute top-[300px] left-0 w-full">
               <TiltedCarousel
                 className="h-auto"
-                images={carouselImages.slice().reverse()}
+                images={secondCarouselImages.slice().reverse()}
                 speed={30}
                 tiltAngle={-10}
                 scale={1.1}
