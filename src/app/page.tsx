@@ -268,8 +268,8 @@ const ModernLandingPage = () => {
       </section>
 
       {/* Notre produit slaps */}
-      <section className="py-20 bg-gradient-to-b from-white to-gray-50">
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="h-screen py-20 bg-gradient-to-b from-white to-gray-50 w-full">
+        <div className="inset-0 flex flex-col justify-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -277,11 +277,7 @@ const ModernLandingPage = () => {
             viewport={{ once: true, amount: 0.3 }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold mb-4">Our Work Slaps</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Explorez notre portfolio de designs organiques et de solutions
-              créatives
-            </p>
+            <h2 className="text-4xl font-bold mb-4">Quelques Snippets</h2>
           </motion.div>
 
           <motion.div
