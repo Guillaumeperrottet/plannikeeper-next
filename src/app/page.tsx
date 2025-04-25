@@ -267,17 +267,17 @@ const ModernLandingPage = () => {
         </div>
       </section>
 
-      {/* Notre produit slaps */}
-      <section className="h-screen bg-gradient-to-b from-white to-gray-50 w-full flex items-center justify-center">
-        <div className="inset-0 flex flex-col justify-center">
+      {/* Section Carousel */}
+      <section className="py-24 w-full overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true, amount: 0.3 }}
-            className="text-center mb-16"
+            className="text-center mb-16 space-y-6"
           >
-            <h2 className="text-4xl font-bold mb-4">Quelques Snippets</h2>
+            <h2 className="text-4xl font-bold">Quelques Snippets</h2>
           </motion.div>
 
           <motion.div
@@ -287,18 +287,26 @@ const ModernLandingPage = () => {
             viewport={{ once: true, amount: 0.3 }}
             className="mb-16"
           >
-            {/* Intégration du carousel */}
+            {/* Carousel amélioré avec les spécifications demandées */}
             <TiltedCarousel
-              className="h-full"
+              className="h-auto"
               images={carouselImages}
-              speed={41}
-              tiltAngle={-8}
-              scale={1}
-              imageWidth={280}
+              speed={40}
+              tiltAngle={-10}
+              scale={1.25}
+              imageWidth={320}
+              imageHeight={256} // h-64 sur mobile
               borderWidth={3}
               pauseOnHover={true}
+              gap={24} // Espace entre les images
             />
           </motion.div>
+
+          <div className="text-center mt-16 space-y-6">
+            <button className="px-8 py-3 bg-black text-white rounded-xl font-semibold">
+              Explorer toutes nos fonctionnalités
+            </button>
+          </div>
         </div>
       </section>
 

@@ -10,15 +10,15 @@ type CarouselImage = {
 
 interface TiltedCarouselProps {
   images: CarouselImage[];
-  speed?: number; // Vitesse de défilement en pixels par seconde
-  tiltAngle?: number; // Angle d'inclinaison en degrés
-  scale?: number; // Facteur d'échelle
-  gap?: number; // Espace entre les images en pixels
-  imageWidth?: number; // Largeur des images en pixels
-  imageHeight?: number; // Hauteur des images en pixels
+  speed?: number;
+  tiltAngle?: number;
+  scale?: number;
+  gap?: number;
+  imageWidth?: number;
+  imageHeight?: number;
   className?: string;
-  borderWidth?: number; // Épaisseur de la bordure en pixels
-  pauseOnHover?: boolean; // Pause au survol
+  borderWidth?: number;
+  pauseOnHover?: boolean;
 }
 
 const TiltedCarousel = ({
@@ -41,50 +41,39 @@ const TiltedCarousel = ({
 
   // Effet d'animation pour le déplacement continu
   useEffect(() => {
-    // Fonction d'animation qui sera appelée à chaque frame
     const animate = (timestamp: number) => {
       if (!carouselRef.current) return;
 
-      // Initialiser lastTime si c'est le premier frame
       if (lastTimeRef.current === null) {
         lastTimeRef.current = timestamp;
         animationRef.current = requestAnimationFrame(animate);
         return;
       }
 
-      // Si l'animation est en pause (survol), on ne déplace pas
       if (isPaused && pauseOnHover) {
         lastTimeRef.current = timestamp;
         animationRef.current = requestAnimationFrame(animate);
         return;
       }
 
-      // Calculer le delta de temps en secondes
       const deltaTime = (timestamp - lastTimeRef.current) / 1000;
       lastTimeRef.current = timestamp;
 
-      // Calculer le nouveau déplacement
       offsetRef.current -= speed * deltaTime;
 
-      // La largeur totale d'un ensemble d'images (50% du contenu)
       const slideWidth = carouselRef.current.scrollWidth / 2;
 
-      // Si le déplacement dépasse la moitié (premier set d'images), réinitialiser
       if (Math.abs(offsetRef.current) >= slideWidth) {
         offsetRef.current += slideWidth;
       }
 
-      // Appliquer la transformation
       carouselRef.current.style.transform = `translateX(${offsetRef.current}px) translateZ(0)`;
 
-      // Continuer l'animation
       animationRef.current = requestAnimationFrame(animate);
     };
 
-    // Démarrer l'animation
     animationRef.current = requestAnimationFrame(animate);
 
-    // Nettoyer l'animation lors du démontage
     return () => {
       if (animationRef.current !== null) {
         cancelAnimationFrame(animationRef.current);
@@ -97,9 +86,12 @@ const TiltedCarousel = ({
 
   return (
     <div
-      className={`w-full overflow-hidden ${className}`}
+      className={`w-full overflow-visible ${className}`}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
+      style={{
+        padding: `${scale * 60}px 0`,
+      }}
     >
       {/* Wrapper avec transformation de tilt et scale */}
       <div
@@ -135,7 +127,7 @@ const TiltedCarousel = ({
                   fill
                   className="object-cover"
                   sizes={`${imageWidth}px`}
-                  priority={index < 4} // Priorité pour les premières images
+                  priority={index < 4}
                   loading={index < 4 ? "eager" : "lazy"}
                   quality={80}
                   decoding="async"
