@@ -808,7 +808,7 @@ export default function ArticleEditor({
   return (
     <div className="relative">
       {/* Toolbar */}
-      <div className="sticky top-0 z-10 p-2 bg-white border-b">
+      <div className="sticky top-0 z-10 p-2 bg-backgroundround border-b">
         <button
           onClick={() => {
             setIsAddingArticle(!isAddingArticle);
@@ -886,7 +886,7 @@ export default function ArticleEditor({
 
               return (
                 <div
-                  className="absolute z-30 bg-white border shadow-lg rounded-md p-2 flex flex-col gap-2 w-48"
+                  className="absolute z-30 bg-background border shadow-lg rounded-md p-2 flex flex-col gap-2 w-48"
                   style={{
                     top: `${tooltipPosition.y}px`,
                     left: `${tooltipPosition.x}px`,
@@ -966,7 +966,7 @@ export default function ArticleEditor({
       {/* Modal pour éditer/créer un article */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+          <div className="bg-background rounded-lg p-6 max-w-md w-full">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium">
                 {modalArticle.id ? "Modifier l'article" : "Nouvel article"}

@@ -26,7 +26,7 @@ export default async function JoinPage({
   // Si le code est invalide, affichez un message d'erreur
   if (!invitation) {
     return (
-      <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md text-center">
+      <div className="max-w-md mx-auto mt-10 p-6 bg-background rounded-lg shadow-md text-center">
         <h1 className="text-2xl font-bold text-red-600 mb-4">
           Code d'invitation invalide
         </h1>
@@ -46,7 +46,7 @@ export default async function JoinPage({
   // Si l'utilisateur n'est pas connecté, redirigez vers la page de connexion
   if (!user) {
     return (
-      <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md text-center">
+      <div className="max-w-md mx-auto mt-10 p-6 bg-background rounded-lg shadow-md text-center">
         <h1 className="text-2xl font-bold mb-4">
           Rejoindre {invitation.organization.name}
         </h1>
@@ -82,7 +82,7 @@ export default async function JoinPage({
 
   if (existingMembership) {
     return (
-      <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md text-center">
+      <div className="max-w-md mx-auto mt-10 p-6 bg-background rounded-lg shadow-md text-center">
         <h1 className="text-2xl font-bold mb-4">Déjà membre</h1>
         <p className="mb-6 text-gray-600">
           Vous êtes déjà membre de {invitation.organization.name}.

@@ -79,7 +79,7 @@ export default async function ObjetEditPage({
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+      <div className="bg-backgroundround rounded-lg border border-gray-200 p-6 mb-6">
         <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <h2 className="text-lg font-semibold mb-4">
@@ -152,7 +152,7 @@ export default async function ObjetEditPage({
               <Link
                 key={sector.id}
                 href={`/dashboard/objet/${objetId}/view`}
-                className="block bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition"
+                className="block bg-background rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition"
               >
                 <div className="relative w-full h-40">
                   <Image

@@ -167,7 +167,7 @@ export default function TaskList({
         <div
           key={task.id}
           className={`p-4 border rounded-lg ${
-            task.done ? "bg-green-50 border-green-200" : "bg-white"
+            task.done ? "bg-green-50 border-green-200" : "bg-backgroundround"
           }`}
         >
           <div className="flex justify-between items-start">

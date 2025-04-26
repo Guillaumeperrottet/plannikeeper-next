@@ -62,7 +62,7 @@ export default async function EditUserPage({
   // Nous ajouterons la logique d'accès spécifique plus tard
 
   return (
-    <div className="max-w-3xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
+    <div className="max-w-3xl mx-auto mt-10 p-6 bg-background rounded-lg shadow-md">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">
           Modifier l&apos;utilisateur: {userToEdit.name}

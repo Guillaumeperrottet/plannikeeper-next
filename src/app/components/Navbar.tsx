@@ -59,7 +59,7 @@ export default function Navbar({ user }: { user?: User | null }) {
   }, [menuOpen]);
 
   return (
-    <nav className="w-full bg-white border-b px-4 py-2 flex justify-between items-center">
+    <nav className="w-full bg-backgroundround border-b px-4 py-2 flex justify-between items-center">
       <Link
         href="/dashboard"
         className={`text-4xl font-bold ${vt323.className} text-black`}
@@ -96,7 +96,7 @@ export default function Navbar({ user }: { user?: User | null }) {
             {menuOpen && (
               <div
                 ref={userMenuRef}
-                className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg z-50"
+                className="absolute right-0 mt-2 w-48 bg-background border rounded-lg shadow-lg z-50"
               >
                 <div className="px-4 py-2 border-b">{user.name}</div>
                 <Link
@@ -137,7 +137,7 @@ export default function Navbar({ user }: { user?: User | null }) {
       {menuOpen && (
         <div
           ref={mobileMenuRef}
-          className="sm:hidden absolute top-16 right-4 bg-white border rounded-lg shadow-lg z-50 w-48"
+          className="sm:hidden absolute top-16 right-4 bg-background border rounded-lg shadow-lg z-50 w-48"
         >
           {user ? (
             <>

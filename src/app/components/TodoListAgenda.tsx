@@ -242,7 +242,7 @@ export default function TodoListAgenda() {
         {/* Colonne droite avec les contrôles */}
         <div className="flex items-center gap-2 w-1/4 justify-end">
           <select
-            className="bg-white text-gray-800 px-3 py-1 rounded border-none text-sm mr-2"
+            className="bg-background text-gray-800 px-3 py-1 rounded border-none text-sm mr-2"
             value={selectedObjectId}
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
               setSelectedObjectId(e.target.value)

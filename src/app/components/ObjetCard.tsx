@@ -28,7 +28,7 @@ export default function ObjetCard({ objet }: ObjetCardProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 relative">
+    <div className="bg-background rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 relative">
       <Link href={`/dashboard/objet/${objet.id}/view`} className="block p-5">
         <div className="flex justify-between items-start mb-3">
           <h2 className="text-xl font-semibold text-gray-800 line-clamp-1">

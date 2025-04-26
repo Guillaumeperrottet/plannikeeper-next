@@ -99,7 +99,7 @@ const ModernLandingPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white text-black overflow-hidden">
+    <div className="min-h-screen bg-background text-black overflow-hidden">
       {/* Nouveau Header avec effet de scroll */}
       <Header />
 
@@ -201,7 +201,7 @@ const ModernLandingPage = () => {
           initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: 0.2, scale: 1 }}
           transition={{ duration: 1.5, delay: 0.9 }}
-          className="absolute right-1/3 top-1/4 w-64 h-64 rounded-full bg-white blur-3xl z-0"
+          className="absolute right-1/3 top-1/4 w-64 h-64 rounded-full bg-background blur-3xl z-0"
         />
       </section>
 
@@ -209,7 +209,7 @@ const ModernLandingPage = () => {
       <section
         id="features"
         ref={featuresRef}
-        className="py-24 bg-white z-10 relative"
+        className="py-24 bg-background z-10 relative"
       >
         <div className="max-w-7xl mx-auto px-6">
           <motion.div
@@ -237,7 +237,7 @@ const ModernLandingPage = () => {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true, amount: 0.3 }}
                 whileHover={{ y: -10 }}
-                className="bg-white p-6 rounded-2xl shadow-xl transition-all duration-300 border border-gray-100"
+                className="bg-background p-6 rounded-2xl shadow-xl transition-all duration-300 border border-gray-100"
               >
                 <div
                   className={`w-14 h-14 ${feature.color} rounded-2xl flex items-center justify-center text-2xl text-white mb-5`}
@@ -405,7 +405,7 @@ const ModernLandingPage = () => {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-background">
         <div className="max-w-5xl mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}

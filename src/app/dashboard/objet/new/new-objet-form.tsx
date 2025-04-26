@@ -159,7 +159,7 @@ export default function NewObjectForm() {
 
       <form
         onSubmit={handleSubmit}
-        className="space-y-6 bg-white rounded-lg border border-gray-200 p-6"
+        className="space-y-6 bg-backgroundround rounded-lg border border-gray-200 p-6"
       >
         <div className="grid gap-6 mb-8">
           <h2 className="text-xl font-semibold border-b pb-2">

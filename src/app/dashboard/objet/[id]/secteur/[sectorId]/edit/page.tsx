@@ -49,7 +49,7 @@ export default async function EditSectorPage({
 
   return (
     <div className="flex flex-col h-screen">
-      <div className="p-4 border-b bg-white flex justify-between items-center">
+      <div className="p-4 border-b bg-background flex justify-between items-center">
         <div className="flex items-center gap-3">
           <Link
             href={`/dashboard/objet/${objetId}/view`}

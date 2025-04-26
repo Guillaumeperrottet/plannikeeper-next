@@ -78,7 +78,7 @@ export default function NewSectorForm({ objetId }: { objetId: string }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-6 bg-white rounded-lg border border-gray-200 p-6"
+      className="space-y-6 bg-background rounded-lg border border-gray-200 p-6"
     >
       <div>
         <label

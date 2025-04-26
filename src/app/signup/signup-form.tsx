@@ -74,7 +74,9 @@ export default function SignUpForm() {
 
   return (
     <div
-      className={cn("max-w-md mx-auto my-10 p-6 bg-white rounded-lg shadow-md")}
+      className={cn(
+        "max-w-md mx-auto my-10 p-6 bg-background rounded-lg shadow-md"
+      )}
     >
       <h2 className="text-2xl font-bold text-center mb-6">Sign Up</h2>
 

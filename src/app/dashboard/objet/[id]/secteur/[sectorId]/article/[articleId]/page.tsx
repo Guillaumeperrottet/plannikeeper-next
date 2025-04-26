@@ -82,7 +82,7 @@ export default async function ArticleDetailPage({
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+      <div className="bg-backgroundround rounded-lg border border-gray-200 p-6 mb-6">
         <div className="mb-6">
           <h2 className="text-lg font-semibold mb-2">Description</h2>
           <p className="text-gray-600">

@@ -88,7 +88,7 @@ export default function Header() {
           transition={{ delay: 0.3, duration: 0.5 }}
         >
           <div
-            className={`flex items-center gap-4 bg-white/90 backdrop-blur-sm rounded-full px-6 py-2 shadow-lg transition-all duration-300 ${
+            className={`flex items-center gap-4 bg-background/90 backdrop-blur-sm rounded-full px-6 py-2 shadow-lg transition-all duration-300 ${
               scrolled ? "px-8 py-3" : ""
             }`}
           >

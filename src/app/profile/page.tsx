@@ -19,7 +19,7 @@ export default async function ProfilePage() {
   const isAdmin = orgUser?.role === "admin";
 
   return (
-    <div className="max-w-2xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
+    <div className="max-w-2xl mx-auto mt-10 p-6 bg-background rounded-lg shadow-md">
       <h1 className="text-2xl font-bold mb-6">Mon profil</h1>
 
       {/* Section Organisation */}

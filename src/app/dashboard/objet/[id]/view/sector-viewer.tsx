@@ -167,7 +167,7 @@ export default function SectorViewer({
       }`}
     >
       {!isFullscreen && (
-        <div className="p-4 bg-white border-b flex justify-between items-center">
+        <div className="p-4 bg-background border-b flex justify-between items-center">
           <div className="relative">
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -182,7 +182,7 @@ export default function SectorViewer({
             </button>
 
             {isDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-64 bg-white border rounded-md shadow-lg z-10">
+              <div className="absolute top-full left-0 mt-1 w-64 bg-background border rounded-md shadow-lg z-10">
                 {sectors.map((sector) => (
                   <button
                     key={sector.id}
@@ -230,14 +230,14 @@ export default function SectorViewer({
               <>
                 <button
                   onClick={navigateToPreviousSector}
-                  className="absolute left-2 top-1/2 transform -translate-y-1/2 p-2 bg-white bg-opacity-80 rounded-full shadow-md hover:bg-opacity-100 z-10"
+                  className="absolute left-2 top-1/2 transform -translate-y-1/2 p-2 bg-background bg-opacity-80 rounded-full shadow-md hover:bg-opacity-100 z-10"
                   aria-label="Secteur précédent"
                 >
                   <ChevronLeft size={24} />
                 </button>
                 <button
                   onClick={navigateToNextSector}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-white bg-opacity-80 rounded-full shadow-md hover:bg-opacity-100 z-10"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-background bg-opacity-80 rounded-full shadow-md hover:bg-opacity-100 z-10"
                   aria-label="Secteur suivant"
                 >
                   <ChevronRight size={24} />
@@ -267,7 +267,7 @@ export default function SectorViewer({
               </div>
             )}
 
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-80 px-4 py-2 rounded-full shadow-md z-10 flex items-center gap-4">
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-background bg-opacity-80 px-4 py-2 rounded-full shadow-md z-10 flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Layers size={16} />
                 <span>

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 export default function NotFoundPage() {
   const router = useRouter();
   return (
-    <section className="bg-white font-serif min-h-screen flex items-center justify-center">
+    <section className="bg-background font-serif min-h-screen flex items-center justify-center">
       <div className="container mx-auto">
         <div className="flex justify-center">
           <div className="w-full sm:w-10/12 md:w-8/12 text-center">

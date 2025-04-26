@@ -27,14 +27,14 @@ export default async function InvitationsPage() {
       organizationId: orgUser.organizationId,
       isUsed: false,
       expiresAt: {
-        gt: new Date()
-      }
+        gt: new Date(),
+      },
     },
     orderBy: { createdAt: "desc" },
   });
 
   return (
-    <div className="max-w-3xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
+    <div className="max-w-3xl mx-auto mt-10 p-6 bg-background rounded-lg shadow-md">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Invitations</h1>
         <Link
@@ -45,11 +45,19 @@ export default async function InvitationsPage() {
         </Link>
       </div>
 
-      <GenerateInviteForm organizationId={orgUser.organizationId} userId={user.id} />
+      <GenerateInviteForm
+        organizationId={orgUser.organizationId}
+        userId={user.id}
+      />
 
       <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-4">Codes d'invitation actifs</h2>
-        <InvitationsList invitationCodes={invitationCodes} organizationName={orgUser.organization.name} />
+        <h2 className="text-xl font-semibold mb-4">
+          Codes d'invitation actifs
+        </h2>
+        <InvitationsList
+          invitationCodes={invitationCodes}
+          organizationName={orgUser.organization.name}
+        />
       </div>
     </div>
   );

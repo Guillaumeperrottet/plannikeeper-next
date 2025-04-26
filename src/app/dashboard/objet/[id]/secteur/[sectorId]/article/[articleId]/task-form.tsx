@@ -179,7 +179,7 @@ export default function TaskForm({
   }
 
   return (
-    <div className="bg-white border rounded-lg p-5">
+    <div className="bg-backgroundround border rounded-lg p-5">
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-semibold text-lg">
           {task ? "Modifier la tâche" : "Nouvelle tâche"}
