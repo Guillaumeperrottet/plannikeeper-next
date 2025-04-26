@@ -1,5 +1,6 @@
 "use client";
 
+import DropdownMenu from "@/app/components/ui/dropdownmenu";
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
@@ -169,33 +170,17 @@ export default function SectorViewer({
       {!isFullscreen && (
         <div className="p-4 bg-background border-b flex justify-between items-center">
           <div className="relative">
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 border rounded-md hover:bg-gray-200"
-            >
-              <span>
-                {selectedSector
-                  ? selectedSector.name
-                  : "Sélectionner un secteur"}
-              </span>
-              <ChevronDown size={16} />
-            </button>
-
-            {isDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-64 bg-background border rounded-md shadow-lg z-10">
-                {sectors.map((sector) => (
-                  <button
-                    key={sector.id}
-                    onClick={() => handleSectorChange(sector)}
-                    className={`block w-full text-left px-4 py-2 hover:bg-blue-50 ${
-                      selectedSector?.id === sector.id ? "bg-blue-50" : ""
-                    }`}
-                  >
-                    {sector.name}
-                  </button>
-                ))}
-              </div>
-            )}
+            <DropdownMenu
+              items={sectors.map((s) => ({ id: s.id, label: s.name }))}
+              selectedId={selectedSector?.id}
+              onSelect={(id) => {
+                const sector = sectors.find((s) => s.id === id);
+                if (sector) handleSectorChange(sector);
+              }}
+              label={
+                selectedSector ? selectedSector.name : "Sélectionner un secteur"
+              }
+            />
           </div>
 
           <div className="flex items-center gap-3">
