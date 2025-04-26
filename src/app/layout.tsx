@@ -3,6 +3,7 @@ import Navbar from "./components/Navbar";
 import { getUser } from "../lib/auth-session";
 import "./globals.css";
 import TodoListAgendaWrapper from "./components/TodoListAgendaWrapper";
+import SidebarWrapper from "@/app/components/ui/sidebarwrapper";
 
 export default async function RootLayout({
   children,
@@ -15,7 +16,9 @@ export default async function RootLayout({
     <html lang="en">
       <body className="bg-background">
         {user && <Navbar user={user} />}
-        <div className="pb-16 md:pb-14">{children}</div>
+        <SidebarWrapper>
+          <div className="pb-16 md:pb-14">{children}</div>
+        </SidebarWrapper>
         {user && <TodoListAgendaWrapper />}
         <Toaster position="top-center" richColors />
       </body>

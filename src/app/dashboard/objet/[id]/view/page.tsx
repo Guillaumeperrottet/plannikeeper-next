@@ -51,17 +51,17 @@ export default async function ObjetViewPage({
     <div className="h-screen flex flex-col">
       {/* Content */}
       {objet.sectors.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center bg-gray-50">
+        <div className="flex-1 flex items-center justify-center bg-background">
           <div className="text-center p-6">
-            <h2 className="text-xl font-medium text-gray-600 mb-2">
+            <h2 className="text-xl font-medium text-foreground mb-2">
               Aucun secteur trouvé
             </h2>
-            <p className="text-gray-500 mb-4">
+            <p className="text-muted-foreground mb-4">
               Ajoutez des secteurs à cet objet pour les visualiser ici.
             </p>
             <Link
               href={`/dashboard/objet/${objetId}/secteur/new`}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
             >
               Ajouter un secteur
             </Link>
