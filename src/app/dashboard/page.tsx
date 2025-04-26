@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { PlusCircle } from "lucide-react";
 import ObjetCard from "@/app/components/ObjetCard";
+import { Button } from "@/app/components/ui/button";
 
 export default async function DashboardPage() {
   const session = await getUser();
@@ -41,13 +42,12 @@ export default async function DashboardPage() {
     <div className="max-w-6xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <Link
-          href="/dashboard/objet/new"
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
-        >
-          <PlusCircle size={20} />
-          <span>Nouvel objet</span>
-        </Link>
+        <Button asChild variant="outline">
+          <Link href={"/dashboard/objet/new"}>
+            <PlusCircle size={20} className="mr-2" />
+            Nouvel objet
+          </Link>
+        </Button>
       </div>
 
       {objets.length === 0 ? (

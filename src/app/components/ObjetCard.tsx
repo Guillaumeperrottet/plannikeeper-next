@@ -1,8 +1,9 @@
 "use client";
 
-import { MapPin, Briefcase, Edit } from "lucide-react";
+import { MapPin, Briefcase } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import Editbutton from "./ui/edit-button";
 
 interface ObjetCardProps {
   objet: {
@@ -33,6 +34,9 @@ export default function ObjetCard({ objet }: ObjetCardProps) {
           <h2 className="text-xl font-semibold text-gray-800 line-clamp-1">
             {objet.nom}
           </h2>
+          <Link href={`/dashboard/objet/${objet.id}/edit`}>
+            <Editbutton aria-label="Modifier cet objet" />
+          </Link>
         </div>
 
         <div className="flex items-center gap-2 text-gray-600 mb-2">
@@ -60,17 +64,7 @@ export default function ObjetCard({ objet }: ObjetCardProps) {
               {objet.secteur}
             </span>
           </div>
-          <span className="text-xs text-blue-600 font-medium">
-            Voir détails
-          </span>
         </div>
-      </Link>
-      <Link
-        href={`/dashboard/objet/${objet.id}/edit`}
-        className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition"
-        aria-label="Modifier cet objet"
-      >
-        <Edit size={16} />
       </Link>
     </div>
   );
