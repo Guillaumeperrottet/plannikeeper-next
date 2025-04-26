@@ -215,7 +215,7 @@ export default function TodoListAgenda() {
   return (
     <div
       ref={agendaRef}
-      className="fixed bottom-0 left-0 right-0 bg-gray-200 transition-height duration-200 shadow-lg print:shadow-none print:relative print:h-auto"
+      className="fixed bottom-0 left-0 right-0 bg-background transition-height duration-200 shadow-lg print:shadow-none print:relative print:h-auto border-t border-border"
       style={{
         height: `${agendaHeight}px`,
         zIndex: 40,
@@ -223,7 +223,7 @@ export default function TodoListAgenda() {
       data-todo-list-agenda
     >
       {/* Barre de titre avec poignée de drag */}
-      <div className="flex justify-between items-center bg-gray-800 text-white p-3 relative">
+      <div className="flex justify-between items-center bg-[#F2E7D8] text-card-foreground p-3 relative border-b border-border">
         {/* Colonne gauche (vide ou avec d'autres contrôles si nécessaire) */}
         <div className="w-1/4"></div>
 
@@ -234,7 +234,7 @@ export default function TodoListAgenda() {
             onMouseDown={handleDragStart}
             onTouchStart={handleDragStart}
           >
-            <GripHorizontal size={20} className="text-gray-400" />
+            <GripHorizontal size={20} className="text-muted-foreground" />
           </div>
           <h2 className="text-xl font-semibold">Agenda todo list</h2>
         </div>
@@ -242,7 +242,7 @@ export default function TodoListAgenda() {
         {/* Colonne droite avec les contrôles */}
         <div className="flex items-center gap-2 w-1/4 justify-end">
           <select
-            className="bg-background text-gray-800 px-3 py-1 rounded border-none text-sm mr-2"
+            className="bg-background text-foreground px-3 py-1 rounded border border-border text-sm mr-2"
             value={selectedObjectId}
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
               setSelectedObjectId(e.target.value)
@@ -256,7 +256,7 @@ export default function TodoListAgenda() {
           </select>
           <button
             onClick={handlePrint}
-            className="p-1 rounded hover:bg-gray-700 print:hidden"
+            className="p-1 rounded hover:bg-accent print:hidden"
             title="Imprimer"
           >
             <Printer size={20} />
@@ -274,14 +274,16 @@ export default function TodoListAgenda() {
       {/* Contenu */}
       <div className="overflow-y-auto" style={{ height: `calc(100% - 48px)` }}>
         {isLoading ? (
-          <div className="p-4 text-center">Chargement des tâches...</div>
+          <div className="p-4 text-center text-muted-foreground">
+            Chargement des tâches...
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
             {/* Cette semaine */}
             <div>
               <h3 className="text-lg font-semibold mb-2">Cette semaine</h3>
               {thisWeekTasks.length === 0 ? (
-                <p className="text-gray-500">
+                <p className="text-muted-foreground">
                   Aucune tâche pour cette semaine.
                 </p>
               ) : (
@@ -289,16 +291,16 @@ export default function TodoListAgenda() {
                   {thisWeekTasks.map((task) => (
                     <li
                       key={task.id}
-                      className="cursor-pointer hover:text-blue-600"
+                      className="cursor-pointer hover:text-primary"
                       onClick={() => navigateToTask(task)}
                     >
                       {task.realizationDate && (
-                        <span className="text-sm text-gray-500 mr-2">
+                        <span className="text-sm text-muted-foreground mr-2">
                           {formatDate(task.realizationDate)} -
                         </span>
                       )}
                       <span>{task.name}</span>
-                      <span className="text-sm text-gray-500 ml-1">
+                      <span className="text-sm text-muted-foreground ml-1">
                         - {task.article.sector.name}
                       </span>
                     </li>
@@ -311,22 +313,22 @@ export default function TodoListAgenda() {
             <div>
               <h3 className="text-lg font-semibold mb-2">À venir</h3>
               {upcomingTasks.length === 0 ? (
-                <p className="text-gray-500">Aucune tâche à venir.</p>
+                <p className="text-muted-foreground">Aucune tâche à venir.</p>
               ) : (
                 <ul className="list-disc list-inside space-y-2">
                   {upcomingTasks.map((task) => (
                     <li
                       key={task.id}
-                      className="cursor-pointer hover:text-blue-600"
+                      className="cursor-pointer hover:text-primary"
                       onClick={() => navigateToTask(task)}
                     >
                       {task.realizationDate && (
-                        <span className="text-sm text-gray-500 mr-2">
+                        <span className="text-sm text-muted-foreground mr-2">
                           {formatDate(task.realizationDate)} -
                         </span>
                       )}
                       <span>{task.name}</span>
-                      <span className="text-sm text-gray-500 ml-1">
+                      <span className="text-sm text-muted-foreground ml-1">
                         - {task.article.sector.name}
                       </span>
                     </li>

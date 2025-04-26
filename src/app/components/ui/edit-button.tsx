@@ -18,12 +18,13 @@ const StyledWrapper = styled.div`
     width: 40px;
     height: 40px;
     border-radius: 12px;
-    border: none;
-    background-color: #f5f3ee;
+    border: 1px solid #27272a; /* border-gray-800 */
+    background-color: transparent;
+    color: #000;
+    font-weight: 600;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.08);
     cursor: pointer;
     position: relative;
     overflow: hidden;
@@ -45,7 +46,7 @@ const StyledWrapper = styled.div`
     transform: scale(1);
   }
   .editBtn:hover {
-    background-color: #ece7df;
+    background-color: #f3f4f6; /* bg-gray-100 */
     box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.13);
   }
 

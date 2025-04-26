@@ -19,84 +19,135 @@ export default async function ProfilePage() {
   const isAdmin = orgUser?.role === "admin";
 
   return (
-    <div className="max-w-2xl mx-auto mt-10 p-6 bg-background rounded-lg shadow-md">
-      <h1 className="text-2xl font-bold mb-6">Mon profil</h1>
-
-      {/* Section Organisation */}
-      {orgUser?.organization && (
-        <div className="mb-8 p-4 border rounded-lg bg-gray-50">
-          <h2 className="text-xl font-semibold mb-3">
-            Information Organisation
-          </h2>
-          <div className="mb-4">
-            <label className="block text-gray-700 font-semibold mb-1">
-              Nom de l organisation
-            </label>
-            <EditOrganizationName
-              initialName={orgUser.organization.name}
-              organizationId={orgUser.organization.id}
-              isAdmin={isAdmin}
-            />
-            {isAdmin && (
-              <p className="mt-1 text-sm text-gray-500">
-                En tant qu&apos;administrateur, vous pouvez modifier le nom de
-                l&apos;organisation
-              </p>
-            )}
+    <div className="min-h-screen bg-background flex">
+      {/* Sidebar */}
+      <aside className="w-72 min-h-screen bg-[color:var(--sidebar-background)] border-r border-[color:var(--sidebar-border)] flex flex-col justify-between py-12 px-6">
+        <div>
+          <div className="flex items-center gap-3 mb-10">
+            <div className="w-10 h-10 rounded-lg bg-[color:var(--primary)] flex items-center justify-center text-xl text-[color:var(--primary-foreground)] font-bold">
+              {orgUser?.organization?.name?.[0] ?? "?"}
+            </div>
+            <div>
+              <div className="font-bold text-[color:var(--sidebar-foreground)]">
+                {orgUser?.organization?.name ?? "Organisation"}
+              </div>
+              <div className="text-xs text-[color:var(--muted-foreground)] capitalize">
+                {orgUser?.role}
+              </div>
+            </div>
           </div>
-          <div className="mt-2 text-sm text-gray-600">
-            <span className="font-medium">Votre rôle : </span>
-            <span className="capitalize">{orgUser.role}</span>
-          </div>
+          <nav className="space-y-2">
+            <Link
+              href="/dashboard"
+              className="block px-3 py-2 rounded hover:bg-[color:var(--sidebar-accent)] text-[color:var(--sidebar-foreground)] font-medium"
+            >
+              Dashboard
+            </Link>
+            <Link
+              href="/profile"
+              className="block px-3 py-2 rounded bg-[color:var(--sidebar-accent)] text-[color:var(--sidebar-primary)] font-semibold"
+            >
+              Profil
+            </Link>
+            <Link
+              href="/profile/edit"
+              className="block px-3 py-2 rounded hover:bg-[color:var(--sidebar-accent)] text-[color:var(--sidebar-foreground)]"
+            >
+              Gestion des utilisateurs
+            </Link>
+          </nav>
         </div>
-      )}
-
-      <div className="flex justify-end">
-        <Link
-          href="/profile/edit"
-          className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-900 transition"
-        >
-          Gestion des utilisateurs
-        </Link>
-      </div>
-
-      {/* Section Infos personnelles */}
-      <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-3">
-          Informations personnelles
-        </h2>
-        <div className="flex flex-col sm:flex-row items-center gap-6">
-          {/* Avatar */}
-          <div className="flex-shrink-0">
-            <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center text-4xl text-gray-500">
-              {user.name?.[0] ?? "?"}
-            </div>
+        <div className="flex items-center gap-3 mt-10">
+          <div className="w-10 h-10 rounded-full bg-[color:var(--muted)] flex items-center justify-center text-xl text-[color:var(--muted-foreground)] font-bold">
+            {user.name?.[0] ?? "?"}
           </div>
-          {/* Infos utilisateur */}
-          <div className="flex-1 w-full">
-            <div className="mb-4">
-              <label className="block text-gray-700 font-semibold mb-1">
-                Nom
-              </label>
-              <EditName initialName={user.name ?? ""} />
-              <p className="mt-1 text-sm text-gray-500">
-                Cliquez sur le nom pour le modifier
-              </p>
+          <div>
+            <div className="font-semibold text-[color:var(--sidebar-foreground)]">
+              {user.name}
             </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 font-semibold mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                value={user.email ?? ""}
-                disabled
-                className="w-full border rounded px-3 py-2 bg-gray-100"
-              />
+            <div className="text-xs text-[color:var(--muted-foreground)]">
+              {user.email}
             </div>
           </div>
         </div>
-      </div>
+      </aside>
+
+      {/* Main content */}
+      <main className="flex-1 p-10 bg-background">
+        <h1 className="text-3xl font-bold mb-8">Mon profil</h1>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Carte Organisation */}
+          {orgUser?.organization && (
+            <div className="bg-card border border-border rounded-lg p-6 shadow-sm flex flex-col gap-4">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-xl font-semibold">Organisation</h2>
+                {isAdmin && (
+                  <span className="px-2 py-1 rounded-full bg-[color:var(--primary)] text-[color:var(--primary-foreground)] text-xs font-semibold">
+                    Admin
+                  </span>
+                )}
+              </div>
+              <div>
+                <label className="block font-semibold mb-1 text-foreground">
+                  Nom de l&apos;organisation
+                </label>
+                <EditOrganizationName
+                  initialName={orgUser.organization.name}
+                  organizationId={orgUser.organization.id}
+                  isAdmin={isAdmin}
+                />
+                {isAdmin && (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    En tant qu&apos;administrateur, vous pouvez modifier le nom
+                    de l&apos;organisation
+                  </p>
+                )}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                <span className="font-medium">Votre rôle : </span>
+                <span className="capitalize">{orgUser.role}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Carte Infos personnelles */}
+          <div className="bg-card border border-border rounded-lg p-6 shadow-sm flex flex-col gap-4">
+            <h2 className="text-xl font-semibold mb-3">
+              Informations personnelles
+            </h2>
+            <div className="flex items-center gap-6">
+              <div className="flex-shrink-0">
+                <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center text-3xl text-muted-foreground font-bold">
+                  {user.name?.[0] ?? "?"}
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="mb-3">
+                  <label className="block font-semibold mb-1 text-foreground">
+                    Nom
+                  </label>
+                  <EditName initialName={user.name ?? ""} />
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Cliquez sur le nom pour le modifier
+                  </p>
+                </div>
+                <div>
+                  <label className="block font-semibold mb-1 text-foreground">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={user.email ?? ""}
+                    disabled
+                    className="w-full border border-border rounded px-3 py-2 bg-muted text-muted-foreground"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

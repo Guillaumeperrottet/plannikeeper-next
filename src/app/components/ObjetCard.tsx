@@ -27,11 +27,25 @@ export default function ObjetCard({ objet }: ObjetCardProps) {
     }
   };
 
+  // ...existing code...
   return (
-    <div className="bg-background rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 relative">
+    <div
+      className="
+      rounded-lg
+      border
+      border-[color:var(--border)]
+      bg-[color:var(--card)]
+      text-[color:var(--card-foreground)]
+      hover:border-[color:#6C5A41]
+      hover:shadow-md
+      transition-all
+      duration-200
+      relative
+    "
+    >
       <Link href={`/dashboard/objet/${objet.id}/view`} className="block p-5">
         <div className="flex justify-between items-start mb-3">
-          <h2 className="text-xl font-semibold text-gray-800 line-clamp-1">
+          <h2 className="text-xl font-semibold text-[color:var(--card-foreground)] line-clamp-1">
             {objet.nom}
           </h2>
           <Link href={`/dashboard/objet/${objet.id}/edit`}>
@@ -39,17 +53,17 @@ export default function ObjetCard({ objet }: ObjetCardProps) {
           </Link>
         </div>
 
-        <div className="flex items-center gap-2 text-gray-600 mb-2">
+        <div className="flex items-center gap-2 text-[color:var(--muted-foreground)] mb-2">
           <MapPin size={16} />
           <span className="text-sm line-clamp-1">{objet.adresse}</span>
         </div>
 
-        <div className="flex items-center gap-2 text-gray-600">
+        <div className="flex items-center gap-2 text-[color:var(--muted-foreground)]">
           <Briefcase size={16} />
           <span className="text-sm">{objet.secteur}</span>
         </div>
 
-        <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
+        <div className="mt-4 pt-3 border-t border-[color:var(--border)] flex justify-between items-center">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 relative">
               <Image
@@ -60,7 +74,7 @@ export default function ObjetCard({ objet }: ObjetCardProps) {
                 className="object-contain"
               />
             </div>
-            <span className="text-xs text-gray-500 capitalize">
+            <span className="text-xs text-[color:var(--muted-foreground)] capitalize">
               {objet.secteur}
             </span>
           </div>
