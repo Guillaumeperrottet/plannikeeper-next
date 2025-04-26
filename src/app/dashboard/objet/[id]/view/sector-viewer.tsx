@@ -4,7 +4,6 @@ import DropdownMenu from "@/app/components/ui/dropdownmenu";
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
-  ChevronDown,
   Plus,
   ChevronLeft,
   ChevronRight,
@@ -168,7 +167,7 @@ export default function SectorViewer({
       }`}
     >
       {!isFullscreen && (
-        <div className="p-4 border-b flex justify-center items-center relative bg-transparent">
+        <div className="p-4 flex justify-center items-center relative bg-transparent">
           <div className="relative">
             <DropdownMenu
               items={sectors.map((s) => ({ id: s.id, label: s.name }))}
@@ -186,7 +185,7 @@ export default function SectorViewer({
           <div className="flex items-center gap-3 absolute right-4">
             {selectedSector && (
               <Link
-                href={`/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit`}
+                href={`/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?addArticle=1`}
                 className="flex items-center gap-1 text-gray-600 hover:text-gray-800"
               >
                 <Edit size={16} />

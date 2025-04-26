@@ -4,8 +4,8 @@ import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import Image from "next/image";
 import ArticleEditor from "./article-editor";
+import { useSearchParams } from "next/navigation";
 
 export default async function EditSectorPage({
   params,
