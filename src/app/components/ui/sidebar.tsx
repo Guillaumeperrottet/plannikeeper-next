@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import React, { useState, createContext, useContext } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { IconMenu2, IconX } from "@tabler/icons-react";
+import Link from "next/link";
 
 interface Links {
   label: string;
@@ -70,11 +71,24 @@ export const Sidebar = ({
   );
 };
 
-export const SidebarBody = (props: React.ComponentProps<typeof motion.div>) => {
+export const SidebarBody = ({
+  children,
+  userComponent,
+  ...props
+}: React.ComponentProps<typeof motion.div> & {
+  userComponent?: (open: boolean) => React.ReactNode;
+}) => {
   return (
     <>
-      <DesktopSidebar {...props} />
-      <MobileSidebar {...(props as React.ComponentProps<"div">)} />
+      <DesktopSidebar userComponent={userComponent} {...props}>
+        {children}
+      </DesktopSidebar>
+      <MobileSidebar
+        userComponent={userComponent}
+        {...(props as React.ComponentProps<"div">)}
+      >
+        {children}
+      </MobileSidebar>
     </>
   );
 };
@@ -82,24 +96,60 @@ export const SidebarBody = (props: React.ComponentProps<typeof motion.div>) => {
 export const DesktopSidebar = ({
   className,
   children,
+  userComponent,
   ...props
-}: React.ComponentProps<typeof motion.div>) => {
+}: React.ComponentProps<typeof motion.div> & {
+  userComponent?: (open: boolean) => React.ReactNode;
+}) => {
   const { open, setOpen, animate } = useSidebar();
   return (
     <>
       <motion.div
         className={cn(
-          "h-full px-4 py-4 hidden md:flex md:flex-col bg-neutral-100 dark:bg-neutral-800 w-[300px] shrink-0",
+          "hidden md:flex md:flex-col h-full bg-[color:var(--sidebar-background)] text-[color:var(--sidebar-foreground)] shadow-md shrink-0 transition-all duration-300 border-r border-[color:var(--sidebar-border)]",
           className
         )}
         animate={{
-          width: animate ? (open ? "300px" : "60px") : "300px",
+          width: animate ? (open ? "300px" : "76px") : "300px",
         }}
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
         {...props}
       >
-        {children}
+        <div className="flex flex-col h-full">
+          {/* Logo Container */}
+          <div className="p-4 border-b border-[color:var(--sidebar-border)] flex items-center justify-center h-16">
+            {open ? (
+              <div className="font-bold text-xl">PlanniKeeper</div>
+            ) : (
+              <div className="w-10 h-10 bg-[color:var(--sidebar-primary)] rounded-lg flex items-center justify-center text-[color:var(--sidebar-primary-foreground)] font-bold">
+                P
+              </div>
+            )}
+          </div>
+
+          {/* Main Navigation */}
+          <div className="flex-grow p-3">{children}</div>
+
+          {/* User Profile Section */}
+          <div className="border-t border-[color:var(--sidebar-border)] p-4 flex items-center gap-3">
+            {userComponent ? (
+              userComponent(open)
+            ) : (
+              <>
+                <div className="w-10 h-10 bg-[color:var(--muted)] rounded-full flex items-center justify-center text-[color:var(--muted-foreground)] font-semibold">
+                  U
+                </div>
+                {open && (
+                  <div className="flex flex-col">
+                    <span className="font-medium text-sm">Utilisateur</span>
+                    <span className="text-xs text-[color:var(--muted-foreground)]"></span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
       </motion.div>
     </>
   );
@@ -108,20 +158,25 @@ export const DesktopSidebar = ({
 export const MobileSidebar = ({
   className,
   children,
+  userComponent,
   ...props
-}: React.ComponentProps<"div">) => {
+}: React.ComponentProps<"div"> & {
+  userComponent?: (open: boolean) => React.ReactNode;
+}) => {
   const { open, setOpen } = useSidebar();
   return (
     <>
       <div
         className={cn(
-          "h-10 px-4 py-4 flex flex-row md:hidden  items-center justify-between bg-neutral-100 dark:bg-neutral-800 w-full"
+          "h-16 px-4 flex flex-row md:hidden items-center justify-between bg-[color:var(--sidebar-background)] text-[color:var(--sidebar-foreground)] border-b border-[color:var(--sidebar-border)] w-full",
+          className
         )}
         {...props}
       >
-        <div className="flex justify-end z-20 w-full">
+        <div className="font-bold text-xl">PlanniKeeper</div>
+        <div className="flex justify-end z-20">
           <IconMenu2
-            className="text-neutral-800 dark:text-neutral-200"
+            className="text-[color:var(--sidebar-foreground)] cursor-pointer"
             onClick={() => setOpen(!open)}
           />
         </div>
@@ -136,17 +191,35 @@ export const MobileSidebar = ({
                 ease: "easeInOut",
               }}
               className={cn(
-                "fixed h-full w-full inset-0 bg-white dark:bg-neutral-900 p-10 z-[100] flex flex-col justify-between",
+                "fixed h-full w-full inset-0 bg-[color:var(--sidebar-background)] text-[color:var(--sidebar-foreground)] z-[100] flex flex-col",
                 className
               )}
             >
-              <div
-                className="absolute right-10 top-10 z-50 text-neutral-800 dark:text-neutral-200"
-                onClick={() => setOpen(!open)}
-              >
-                <IconX />
+              <div className="flex justify-between items-center p-4 border-b border-[color:var(--sidebar-border)]">
+                <div className="font-bold text-xl">PlanniKeeper</div>
+                <div
+                  className="text-[color:var(--sidebar-foreground)] cursor-pointer"
+                  onClick={() => setOpen(!open)}
+                >
+                  <IconX />
+                </div>
               </div>
-              {children}
+              <div className="flex-grow p-4 overflow-y-auto">{children}</div>
+              <div className="border-t border-[color:var(--sidebar-border)] p-4 flex items-center gap-3">
+                {userComponent ? (
+                  userComponent(true)
+                ) : (
+                  <>
+                    <div className="w-10 h-10 bg-[color:var(--muted)] rounded-full flex items-center justify-center text-[color:var(--muted-foreground)] font-semibold">
+                      U
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-medium text-sm">Utilisateur</span>
+                      <span className="text-xs text-[color:var(--muted-foreground)]"></span>
+                    </div>
+                  </>
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -158,32 +231,39 @@ export const MobileSidebar = ({
 export const SidebarLink = ({
   link,
   className,
+  isActive,
   ...props
 }: {
   link: Links;
   className?: string;
+  isActive?: boolean;
 }) => {
   const { open, animate } = useSidebar();
   return (
-    <a
+    <Link
       href={link.href}
       className={cn(
-        "flex items-center justify-start gap-2  group/sidebar py-2",
+        "flex items-center gap-3 py-2 px-3 my-1 rounded-lg transition-colors duration-200",
+        isActive
+          ? "bg-[color:var(--sidebar-accent)] text-[color:var(--sidebar-accent-foreground)]"
+          : "text-[color:var(--sidebar-foreground)] hover:bg-[color:var(--sidebar-accent)] hover:bg-opacity-50 hover:text-[color:var(--sidebar-accent-foreground)]",
         className
       )}
       {...props}
     >
-      {link.icon}
+      {/* Icon */}
+      <div className="text-xl min-w-6 flex-shrink-0">{link.icon}</div>
 
+      {/* Label with animation */}
       <motion.span
         animate={{
           display: animate ? (open ? "inline-block" : "none") : "inline-block",
           opacity: animate ? (open ? 1 : 0) : 1,
         }}
-        className="text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block !p-0 !m-0"
+        className="text-sm font-medium whitespace-nowrap overflow-hidden"
       >
         {link.label}
       </motion.span>
-    </a>
+    </Link>
   );
 };
