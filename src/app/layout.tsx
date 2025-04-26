@@ -13,7 +13,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body>
+      <body className="bg-background">
         {user && <Navbar user={user} />}
         <div className="pb-16 md:pb-14">{children}</div>
         {user && <TodoListAgendaWrapper />}

@@ -1,6 +1,6 @@
-@import "tailwindcss";
-@import "tw-animate-css";
-
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 /* Styles d'impression pour l'agenda todo list */
 @media print {
 }
