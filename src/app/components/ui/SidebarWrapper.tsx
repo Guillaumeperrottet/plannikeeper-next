@@ -4,6 +4,7 @@ import { Sidebar } from "@/app/components/ui/sidebar";
 import { usePathname } from "next/navigation";
 import { SidebarBody, SidebarLink } from "@/app/components/ui/sidebar";
 import { useEffect, useState } from "react";
+import { SidebarObjectsMenu } from "@/app/components/ui/SidebarObjectsMenu";
 
 // Import icons from Tabler Icons
 import {
@@ -107,15 +108,34 @@ export default function SidebarWrapper({
     <div className="flex h-screen">
       <Sidebar>
         <SidebarBody userComponent={(open) => userComponent(open)}>
-          {navItems.map((item) => (
-            <SidebarLink
-              key={item.href}
-              link={item}
-              isActive={
-                pathname === item.href || pathname.startsWith(`${item.href}/`)
-              }
-            />
-          ))}
+          {/* Premier lien : Dashboard */}
+          <SidebarLink
+            key={navItems[0].href}
+            link={navItems[0]}
+            isActive={
+              pathname === navItems[0].href ||
+              pathname.startsWith(`${navItems[0].href}/`)
+            }
+          />
+
+          {/* Deuxième : menu spécial des objets */}
+          <SidebarObjectsMenu
+            isActive={pathname.startsWith("/dashboard/objet/")}
+          />
+
+          {/* Le reste des liens, sauf "Objets" (déjà géré par SidebarObjectsMenu) et Dashboard */}
+          {navItems
+            .slice(1)
+            .filter((item) => item.href !== "/dashboard/objet")
+            .map((item) => (
+              <SidebarLink
+                key={item.href}
+                link={item}
+                isActive={
+                  pathname === item.href || pathname.startsWith(`${item.href}/`)
+                }
+              />
+            ))}
         </SidebarBody>
       </Sidebar>
       <div className="flex-1">{children}</div>

@@ -164,11 +164,11 @@ export default function SectorViewer({
     <div
       ref={viewerRef}
       className={`flex-1 flex flex-col ${
-        isFullscreen ? "fixed inset-0 z-50 bg-black" : ""
+        isFullscreen ? "fixed inset-0 z-50 bg-transparent" : ""
       }`}
     >
       {!isFullscreen && (
-        <div className="p-4 bg-background border-b flex justify-between items-center">
+        <div className="p-4 border-b flex justify-center items-center relative bg-transparent">
           <div className="relative">
             <DropdownMenu
               items={sectors.map((s) => ({ id: s.id, label: s.name }))}
@@ -183,7 +183,7 @@ export default function SectorViewer({
             />
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 absolute right-4">
             {selectedSector && (
               <Link
                 href={`/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit`}
@@ -206,7 +206,7 @@ export default function SectorViewer({
 
       <div
         className={`flex-1 flex items-center justify-center overflow-hidden ${
-          isFullscreen ? "bg-black" : "bg-gray-100 p-4"
+          isFullscreen ? "bg-transparent" : "bg-transparent p-4"
         }`}
       >
         {selectedSector ? (
