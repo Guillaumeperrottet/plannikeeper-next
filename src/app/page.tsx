@@ -2,8 +2,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
-import Header from "@/app/components/landing/Header"; // Assurez-vous d'ajuster le chemin si nécessaire
+import Header from "@/app/components/landing/Header";
 import TiltedCarousel from "@/app/components/landing/DualDirectionCarousel";
+import LordiconFeature from "@/app/components/ui/LordiconFeature";
+import LordiconFeatureWrapper from "@/app/components/ui/LordiconFeatureWrapper";
+
+import ICON_DOCUMENTATION from "./assets/documentation.json";
 
 const ModernLandingPage = () => {
   const [activeSection, setActiveSection] = useState("hero");
@@ -30,25 +34,25 @@ const ModernLandingPage = () => {
     {
       title: "Suivi simplifié",
       description: "Gérez vos tâches et documents en un seul endroit",
-      icon: "📊",
+      icon: ICON_DOCUMENTATION,
       color: "bg-blue-500",
     },
     {
       title: "Interface intuitive",
       description: "Naviguez facilement entre vos projets immobiliers",
-      icon: "🏡",
+      icon: ICON_DOCUMENTATION,
       color: "bg-green-500",
     },
     {
       title: "Collaboration",
       description: "Partagez les informations avec votre équipe en temps réel",
-      icon: "👥",
+      icon: ICON_DOCUMENTATION,
       color: "bg-purple-500",
     },
     {
       title: "Documentation",
       description: "Gardez tous vos documents organisés et accessibles",
-      icon: "📄",
+      icon: ICON_DOCUMENTATION,
       color: "bg-amber-500",
     },
   ];
@@ -228,23 +232,14 @@ const ModernLandingPage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
-              <motion.div
+              <LordiconFeatureWrapper
                 key={feature.title}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true, amount: 0.3 }}
-                whileHover={{ y: -10 }}
-                className="bg-white p-6 rounded-2xl shadow-xl transition-all duration-300 border border-gray-100"
-              >
-                <div
-                  className={`w-14 h-14 ${feature.color} rounded-2xl flex items-center justify-center text-2xl text-white mb-5`}
-                >
-                  {feature.icon}
-                </div>
-                <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
-              </motion.div>
+                title={feature.title}
+                description={feature.description}
+                icon={feature.icon}
+                color={feature.color}
+                index={index}
+              />
             ))}
           </div>
 
