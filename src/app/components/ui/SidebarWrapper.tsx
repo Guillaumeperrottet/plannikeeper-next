@@ -104,7 +104,7 @@ export default function SidebarWrapper({
   );
 
   return (
-    <div className="flex">
+    <div className="flex h-screen">
       <Sidebar>
         <SidebarBody userComponent={(open) => userComponent(open)}>
           {navItems.map((item) => (

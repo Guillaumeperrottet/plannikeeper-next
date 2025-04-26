@@ -1,7 +1,7 @@
 "use client";
 import { cn } from "@/lib/utils";
 import React, { useState, createContext, useContext } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion } from "framer-motion";
 import { IconMenu2, IconX } from "@tabler/icons-react";
 import Link from "next/link";
 
@@ -106,30 +106,19 @@ export const DesktopSidebar = ({
     <>
       <motion.div
         className={cn(
-          "hidden md:flex md:flex-col h-full bg-[color:var(--sidebar-background)] text-[color:var(--sidebar-foreground)] shadow-md shrink-0 transition-all duration-300 border-r border-[color:var(--sidebar-border)]",
+          "hidden md:flex md:flex-col h-full bg-[color:var(--sidebar-background)] text-[color:var(--sidebar-foreground)] shadow-md shrink-0 transition-all duration-150 border-r border-[color:var(--sidebar-border)]",
           className
         )}
         animate={{
-          width: animate ? (open ? "300px" : "76px") : "300px",
+          width: animate ? (open ? "300px" : "45px") : "300px",
         }}
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
         {...props}
       >
         <div className="flex flex-col h-full">
-          {/* Logo Container */}
-          <div className="p-4 border-b border-[color:var(--sidebar-border)] flex items-center justify-center h-16">
-            {open ? (
-              <div className="font-bold text-xl">PlanniKeeper</div>
-            ) : (
-              <div className="w-10 h-10 bg-[color:var(--sidebar-primary)] rounded-lg flex items-center justify-center text-[color:var(--sidebar-primary-foreground)] font-bold">
-                P
-              </div>
-            )}
-          </div>
-
           {/* Main Navigation */}
-          <div className="flex-grow p-3">{children}</div>
+          <div className="flex-grow p-1">{children}</div>
 
           {/* User Profile Section */}
           <div className="border-t border-[color:var(--sidebar-border)] p-4 flex items-center gap-3">
@@ -243,7 +232,7 @@ export const SidebarLink = ({
     <Link
       href={link.href}
       className={cn(
-        "flex items-center gap-3 py-2 px-3 my-1 rounded-lg transition-colors duration-200",
+        "flex items-center gap-2 py-2 px-2 my-1 rounded-lg transition-colors duration-200", // gap et padding réduits
         isActive
           ? "bg-[color:var(--sidebar-accent)] text-[color:var(--sidebar-accent-foreground)]"
           : "text-[color:var(--sidebar-foreground)] hover:bg-[color:var(--sidebar-accent)] hover:bg-opacity-50 hover:text-[color:var(--sidebar-accent-foreground)]",
@@ -252,9 +241,7 @@ export const SidebarLink = ({
       {...props}
     >
       {/* Icon */}
-      <div className="text-xl min-w-6 flex-shrink-0">{link.icon}</div>
-
-      {/* Label with animation */}
+      <div className="text-lg min-w-[20px] flex-shrink-0">{link.icon}</div>{" "}
       <motion.span
         animate={{
           display: animate ? (open ? "inline-block" : "none") : "inline-block",
