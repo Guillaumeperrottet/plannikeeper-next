@@ -3,7 +3,7 @@ import Navbar from "./components/Navbar";
 import { getUser } from "../lib/auth-session";
 import "./globals.css";
 import TodoListAgendaWrapper from "./components/TodoListAgendaWrapper";
-import SidebarWrapper from "@/app/components/ui/sidebarwrapper";
+import SidebarWrapper from "@/app/components/ui/SidebarWrapper";
 
 export default async function RootLayout({
   children,
