@@ -109,7 +109,7 @@ const ModernLandingPage = () => {
         ref={heroRef}
         className="min-h-screen relative flex items-center overflow-hidden"
         style={{
-          background: "linear-gradient(to bottom, #ffffff 0%, #C74A12 100%)",
+          background: "linear-gradient(to bottom, #ffffff 0%, #CB8E01 100%)",
         }}
       >
         <div className="container mx-auto px-6 pt-24 z-10">
@@ -175,7 +175,7 @@ const ModernLandingPage = () => {
             >
               <button
                 onClick={() => scrollToSection("features")}
-                className="px-8 py-3 bg-[#C74A12] text-white rounded-xl font-semibold text-lg transition-all duration-300 hover:bg-orange-800 hover:shadow-lg transform hover:scale-105"
+                className="px-8 py-3 bg-[#C74A11] text-white rounded-xl font-semibold text-lg transition-all duration-300 hover:bg-orange-800 hover:shadow-lg transform hover:scale-105"
               >
                 Découvrir
               </button>
