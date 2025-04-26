@@ -4,6 +4,7 @@ import { MapPin, Briefcase } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import Editbutton from "./ui/edit-button";
+import { useRouter } from "next/navigation";
 
 interface ObjetCardProps {
   objet: {
@@ -15,6 +16,8 @@ interface ObjetCardProps {
 }
 
 export default function ObjetCard({ objet }: ObjetCardProps) {
+  const router = useRouter();
+
   const getSecteurIcon = (secteur: string) => {
     switch (secteur.toLowerCase()) {
       case "bureau":
@@ -36,15 +39,18 @@ export default function ObjetCard({ objet }: ObjetCardProps) {
         cursor-pointer
       "
       onClick={() => {
-        // navigation imperceptible sans <Link> imbriqué
-        window.location.href = `/dashboard/objet/${objet.id}/view`;
+        router.push(`/dashboard/objet/${objet.id}/view`);
       }}
     >
       <div className="block p-5">
         <div className="flex justify-between items-start mb-3">
           <h2 className="text-xl font-semibold line-clamp-1">{objet.nom}</h2>
-          {/* ici seul ce Link gère l’édition */}
-          <Link href={`/dashboard/objet/${objet.id}/edit`}>
+
+          {/* Arrêt de la propagation pour que seul ce lien réagisse */}
+          <Link
+            href={`/dashboard/objet/${objet.id}/edit`}
+            onClick={(e) => e.stopPropagation()}
+          >
             <Editbutton aria-label="Modifier cet objet" />
           </Link>
         </div>
