@@ -1,73 +1,72 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@import "tailwindcss";
-@import "tw-animate-css";
-
 /* Styles d'impression pour l'agenda todo list */
 @media print {
 }
 
 @layer base {
-  root {
+  :root {
     --background: #f9f3ec;
-    --foreground: 35 2.5% 7.5%;
-    --card: 35 25% 95%;
-    --card-foreground: 35 2.5% 12.5%;
-    --popover: 35 50% 97.5%;
-    --popover-foreground: 35 97.5% 5%;
-    --primary: 35 88.7% 45.1%;
-    --primary-foreground: 0, 0%, 0%;
-    --secondary: 35 20% 80%;
-    --secondary-foreground: 0 0% 0%;
-    --muted: 73 20% 90%;
-    --muted-foreground: 35 2.5% 37.5%;
-    --accent: 73 20% 85%;
-    --accent-foreground: 35 2.5% 12.5%;
-    --destructive: 0 75% 40%;
-    --destructive-foreground: 35 2.5% 95%;
-    --border: 35 25% 66%;
-    --input: 35 25% 34%;
-    --ring: 35 88.7% 45.3%;
+    --foreground: #141313;
+    --card: #f5f3ef;
+    --card-foreground: #21201f;
+    --popover: #fcf9f5;
+    --popover-foreground: #190f00;
+    --primary: #d9840d;
+    --primary-foreground: #000000;
+    --secondary: #d6cec2;
+    --secondary-foreground: #000000;
+    --muted: #e8ebe0;
+    --muted-foreground: #62605d;
+    --accent: #dde0d1;
+    --accent-foreground: #21201f;
+    --destructive: #b31919;
+    --destructive-foreground: #f3f2f2;
+    --border: #beac93;
+    --input: #6c5a41;
+    --ring: #da850d;
     --radius: 0.5rem;
-    --sidebar-background: 35, 50%, 90%;
-    --sidebar-foreground: 35, 3%, 7%;
-    --sidebar-primary: 35, 89%, 41%;
-    --sidebar-primary-foreground: 0 0% 0%;
-    --sidebar-accent: 73, 20%, 81%;
-    --sidebar-accent-foreground: 0 0% 0%;
-    --sidebar-border: 35, 25%, 63%;
-    --sidebar-ring: 25, 98%, 45%;
+
+    --sidebar-background: #f2e8d9;
+    --sidebar-foreground: #121211;
+    --sidebar-primary: #c6780c;
+    --sidebar-primary-foreground: #000000;
+    --sidebar-accent: #d4d8c5;
+    --sidebar-accent-foreground: #000000;
+    --sidebar-border: #b8a589;
+    --sidebar-ring: #e36002;
   }
 
   .dark {
-    --background: 35 30% 7.5%;
-    --foreground: 35 2.5% 95%;
-    --card: 35 25% 5%;
-    --card-foreground: 35 2.5% 95%;
-    --popover: 35 30% 5%;
-    --popover-foreground: 35 2.5% 95%;
-    --primary: 35 88.7% 45.1%;
-    --primary-foreground: 0, 0%, 0%;
-    --secondary: 35 20% 15%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 73 20% 20%;
-    --muted-foreground: 35 2.5% 62.5%;
-    --accent: 73 20% 20%;
-    --accent-foreground: 35 2.5% 92.5%;
-    --destructive: 0 75% 40%;
-    --destructive-foreground: 35 2.5% 95%;
-    --border: 35 25% 34%;
-    --input: 35 25% 34%;
-    --ring: 35 88.7% 45.3%;
+    --background: #19140d;
+    --foreground: #f3f2f2;
+    --card: #100d0a;
+    --card-foreground: #f3f2f2;
+    --popover: #110d09;
+    --popover-foreground: #f3f2f2;
+    --primary: #d9840d;
+    --primary-foreground: #000000;
+    --secondary: #2e281f;
+    --secondary-foreground: #ffffff;
+    --muted: #393d29;
+    --muted-foreground: #a2a09d;
+    --accent: #393d29;
+    --accent-foreground: #ececeb;
+    --destructive: #b31919;
+    --destructive-foreground: #f3f2f2;
+    --border: #6c5a41;
+    --input: #6c5a41;
+    --ring: #da850d;
     --radius: 0.5rem;
-    --sidebar-background: 35, 30%, 10%;
-    --sidebar-foreground: 35, 3%, 100%;
-    --sidebar-primary: 35, 89%, 36%;
-    --sidebar-primary-foreground: 0, 0%, 0%;
-    --sidebar-accent: 73, 20%, 17%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 35, 25%, 32%;
-    --sidebar-ring: 25, 98%, 45%;
+
+    --sidebar-background: #211b12;
+    --sidebar-foreground: #ffffff;
+    --sidebar-primary: #ae690a;
+    --sidebar-primary-foreground: #000000;
+    --sidebar-accent: #303423;
+    --sidebar-accent-foreground: #ffffff;
+    --sidebar-border: #66553d;
+    --sidebar-ring: #e36002;
   }
 }
