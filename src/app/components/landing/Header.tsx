@@ -4,10 +4,18 @@ import {
   HomeIcon,
   RocketLaunchIcon,
   CurrencyDollarIcon,
-  ArrowUpRightIcon,
 } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
+import { buttonVariants } from "@/app/components/ui/button";
+import { VT323 } from "next/font/google";
+import Link from "next/link";
+
+const vt323 = VT323({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-vt323",
+});
 
 const NAV_ITEMS = [
   { id: "hero", icon: HomeIcon, label: "Accueil" },
@@ -66,7 +74,7 @@ export default function Header() {
         {/* Logo on the left - fades out on scroll */}
         <motion.div
           style={{ opacity: sideOpacity, scale: sideScale }}
-          className="text-3xl font-bold tracking-widest font-mono"
+          className={`text-5xl font-bold ${vt323.className} text-black`}
         >
           plannikeeper
         </motion.div>
@@ -105,13 +113,12 @@ export default function Header() {
 
         {/* Start button on the right - fades out on scroll */}
         <motion.div style={{ opacity: sideOpacity, scale: sideScale }}>
-          <button
-            onClick={() => scrollToSection("pricing")}
-            className="flex items-center gap-2 bg-black text-white px-6 py-2 rounded-lg font-bold text-xl transition-all duration-300 hover:bg-gray-800 hover:scale-105"
+          <Link
+            href="/dashboard"
+            className={buttonVariants({ variant: "outline" })}
           >
-            start
-            <ArrowUpRightIcon className="h-5 w-5" />
-          </button>
+            SignIn
+          </Link>
         </motion.div>
       </div>
     </header>

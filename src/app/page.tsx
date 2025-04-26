@@ -4,10 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import Header from "@/app/components/landing/Header"; // Assurez-vous d'ajuster le chemin si nécessaire
 import TiltedCarousel from "@/app/components/landing/DualDirectionCarousel";
-import { CardContainer, CardBody, CardItem } from "@/app/components/ui/3d-card";
+import { Button } from "@/app/components/ui/button"; // Assurez-vous d'ajuster le chemin si nécessaire
 
 const ModernLandingPage = () => {
-  const [activeSection, setActiveSection] = useState("hero");
+  const [, setActiveSection] = useState("hero");
   const heroRef = useRef(null);
   const featuresRef = useRef(null);
   const pricingRef = useRef(null);
@@ -109,7 +109,7 @@ const ModernLandingPage = () => {
         ref={heroRef}
         className="min-h-screen relative flex items-center overflow-hidden"
         style={{
-          background: "linear-gradient(to bottom, #ffffff 0%, #CB8E01 100%)",
+          background: "linear-gradient(to bottom, #ffffff 0%, #D9840C 100%)",
         }}
       >
         <div className="container mx-auto px-6 pt-24 z-10">
@@ -119,11 +119,15 @@ const ModernLandingPage = () => {
             transition={{ duration: 0.8 }}
             className="text-left w-full md:w-2/3"
           >
-            <h1 className="text-[5rem] md:text-[6rem] font-extrabold leading-none text-gray-900 mb-6">
+            <h1 className="text-[5rem] md:text-[6rem] leading-none text-gray-900 mb-6">
               <motion.span
                 initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
+                className="font-normal"
+                style={{
+                  display: "inline-block",
+                }}
               >
                 Organisation
               </motion.span>
@@ -136,6 +140,7 @@ const ModernLandingPage = () => {
               >
                 Gestion
               </motion.span>{" "}
+              <br />
               <motion.span
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -145,16 +150,12 @@ const ModernLandingPage = () => {
                   type: "spring",
                   stiffness: 200,
                 }}
-                className="align-middle dot-pattern"
+                className="font-normal"
                 style={{
-                  fontFamily: "'VT323', monospace",
-                  letterSpacing: "0.05em",
-                  fontWeight: 700,
-                  fontSize: "1em",
                   display: "inline-block",
                 }}
               >
-                Planification
+                Plannification
               </motion.span>
             </h1>
 
@@ -173,12 +174,12 @@ const ModernLandingPage = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.8 }}
             >
-              <button
+              <Button
                 onClick={() => scrollToSection("features")}
-                className="px-8 py-3 bg-[#C74A11] text-white rounded-xl font-semibold text-lg transition-all duration-300 hover:bg-orange-800 hover:shadow-lg transform hover:scale-105"
+                variant="secondary"
               >
                 Découvrir
-              </button>
+              </Button>
             </motion.div>
           </motion.div>
         </div>

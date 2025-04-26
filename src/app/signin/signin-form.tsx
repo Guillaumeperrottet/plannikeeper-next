@@ -1,12 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { cn } from "@/lib/utils";
+import { Button } from "@/app/components/ui/button";
+import { Input } from "@/app/components/ui/input";
+import { Label } from "@/app/components/ui/label";
+import Link from "next/link";
 
-
-export default function SignInForm() {
+export default function SignInForm({
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<"div">) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -17,85 +23,79 @@ export default function SignInForm() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    const submitButton = e.currentTarget.querySelector('button[type="submit"]') as HTMLButtonElement;
     setIsLoading(true);
     setError(null);
-    submitButton.disabled = true;
-    submitButton.textContent = 'Signing in...';
 
-    await authClient.signIn.email({
-      email,
-      password,
-      callbackURL: redirectPath, // Utilisez le chemin de redirection
-    }, {
-      onSuccess: () => {
-        window.location.href = redirectPath;
+    await authClient.signIn.email(
+      {
+        email,
+        password,
+        callbackURL: redirectPath,
       },
-      onError: (err: any) => {
-        setError("Invalid email or password");
-        submitButton.disabled = false;
-        submitButton.textContent = 'Sign In';
-      },
-    });
+      {
+        onSuccess: () => {
+          window.location.href = redirectPath;
+        },
+        onError: () => {
+          setError("Invalid email or password");
+          setIsLoading(false);
+        },
+      }
+    );
   };
 
-
   return (
-    <div className="max-w-md mx-auto p-6 bg-white rounded shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-center">Sign In</h2>
-
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
-          {error}
-        </div>
-      )}
-
+    <div className={cn("flex flex-col gap-6", className)} {...props}>
       <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label htmlFor="email" className="block mb-2 text-sm font-medium">
-            Email
-          </label>
-          <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 border rounded"
-            required
-          />
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col items-center gap-2">
+            <h1 className="text-xl font-bold">Bienvenue sur Plannikeeper</h1>
+            <div className="text-center text-sm">
+              Don&apos;t have an account?{" "}
+              <Link href="/signup" className="underline underline-offset-4">
+                Sign up
+              </Link>
+            </div>
+          </div>
+          <div className="flex flex-col gap-6">
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
+                {error}
+              </div>
+            )}
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="m@example.com"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Signing in..." : "Login"}
+            </Button>
+          </div>
+          {/* ... (social login buttons et autres éléments si tu veux les garder) ... */}
         </div>
-
-        <div className="mb-6">
-          <label htmlFor="password" className="block mb-2 text-sm font-medium">
-            Password
-          </label>
-          <input
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3 py-2 border rounded"
-            required
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-        >
-          {isLoading ? "Signing in..." : "Sign In"}
-        </button>
       </form>
-
-      <div className="mt-4 text-center text-sm">
-        <p>
-          Don t have an account?{" "}
-          <Link href="/signup" className="text-blue-600 hover:underline">
-            Sign Up
-          </Link>
-        </p>
+      <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary">
+        By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
+        and <a href="#">Privacy Policy</a>.
       </div>
     </div>
   );
