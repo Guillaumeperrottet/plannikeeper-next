@@ -1,4 +1,8 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Le reste de vos styles personnalisés */
 
 /* Styles d'impression pour l'agenda todo list */
 @media print {
