@@ -70,7 +70,7 @@ export default function Header() {
         scrolled ? "bg-transparent backdrop-blur-sm py-3" : "bg-transparent"
       }`}
     >
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <div className="max-w-8xl mx-auto flex items-center justify-between">
         {/* Logo on the left - fades out on scroll */}
         <motion.div
           style={{ opacity: sideOpacity, scale: sideScale }}
@@ -88,7 +88,7 @@ export default function Header() {
           transition={{ delay: 0.3, duration: 0.5 }}
         >
           <div
-            className={`flex items-center gap-4 bg-background/90 backdrop-blur-sm rounded-full px-6 py-2 shadow-lg transition-all duration-300 ${
+            className={`flex items-center gap-6 bg-background/90 backdrop-blur-sm rounded-full px-6 py-2 shadow-lg transition-all duration-300 ${
               scrolled ? "px-8 py-3" : ""
             }`}
           >

@@ -15,7 +15,6 @@ interface ObjetCardProps {
 }
 
 export default function ObjetCard({ objet }: ObjetCardProps) {
-  // Fonction pour déterminer quelle icône utiliser selon le secteur
   const getSecteurIcon = (secteur: string) => {
     switch (secteur.toLowerCase()) {
       case "bureau":
@@ -27,27 +26,24 @@ export default function ObjetCard({ objet }: ObjetCardProps) {
     }
   };
 
-  // ...existing code...
   return (
     <div
       className="
-      rounded-lg
-      border
-      border-[color:var(--border)]
-      bg-[color:var(--card)]
-      text-[color:var(--card-foreground)]
-      hover:border-[color:#6C5A41]
-      hover:shadow-md
-      transition-all
-      duration-200
-      relative
-    "
+        rounded-lg border border-[color:var(--border)]
+        bg-[color:var(--card)] text-[color:var(--card-foreground)]
+        hover:border-[color:#6C5A41] hover:shadow-md
+        transition-all duration-200 relative
+        cursor-pointer
+      "
+      onClick={() => {
+        // navigation imperceptible sans <Link> imbriqué
+        window.location.href = `/dashboard/objet/${objet.id}/view`;
+      }}
     >
-      <Link href={`/dashboard/objet/${objet.id}/view`} className="block p-5">
+      <div className="block p-5">
         <div className="flex justify-between items-start mb-3">
-          <h2 className="text-xl font-semibold text-[color:var(--card-foreground)] line-clamp-1">
-            {objet.nom}
-          </h2>
+          <h2 className="text-xl font-semibold line-clamp-1">{objet.nom}</h2>
+          {/* ici seul ce Link gère l’édition */}
           <Link href={`/dashboard/objet/${objet.id}/edit`}>
             <Editbutton aria-label="Modifier cet objet" />
           </Link>
@@ -79,7 +75,7 @@ export default function ObjetCard({ objet }: ObjetCardProps) {
             </span>
           </div>
         </div>
-      </Link>
+      </div>
     </div>
   );
 }
