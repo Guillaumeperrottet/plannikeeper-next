@@ -106,7 +106,7 @@ export const DesktopSidebar = ({
     <>
       <motion.div
         className={cn(
-          "hidden md:flex md:flex-col h-full bg-[color:var(--sidebar-background)] text-[color:var(--sidebar-foreground)] shadow-md shrink-0 transition-all duration-150 border-r border-[color:var(--sidebar-border)]",
+          "hidden md:flex md:flex-col h-full bg-[color:var(--sidebar-background)] text-[color:var(--sidebar-foreground)] shadow-md shrink-0 transition-all duration-30 border-r border-[color:var(--sidebar-border)]",
           className
         )}
         animate={{
@@ -232,7 +232,7 @@ export const SidebarLink = ({
     <Link
       href={link.href}
       className={cn(
-        "flex items-center gap-2 py-2 px-2 my-1 rounded-lg transition-colors duration-200", // gap et padding réduits
+        "flex items-center gap-2 py-2 px-2 my-1 rounded-lg transition-colors duration-1", // gap et padding réduits
         isActive
           ? "bg-[color:var(--sidebar-accent)] text-[color:var(--sidebar-accent-foreground)]"
           : "text-[color:var(--sidebar-foreground)] hover:bg-[color:var(--sidebar-accent)] hover:bg-opacity-50 hover:text-[color:var(--sidebar-accent-foreground)]",

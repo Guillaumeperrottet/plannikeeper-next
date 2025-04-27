@@ -2,8 +2,10 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { Plus, Move, X, Edit, Trash } from "lucide-react";
+import { Plus, Move, X, Edit, Trash, ArrowLeft } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type Article = {
   id: string;
@@ -116,6 +118,8 @@ export default function ArticleEditor({
     width: 10,
     height: 10,
   });
+
+  const router = useRouter();
 
   // Fonction pour mettre à jour les dimensions de l'image
   const updateImageDimensions = useCallback(() => {
@@ -809,7 +813,15 @@ export default function ArticleEditor({
   return (
     <div className="relative">
       {/* Toolbar */}
-      <div className="sticky top-0 z-10 p-2 bg-backgroundround border-b">
+      <div className="sticky top-0 left-10 z-10 p-4 bg-backgroundround w-full flex justify-center">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="absolute left-12 top-1/2 -translate-y-1/2"
+          aria-label="Retour"
+        >
+          <ArrowLeft size={20} />
+        </button>
         <Button
           type="button"
           variant="outline"
