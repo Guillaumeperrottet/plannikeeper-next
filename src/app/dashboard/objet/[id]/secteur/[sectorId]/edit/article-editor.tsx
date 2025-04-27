@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { Plus, Move, X, Edit, Trash } from "lucide-react";
+import { Button } from "@/app/components/ui/button";
 
 type Article = {
   id: string;
@@ -809,15 +810,17 @@ export default function ArticleEditor({
     <div className="relative">
       {/* Toolbar */}
       <div className="sticky top-0 z-10 p-2 bg-backgroundround border-b">
-        <button
+        <Button
+          type="button"
+          variant="outline"
+          className={`flex items-center gap-2 px-3 py-2 rounded ${
+            isAddingArticle ? "bg-blue-100 text-blue-700" : ""
+          }`}
           onClick={() => {
             setIsAddingArticle(!isAddingArticle);
             setIsDraggingNew(false);
             setSelectedArticleId(null);
           }}
-          className={`flex items-center gap-2 px-3 py-2 rounded ${
-            isAddingArticle ? "bg-blue-100 text-blue-700" : "bg-gray-100"
-          }`}
         >
           <Plus size={16} />
           <span>
@@ -825,7 +828,7 @@ export default function ArticleEditor({
               ? "Dessinez pour placer un article"
               : "Ajouter un article"}
           </span>
-        </button>
+        </Button>
       </div>
 
       {/* Espace de dessin */}

@@ -1,13 +1,13 @@
 "use client";
 
 import DropdownMenu from "@/app/components/ui/dropdownmenu";
+import { Button } from "@/app/components/ui/button";
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
-  Plus,
+  PlusCircle,
   ChevronLeft,
   ChevronRight,
-  Edit,
   Layers,
   Maximize2,
   Minimize2,
@@ -117,7 +117,7 @@ export default function SectorViewer({
         if (viewerRef.current.requestFullscreen) {
           viewerRef.current.requestFullscreen();
         }
-      } catch (err) {
+      } catch {
         console.log("Fullscreen API not supported or enabled");
       }
     } else if (document.fullscreenElement) {
@@ -182,30 +182,24 @@ export default function SectorViewer({
             />
           </div>
 
-          <div className="flex items-center gap-3 absolute right-4">
+          <div className="flex items-center gap-3 absolute right-40">
             {selectedSector && (
-              <Link
-                href={`/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?addArticle=1`}
-                className="flex items-center gap-1 text-gray-600 hover:text-gray-800"
-              >
-                <Edit size={16} />
-                <span>Éditer ce secteur</span>
-              </Link>
+              <Button asChild variant="outline">
+                <Link
+                  href={`/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?addArticle=1`}
+                >
+                  <PlusCircle size={20} className="mr-2" />
+                  Ajouter/Déplacer un article
+                </Link>
+              </Button>
             )}
-            <Link
-              href={`/dashboard/objet/${objetId}/secteur/new`}
-              className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
-            >
-              <Plus size={16} />
-              <span>Ajouter un secteur</span>
-            </Link>
           </div>
         </div>
       )}
 
       <div
         className={`flex-1 flex items-center justify-center overflow-hidden ${
-          isFullscreen ? "bg-transparent" : "bg-transparent p-4"
+          isFullscreen ? "bg-transparent" : "bg-transparent p-1"
         }`}
       >
         {selectedSector ? (
@@ -244,7 +238,7 @@ export default function SectorViewer({
                   onArticleClick={handleArticleClick}
                   onArticleHover={setHoveredArticleId}
                   hoveredArticleId={hoveredArticleId}
-                  className={`rounded-md shadow-md ${
+                  className={`${
                     isFullscreen ? "max-h-screen" : "max-h-[calc(100vh-150px)]"
                   }`}
                 />
