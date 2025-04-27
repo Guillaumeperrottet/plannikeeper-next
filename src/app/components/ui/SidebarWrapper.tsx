@@ -105,9 +105,12 @@ export default function SidebarWrapper({
   );
 
   return (
-    <div className="flex h-screen">
+    <div className="flex">
       <Sidebar>
-        <SidebarBody userComponent={(open) => userComponent(open)}>
+        <SidebarBody
+          userComponent={(open) => userComponent(open)}
+          className="h-[calc(100vh-100px)]"
+        >
           {/* Premier lien : Dashboard */}
           <SidebarLink
             key={navItems[0].href}
