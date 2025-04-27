@@ -6,6 +6,8 @@ import { ArrowLeft, Plus, Trash, Upload } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
+import { Input } from "@/app/components/ui/input";
+import { Button } from "@/app/components/ui/button";
 
 interface SectorInput {
   name: string;
@@ -159,28 +161,27 @@ export default function NewObjectForm() {
 
       <form
         onSubmit={handleSubmit}
-        className="space-y-6 bg-backgroundround rounded-lg border border-gray-200 p-6"
+        className="space-y-6 bg-[color:var(--card)] rounded-lg border border-[color:var(--border)] p-6"
       >
         <div className="grid gap-6 mb-8">
-          <h2 className="text-xl font-semibold border-b pb-2">
+          <h2 className="text-xl font-semibold border-b border-[color:var(--border)] pb-2 text-[color:var(--foreground)]">
             Informations générales
           </h2>
 
           <div>
             <label
               htmlFor="nom"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-medium text-[color:var(--foreground)] mb-1"
             >
               Nom *
             </label>
-            <input
+            <Input
               type="text"
               id="nom"
               name="nom"
               value={nom}
               onChange={(e) => setNom(e.target.value)}
               placeholder="Nom de l'objet"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
@@ -188,18 +189,17 @@ export default function NewObjectForm() {
           <div>
             <label
               htmlFor="adresse"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-medium text-[color:var(--foreground)] mb-1"
             >
               Adresse *
             </label>
-            <input
+            <Input
               type="text"
               id="adresse"
               name="adresse"
               value={adresse}
               onChange={(e) => setAdresse(e.target.value)}
               placeholder="Adresse complète"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
@@ -207,18 +207,17 @@ export default function NewObjectForm() {
           <div>
             <label
               htmlFor="secteur"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-medium text-[color:var(--foreground)] mb-1"
             >
-              Acticité *
+              Activité *
             </label>
-            <input
+            <Input
               type="text"
               id="secteur"
               name="secteur"
               value={secteurPrincipal}
               onChange={(e) => setSecteurPrincipal(e.target.value)}
-              placeholder="Entrez l'activité' de l'objet ex: Camping, Immobilier..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Ex: Camping, Immobilier..."
               required
             />
           </div>
@@ -286,8 +285,8 @@ export default function NewObjectForm() {
                       htmlFor={`sector-${index}-image`}
                       className={`flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed rounded-lg cursor-pointer ${
                         sector.image
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-300 hover:bg-gray-100"
+                          ? "border-[color:var(--primary)] bg-[color:var(--primary)]/10"
+                          : "border-[color:var(--border)] hover:bg-[color:var(--muted)]"
                       }`}
                     >
                       {sector.imagePreview ? (
@@ -335,20 +334,15 @@ export default function NewObjectForm() {
           ))}
         </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t mt-8">
-          <Link
-            href="/dashboard"
-            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-          >
-            Annuler
+        <div className="flex justify-end gap-3 pt-4 border-t border-[color:var(--border)] mt-8">
+          <Link href="/dashboard">
+            <Button variant="outline" type="button">
+              Annuler
+            </Button>
           </Link>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-          >
+          <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Création en cours..." : "Créer l'objet"}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
