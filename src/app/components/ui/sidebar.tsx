@@ -157,12 +157,11 @@ export const MobileSidebar = ({
     <>
       <div
         className={cn(
-          "h-16 px-4 flex flex-row md:hidden items-center justify-between bg-[color:var(--sidebar-background)] text-[color:var(--sidebar-foreground)] border-b border-[color:var(--sidebar-border)] w-full",
+          "h-auto px-0 flex flex-row w-6 md:hidden items-center justify-between bg-[color:var(--sidebar-background)] text-[color:var(--sidebar-foreground)] border-b border-[color:var(--sidebar-border)]",
           className
         )}
         {...props}
       >
-        <div className="font-bold text-xl">PlanniKeeper</div>
         <div className="flex justify-end z-20">
           <IconMenu2
             className="text-[color:var(--sidebar-foreground)] cursor-pointer"
@@ -185,7 +184,6 @@ export const MobileSidebar = ({
               )}
             >
               <div className="flex justify-between items-center p-4 border-b border-[color:var(--sidebar-border)]">
-                <div className="font-bold text-xl">PlanniKeeper</div>
                 <div
                   className="text-[color:var(--sidebar-foreground)] cursor-pointer"
                   onClick={() => setOpen(!open)}
