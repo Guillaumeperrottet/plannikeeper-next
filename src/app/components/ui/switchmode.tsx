@@ -1,11 +1,26 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 
 const Switch = () => {
+  const [dark, setDark] = useState(false);
+
+  useEffect(() => {
+    if (dark) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [dark]);
+
   return (
     <StyledWrapper>
       <label className="ui-switch">
-        <input type="checkbox" />
+        <input
+          type="checkbox"
+          checked={dark}
+          onChange={() => setDark((v) => !v)}
+          aria-label="Activer le mode sombre"
+        />
         <div className="slider">
           <div className="circle" />
         </div>
