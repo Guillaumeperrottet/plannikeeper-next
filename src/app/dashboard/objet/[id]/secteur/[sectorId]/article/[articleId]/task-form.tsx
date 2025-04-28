@@ -8,7 +8,10 @@ import {
   Paperclip,
   Upload,
   Trash,
+  Image as ImageIcon,
+  FileText,
 } from "lucide-react";
+
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
@@ -547,7 +550,7 @@ export default function TaskFormWithDocuments({
                     >
                       <div className="flex items-center gap-2 truncate">
                         {file.type.startsWith("image/") ? (
-                          <Image size={16} className="text-blue-500" />
+                          <ImageIcon size={16} className="text-blue-500" />
                         ) : (
                           <FileText size={16} className="text-red-500" />
                         )}
