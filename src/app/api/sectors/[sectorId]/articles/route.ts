@@ -12,7 +12,7 @@ export async function GET(
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const sectorId = params.sectorId;
+  const sectorId = await params.sectorId;
 
   // Vérifier que l'utilisateur a accès au secteur
   const sector = await prisma.sector.findUnique({

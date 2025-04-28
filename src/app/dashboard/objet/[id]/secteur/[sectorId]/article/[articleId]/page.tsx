@@ -14,9 +14,9 @@ export default async function ArticleDetailPage({
     redirect("/signin");
   }
 
-  const objetId = params.id;
-  const sectorId = params.sectorId;
-  const articleId = params.articleId;
+  const objetId = await params.id;
+  const sectorId = await params.sectorId;
+  const articleId = await params.articleId;
 
   // Récupérer l'article avec ses tâches et le secteur parent
   const article = await prisma.article.findUnique({

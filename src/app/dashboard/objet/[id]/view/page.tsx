@@ -17,7 +17,7 @@ export default async function ObjetViewPage({
   }
 
   // Assurez-vous que params.id est disponible avant de l'utiliser
-  const objetId = params.id;
+  const objetId = await params.id;
 
   // Récupérer l'objet avec ses secteurs
   const objet = await prisma.objet.findUnique({

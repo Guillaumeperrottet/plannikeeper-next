@@ -17,7 +17,7 @@ export default async function ObjetEditPage({
     redirect("/signin");
   }
 
-  const objetId = params.id;
+  const objetId = await params.id;
 
   // Récupérer l'objet avec ses secteurs
   const objet = await prisma.objet.findUnique({

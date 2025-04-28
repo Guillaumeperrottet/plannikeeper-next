@@ -12,7 +12,7 @@ export async function GET(
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const objectId = params.objectId;
+  const objectId = await params.objectId;
 
   // Vérifier que l'utilisateur a accès à cet objet
   const userWithOrg = await prisma.user.findUnique({
