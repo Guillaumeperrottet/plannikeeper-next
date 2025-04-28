@@ -4,6 +4,7 @@ import { getUser } from "../lib/auth-session";
 import "./globals.css";
 import TodoListAgendaWrapper from "./components/TodoListAgendaWrapper";
 import SidebarWrapper from "@/app/components/ui/SidebarWrapper";
+import { prisma } from "@/lib/prisma";
 
 export default async function RootLayout({
   children,
@@ -12,11 +13,29 @@ export default async function RootLayout({
 }) {
   const user = await getUser();
 
+  // Récupérer des informations supplémentaires comme le rôle si l'utilisateur est connecté
+  let userWithRole = user;
+
+  if (user) {
+    // Obtenir le rôle de l'utilisateur
+    const orgUser = await prisma.organizationUser.findFirst({
+      where: { userId: user.id },
+      select: { role: true },
+    });
+
+    // Ajouter le rôle aux informations de l'utilisateur
+    userWithRole = {
+      ...user,
+      isAdmin: orgUser?.role === "admin",
+      role: orgUser?.role,
+    };
+  }
+
   return (
     <html lang="en">
       <body className="bg-background" suppressHydrationWarning>
-        {user && <Navbar user={user} />}
-        <SidebarWrapper user={user}>
+        {user && <Navbar user={userWithRole} />}
+        <SidebarWrapper user={userWithRole}>
           <div className="pb-16 md:pb-14">{children}</div>
         </SidebarWrapper>
         {user && <TodoListAgendaWrapper />}

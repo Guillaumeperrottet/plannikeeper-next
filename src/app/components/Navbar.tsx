@@ -4,6 +4,7 @@ import Link from "next/link";
 import { VT323 } from "next/font/google";
 import Switch from "@/app/components/ui/switchmode";
 import Breadcrumbs from "@/app/components/Breadcrumbs";
+import UserMenu from "@/app/components/ui/UserMenu";
 
 const vt323 = VT323({
   subsets: ["latin"],
@@ -11,7 +12,10 @@ const vt323 = VT323({
   variable: "--font-vt323",
 });
 
-export default function Navbar() {
+export default function Navbar({ user }: { user: any }) {
+  // Vérifier si l'utilisateur est admin en se basant sur les propriétés attendues
+  const isAdmin = user?.role === "admin" || user?.isAdmin;
+
   return (
     <nav
       className="w-full border-b px-4 py-2 flex justify-between items-center relative z-50"
@@ -36,8 +40,10 @@ export default function Navbar() {
         <Breadcrumbs />
       </div>
 
-      <div>
+      {/* Section droite avec Dark Mode Switch et User Menu */}
+      <div className="flex items-center gap-4">
         <Switch />
+        <UserMenu user={user} isAdmin={isAdmin} />
       </div>
     </nav>
   );
