@@ -1,10 +1,7 @@
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import TaskList from "@/app/dashboard/objet/[id]/secteur/[sectorId]/article/[articleId]/task-list";
-import TaskForm from "@/app/dashboard/objet/[id]/secteur/[sectorId]/article/[articleId]/task-form";
+import TasksPage from "./tasks-page";
 
 export default async function ArticleDetailPage({
   params,
@@ -63,57 +60,19 @@ export default async function ArticleDetailPage({
 
   const users = orgUsers.map((ou) => ({
     id: ou.user.id,
-    name: ou.user.name,
-    email: ou.user.email,
+    name: ou.user.name || "",
+    email: ou.user.email || "",
   }));
 
   return (
-    <div className="max-w-4xl mx-auto p-20 bg-background text-foreground rounded-lg shadow-md over">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-3">
-          <Link
-            href={`/dashboard/objet/${objetId}/view`}
-            className="p-2 rounded-full hover:bg-accent transition-colors"
-          >
-            <ArrowLeft size={20} />
-          </Link>
-          <h1 className="text-2xl font-bold">{article.title}</h1>
-        </div>
-      </div>
-
-      <div className="bg-card rounded-lg border border-border p-6 mb-6 shadow-sm">
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold mb-2">Description</h2>
-          <p className="text-muted-foreground">
-            {article.description || "Aucune description"}
-          </p>
-        </div>
-
-        <div className="border-t border-border pt-4">
-          <p className="text-sm text-muted-foreground">
-            Secteur: {article.sector.name} • Créé le:{" "}
-            {new Date(article.createdAt).toLocaleDateString()}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-8">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">
-            Tâches ({article.tasks.length})
-          </h2>
-        </div>
-
-        <TaskForm articleId={article.id} users={users} />
-
-        <div className="mt-6">
-          <TaskList
-            tasks={article.tasks}
-            users={users}
-            articleId={article.id}
-          />
-        </div>
-      </div>
-    </div>
+    <TasksPage
+      initialTasks={article.tasks}
+      users={users}
+      articleId={article.id}
+      articleTitle={article.title}
+      articleDescription={article.description}
+      objetId={objetId}
+      sectorId={sectorId}
+    />
   );
 }

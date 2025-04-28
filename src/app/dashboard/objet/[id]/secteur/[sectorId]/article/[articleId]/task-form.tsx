@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Calendar, Plus, X } from "lucide-react";
-import { toast } from "sonner";
+import { useState } from "react";
+import { Calendar, X, AlertCircle } from "lucide-react";
+import { motion } from "framer-motion";
 
 type User = {
   id: string;
@@ -11,7 +11,7 @@ type User = {
 };
 
 type Task = {
-  id: string;
+  id?: string;
   name: string;
   description: string | null;
   executantComment: string | null;
@@ -25,44 +25,47 @@ type Task = {
   endDate: Date | null;
   recurrenceReminderDate: Date | null;
   assignedToId: string | null;
-  assignedTo: User | null;
-  createdAt: Date;
-  updatedAt: Date;
+  assignedTo?: User | null;
+  createdAt?: Date;
+  updatedAt?: Date;
 };
 
-type TaskFormProps = {
-  articleId: string;
-  users: User[];
+interface TaskFormProps {
   task?: Task;
-  onCancel?: () => void;
-};
+  users: User[];
+  articleId: string;
+  onSave: (task: Task) => Promise<void>;
+  onCancel: () => void;
+}
 
 export default function TaskForm({
-  articleId,
-  users,
   task,
+  users,
+  onSave,
   onCancel,
 }: TaskFormProps) {
-  const [isOpen, setIsOpen] = useState(!!task);
+  const [isLoading, setIsLoading] = useState(false);
   const [isRecurring, setIsRecurring] = useState(task?.recurring || false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState({
+  const defaultColor = "#3b82f6"; // Bleu par défaut
+
+  const [formData, setFormData] = useState<
+    Omit<Task, "id" | "assignedTo" | "createdAt" | "updatedAt">
+  >({
     name: task?.name || "",
     description: task?.description || "",
+    executantComment: task?.executantComment || "",
+    done: task?.done || false,
+    realizationDate: task?.realizationDate || null,
     status: task?.status || "pending",
     taskType: task?.taskType || "",
-    color: task?.color || "#3b82f6", // Bleu par défaut
-    realizationDate: task?.realizationDate
-      ? new Date(task.realizationDate).toISOString().split("T")[0]
-      : "",
-    assignedToId: task?.assignedToId || "",
+    color: task?.color || defaultColor,
     recurring: task?.recurring || false,
-    period: task?.period || "daily",
-    endDate: task?.endDate
-      ? new Date(task.endDate).toISOString().split("T")[0]
-      : "",
-    executantComment: task?.executantComment || "",
+    period: task?.period || "weekly",
+    endDate: task?.endDate || null,
+    recurrenceReminderDate: task?.recurrenceReminderDate || null,
+    assignedToId: task?.assignedToId || "",
   });
 
   const handleChange = (
@@ -89,366 +92,341 @@ export default function TaskForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
 
     if (!formData.name.trim()) {
-      toast.error("Le nom de la tâche est requis");
+      setFormError("Le nom de la tâche est requis");
       return;
     }
 
-    setIsSubmitting(true);
-    const toastId = toast.loading(
-      task ? "Mise à jour de la tâche..." : "Création de la tâche..."
-    );
-
     try {
-      const taskData = {
+      setIsLoading(true);
+
+      // Construire l'objet de tâche complet
+      const taskData: Task = {
         ...formData,
-        articleId,
-        realizationDate: formData.realizationDate || null,
+        id: task?.id,
+        realizationDate: formData.realizationDate
+          ? new Date(formData.realizationDate as unknown as string)
+          : null,
         endDate:
-          formData.recurring && formData.endDate ? formData.endDate : null,
+          formData.recurring && formData.endDate
+            ? new Date(formData.endDate as unknown as string)
+            : null,
       };
 
-      const url = task ? `/api/tasks/${task.id}` : "/api/tasks";
-      const method = task ? "PUT" : "POST";
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(taskData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Une erreur est survenue");
-      }
-
-      toast.success(
-        task ? "Tâche mise à jour avec succès" : "Tâche créée avec succès",
-        { id: toastId }
-      );
-
-      // Réinitialiser le formulaire ou fermer
-      if (!task) {
-        setFormData({
-          name: "",
-          description: "",
-          status: "pending",
-          taskType: "",
-          color: "#3b82f6",
-          realizationDate: "",
-          assignedToId: "",
-          recurring: false,
-          period: "daily",
-          endDate: "",
-          executantComment: "",
-        });
-        setIsRecurring(false);
-        setIsOpen(false);
-      } else if (onCancel) {
-        onCancel();
-      }
-
-      // Rafraîchir la page pour voir les modifications
-      window.location.reload();
+      await onSave(taskData);
     } catch (error) {
-      console.error("Erreur:", error);
-      toast.error(
-        `Erreur: ${
-          error instanceof Error ? error.message : "Une erreur est survenue"
-        }`,
-        { id: toastId }
-      );
+      console.error("Erreur lors de la sauvegarde:", error);
+      setFormError("Une erreur est survenue lors de la sauvegarde");
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
-  if (!isOpen && !task) {
-    return (
-      <button
-        onClick={() => setIsOpen(true)}
-        className="w-full py-3 border-2 border-dashed text-gray-500 hover:text-gray-700 hover:border-gray-400 rounded-lg flex items-center justify-center gap-2"
-      >
-        <Plus size={16} />
-        <span>Ajouter une nouvelle tâche</span>
-      </button>
-    );
-  }
-
   return (
-    <div className="bg-backgroundround border rounded-lg p-5">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="font-semibold text-lg">
-          {task ? "Modifier la tâche" : "Nouvelle tâche"}
-        </h3>
-
-        {!task && (
-          <button
-            onClick={() => setIsOpen(false)}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            <X size={20} />
-          </button>
-        )}
+    <motion.div
+      className="max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-lg"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 20 }}
+      transition={{ duration: 0.3 }}
+    >
+      <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-700 px-6 py-4 border-b border-gray-200 dark:border-gray-600">
+        <h2 className="text-xl font-semibold">
+          {task?.id ? "Modifier la tâche" : "Nouvelle tâche"}
+        </h2>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+        >
+          <X size={20} />
+        </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium mb-1">
-            Nom de la tâche *
-          </label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            placeholder="Saisir le nom de la tâche"
-            className="w-full px-3 py-2 border rounded-md focus:ring-1 focus:ring-blue-500"
-            required
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="description"
-            className="block text-sm font-medium mb-1"
-          >
-            Description
-          </label>
-          <textarea
-            id="description"
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            placeholder="Description détaillée (optionnelle)"
-            className="w-full px-3 py-2 border rounded-md focus:ring-1 focus:ring-blue-500"
-            rows={3}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="status" className="block text-sm font-medium mb-1">
-              Statut
-            </label>
-            <select
-              id="status"
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md focus:ring-1 focus:ring-blue-500"
-            >
-              <option value="pending">À faire</option>
-              <option value="in_progress">En cours</option>
-              <option value="completed">Terminée</option>
-              <option value="cancelled">Annulée</option>
-            </select>
+      <form onSubmit={handleSubmit} className="p-6">
+        {formError && (
+          <div className="mb-6 flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400">
+            <AlertCircle size={16} />
+            <span>{formError}</span>
           </div>
+        )}
 
+        <div className="space-y-6">
           <div>
-            <label
-              htmlFor="taskType"
-              className="block text-sm font-medium mb-1"
-            >
-              Type de tâche
+            <label htmlFor="name" className="block text-sm font-medium mb-2">
+              Nom de la tâche *
             </label>
             <input
               type="text"
-              id="taskType"
-              name="taskType"
-              value={formData.taskType}
+              id="name"
+              name="name"
+              value={formData.name}
               onChange={handleChange}
-              placeholder="Ex: Maintenance, Nettoyage, Réparation..."
-              className="w-full px-3 py-2 border rounded-md focus:ring-1 focus:ring-blue-500"
+              placeholder="Saisir le nom de la tâche"
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700"
+              required
             />
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label
-              htmlFor="realizationDate"
-              className="block text-sm font-medium mb-1"
-            >
-              Date de réalisation prévue
-            </label>
-            <div className="relative">
-              <input
-                type="date"
-                id="realizationDate"
-                name="realizationDate"
-                value={formData.realizationDate}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border rounded-md focus:ring-1 focus:ring-blue-500"
-              />
-              <Calendar
-                size={16}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              />
-            </div>
-          </div>
 
           <div>
             <label
-              htmlFor="assignedToId"
-              className="block text-sm font-medium mb-1"
+              htmlFor="description"
+              className="block text-sm font-medium mb-2"
             >
-              Attribuer à
+              Description
             </label>
-            <select
-              id="assignedToId"
-              name="assignedToId"
-              value={formData.assignedToId}
+            <textarea
+              id="description"
+              name="description"
+              value={formData.description || ""}
               onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-md focus:ring-1 focus:ring-blue-500"
-            >
-              <option value="">Non assignée</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-          <div>
-            <label htmlFor="color" className="block text-sm font-medium mb-1">
-              Couleur
-            </label>
-            <div className="flex items-center gap-2">
-              <input
-                type="color"
-                id="color"
-                name="color"
-                value={formData.color}
-                onChange={handleColorChange}
-                className="w-10 h-10 p-0 border-0 rounded-md cursor-pointer"
-              />
-              <span className="text-sm">{formData.color}</span>
-            </div>
+              placeholder="Description détaillée (optionnelle)"
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700"
+              rows={3}
+            />
           </div>
 
-          <div className="col-span-2">
-            <div className="flex items-center h-10">
-              <input
-                type="checkbox"
-                id="recurring"
-                name="recurring"
-                checked={formData.recurring}
-                onChange={handleCheckboxChange}
-                className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
-              />
-              <label htmlFor="recurring" className="ml-2 block text-sm">
-                Tâche récurrente
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label
+                htmlFor="status"
+                className="block text-sm font-medium mb-2"
+              >
+                Statut
               </label>
+              <select
+                id="status"
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700"
+              >
+                <option value="pending">À faire</option>
+                <option value="in_progress">En cours</option>
+                <option value="completed">Terminée</option>
+                <option value="cancelled">Annulée</option>
+              </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="taskType"
+                className="block text-sm font-medium mb-2"
+              >
+                Type de tâche
+              </label>
+              <input
+                type="text"
+                id="taskType"
+                name="taskType"
+                value={formData.taskType || ""}
+                onChange={handleChange}
+                placeholder="Ex: Maintenance, Nettoyage, Réparation..."
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700"
+              />
             </div>
           </div>
-        </div>
 
-        {isRecurring && (
-          <div className="p-4 bg-blue-50 rounded-md space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label
-                  htmlFor="period"
-                  className="block text-sm font-medium mb-1"
-                >
-                  Périodicité
-                </label>
-                <select
-                  id="period"
-                  name="period"
-                  value={formData.period}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label
+                htmlFor="realizationDate"
+                className="block text-sm font-medium mb-2"
+              >
+                Date de réalisation prévue
+              </label>
+              <div className="relative">
+                <input
+                  type="date"
+                  id="realizationDate"
+                  name="realizationDate"
+                  value={
+                    formData.realizationDate
+                      ? new Date(formData.realizationDate as unknown as string)
+                          .toISOString()
+                          .split("T")[0]
+                      : ""
+                  }
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border rounded-md focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="daily">Quotidienne</option>
-                  <option value="weekly">Hebdomadaire</option>
-                  <option value="monthly">Mensuelle</option>
-                  <option value="quarterly">Trimestrielle</option>
-                  <option value="yearly">Annuelle</option>
-                </select>
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700"
+                />
+                <Calendar
+                  size={16}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+                />
               </div>
+            </div>
 
-              <div>
+            <div>
+              <label
+                htmlFor="assignedToId"
+                className="block text-sm font-medium mb-2"
+              >
+                Attribuer à
+              </label>
+              <select
+                id="assignedToId"
+                name="assignedToId"
+                value={formData.assignedToId || ""}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700"
+              >
+                <option value="">Non assignée</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+            <div>
+              <label htmlFor="color" className="block text-sm font-medium mb-2">
+                Couleur
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  id="color"
+                  name="color"
+                  value={formData.color || defaultColor}
+                  onChange={handleColorChange}
+                  className="w-12 h-12 p-1 border-0 rounded-md cursor-pointer"
+                />
+                <div
+                  className="w-12 h-8 rounded border border-gray-300 dark:border-gray-600"
+                  style={{ backgroundColor: formData.color || defaultColor }}
+                />
+              </div>
+            </div>
+
+            <div className="col-span-2">
+              <div className="flex items-center h-12">
+                <input
+                  type="checkbox"
+                  id="recurring"
+                  name="recurring"
+                  checked={formData.recurring}
+                  onChange={handleCheckboxChange}
+                  className="h-5 w-5 text-primary rounded focus:ring-primary"
+                />
                 <label
-                  htmlFor="endDate"
-                  className="block text-sm font-medium mb-1"
+                  htmlFor="recurring"
+                  className="ml-2 block text-sm font-medium"
                 >
-                  Date de fin (optionnelle)
+                  Tâche récurrente
                 </label>
-                <div className="relative">
-                  <input
-                    type="date"
-                    id="endDate"
-                    name="endDate"
-                    value={formData.endDate}
+              </div>
+            </div>
+          </div>
+
+          {isRecurring && (
+            <div className="p-5 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label
+                    htmlFor="period"
+                    className="block text-sm font-medium mb-2"
+                  >
+                    Périodicité
+                  </label>
+                  <select
+                    id="period"
+                    name="period"
+                    value={formData.period || "weekly"}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border rounded-md focus:ring-1 focus:ring-blue-500"
-                  />
-                  <Calendar
-                    size={16}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                  />
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700"
+                  >
+                    <option value="daily">Quotidienne</option>
+                    <option value="weekly">Hebdomadaire</option>
+                    <option value="monthly">Mensuelle</option>
+                    <option value="quarterly">Trimestrielle</option>
+                    <option value="yearly">Annuelle</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="endDate"
+                    className="block text-sm font-medium mb-2"
+                  >
+                    Date de fin (optionnelle)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="date"
+                      id="endDate"
+                      name="endDate"
+                      value={
+                        formData.endDate
+                          ? new Date(formData.endDate as unknown as string)
+                              .toISOString()
+                              .split("T")[0]
+                          : ""
+                      }
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700"
+                    />
+                    <Calendar
+                      size={16}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {task && (
-          <div>
-            <label
-              htmlFor="executantComment"
-              className="block text-sm font-medium mb-1"
-            >
-              Commentaire d'exécution
-            </label>
-            <textarea
-              id="executantComment"
-              name="executantComment"
-              value={formData.executantComment}
-              onChange={handleChange}
-              placeholder="Commentaires sur l'exécution de la tâche"
-              className="w-full px-3 py-2 border rounded-md focus:ring-1 focus:ring-blue-500"
-              rows={2}
-            />
-          </div>
-        )}
+          {task?.id && (
+            <div>
+              <label
+                htmlFor="executantComment"
+                className="block text-sm font-medium mb-2"
+              >
+                Commentaire d&apos;exécution
+              </label>
+              <textarea
+                id="executantComment"
+                name="executantComment"
+                value={formData.executantComment || ""}
+                onChange={handleChange}
+                placeholder="Commentaires sur l'exécution de la tâche"
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700"
+                rows={2}
+              />
+            </div>
+          )}
 
-        <div className="flex justify-end gap-2 pt-4">
-          {task && onCancel && (
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-              disabled={isSubmitting}
+              className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              disabled={isLoading}
             >
               Annuler
             </button>
-          )}
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-          >
-            {isSubmitting
-              ? task
-                ? "Mise à jour..."
-                : "Création..."
-              : task
-              ? "Mettre à jour"
-              : "Créer la tâche"}
-          </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="px-4 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              {isLoading
+                ? task?.id
+                  ? "Mise à jour..."
+                  : "Création..."
+                : task?.id
+                ? "Mettre à jour"
+                : "Créer la tâche"}
+            </button>
+          </div>
         </div>
       </form>
-    </div>
+    </motion.div>
   );
 }
