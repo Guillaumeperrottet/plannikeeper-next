@@ -196,6 +196,7 @@ model Task {
   endDate               DateTime?
   recurrenceReminderDate DateTime?
   // Relations
+  documents Document[]
   articleId             String    // Foreign key to Article
   article               Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
   assignedToId          String?   // Optional foreign key to User
@@ -204,4 +205,20 @@ model Task {
   updatedAt             DateTime  @updatedAt
 
   @@map("task")
+}
+
+model Document {
+  id        String   @id @default(cuid())
+  name      String
+  filePath  String
+  fileSize  Int
+  fileType  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relation avec la tâche
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId    String
+
+  @@index([taskId])
 }
