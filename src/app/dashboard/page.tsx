@@ -5,6 +5,7 @@ import Link from "next/link";
 import { PlusCircle } from "lucide-react";
 import ObjetCard from "@/app/components/ObjetCard";
 import { Button } from "@/app/components/ui/button";
+import { getAccessibleObjects } from "@/lib/auth-session";
 
 export default async function DashboardPage() {
   const session = await getUser();
@@ -33,10 +34,10 @@ export default async function DashboardPage() {
   }
 
   // Récupérer tous les objets de l'organisation
-  const objets = await prisma.objet.findMany({
-    where: { organizationId: userWithOrg.Organization.id },
-    orderBy: { nom: "asc" },
-  });
+  const objets = await getAccessibleObjects(
+    session.id,
+    userWithOrg.Organization.id
+  );
 
   return (
     <div className="max-w-6xl mx-auto p-6 bg-background text-foreground overflow-hidden">
