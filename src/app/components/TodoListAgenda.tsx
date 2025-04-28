@@ -1,8 +1,17 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { ChevronUp, ChevronDown, Printer, GripHorizontal } from "lucide-react";
+import {
+  ChevronUp,
+  ChevronDown,
+  Printer,
+  GripHorizontal,
+  CalendarIcon,
+  ListIcon,
+  LayoutGridIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
+import CalendarView from "./CalendarView";
 
 type Task = {
   id: string;
@@ -11,6 +20,11 @@ type Task = {
   done: boolean;
   realizationDate: string | null;
   status: string;
+  taskType: string | null;
+  color: string | null;
+  recurring: boolean;
+  period: string | null;
+  endDate: Date | null;
   article: {
     id: string;
     title: string;
@@ -27,12 +41,20 @@ type Task = {
     id: string;
     name: string;
   } | null;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 type AppObject = {
   id: string;
   nom: string;
 };
+
+// Enum pour les modes d'affichage
+enum ViewMode {
+  LIST = "list",
+  CALENDAR = "calendar",
+}
 
 export default function TodoListAgenda() {
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
@@ -43,6 +65,7 @@ export default function TodoListAgenda() {
   const [objects, setObjects] = useState<AppObject[]>([]);
   const [selectedObjectId, setSelectedObjectId] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.LIST);
   const agendaRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -50,6 +73,22 @@ export default function TodoListAgenda() {
   const MIN_HEIGHT = 48; // Hauteur minimale (fermé)
   const MAX_HEIGHT = window.innerHeight * 0.8; // Hauteur maximale (80% de la fenêtre)
   const EXPANDED_THRESHOLD = 100; // Seuil à partir duquel on considère l'agenda comme développé
+
+  // Charger la préférence de vue depuis localStorage au chargement
+  useEffect(() => {
+    const savedViewMode = localStorage.getItem("plannikeeper-view-mode");
+    if (
+      savedViewMode &&
+      Object.values(ViewMode).includes(savedViewMode as ViewMode)
+    ) {
+      setViewMode(savedViewMode as ViewMode);
+    }
+  }, []);
+
+  // Sauvegarder la préférence de vue dans localStorage quand elle change
+  useEffect(() => {
+    localStorage.setItem("plannikeeper-view-mode", viewMode);
+  }, [viewMode]);
 
   // Récupération des objets
   useEffect(() => {
@@ -212,6 +251,11 @@ export default function TodoListAgenda() {
     );
   };
 
+  // Basculer entre les modes d'affichage
+  const toggleViewMode = () => {
+    setViewMode(viewMode === ViewMode.LIST ? ViewMode.CALENDAR : ViewMode.LIST);
+  };
+
   return (
     <div
       ref={agendaRef}
@@ -224,8 +268,25 @@ export default function TodoListAgenda() {
     >
       {/* Barre de titre avec poignée de drag */}
       <div className="flex justify-between items-center bg-[#F2E7D8] text-card-foreground p-3 relative border-b border-border">
-        {/* Colonne gauche (vide ou avec d'autres contrôles si nécessaire) */}
-        <div className="w-1/4"></div>
+        {/* Colonne gauche avec toggle de vue */}
+        <div className="w-1/4 flex items-center">
+          <button
+            onClick={toggleViewMode}
+            className="flex items-center gap-1.5 rounded-full border border-[color:var(--border)] px-3 py-1 hover:bg-[color:var(--muted)] transition-colors"
+          >
+            {viewMode === ViewMode.LIST ? (
+              <>
+                <ListIcon size={14} />
+                <span className="text-sm">Liste</span>
+              </>
+            ) : (
+              <>
+                <CalendarIcon size={14} />
+                <span className="text-sm">Calendrier</span>
+              </>
+            )}
+          </button>
+        </div>
 
         {/* Titre centré avec poignée de drag au-dessus */}
         <div className="flex-1 flex justify-center items-center relative">
@@ -271,12 +332,14 @@ export default function TodoListAgenda() {
         </div>
       </div>
 
-      {/* Contenu */}
+      {/* Contenu: Liste ou Calendrier selon le mode */}
       <div className="overflow-y-auto" style={{ height: `calc(100% - 48px)` }}>
         {isLoading ? (
           <div className="p-4 text-center text-muted-foreground">
             Chargement des tâches...
           </div>
+        ) : viewMode === ViewMode.CALENDAR ? (
+          <CalendarView tasks={tasks} navigateToTask={navigateToTask} />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
             {/* Cette semaine */}
