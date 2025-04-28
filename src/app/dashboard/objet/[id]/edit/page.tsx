@@ -62,16 +62,18 @@ export default async function ObjetEditPage({
         <div className="flex items-center gap-3">
           <Link
             href="/dashboard"
-            className="p-2 rounded-full hover:bg-gray-100"
+            className="p-2 rounded-full hover:bg-[color:var(--muted)] transition-colors"
           >
             <ArrowLeft size={20} />
           </Link>
-          <h1 className="text-2xl font-bold">{objet.nom}</h1>
+          <h1 className="text-2xl font-bold text-[color:var(--foreground)]">
+            {objet.nom}
+          </h1>
         </div>
         <div className="flex gap-2">
           <Link
             href={`/dashboard/objet/${objetId}/edit/update`}
-            className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="flex items-center gap-2 px-3 py-2 rounded-md bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:bg-[color:var(--primary)]/90 transition"
           >
             <Edit size={16} />
             <span>Modifier</span>
@@ -79,41 +81,59 @@ export default async function ObjetEditPage({
         </div>
       </div>
 
-      <div className="bg-backgroundround rounded-lg border border-gray-200 p-6 mb-6">
+      <div className="bg-background rounded-lg border border-[color:var(--border)] p-6 mb-6 shadow-sm">
         <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h2 className="text-lg font-semibold mb-4">
+            <h2 className="text-lg font-semibold mb-4 text-[color:var(--foreground)]">
               Informations générales
             </h2>
             <div className="space-y-3">
               <div className="flex items-start gap-2">
                 <div className="min-w-8 mt-0.5">
-                  <MapPin size={18} className="text-gray-500" />
+                  <MapPin
+                    size={18}
+                    className="text-[color:var(--muted-foreground)]"
+                  />
                 </div>
                 <div>
-                  <p className="font-medium">Adresse</p>
-                  <p className="text-gray-600">{objet.adresse}</p>
+                  <p className="font-medium text-[color:var(--foreground)]">
+                    Adresse
+                  </p>
+                  <p className="text-[color:var(--muted-foreground)]">
+                    {objet.adresse}
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
                 <div className="min-w-8 mt-0.5">
-                  <Briefcase size={18} className="text-gray-500" />
+                  <Briefcase
+                    size={18}
+                    className="text-[color:var(--muted-foreground)]"
+                  />
                 </div>
                 <div>
-                  <p className="font-medium">Activité</p>
-                  <p className="text-gray-600">{objet.secteur}</p>
+                  <p className="font-medium text-[color:var(--foreground)]">
+                    Activité
+                  </p>
+                  <p className="text-[color:var(--muted-foreground)]">
+                    {objet.secteur}
+                  </p>
                 </div>
               </div>
             </div>
           </div>
           <div>
-            <h2 className="text-lg font-semibold mb-4">Organisation</h2>
-            <p className="font-medium">{objet.organization.name}</p>
+            <h2 className="text-lg font-semibold mb-4 text-[color:var(--foreground)]">
+              Organisation
+            </h2>
+            <p className="font-medium text-[color:var(--foreground)]">
+              {objet.organization.name}
+            </p>
           </div>
         </div>
 
         {isAdmin && (
-          <div className="border-t pt-4 mt-4">
+          <div className="border-t border-[color:var(--border)] pt-4 mt-4">
             <DeleteObjectButton objetId={objetId} objetName={objet.nom} />
           </div>
         )}
@@ -121,12 +141,12 @@ export default async function ObjetEditPage({
 
       <div className="mt-8">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">
+          <h2 className="text-xl font-semibold text-[color:var(--foreground)]">
             Secteurs ({objet.sectors.length})
           </h2>
           <Link
             href={`/dashboard/objet/${objetId}/secteur/new`}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
+            className="flex items-center gap-2 text-[color:var(--primary)] hover:text-[color:var(--primary)]/80 font-medium transition"
           >
             <Plus size={16} />
             <span>Ajouter un secteur</span>
@@ -134,13 +154,13 @@ export default async function ObjetEditPage({
         </div>
 
         {objet.sectors.length === 0 ? (
-          <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-gray-500 mb-4">
+          <div className="text-center py-12 bg-[color:var(--muted)] rounded-lg border border-[color:var(--border)]">
+            <p className="text-[color:var(--muted-foreground)] mb-4">
               Aucun secteur n&apos;a été créé pour cet objet.
             </p>
             <Link
               href={`/dashboard/objet/${objetId}/secteur/new`}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:bg-[color:var(--primary)]/90 transition"
             >
               <Plus size={16} />
               <span>Ajouter un secteur</span>
@@ -152,7 +172,7 @@ export default async function ObjetEditPage({
               <Link
                 key={sector.id}
                 href={`/dashboard/objet/${objetId}/view`}
-                className="block bg-background rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition"
+                className="block bg-background rounded-lg border border-[color:var(--border)] overflow-hidden hover:shadow-md transition"
               >
                 <div className="relative w-full h-40">
                   <Image
@@ -163,12 +183,14 @@ export default async function ObjetEditPage({
                   />
                 </div>
                 <div className="p-4">
-                  <h3 className="font-semibold text-lg mb-1">{sector.name}</h3>
+                  <h3 className="font-semibold text-lg mb-1 text-[color:var(--foreground)]">
+                    {sector.name}
+                  </h3>
                   <div className="flex justify-between items-center mt-3">
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-[color:var(--muted-foreground)]">
                       {new Date(sector.createdAt).toLocaleDateString()}
                     </span>
-                    <span className="text-blue-600 text-sm font-medium">
+                    <span className="text-[color:var(--primary)] text-sm font-medium">
                       Voir détails
                     </span>
                   </div>
