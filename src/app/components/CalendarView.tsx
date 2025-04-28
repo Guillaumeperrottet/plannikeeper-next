@@ -59,6 +59,33 @@ export default function CalendarView({
     return date.toISOString().split("T")[0];
   };
 
+  // Gestion du clic sur une date
+  const handleDateClick = (date: Date) => {
+    if (!isCurrentMonth(date)) return; // N'ouvre pas le dialogue pour les jours hors du mois courant
+
+    const dateKey = formatDateKey(date);
+    const dayTasks = tasksByDay[dateKey] || [];
+
+    setSelectedDay(date);
+    setSelectedDayTasks(dayTasks);
+  };
+
+  // Fermer le dialogue
+  const closeDialog = () => {
+    setSelectedDay(null);
+    setSelectedDayTasks([]);
+  };
+
+  // Formater une date en texte lisible
+  const formatDateLong = (date: Date): string => {
+    return date.toLocaleDateString(undefined, {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
   // Generate calendar days for current month view
   useEffect(() => {
     const year = currentDate.getFullYear();
@@ -216,78 +243,6 @@ export default function CalendarView({
         </button>
       </div>
 
-      {/* Modal Dialog for day details */}
-      {selectedDay && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-          onClick={closeDialog}
-        >
-          <div
-            ref={dialogRef}
-            className="bg-[color:var(--background)] rounded-lg shadow-lg max-w-md w-full max-h-[80vh] mx-4 overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center p-4 border-b border-[color:var(--border)]">
-              <h3 className="text-lg font-semibold">
-                {formatDateLong(selectedDay)}
-              </h3>
-              <button
-                onClick={closeDialog}
-                className="p-1 rounded-full hover:bg-[color:var(--muted)]"
-                aria-label="Fermer"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="overflow-y-auto max-h-[60vh] p-4">
-              {selectedDayTasks.length === 0 ? (
-                <p className="text-[color:var(--muted-foreground)] text-center py-4">
-                  Aucune tâche prévue pour cette journée
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {selectedDayTasks.map((task) => (
-                    <div
-                      key={task.id}
-                      onClick={() => {
-                        navigateToTask(task);
-                        closeDialog();
-                      }}
-                      className={`p-3 rounded-lg cursor-pointer transition-colors ${getStatusColor(
-                        task.status
-                      )} hover:opacity-90`}
-                    >
-                      <div className="font-medium">{task.name}</div>
-                      {task.description && (
-                        <div className="text-sm mt-1 opacity-90 line-clamp-2">
-                          {task.description}
-                        </div>
-                      )}
-                      <div className="flex justify-between items-center mt-2 text-xs">
-                        <span>{task.article.sector.name}</span>
-                        {task.assignedTo && (
-                          <span>Assigné à: {task.assignedTo.name}</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="p-4 border-t border-[color:var(--border)] text-center">
-              <button
-                onClick={closeDialog}
-                className="px-4 py-2 bg-[color:var(--primary)] text-[color:var(--primary-foreground)] rounded-lg hover:bg-opacity-90 transition-colors"
-              >
-                Fermer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Days of week header */}
       <div className="grid grid-cols-7 text-center py-2 border-b border-[color:var(--border)] bg-[color:var(--muted)]">
         {daysOfWeek.map((day, index) => (
@@ -366,7 +321,10 @@ export default function CalendarView({
                         {dayTasks.slice(0, 3).map((task) => (
                           <div
                             key={task.id}
-                            onClick={() => navigateToTask(task)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigateToTask(task);
+                            }}
                             className={`px-1 py-0.5 text-xs rounded truncate cursor-pointer ${getStatusColor(
                               task.status
                             )}`}
@@ -388,6 +346,78 @@ export default function CalendarView({
           })}
         </div>
       </div>
+
+      {/* Modal Dialog for day details */}
+      {selectedDay && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={closeDialog}
+        >
+          <div
+            ref={dialogRef}
+            className="bg-[color:var(--background)] rounded-lg shadow-lg max-w-md w-full max-h-[80vh] mx-4 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center p-4 border-b border-[color:var(--border)]">
+              <h3 className="text-lg font-semibold">
+                {formatDateLong(selectedDay)}
+              </h3>
+              <button
+                onClick={closeDialog}
+                className="p-1 rounded-full hover:bg-[color:var(--muted)]"
+                aria-label="Fermer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto max-h-[60vh] p-4">
+              {selectedDayTasks.length === 0 ? (
+                <p className="text-[color:var(--muted-foreground)] text-center py-4">
+                  Aucune tâche prévue pour cette journée
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {selectedDayTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      onClick={() => {
+                        navigateToTask(task);
+                        closeDialog();
+                      }}
+                      className={`p-3 rounded-lg cursor-pointer transition-colors ${getStatusColor(
+                        task.status
+                      )} hover:opacity-90`}
+                    >
+                      <div className="font-medium">{task.name}</div>
+                      {task.description && (
+                        <div className="text-sm mt-1 opacity-90 line-clamp-2">
+                          {task.description}
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center mt-2 text-xs">
+                        <span>{task.article.sector.name}</span>
+                        {task.assignedTo && (
+                          <span>Assigné à: {task.assignedTo.name}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-[color:var(--border)] text-center">
+              <button
+                onClick={closeDialog}
+                className="px-4 py-2 bg-[color:var(--primary)] text-[color:var(--primary-foreground)] rounded-lg hover:bg-opacity-90 transition-colors"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
