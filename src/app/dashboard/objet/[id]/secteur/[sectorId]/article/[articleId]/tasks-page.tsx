@@ -710,7 +710,7 @@ export default function TasksPage({
         advancedFilter.recurring !== null));
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-[color:var(--background)]">
+    <div className="flex h-screen overflow-hidden bg-[color:var(--background)]">
       {/* Sidebar plus large des tâches */}
       <div
         ref={sidebarRef}
