@@ -1,9 +1,9 @@
-// src/app/dashboard/objet/[id]/secteur/[sectorId]/article/[articleId]/documents-list.tsx
 "use client";
 
 import { useState, useEffect } from "react";
-import { File, Trash2, FileText, Image, AlertCircle } from "lucide-react";
+import { File, Trash2, FileText, Image, AlertCircle, Eye } from "lucide-react";
 import { toast } from "sonner";
+import DocumentPreview from "./DocumentPreview";
 
 interface Document {
   id: string;
@@ -26,6 +26,8 @@ export default function DocumentsList({
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
+  const [currentDocumentIndex, setCurrentDocumentIndex] = useState<number>(0);
 
   const loadDocuments = async () => {
     try {
@@ -97,6 +99,22 @@ export default function DocumentsList({
     }
   };
 
+  const openPreview = (document: Document, index: number) => {
+    setPreviewDocument(document);
+    setCurrentDocumentIndex(index);
+  };
+
+  const closePreview = () => {
+    setPreviewDocument(null);
+  };
+
+  const navigateToDocument = (index: number) => {
+    if (index >= 0 && index < documents.length) {
+      setCurrentDocumentIndex(index);
+      setPreviewDocument(documents[index]);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="text-center py-4">
@@ -124,38 +142,55 @@ export default function DocumentsList({
   }
 
   return (
-    <div className="space-y-2">
-      {documents.map((doc) => (
+    <div className="space-y-2" data-document-list>
+      {documents.map((doc, index) => (
         <div
           key={doc.id}
-          className="flex items-center justify-between p-3 bg-background rounded-lg border shadow-sm"
+          className="flex items-center justify-between p-3 bg-background rounded-lg border shadow-sm hover:bg-muted/50 transition-colors"
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
             {getFileIcon(doc.fileType)}
             <div className="flex-1 min-w-0">
-              <a
-                href={doc.filePath}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block text-sm font-medium hover:underline truncate"
+              <div
+                className="block text-sm font-medium hover:underline truncate cursor-pointer"
+                onClick={() => openPreview(doc, index)}
               >
                 {doc.name}
-              </a>
+              </div>
               <div className="text-xs text-muted-foreground">
                 {formatFileSize(doc.fileSize)} •
                 {new Date(doc.createdAt).toLocaleDateString()}
               </div>
             </div>
           </div>
-          <button
-            onClick={() => handleDelete(doc.id)}
-            className="p-1 hover:text-red-600 transition-colors"
-            title="Supprimer"
-          >
-            <Trash2 size={16} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => openPreview(doc, index)}
+              className="p-1 hover:text-blue-600 transition-colors"
+              title="Prévisualiser"
+            >
+              <Eye size={16} />
+            </button>
+            <button
+              onClick={() => handleDelete(doc.id)}
+              className="p-1 hover:text-red-600 transition-colors"
+              title="Supprimer"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
         </div>
       ))}
+
+      {/* Composant de prévisualisation */}
+      {previewDocument && (
+        <DocumentPreview
+          document={previewDocument}
+          onClose={closePreview}
+          documents={documents}
+          currentIndex={currentDocumentIndex}
+        />
+      )}
     </div>
   );
 }

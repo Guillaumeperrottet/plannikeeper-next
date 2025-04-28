@@ -1,8 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { Calendar, X, AlertCircle } from "lucide-react";
+import { useState, useRef } from "react";
+import {
+  Calendar,
+  X,
+  AlertCircle,
+  Paperclip,
+  Upload,
+  Trash,
+} from "lucide-react";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 type User = {
   id: string;
@@ -34,19 +42,23 @@ interface TaskFormProps {
   task?: Task;
   users: User[];
   articleId: string;
-  onSave: (task: Task) => Promise<void>;
+  onSave: (task: Task, documents?: File[]) => Promise<void>;
   onCancel: () => void;
 }
 
-export default function TaskForm({
+export default function TaskFormWithDocuments({
   task,
   users,
+  articleId,
   onSave,
   onCancel,
 }: TaskFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isRecurring, setIsRecurring] = useState(task?.recurring || false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [documents, setDocuments] = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const defaultColor = "var(--primary)"; // Utilisation de la variable CSS
 
@@ -90,6 +102,79 @@ export default function TaskForm({
     setFormData((prev) => ({ ...prev, color: e.target.value }));
   };
 
+  // Gestion des documents
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const newFiles = Array.from(e.target.files);
+      addDocuments(newFiles);
+    }
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const newFiles = Array.from(e.dataTransfer.files);
+      addDocuments(newFiles);
+    }
+  };
+
+  const addDocuments = (files: File[]) => {
+    // Vérifier le type de fichier
+    const allowedTypes = [
+      "application/pdf",
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ];
+
+    const filteredFiles = files.filter((file) => {
+      if (!allowedTypes.includes(file.type)) {
+        toast.error(
+          `Le type de fichier ${file.type} n'est pas pris en charge.`
+        );
+        return false;
+      }
+
+      // Vérifier la taille (max 10MB)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        toast.error(`Le fichier ${file.name} est trop volumineux (max 10MB).`);
+        return false;
+      }
+
+      return true;
+    });
+
+    if (filteredFiles.length > 0) {
+      setDocuments((prev) => [...prev, ...filteredFiles]);
+    }
+  };
+
+  const removeDocument = (index: number) => {
+    setDocuments((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
@@ -115,7 +200,7 @@ export default function TaskForm({
             : null,
       };
 
-      await onSave(taskData);
+      await onSave(taskData, documents.length > 0 ? documents : undefined);
     } catch (error) {
       console.error("Erreur lors de la sauvegarde:", error);
       setFormError("Une erreur est survenue lors de la sauvegarde");
@@ -406,6 +491,81 @@ export default function TaskForm({
               />
             </div>
           )}
+
+          {/* Section pour l'upload de documents */}
+          <div>
+            <label className="block text-sm font-medium mb-2 text-[color:var(--foreground)]">
+              Documents
+            </label>
+            <div
+              className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+                isDragging
+                  ? "border-blue-500 bg-blue-50 bg-opacity-30"
+                  : "border-[color:var(--border)]"
+              }`}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                onChange={handleFileChange}
+                className="hidden"
+                accept=".pdf,image/*"
+              />
+
+              <div className="flex flex-col items-center justify-center py-4">
+                <Paperclip className="h-10 w-10 text-[color:var(--muted-foreground)] mb-2" />
+                <p className="text-sm text-[color:var(--muted-foreground)] mb-2">
+                  Glissez-déposez des fichiers ici, ou
+                </p>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-4 py-2 text-sm text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                >
+                  Sélectionnez des fichiers
+                </button>
+                <p className="text-xs text-[color:var(--muted-foreground)] mt-2">
+                  PDF, JPG, PNG, GIF (max. 10MB)
+                </p>
+              </div>
+            </div>
+
+            {/* Liste des fichiers à uploader */}
+            {documents.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <h4 className="text-sm font-medium">Fichiers à télécharger:</h4>
+                <div className="max-h-40 overflow-y-auto pr-2">
+                  {documents.map((file, index) => (
+                    <div
+                      key={`${file.name}-${index}`}
+                      className="flex items-center justify-between p-2 bg-[color:var(--background)] border rounded mb-2"
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        {file.type.startsWith("image/") ? (
+                          <Image size={16} className="text-blue-500" />
+                        ) : (
+                          <FileText size={16} className="text-red-500" />
+                        )}
+                        <span className="text-sm truncate">{file.name}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeDocument(index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-[color:var(--border)]">
             <button

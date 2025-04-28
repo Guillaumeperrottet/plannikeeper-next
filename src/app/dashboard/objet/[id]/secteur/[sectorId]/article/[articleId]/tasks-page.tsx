@@ -333,7 +333,7 @@ export default function TasksPage({
     setShowAddForm(true);
   };
 
-  const handleTaskSave = async (updatedTask: Task) => {
+  const handleTaskSave = async (updatedTask: Task, documents?: File[]) => {
     try {
       // Pour une nouvelle tâche
       if (!updatedTask.id) {
@@ -354,6 +354,11 @@ export default function TasksPage({
         const newTask = await response.json();
         setTasks((prev) => [newTask, ...prev]);
         toast.success("Tâche créée avec succès");
+
+        // Uploader les documents si présents
+        if (documents && documents.length > 0) {
+          await uploadDocumentsForTask(newTask.id, documents);
+        }
       }
       // Pour une tâche existante
       else {
@@ -373,6 +378,11 @@ export default function TasksPage({
           prev.map((t) => (t.id === updated.id ? updated : t))
         );
         toast.success("Tâche mise à jour avec succès");
+
+        // Uploader les documents si présents
+        if (documents && documents.length > 0) {
+          await uploadDocumentsForTask(updated.id, documents);
+        }
       }
 
       setSelectedTask(null);
@@ -380,6 +390,43 @@ export default function TasksPage({
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Une erreur est survenue"
+      );
+    }
+  };
+
+  // Fonction d'upload de documents pour une tâche
+  const uploadDocumentsForTask = async (taskId: string, documents: File[]) => {
+    try {
+      // Upload des documents un par un
+      const uploadPromises = documents.map(async (document) => {
+        const formData = new FormData();
+        formData.append("file", document);
+
+        const response = await fetch(`/api/tasks/${taskId}/documents`, {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(
+            error.error || `Erreur lors de l'upload de ${document.name}`
+          );
+        }
+
+        return response.json();
+      });
+
+      // Attendre que tous les uploads soient terminés
+      await Promise.all(uploadPromises);
+
+      toast.success(`${documents.length} document(s) ajouté(s) à la tâche`);
+    } catch (error) {
+      console.error("Erreur lors de l'upload des documents:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Erreur lors de l'ajout des documents"
       );
     }
   };
