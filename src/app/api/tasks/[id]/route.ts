@@ -16,7 +16,7 @@ export async function POST(
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const taskId = await params.id;
+  const taskId = params.id;
 
   try {
     // Vérifier que la tâche existe et que l'utilisateur a accès
@@ -126,7 +126,7 @@ export async function POST(
   }
 }
 
-// GET /api/tasks/[id]/documents
+// GET /api/tasks/[id]
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -136,69 +136,7 @@ export async function GET(
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const taskId = await params.id;
-
-  try {
-    // Vérifier que la tâche existe et que l'utilisateur a accès
-    const task = await prisma.task.findUnique({
-      where: { id: taskId },
-      include: {
-        article: {
-          include: {
-            sector: {
-              include: { object: true },
-            },
-          },
-        },
-      },
-    });
-
-    if (!task) {
-      return NextResponse.json({ error: "Tâche non trouvée" }, { status: 404 });
-    }
-
-    // Vérifier que l'utilisateur appartient à la même organisation que l'objet
-    const userWithOrg = await prisma.user.findUnique({
-      where: { id: user.id },
-      include: { Organization: true },
-    });
-
-    if (
-      !userWithOrg?.Organization ||
-      userWithOrg.Organization.id !== task.article.sector.object.organizationId
-    ) {
-      return NextResponse.json(
-        { error: "Vous n'avez pas les droits pour accéder à cette tâche" },
-        { status: 403 }
-      );
-    }
-
-    // Récupérer tous les documents de la tâche
-    const documents = await prisma.document.findMany({
-      where: { taskId },
-      orderBy: { createdAt: "desc" },
-    });
-
-    return NextResponse.json(documents);
-  } catch (error) {
-    console.error("Erreur lors de la récupération des documents:", error);
-    return NextResponse.json(
-      { error: "Erreur lors de la récupération des documents" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const user = await getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
-  }
-
-  const taskId = await params.id;
+  const taskId = params.id;
 
   // Récupérer la tâche avec l'article associé
   const task = await prisma.task.findUnique({
@@ -247,7 +185,7 @@ export async function PUT(
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const taskId = await params.id;
+  const taskId = params.id;
   const {
     name,
     description,
@@ -336,7 +274,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const taskId = await params.id;
+  const taskId = params.id;
   const updateData = await req.json();
 
   // Récupérer la tâche avec l'article associé
@@ -391,7 +329,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const taskId = await params.id;
+  const taskId = params.id;
 
   // Récupérer la tâche avec l'article associé
   const task = await prisma.task.findUnique({
