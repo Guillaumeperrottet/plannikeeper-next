@@ -14,7 +14,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const documentId = params.id;
+  const documentId = await params.id;
 
   try {
     // Récupérer le document avec sa tâche associée

@@ -16,7 +16,7 @@ export default async function NewSectorPage({
     redirect("/signin");
   }
 
-  const objetId = params.id;
+  const objetId = await params.id;
 
   // Récupérer l'objet
   const objet = await prisma.objet.findUnique({

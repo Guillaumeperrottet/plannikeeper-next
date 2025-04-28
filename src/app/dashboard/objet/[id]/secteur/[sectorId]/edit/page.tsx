@@ -15,8 +15,8 @@ export default async function EditSectorPage({
     redirect("/signin");
   }
 
-  const objetId = params.id;
-  const sectorId = params.sectorId;
+  const objetId = await params.id;
+  const sectorId = await params.sectorId;
 
   // Récupérer le secteur
   const sector = await prisma.sector.findUnique({

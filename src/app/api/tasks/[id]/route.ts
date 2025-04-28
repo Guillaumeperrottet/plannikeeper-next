@@ -16,7 +16,7 @@ export async function POST(
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const taskId = params.id;
+  const taskId = await params.id;
 
   try {
     // Vérifier que la tâche existe et que l'utilisateur a accès
@@ -136,7 +136,7 @@ export async function GET(
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const taskId = params.id;
+  const taskId = await params.id;
 
   try {
     // Vérifier que la tâche existe et que l'utilisateur a accès
@@ -198,7 +198,7 @@ export async function GET(
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const taskId = params.id;
+  const taskId = await params.id;
 
   // Récupérer la tâche avec l'article associé
   const task = await prisma.task.findUnique({
@@ -247,7 +247,7 @@ export async function PUT(
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const taskId = params.id;
+  const taskId = await params.id;
   const {
     name,
     description,
@@ -336,7 +336,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const taskId = params.id;
+  const taskId = await params.id;
   const updateData = await req.json();
 
   // Récupérer la tâche avec l'article associé
@@ -391,7 +391,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const taskId = params.id;
+  const taskId = await params.id;
 
   // Récupérer la tâche avec l'article associé
   const task = await prisma.task.findUnique({

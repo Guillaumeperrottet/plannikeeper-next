@@ -20,18 +20,21 @@ export async function POST(
     return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
   }
 
-  const invitationId = params.id;
+  const invitationId = await params.id;
 
   // Vérifiez que l'invitation appartient à l'organisation de l'utilisateur
   const invitation = await prisma.invitationCode.findFirst({
     where: {
       id: invitationId,
-      organizationId: userOrg.organizationId
+      organizationId: userOrg.organizationId,
     },
   });
 
   if (!invitation) {
-    return NextResponse.json({ error: "Invitation non trouvée" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Invitation non trouvée" },
+      { status: 404 }
+    );
   }
 
   // Supprimez l'invitation

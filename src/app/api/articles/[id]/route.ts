@@ -12,7 +12,7 @@ export async function PUT(
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const articleId = params.id;
+  const articleId = await params.id;
   const { title, description, positionX, positionY, width, height } =
     await req.json();
 
@@ -71,7 +71,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const articleId = params.id;
+  const articleId = await params.id;
 
   // Vérifier que l'article existe et que l'utilisateur y a accès
   const article = await prisma.article.findUnique({

@@ -11,7 +11,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const objetId = params.id;
+  const objetId = await params.id;
 
   // Récupérer l'objet
   const objet = await prisma.objet.findUnique({
