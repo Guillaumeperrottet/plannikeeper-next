@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { VT323 } from "next/font/google";
 import Switch from "@/app/components/ui/switchmode";
+import Breadcrumbs from "@/app/components/Breadcrumbs";
 
 const vt323 = VT323({
   subsets: ["latin"],
@@ -29,6 +30,12 @@ export default function Navbar() {
       >
         PlanniKeeper
       </Link>
+
+      {/* Breadcrumbs au centre */}
+      <div className="flex-1 flex justify-center">
+        <Breadcrumbs />
+      </div>
+
       <div>
         <Switch />
       </div>
