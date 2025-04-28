@@ -9,14 +9,17 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-amber-500 text-black font-semibold hover:bg-amber-600",
+        default:
+          "bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:bg-[color:var(--primary)]/90",
         destructive:
-          "bg-red-600 text-white shadow-sm shadow-black/5 hover:bg-red-700",
+          "bg-[color:var(--destructive)] text-[color:var(--destructive-foreground)] shadow-sm hover:bg-[color:var(--destructive)]/90",
         outline:
-          "border border-gray-800 bg-transparent text-black font-semibold hover:bg-gray-100",
-        secondary: "bg-stone-300 text-black font-semibold hover:bg-stone-400",
-        ghost: "bg-transparent text-black font-semibold hover:bg-gray-100",
-        link: "bg-transparent text-amber-500 font-semibold hover:text-amber-600 hover:underline p-0",
+          "border border-[color:var(--border)] bg-transparent text-[color:var(--foreground)] hover:bg-[color:var(--muted)]",
+        secondary:
+          "bg-[color:var(--secondary)] text-[color:var(--secondary-foreground)] hover:bg-[color:var(--secondary)]/80",
+        ghost:
+          "bg-transparent text-[color:var(--foreground)] hover:bg-[color:var(--muted)]",
+        link: "bg-transparent text-[color:var(--primary)] hover:text-[color:var(--primary)]/80 hover:underline p-0",
       },
       size: {
         default: "h-9 px-4 py-2",
