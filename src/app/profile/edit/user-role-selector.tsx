@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { Shield, User as UserIcon, Check, Loader2 } from "lucide-react";
+import { Button } from "@/app/components/ui/button";
 
 export function UserRoleSelector({
   userId,
@@ -15,8 +17,18 @@ export function UserRoleSelector({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
-  const handleRoleChange = async () => {
-    if (role === currentRole) return;
+  const handleRoleChange = async (newRole: string) => {
+    if (newRole === role) return;
+
+    if (
+      !confirm(
+        `Êtes-vous sûr de vouloir changer le rôle de cet utilisateur en "${
+          newRole === "admin" ? "Administrateur" : "Membre"
+        }" ?`
+      )
+    ) {
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -27,7 +39,7 @@ export function UserRoleSelector({
         },
         body: JSON.stringify({
           userId,
-          role,
+          role: newRole,
         }),
       });
 
@@ -37,6 +49,7 @@ export function UserRoleSelector({
       }
 
       toast.success(`Le rôle a été mis à jour avec succès.`);
+      setRole(newRole);
       router.refresh();
     } catch (error) {
       toast.error(
@@ -44,33 +57,52 @@ export function UserRoleSelector({
           error instanceof Error ? error.message : "Une erreur est survenue"
         }`
       );
-      setRole(currentRole); // Reset to original value on error
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="flex items-center gap-4">
-      <select
-        value={role}
-        onChange={(e) => setRole(e.target.value)}
-        className="px-3 py-2 border rounded-md"
-        disabled={isSubmitting}
+    <div className="flex flex-col sm:flex-row gap-3">
+      <Button
+        variant={role === "admin" ? "default" : "outline"}
+        disabled={isSubmitting || role === "admin"}
+        onClick={() => handleRoleChange("admin")}
+        className="flex items-center justify-center gap-2 py-2 relative"
       >
-        <option value="admin">Administrateur</option>
-        <option value="member">Membre</option>
-      </select>
+        {isSubmitting && role !== "admin" ? (
+          <Loader2 size={16} className="animate-spin" />
+        ) : (
+          <Shield size={16} />
+        )}
+        <span>Administrateur</span>
+        {role === "admin" && (
+          <Check
+            size={16}
+            className="absolute right-2 text-[color:var(--primary-foreground)]"
+          />
+        )}
+      </Button>
 
-      {role !== currentRole && (
-        <button
-          onClick={handleRoleChange}
-          disabled={isSubmitting}
-          className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-        >
-          {isSubmitting ? "Enregistrement..." : "Enregistrer"}
-        </button>
-      )}
+      <Button
+        variant={role === "member" ? "default" : "outline"}
+        disabled={isSubmitting || role === "member"}
+        onClick={() => handleRoleChange("member")}
+        className="flex items-center justify-center gap-2 py-2 relative"
+      >
+        {isSubmitting && role !== "member" ? (
+          <Loader2 size={16} className="animate-spin" />
+        ) : (
+          <UserIcon size={16} />
+        )}
+        <span>Membre</span>
+        {role === "member" && (
+          <Check
+            size={16}
+            className="absolute right-2 text-[color:var(--primary-foreground)]"
+          />
+        )}
+      </Button>
     </div>
   );
 }

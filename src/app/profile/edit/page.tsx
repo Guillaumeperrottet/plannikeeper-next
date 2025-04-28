@@ -2,6 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { UsersTable } from "@/app/profile/edit/users-table";
+import { Button } from "@/app/components/ui/button";
+import { PlusCircle, Users, ArrowLeft } from "lucide-react";
 
 export default async function ProfileEditPage() {
   const user = await getUser();
@@ -26,55 +29,71 @@ export default async function ProfileEditPage() {
     orderBy: { user: { email: "asc" } },
   });
 
+  // Récupérer le nom de l'organisation
+  const organization = await prisma.organization.findUnique({
+    where: { id: orgUser.organizationId },
+  });
+
   return (
-    <div className="max-w-3xl mx-auto mt-10 p-6 bg-background rounded-lg shadow-md">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Gestion des Utilisateurs</h1>
-        <div className="flex gap-2">
-          <Link
-            href="/profile/invitations"
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-          >
-            Gérer les invitations
-          </Link>
-          <Link
-            href="/profile"
-            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition"
-          >
-            Retour au profil
-          </Link>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+      <div className="mb-8">
+        <Link
+          href="/profile"
+          className="flex items-center text-sm text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)] mb-4 transition-colors"
+        >
+          <ArrowLeft size={16} className="mr-1" />
+          Retour au profil
+        </Link>
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-[color:var(--foreground)]">
+              Gestion des Utilisateurs
+            </h1>
+            <p className="text-[color:var(--muted-foreground)] mt-1">
+              {organization?.name || "Organisation"} - {orgUsers.length} membre
+              {orgUsers.length > 1 ? "s" : ""}
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button asChild variant="outline">
+              <Link href="/profile">
+                <ArrowLeft size={16} className="mr-2" />
+                Profil
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link href="/profile/invitations">
+                <PlusCircle size={16} className="mr-2" />
+                Inviter des membres
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
-      <table className="w-full border">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="p-2">#</th>
-            <th className="p-2">Email</th>
-            <th className="p-2">Nom</th>
-            <th className="p-2">Rôle</th>
-            <th className="p-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orgUsers.map((ou, i) => (
-            <tr key={ou.user.id} className="border-t">
-              <td className="p-2">{i + 1}</td>
-              <td className="p-2">{ou.user.email}</td>
-              <td className="p-2">{ou.user.name}</td>
-              <td className="p-2">{ou.role}</td>
-              <td className="p-2">
-                <Link
-                  href={`/profile/edit/${ou.user.id}`}
-                  className="mr-2 text-blue-600 hover:underline"
-                >
-                  Modifier
-                </Link>
-                {/* Ajoutez ici un bouton de suppression si besoin */}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+
+      <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg shadow-sm overflow-hidden">
+        <div className="p-4 sm:p-6 border-b border-[color:var(--border)] bg-[color:var(--muted)]">
+          <div className="flex items-center gap-3">
+            <Users size={20} className="text-[color:var(--primary)]" />
+            <h2 className="text-lg font-medium">Liste des membres</h2>
+          </div>
+        </div>
+
+        <div className="p-1 sm:p-2">
+          <UsersTable
+            users={orgUsers.map((ou) => ({
+              id: ou.user.id,
+              email: ou.user.email || "",
+              name: ou.user.name || "",
+              role: ou.role,
+              avatar: ou.user.image,
+              isCurrentUser: ou.user.id === user.id,
+            }))}
+          />
+        </div>
+      </div>
     </div>
   );
 }
