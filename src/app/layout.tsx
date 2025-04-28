@@ -14,7 +14,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className="bg-background">
+      <body className="bg-background" suppressHydrationWarning>
         {user && <Navbar user={user} />}
         <SidebarWrapper user={user}>
           <div className="pb-16 md:pb-14">{children}</div>

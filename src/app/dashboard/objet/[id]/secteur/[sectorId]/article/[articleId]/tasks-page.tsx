@@ -1,5 +1,7 @@
 "use client";
 
+import DocumentsList from "./documents-list";
+import DocumentUpload from "./document-upload";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -28,6 +30,7 @@ import {
   Inbox,
   CheckCircle2,
   TimerOff,
+  Paperclip,
   ClipboardList,
   CircleOff,
 } from "lucide-react";
@@ -454,7 +457,14 @@ export default function TasksPage({
 
   const formatDate = (date: Date | null) => {
     if (!date) return "Non définie";
-    return new Date(date).toLocaleDateString();
+
+    // Format avec année-mois-jour pour être cohérent entre serveur et client
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+
+    return `${day}/${month}/${year}`;
   };
 
   const getStatusColor = (status: string) => {
@@ -1272,6 +1282,42 @@ export default function TasksPage({
                             </div>
                           </div>
                         )}
+                        {/* Section Documents */}
+                        <div className="mt-8">
+                          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                            <Paperclip size={18} />
+                            Documents
+                          </h3>
+
+                          <div className="space-y-6">
+                            <DocumentsList
+                              taskId={selectedTask.id}
+                              onDocumentsChange={() => {
+                                // Fonction à appeler quand des changements sont faits à la liste des documents
+                                // Par exemple, vous pourriez vouloir mettre à jour d'autres parties de l'interface
+                              }}
+                            />
+
+                            <div className="border-t pt-4">
+                              <h4 className="text-sm font-medium mb-2">
+                                Ajouter un document
+                              </h4>
+                              <DocumentUpload
+                                taskId={selectedTask.id}
+                                onUploadSuccess={() => {
+                                  // Rafraîchir la liste des documents après un téléchargement réussi
+                                  const documentsList = document.querySelector(
+                                    "[data-document-list]"
+                                  );
+                                  if (documentsList) {
+                                    // Vous pourriez implémenter une méthode de rafraîchissement ici
+                                    // ou simplement recharger la liste des documents
+                                  }
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
