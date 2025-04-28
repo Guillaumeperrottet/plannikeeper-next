@@ -59,10 +59,10 @@ export async function GET() {
   // Extrait la liste des IDs d'objets
   const objectIds = objectAccess.map((access) => access.objectId);
 
-  // Récupère uniquement les objets auxquels l'utilisateur a accès
+  // Récupère uniquement les objets auxquels l'utilisateur a accès (niveau différent de "none")
   const objects = await prisma.objet.findMany({
     where: {
-      id: { in: objectIds },
+      id: { in: objectIds }, // Ne contiendra que les IDs avec accessLevel != "none"
       organizationId: userWithOrg.Organization.id,
     },
     orderBy: { nom: "asc" },
@@ -73,6 +73,5 @@ export async function GET() {
       secteur: true,
     },
   });
-
   return NextResponse.json(objects);
 }

@@ -57,6 +57,25 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Après avoir créé l'objet, créer des entrées d'accès pour tous les membres non-admin
+    const nonAdminUsers = await prisma.organizationUser.findMany({
+      where: {
+        organizationId: userDb.Organization.id,
+        role: { not: "admin" },
+      },
+      select: { userId: true },
+    });
+
+    if (nonAdminUsers.length > 0) {
+      await prisma.objectAccess.createMany({
+        data: nonAdminUsers.map((ou) => ({
+          userId: ou.userId,
+          objectId: objet.id,
+          accessLevel: "none",
+        })),
+      });
+    }
+
     // Récupérer tous les utilisateurs de l'organisation qui ne sont pas admin
     const orgUsers = await prisma.organizationUser.findMany({
       where: {

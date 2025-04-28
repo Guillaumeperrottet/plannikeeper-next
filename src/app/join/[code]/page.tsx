@@ -2,6 +2,7 @@ import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { getAccessibleObjects } from "@/lib/auth-session";
 
 export default async function JoinPage({
   params,
@@ -128,16 +129,14 @@ export default async function JoinPage({
 
   // Initialiser les accès aux objets si l'utilisateur n'est pas admin
   if (invitation.role !== "admin") {
-    // Récupérer tous les objets de l'organisation
-    const objects = await prisma.objet.findMany({
-      where: { organizationId: invitation.organizationId },
-      select: { id: true },
-    });
+    const objets = await getAccessibleObjects(
+      user.id,
+      invitation.organizationId
+    );
 
-    // Créer des entrées d'accès "none" pour chaque objet
-    if (objects.length > 0) {
+    if (objets.length > 0) {
       await prisma.objectAccess.createMany({
-        data: objects.map((obj) => ({
+        data: objets.map((obj) => ({
           userId: user.id,
           objectId: obj.id,
           accessLevel: "none",

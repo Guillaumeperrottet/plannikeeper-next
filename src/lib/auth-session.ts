@@ -207,3 +207,39 @@ export async function checkTaskAccess(
   // Déléguer la vérification à la fonction checkObjectAccess
   return checkObjectAccess(userId, task.article.sector.objectId, requiredLevel);
 }
+
+// Dans auth-session.ts
+export async function getAccessibleObjects(
+  userId: string,
+  organizationId: string
+) {
+  // Vérifier si l'utilisateur est admin
+  const isAdmin = await isOrganizationAdmin(userId);
+
+  // Si l'utilisateur est admin, retourner tous les objets
+  if (isAdmin) {
+    return prisma.objet.findMany({
+      where: { organizationId },
+      orderBy: { nom: "asc" },
+    });
+  }
+
+  // Sinon, uniquement retourner les objets auxquels l'utilisateur a accès
+  const objectAccess = await prisma.objectAccess.findMany({
+    where: {
+      userId,
+      NOT: { accessLevel: "none" },
+    },
+    select: { objectId: true },
+  });
+
+  const objectIds = objectAccess.map((access) => access.objectId);
+
+  return prisma.objet.findMany({
+    where: {
+      id: { in: objectIds },
+      organizationId,
+    },
+    orderBy: { nom: "asc" },
+  });
+}
