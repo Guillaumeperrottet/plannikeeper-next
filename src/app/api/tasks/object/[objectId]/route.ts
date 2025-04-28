@@ -5,7 +5,7 @@ import { getUser } from "@/lib/auth-session";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { objectId: string } }
+  { params }: { params: { objectId: Promise<string> } }
 ) {
   const user = await getUser();
   if (!user) {

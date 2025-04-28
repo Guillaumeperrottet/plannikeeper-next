@@ -8,7 +8,7 @@ import SectorViewer from "@/app/dashboard/objet/[id]/view/sector-viewer";
 export default async function ObjetViewPage({
   params,
 }: {
-  params: { id: string };
+  params: { id: Promise<string> };
 }) {
   const session = await getUser();
 
