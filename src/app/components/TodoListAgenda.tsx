@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   ChevronUp,
   ChevronDown,
@@ -8,7 +8,6 @@ import {
   GripHorizontal,
   CalendarIcon,
   ListIcon,
-  LayoutGridIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import CalendarView from "./CalendarView";
@@ -136,27 +135,37 @@ export default function TodoListAgenda() {
     setIsDragging(true);
   };
 
-  const handleDragMove = (e: MouseEvent | TouchEvent): void => {
-    if (!isDragging) return;
+  const handleDragMove = useCallback(
+    (e: MouseEvent | TouchEvent): void => {
+      if (!isDragging) return;
 
-    const clientY =
-      "touches" in e
-        ? (e as TouchEvent).touches[0].clientY
-        : (e as MouseEvent).clientY;
-    const deltaY = startY - clientY;
+      const clientY =
+        "touches" in e
+          ? (e as TouchEvent).touches[0].clientY
+          : (e as MouseEvent).clientY;
+      const deltaY = startY - clientY;
 
-    // Calculer la nouvelle hauteur en fonction du mouvement
-    let newHeight = agendaHeight + deltaY;
+      // Calculer la nouvelle hauteur en fonction du mouvement
+      let newHeight = agendaHeight + deltaY;
 
-    // Appliquer les limites de hauteur
-    newHeight = Math.max(MIN_HEIGHT, Math.min(newHeight, MAX_HEIGHT));
+      // Appliquer les limites de hauteur
+      newHeight = Math.max(MIN_HEIGHT, Math.min(newHeight, MAX_HEIGHT));
 
-    setAgendaHeight(newHeight);
-    setIsExpanded(newHeight > EXPANDED_THRESHOLD);
-    setStartY(clientY);
-  };
+      setAgendaHeight(newHeight);
+      setIsExpanded(newHeight > EXPANDED_THRESHOLD);
+      setStartY(clientY);
+    },
+    [
+      isDragging,
+      startY,
+      agendaHeight,
+      MIN_HEIGHT,
+      MAX_HEIGHT,
+      EXPANDED_THRESHOLD,
+    ]
+  );
 
-  const handleDragEnd = (): void => {
+  const handleDragEnd = useCallback((): void => {
     setIsDragging(false);
 
     // Snap à la hauteur minimale si on est proche
@@ -164,7 +173,7 @@ export default function TodoListAgenda() {
       setAgendaHeight(MIN_HEIGHT);
       setIsExpanded(false);
     }
-  };
+  }, [agendaHeight, MIN_HEIGHT]);
 
   useEffect(() => {
     // Ajouter les écouteurs d'événements pour le drag
@@ -182,7 +191,7 @@ export default function TodoListAgenda() {
       window.removeEventListener("mouseup", handleDragEnd);
       window.removeEventListener("touchend", handleDragEnd);
     };
-  }, [isDragging, agendaHeight]);
+  }, [isDragging, handleDragMove, handleDragEnd]);
 
   // Boutons pour ouvrir/fermer complètement
   const handleMinimize = (): void => {

@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { SidebarLink } from "@/app/components/ui/sidebar";
 import { useSidebar } from "@/app/components/ui/sidebar";
 import {
   IconFolder,

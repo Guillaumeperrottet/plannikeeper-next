@@ -48,7 +48,7 @@ export async function GET(
     }
 
     // Retourner l'objet sans l'ID de l'organisation
-    const { organizationId, ...objetData } = objet;
+    const { ...objetData } = objet;
     return NextResponse.json(objetData);
   } catch (error) {
     console.error("Erreur lors de la récupération de l'objet:", error);

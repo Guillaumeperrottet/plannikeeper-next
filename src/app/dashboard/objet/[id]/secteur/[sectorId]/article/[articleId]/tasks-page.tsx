@@ -2,7 +2,7 @@
 
 import DocumentsList from "./documents-list";
 import DocumentUpload from "./document-upload";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import TaskForm from "./task-form";
@@ -133,7 +133,6 @@ export default function TasksPage({
   articleTitle,
   articleDescription,
   objetId,
-  sectorId,
 }: {
   initialTasks: Task[];
   users: User[];
@@ -660,7 +659,7 @@ export default function TasksPage({
 
       // Ne retourner que les groupes non vides
       return Object.fromEntries(
-        Object.entries(groups).filter(([_, tasks]) => tasks.length > 0)
+        Object.entries(groups).filter(([tasks]) => tasks.length > 0)
       );
     }
 
@@ -684,7 +683,7 @@ export default function TasksPage({
 
       // Ne retourner que les groupes non vides
       return Object.fromEntries(
-        Object.entries(groups).filter(([_, tasks]) => tasks.length > 0)
+        Object.entries(groups).filter(([tasks]) => tasks.length > 0)
       );
     }
 

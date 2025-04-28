@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,7 @@ interface DocumentPreviewProps {
   onClose: () => void;
   documents?: Document[]; // Optional array of all documents for navigation
   currentIndex?: number; // Current index in the array
+  onNavigate?: (index: number) => void; // Ajout pour navigation
 }
 
 export default function DocumentPreview({
@@ -29,6 +31,7 @@ export default function DocumentPreview({
   onClose,
   documents = [],
   currentIndex = 0,
+  onNavigate,
 }: DocumentPreviewProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,27 +44,27 @@ export default function DocumentPreview({
     if (document) {
       setLoading(true);
       setError(null);
+      if (isPdf) {
+        // Simule le chargement PDF (onLoad n'est pas supporté sur <object>)
+        const timeout = setTimeout(() => setLoading(false), 800);
+        return () => clearTimeout(timeout);
+      }
     }
-  }, [document]);
+  }, [document, isPdf]);
 
   // Navigation entre documents
   const hasMultipleDocuments = documents.length > 1;
 
   const navigateToPrevious = () => {
     if (!hasMultipleDocuments || currentIndex <= 0) return;
-    const newIndex = (currentIndex - 1) % documents.length;
-    navigateToDocument(newIndex);
+    const newIndex = currentIndex - 1;
+    if (onNavigate) onNavigate(newIndex);
   };
 
   const navigateToNext = () => {
-    if (!hasMultipleDocuments) return;
-    const newIndex = (currentIndex + 1) % documents.length;
-    navigateToDocument(newIndex);
-  };
-
-  const navigateToDocument = (index: number) => {
-    // Cette fonction sera implémentée au niveau du composant parent
-    // qui gère l'état de l'index actuel
+    if (!hasMultipleDocuments || currentIndex >= documents.length - 1) return;
+    const newIndex = currentIndex + 1;
+    if (onNavigate) onNavigate(newIndex);
   };
 
   if (!document) return null;
@@ -133,7 +136,7 @@ export default function DocumentPreview({
           {error && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-destructive text-center p-4 bg-destructive-background rounded-md">
-                <p>Impossible d'afficher ce document.</p>
+                <p>Impossible d&apos;afficher ce document.</p>
                 <p className="text-sm">{error}</p>
                 <Button variant="outline" className="mt-2">
                   <a
@@ -147,19 +150,21 @@ export default function DocumentPreview({
               </div>
             </div>
           )}
-
           {isImage && (
             <div className="flex items-center justify-center h-full">
-              <img
-                src={document.filePath}
-                alt={document.name}
-                className="max-w-full max-h-full object-contain"
-                onLoad={() => setLoading(false)}
-                onError={() => {
-                  setLoading(false);
-                  setError("Impossible de charger l'image");
-                }}
-              />
+              <div className="relative w-full h-full">
+                <Image
+                  src={document.filePath}
+                  alt={document.name}
+                  fill
+                  style={{ objectFit: "contain" }}
+                  onLoadingComplete={() => setLoading(false)}
+                  onError={() => {
+                    setLoading(false);
+                    setError("Impossible de charger l'image");
+                  }}
+                />
+              </div>
             </div>
           )}
 
@@ -168,15 +173,12 @@ export default function DocumentPreview({
               data={document.filePath}
               type="application/pdf"
               className="w-full h-full"
-              onLoad={() => setLoading(false)}
-              onError={() => {
-                setLoading(false);
-                setError("Impossible de charger le PDF");
-              }}
+              // onLoad/onError ne sont pas supportés sur <object>
             >
               <div className="flex items-center justify-center h-full">
                 <p>
-                  Votre navigateur ne prend pas en charge l'affichage des PDF.
+                  Votre navigateur ne prend pas en charge l&apos;affichage des
+                  PDF.
                 </p>
                 <a
                   href={document.filePath}

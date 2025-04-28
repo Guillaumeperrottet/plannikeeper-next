@@ -9,6 +9,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface UserMenuProps {
@@ -76,17 +77,22 @@ export default function UserMenu({ user, isAdmin = false }: UserMenuProps) {
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        <div className="w-8 h-8 rounded-full bg-[color:var(--primary)] text-[color:var(--primary-foreground)] flex items-center justify-center text-sm font-medium overflow-hidden">
+        <div className="relative w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-primary text-primary-foreground text-sm font-medium">
           {user.image ? (
-            <img
+            <Image
               src={user.image}
               alt={user.name || "User"}
-              className="w-full h-full object-cover"
+              fill
+              sizes="32px"
+              className="object-cover"
+              priority
             />
           ) : (
-            user.name?.[0]?.toUpperCase() ||
-            user.email?.[0]?.toUpperCase() ||
-            "U"
+            <span>
+              {user.name?.[0]?.toUpperCase() ||
+                user.email?.[0]?.toUpperCase() ||
+                "U"}
+            </span>
           )}
         </div>
         <div className="hidden md:block text-left">

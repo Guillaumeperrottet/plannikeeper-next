@@ -44,14 +44,14 @@ const TiltedCarousel = ({
   // Dupliquer les images pour créer un effet de boucle infinie
   const duplicatedImages = [...images, ...images, ...images];
 
-  // Calculer la largeur totale d'une séquence d'images
-  const calculateSequenceWidth = () => {
-    if (!carouselRef.current) return 0;
-    const itemWidth = imageWidth + gap;
-    return images.length * itemWidth;
-  };
-
   useEffect(() => {
+    // Calculer la largeur totale d'une séquence d'images à l'intérieur de l'effet
+    const calculateSequenceWidth = () => {
+      if (!carouselRef.current) return 0;
+      const itemWidth = imageWidth + gap;
+      return images.length * itemWidth;
+    };
+
     // Fonction d'animation
     const animate = (timestamp: number) => {
       if (!carouselRef.current) return;
@@ -106,7 +106,15 @@ const TiltedCarousel = ({
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [speed, isPaused, pauseOnHover, direction, images.length, gap]);
+  }, [
+    speed,
+    isPaused,
+    pauseOnHover,
+    direction,
+    images.length,
+    gap,
+    imageWidth,
+  ]);
 
   return (
     <div

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { CalendarIcon, ListIcon } from "lucide-react";
 
 export enum ViewMode {

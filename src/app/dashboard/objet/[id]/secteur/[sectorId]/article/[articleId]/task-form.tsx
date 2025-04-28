@@ -6,8 +6,6 @@ import {
   X,
   AlertCircle,
   Paperclip,
-  Upload,
-  Trash,
   Image as ImageIcon,
   FileText,
 } from "lucide-react";
@@ -52,7 +50,6 @@ interface TaskFormProps {
 export default function TaskFormWithDocuments({
   task,
   users,
-  articleId,
   onSave,
   onCancel,
 }: TaskFormProps) {

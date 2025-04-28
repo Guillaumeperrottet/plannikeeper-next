@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 const features = [
   {
     img: "/images/feature-1.png",
@@ -28,11 +30,17 @@ export default function FeaturesGrid() {
         Everything you need
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-        {features.map(({ img, title, desc }) => (
-          <div key={title} className="text-center">
-            <img src={img} alt={title} className="mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-2">{title}</h3>
-            <p className="text-gray-600">{desc}</p>
+        {features.map((feature) => (
+          <div key={feature.title} className="text-center">
+            <Image
+              src={feature.img}
+              alt={feature.title}
+              width={80}
+              height={80}
+              className="mx-auto mb-4"
+            />
+            <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+            <p className="text-gray-600">{feature.desc}</p>
           </div>
         ))}
       </div>

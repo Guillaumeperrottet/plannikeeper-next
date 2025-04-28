@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, CalendarIcon, X } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 type Task = {
   id: string;
@@ -239,7 +238,7 @@ export default function CalendarView({
           onClick={goToCurrentMonth}
           className="px-3 py-1 text-sm rounded border border-[color:var(--border)] hover:bg-[color:var(--muted)]"
         >
-          Aujourd'hui
+          Aujourd&apos;hui
         </button>
       </div>
 
