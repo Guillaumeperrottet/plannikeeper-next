@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import EditName from "./edit-name";
 import EditOrganizationName from "./edit-organization-name";
+import ChangePasswordForm from "./change-password-form";
 
 export default async function ProfilePage() {
   const user = await getUser();
@@ -96,6 +97,13 @@ export default async function ProfilePage() {
                     disabled
                     className="w-full border border-border rounded px-3 py-2 bg-muted text-muted-foreground"
                   />
+                </div>
+
+                <div className="mt-4 border-t border-border pt-4">
+                  <label className="block font-semibold mb-1 text-foreground">
+                    Sécurité
+                  </label>
+                  <ChangePasswordForm />
                 </div>
               </div>
             </div>

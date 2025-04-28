@@ -2,9 +2,10 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { ArrowLeft, Edit, MapPin, Briefcase, Plus } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import Image from "next/image";
 import DeleteObjectButton from "@/app/dashboard/objet/[id]/edit/delete-object-button";
+import EditableField from "@/app/components/ui/EditableField";
 
 export default async function ObjetEditPage({
   params,
@@ -67,17 +68,8 @@ export default async function ObjetEditPage({
             <ArrowLeft size={20} />
           </Link>
           <h1 className="text-2xl font-bold text-[color:var(--foreground)]">
-            {objet.nom}
+            Modifier : {objet.nom}
           </h1>
-        </div>
-        <div className="flex gap-2">
-          <Link
-            href={`/dashboard/objet/${objetId}/edit/update`}
-            className="flex items-center gap-2 px-3 py-2 rounded-md bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:bg-[color:var(--primary)]/90 transition"
-          >
-            <Edit size={16} />
-            <span>Modifier</span>
-          </Link>
         </div>
       </div>
 
@@ -87,38 +79,41 @@ export default async function ObjetEditPage({
             <h2 className="text-lg font-semibold mb-4 text-[color:var(--foreground)]">
               Informations générales
             </h2>
-            <div className="space-y-3">
-              <div className="flex items-start gap-2">
-                <div className="min-w-8 mt-0.5">
-                  <MapPin
-                    size={18}
-                    className="text-[color:var(--muted-foreground)]"
-                  />
-                </div>
-                <div>
-                  <p className="font-medium text-[color:var(--foreground)]">
-                    Adresse
-                  </p>
-                  <p className="text-[color:var(--muted-foreground)]">
-                    {objet.adresse}
-                  </p>
-                </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1 text-[color:var(--foreground)]">
+                  Nom
+                </label>
+                <EditableField
+                  initialValue={objet.nom}
+                  fieldName="nom"
+                  label="Nom"
+                  objectId={objetId}
+                />
               </div>
-              <div className="flex items-start gap-2">
-                <div className="min-w-8 mt-0.5">
-                  <Briefcase
-                    size={18}
-                    className="text-[color:var(--muted-foreground)]"
-                  />
-                </div>
-                <div>
-                  <p className="font-medium text-[color:var(--foreground)]">
-                    Activité
-                  </p>
-                  <p className="text-[color:var(--muted-foreground)]">
-                    {objet.secteur}
-                  </p>
-                </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1 text-[color:var(--foreground)]">
+                  Adresse
+                </label>
+                <EditableField
+                  initialValue={objet.adresse}
+                  fieldName="adresse"
+                  label="Adresse"
+                  objectId={objetId}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1 text-[color:var(--foreground)]">
+                  Activité
+                </label>
+                <EditableField
+                  initialValue={objet.secteur}
+                  fieldName="secteur"
+                  label="Activité"
+                  objectId={objetId}
+                />
               </div>
             </div>
           </div>
