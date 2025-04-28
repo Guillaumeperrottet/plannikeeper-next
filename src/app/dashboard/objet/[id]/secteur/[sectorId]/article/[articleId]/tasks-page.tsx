@@ -1,20 +1,24 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+import TaskForm from "./task-form";
+import { toast } from "sonner";
 import {
-  ArrowLeft,
   Calendar,
   Clock,
   User,
   Filter,
   Search,
   Plus,
+  Edit,
+  Trash,
+  Move,
+  ChevronLeft,
+  ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
-import TaskForm from "./task-form";
-import { toast } from "sonner";
 
 type User = {
   id: string;
@@ -206,15 +210,15 @@ export default function TasksPage({
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
-        return "bg-yellow-100 text-yellow-800 border-yellow-300";
+        return "bg-[color:var(--warning-background)] text-[color:var(--warning-foreground)] border-[color:var(--warning-border)]";
       case "in_progress":
-        return "bg-blue-100 text-blue-800 border-blue-300";
+        return "bg-[color:var(--info-background)] text-[color:var(--info-foreground)] border-[color:var(--info-border)]";
       case "completed":
-        return "bg-green-100 text-green-800 border-green-300";
+        return "bg-[color:var(--success-background)] text-[color:var(--success-foreground)] border-[color:var(--success-border)]";
       case "cancelled":
-        return "bg-red-100 text-red-800 border-red-300";
+        return "bg-[color:var(--destructive-background)] text-[color:var(--destructive-foreground)] border-[color:var(--destructive-border)]";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-300";
+        return "bg-[color:var(--muted)] text-[color:var(--muted-foreground)] border-[color:var(--border)]";
     }
   };
 
@@ -234,43 +238,54 @@ export default function TasksPage({
   };
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-gray-50 dark:bg-gray-900">
+    <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-[color:var(--background)]">
       {/* Sidebar des tâches */}
-      <div className="w-72 flex-shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 flex flex-col">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center">
-          <Link href={`/dashboard/objet/${objetId}/view`} className="mr-2">
-            <ArrowLeft size={18} className="text-gray-500 dark:text-gray-400" />
+      <div className="w-72 flex-shrink-0 border-r border-[color:var(--border)] bg-[color:var(--card)] flex flex-col">
+        <div className="p-4 border-b border-[color:var(--border)] flex items-center">
+          <Link
+            href={`/dashboard/objet/${objetId}/view`}
+            className="mr-2 p-2 rounded-full hover:bg-[color:var(--muted)] transition-colors"
+          >
+            <ArrowLeft
+              size={18}
+              className="text-[color:var(--muted-foreground)]"
+            />
           </Link>
-          <h1 className="font-medium truncate">{articleTitle}</h1>
+          <h1 className="font-medium truncate text-[color:var(--foreground)]">
+            {articleTitle}
+          </h1>
         </div>
 
-        <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-3 border-b border-[color:var(--border)]">
           <div className="relative">
             <Search
               size={16}
-              className="absolute left-2.5 top-2.5 text-gray-400"
+              className="absolute left-2.5 top-2.5 text-[color:var(--muted-foreground)]"
             />
             <input
               type="text"
               placeholder="Rechercher des tâches..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-[color:var(--border)] bg-[color:var(--background)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent text-[color:var(--foreground)]"
             />
           </div>
         </div>
 
-        <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <div className="p-3 border-b border-[color:var(--border)] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Filter size={16} className="text-gray-500 dark:text-gray-400" />
-            <span className="text-sm text-gray-600 dark:text-gray-300">
+            <Filter
+              size={16}
+              className="text-[color:var(--muted-foreground)]"
+            />
+            <span className="text-sm text-[color:var(--muted-foreground)]">
               Filtrer:
             </span>
           </div>
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="text-sm rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 px-2 py-1"
+            className="text-sm rounded border border-[color:var(--border)] bg-[color:var(--background)] px-2 py-1 text-[color:var(--foreground)]"
           >
             <option value="all">Toutes</option>
             <option value="pending">À faire</option>
@@ -282,7 +297,7 @@ export default function TasksPage({
 
         <button
           onClick={handleNewTask}
-          className="mx-3 mt-3 mb-2 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium text-white bg-primary hover:bg-primary/90 transition-colors"
+          className="mx-3 mt-3 mb-2 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium text-[color:var(--primary-foreground)] bg-[color:var(--primary)] hover:bg-opacity-90 transition-colors"
         >
           <Plus size={16} />
           Nouvelle tâche
@@ -290,7 +305,7 @@ export default function TasksPage({
 
         <div className="overflow-y-auto flex-1 py-2">
           {filteredTasks.length === 0 ? (
-            <div className="text-center py-6 text-gray-500 dark:text-gray-400 text-sm">
+            <div className="text-center py-6 text-[color:var(--muted-foreground)] text-sm">
               Aucune tâche trouvée
             </div>
           ) : (
@@ -300,10 +315,10 @@ export default function TasksPage({
                   key={task.id}
                   onClick={() => handleTaskClick(task)}
                   className={cn(
-                    "w-full px-3 py-2.5 text-left text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 border-l-4",
+                    "w-full px-3 py-2.5 text-left text-sm transition-colors hover:bg-[color:var(--accent)] border-l-4",
                     selectedTask?.id === task.id
-                      ? "bg-gray-100 dark:bg-gray-700 border-primary"
-                      : "border-transparent"
+                      ? "bg-[color:var(--accent)] border-[color:var(--primary)]"
+                      : "border-transparent text-[color:var(--foreground)]"
                   )}
                 >
                   <div className="flex items-center justify-between mb-1">
@@ -318,7 +333,7 @@ export default function TasksPage({
                   </div>
 
                   {task.realizationDate && (
-                    <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center text-xs text-[color:var(--muted-foreground)]">
                       <Calendar size={12} className="mr-1" />
                       {formatDate(task.realizationDate)}
 
@@ -343,7 +358,7 @@ export default function TasksPage({
       {/* Contenu principal */}
       <div
         ref={contentRef}
-        className="flex-1 overflow-auto bg-white dark:bg-gray-800 p-6"
+        className="flex-1 overflow-auto bg-[color:var(--background)] p-6"
       >
         <AnimatePresence mode="wait">
           {showAddForm ? (
@@ -375,10 +390,12 @@ export default function TasksPage({
                     <div
                       className="w-3 h-3 rounded-full"
                       style={{
-                        backgroundColor: selectedTask.color || "#3b82f6",
+                        backgroundColor: selectedTask.color || "var(--primary)",
                       }}
                     />
-                    <h1 className="text-2xl font-bold">{selectedTask.name}</h1>
+                    <h1 className="text-2xl font-bold text-[color:var(--foreground)]">
+                      {selectedTask.name}
+                    </h1>
                   </div>
                   <div
                     className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(
@@ -393,11 +410,11 @@ export default function TasksPage({
                   <div className="col-span-2 space-y-6">
                     {selectedTask.description && (
                       <div>
-                        <h3 className="text-sm font-medium uppercase text-gray-500 dark:text-gray-400 mb-2">
+                        <h3 className="text-sm font-medium uppercase text-[color:var(--muted-foreground)] mb-2">
                           Description
                         </h3>
-                        <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <p className="whitespace-pre-wrap">
+                        <div className="p-4 bg-[color:var(--muted)] rounded-lg">
+                          <p className="whitespace-pre-wrap text-[color:var(--foreground)]">
                             {selectedTask.description}
                           </p>
                         </div>
@@ -406,11 +423,11 @@ export default function TasksPage({
 
                     {selectedTask.executantComment && (
                       <div>
-                        <h3 className="text-sm font-medium uppercase text-gray-500 dark:text-gray-400 mb-2">
+                        <h3 className="text-sm font-medium uppercase text-[color:var(--muted-foreground)] mb-2">
                           Commentaire d&apos;exécution
                         </h3>
-                        <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border-l-4 border-primary">
-                          <p className="whitespace-pre-wrap">
+                        <div className="p-4 bg-[color:var(--muted)] rounded-lg border-l-4 border-[color:var(--primary)]">
+                          <p className="whitespace-pre-wrap text-[color:var(--foreground)]">
                             {selectedTask.executantComment}
                           </p>
                         </div>
@@ -419,8 +436,8 @@ export default function TasksPage({
                   </div>
 
                   <div className="space-y-4">
-                    <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <h3 className="text-sm font-medium uppercase text-gray-500 dark:text-gray-400 mb-3">
+                    <div className="p-4 bg-[color:var(--muted)] rounded-lg">
+                      <h3 className="text-sm font-medium uppercase text-[color:var(--muted-foreground)] mb-3">
                         Informations
                       </h3>
 
@@ -428,13 +445,13 @@ export default function TasksPage({
                         <div className="flex items-start">
                           <Calendar
                             size={16}
-                            className="mt-0.5 mr-2 text-gray-500 dark:text-gray-400"
+                            className="mt-0.5 mr-2 text-[color:var(--muted-foreground)]"
                           />
                           <div>
-                            <div className="text-sm font-medium">
+                            <div className="text-sm font-medium text-[color:var(--foreground)]">
                               Date prévue
                             </div>
-                            <div className="text-sm text-gray-600 dark:text-gray-300">
+                            <div className="text-sm text-[color:var(--muted-foreground)]">
                               {formatDate(selectedTask.realizationDate)}
                             </div>
                           </div>
@@ -443,11 +460,13 @@ export default function TasksPage({
                         <div className="flex items-start">
                           <User
                             size={16}
-                            className="mt-0.5 mr-2 text-gray-500 dark:text-gray-400"
+                            className="mt-0.5 mr-2 text-[color:var(--muted-foreground)]"
                           />
                           <div>
-                            <div className="text-sm font-medium">Assigné à</div>
-                            <div className="text-sm text-gray-600 dark:text-gray-300">
+                            <div className="text-sm font-medium text-[color:var(--foreground)]">
+                              Assigné à
+                            </div>
+                            <div className="text-sm text-[color:var(--muted-foreground)]">
                               {selectedTask.assignedTo?.name || "Non assigné"}
                             </div>
                           </div>
@@ -457,13 +476,13 @@ export default function TasksPage({
                           <div className="flex items-start">
                             <Clock
                               size={16}
-                              className="mt-0.5 mr-2 text-gray-500 dark:text-gray-400"
+                              className="mt-0.5 mr-2 text-[color:var(--muted-foreground)]"
                             />
                             <div>
-                              <div className="text-sm font-medium">
+                              <div className="text-sm font-medium text-[color:var(--foreground)]">
                                 Type de tâche
                               </div>
-                              <div className="text-sm text-gray-600 dark:text-gray-300">
+                              <div className="text-sm text-[color:var(--muted-foreground)]">
                                 {selectedTask.taskType}
                               </div>
                             </div>
@@ -474,13 +493,13 @@ export default function TasksPage({
                           <div className="flex items-start">
                             <Calendar
                               size={16}
-                              className="mt-0.5 mr-2 text-gray-500 dark:text-gray-400"
+                              className="mt-0.5 mr-2 text-[color:var(--muted-foreground)]"
                             />
                             <div>
-                              <div className="text-sm font-medium">
+                              <div className="text-sm font-medium text-[color:var(--foreground)]">
                                 Récurrence
                               </div>
-                              <div className="text-sm text-gray-600 dark:text-gray-300">
+                              <div className="text-sm text-[color:var(--muted-foreground)]">
                                 {selectedTask.period === "daily" &&
                                   "Quotidienne"}
                                 {selectedTask.period === "weekly" &&
@@ -501,23 +520,27 @@ export default function TasksPage({
                       </div>
                     </div>
 
-                    <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <h3 className="text-sm font-medium uppercase text-gray-500 dark:text-gray-400 mb-3">
+                    <div className="p-4 bg-[color:var(--muted)] rounded-lg">
+                      <h3 className="text-sm font-medium uppercase text-[color:var(--muted-foreground)] mb-3">
                         Dates
                       </h3>
 
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
-                          <span className="text-gray-500 dark:text-gray-400">
+                          <span className="text-[color:var(--muted-foreground)]">
                             Créée:
                           </span>
-                          <span>{formatDate(selectedTask.createdAt)}</span>
+                          <span className="text-[color:var(--foreground)]">
+                            {formatDate(selectedTask.createdAt)}
+                          </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-500 dark:text-gray-400">
+                          <span className="text-[color:var(--muted-foreground)]">
                             Mise à jour:
                           </span>
-                          <span>{formatDate(selectedTask.updatedAt)}</span>
+                          <span className="text-[color:var(--foreground)]">
+                            {formatDate(selectedTask.updatedAt)}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -531,7 +554,7 @@ export default function TasksPage({
                         onClick={() =>
                           handleTaskStatusChange(selectedTask.id, "completed")
                         }
-                        className="px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] bg-[var(--primary)] hover:bg-[color-mix(in srgb, var(--primary) 90%, black 10%)] rounded-lg transition-colors"
+                        className="px-4 py-2 text-sm font-medium text-[color:var(--primary-foreground)] bg-[color:var(--primary)] hover:bg-opacity-90 rounded-lg transition-colors"
                       >
                         Marquer comme terminée
                       </button>
@@ -541,7 +564,7 @@ export default function TasksPage({
                         onClick={() =>
                           handleTaskStatusChange(selectedTask.id, "pending")
                         }
-                        className="px-4 py-2 text-sm font-medium text-[var(--secondary-foreground)] bg-[var(--secondary)] hover:bg-[color-mix(in srgb, var(--secondary) 90%, black 10%)] rounded-lg transition-colors"
+                        className="px-4 py-2 text-sm font-medium text-[color:var(--secondary-foreground)] bg-[color:var(--secondary)] hover:bg-opacity-90 rounded-lg transition-colors"
                       >
                         Rouvrir la tâche
                       </button>
@@ -554,13 +577,13 @@ export default function TasksPage({
                         setShowAddForm(true);
                         setSelectedTask(selectedTask);
                       }}
-                      className="px-4 py-2 text-sm font-medium text-[var(--primary)] bg-[var(--accent)] hover:bg-[color-mix(in srgb, var(--accent) 90%, black 10%)] hover:text-[var(--primary-foreground)] rounded-lg transition-colors"
+                      className="px-4 py-2 text-sm font-medium text-[color:var(--secondary-foreground)] bg-[color:var(--secondary)] hover:bg-opacity-90 rounded-lg transition-colors"
                     >
                       Modifier
                     </button>
                     <button
                       onClick={() => handleTaskDelete(selectedTask.id)}
-                      className="px-4 py-2 text-sm font-medium text-[var(--destructive)] bg-[var(--destructive-foreground)] hover:bg-[color-mix(in srgb, var(--destructive-foreground) 90%, black 10%)] hover:text-[var(--destructive)] rounded-lg transition-colors"
+                      className="px-4 py-2 text-sm font-medium text-[color:var(--destructive-foreground)] bg-[color:var(--destructive)] hover:bg-opacity-90 rounded-lg transition-colors"
                     >
                       Supprimer
                     </button>
@@ -577,20 +600,22 @@ export default function TasksPage({
               transition={{ duration: 0.2 }}
               className="h-full flex flex-col items-center justify-center text-center p-6"
             >
-              <div className="w-20 h-20 bg-[var(--card)] rounded-full flex items-center justify-center mb-4">
+              <div className="w-20 h-20 bg-[color:var(--muted)] rounded-full flex items-center justify-center mb-4">
                 <Calendar
                   size={32}
-                  className="text-[var(--muted-foreground)]"
+                  className="text-[color:var(--muted-foreground)]"
                 />
               </div>
-              <h2 className="text-xl font-semibold mb-2">Gestion des tâches</h2>
-              <p className="text-[var(--muted-foreground)] max-w-md mb-6">
+              <h2 className="text-xl font-semibold mb-2 text-[color:var(--foreground)]">
+                Gestion des tâches
+              </h2>
+              <p className="text-[color:var(--muted-foreground)] max-w-md mb-6">
                 {articleDescription ||
                   "Sélectionnez une tâche dans la liste ou créez-en une nouvelle pour commencer."}
               </p>
               <button
                 onClick={handleNewTask}
-                className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium text-[var(--primary-foreground)] bg-[var(--primary)] hover:bg-[color-mix(in srgb, var(--primary) 90%, black 10%)] transition-colors"
+                className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium text-[color:var(--primary-foreground)] bg-[color:var(--primary)] hover:bg-opacity-90 transition-colors"
               >
                 <Plus size={16} />
                 Nouvelle tâche

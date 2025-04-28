@@ -48,7 +48,7 @@ export default function TaskForm({
   const [isRecurring, setIsRecurring] = useState(task?.recurring || false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const defaultColor = "#3b82f6"; // Bleu par défaut
+  const defaultColor = "var(--primary)"; // Utilisation de la variable CSS
 
   const [formData, setFormData] = useState<
     Omit<Task, "id" | "assignedTo" | "createdAt" | "updatedAt">
@@ -126,20 +126,20 @@ export default function TaskForm({
 
   return (
     <motion.div
-      className="max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-lg"
+      className="max-w-3xl mx-auto bg-[color:var(--card)] rounded-lg overflow-hidden shadow-lg border border-[color:var(--border)]"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-700 px-6 py-4 border-b border-gray-200 dark:border-gray-600">
-        <h2 className="text-xl font-semibold">
+      <div className="flex justify-between items-center bg-[color:var(--muted)] px-6 py-4 border-b border-[color:var(--border)]">
+        <h2 className="text-xl font-semibold text-[color:var(--foreground)]">
           {task?.id ? "Modifier la tâche" : "Nouvelle tâche"}
         </h2>
         <button
           type="button"
           onClick={onCancel}
-          className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+          className="text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)] transition-colors"
         >
           <X size={20} />
         </button>
@@ -147,7 +147,7 @@ export default function TaskForm({
 
       <form onSubmit={handleSubmit} className="p-6">
         {formError && (
-          <div className="mb-6 flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400">
+          <div className="mb-6 flex items-center gap-2 p-3 bg-[color:var(--destructive-background)] border border-[color:var(--destructive-border)] rounded-lg text-[color:var(--destructive-foreground)]">
             <AlertCircle size={16} />
             <span>{formError}</span>
           </div>
@@ -155,7 +155,10 @@ export default function TaskForm({
 
         <div className="space-y-6">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium mb-2">
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium mb-2 text-[color:var(--foreground)]"
+            >
               Nom de la tâche *
             </label>
             <input
@@ -165,7 +168,7 @@ export default function TaskForm({
               value={formData.name}
               onChange={handleChange}
               placeholder="Saisir le nom de la tâche"
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700"
+              className="w-full px-4 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
               required
             />
           </div>
@@ -173,7 +176,7 @@ export default function TaskForm({
           <div>
             <label
               htmlFor="description"
-              className="block text-sm font-medium mb-2"
+              className="block text-sm font-medium mb-2 text-[color:var(--foreground)]"
             >
               Description
             </label>
@@ -183,7 +186,7 @@ export default function TaskForm({
               value={formData.description || ""}
               onChange={handleChange}
               placeholder="Description détaillée (optionnelle)"
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700"
+              className="w-full px-4 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
               rows={3}
             />
           </div>
@@ -192,7 +195,7 @@ export default function TaskForm({
             <div>
               <label
                 htmlFor="status"
-                className="block text-sm font-medium mb-2"
+                className="block text-sm font-medium mb-2 text-[color:var(--foreground)]"
               >
                 Statut
               </label>
@@ -201,7 +204,7 @@ export default function TaskForm({
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700"
+                className="w-full px-4 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
               >
                 <option value="pending">À faire</option>
                 <option value="in_progress">En cours</option>
@@ -213,7 +216,7 @@ export default function TaskForm({
             <div>
               <label
                 htmlFor="taskType"
-                className="block text-sm font-medium mb-2"
+                className="block text-sm font-medium mb-2 text-[color:var(--foreground)]"
               >
                 Type de tâche
               </label>
@@ -224,7 +227,7 @@ export default function TaskForm({
                 value={formData.taskType || ""}
                 onChange={handleChange}
                 placeholder="Ex: Maintenance, Nettoyage, Réparation..."
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700"
+                className="w-full px-4 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
               />
             </div>
           </div>
@@ -233,7 +236,7 @@ export default function TaskForm({
             <div>
               <label
                 htmlFor="realizationDate"
-                className="block text-sm font-medium mb-2"
+                className="block text-sm font-medium mb-2 text-[color:var(--foreground)]"
               >
                 Date de réalisation prévue
               </label>
@@ -250,11 +253,11 @@ export default function TaskForm({
                       : ""
                   }
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700"
+                  className="w-full px-4 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
                 />
                 <Calendar
                   size={16}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[color:var(--muted-foreground)] pointer-events-none"
                 />
               </div>
             </div>
@@ -262,7 +265,7 @@ export default function TaskForm({
             <div>
               <label
                 htmlFor="assignedToId"
-                className="block text-sm font-medium mb-2"
+                className="block text-sm font-medium mb-2 text-[color:var(--foreground)]"
               >
                 Attribuer à
               </label>
@@ -271,7 +274,7 @@ export default function TaskForm({
                 name="assignedToId"
                 value={formData.assignedToId || ""}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700"
+                className="w-full px-4 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
               >
                 <option value="">Non assignée</option>
                 {users.map((user) => (
@@ -285,7 +288,10 @@ export default function TaskForm({
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
             <div>
-              <label htmlFor="color" className="block text-sm font-medium mb-2">
+              <label
+                htmlFor="color"
+                className="block text-sm font-medium mb-2 text-[color:var(--foreground)]"
+              >
                 Couleur
               </label>
               <div className="flex items-center gap-3">
@@ -298,7 +304,7 @@ export default function TaskForm({
                   className="w-12 h-12 p-1 border-0 rounded-md cursor-pointer"
                 />
                 <div
-                  className="w-12 h-8 rounded border border-gray-300 dark:border-gray-600"
+                  className="w-12 h-8 rounded border border-[color:var(--border)]"
                   style={{ backgroundColor: formData.color || defaultColor }}
                 />
               </div>
@@ -312,11 +318,11 @@ export default function TaskForm({
                   name="recurring"
                   checked={formData.recurring}
                   onChange={handleCheckboxChange}
-                  className="h-5 w-5 text-primary rounded focus:ring-primary"
+                  className="h-5 w-5 text-[color:var(--primary)] rounded focus:ring-[color:var(--ring)]"
                 />
                 <label
                   htmlFor="recurring"
-                  className="ml-2 block text-sm font-medium"
+                  className="ml-2 block text-sm font-medium text-[color:var(--foreground)]"
                 >
                   Tâche récurrente
                 </label>
@@ -325,12 +331,12 @@ export default function TaskForm({
           </div>
 
           {isRecurring && (
-            <div className="p-5 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800 space-y-6">
+            <div className="p-5 bg-[color:var(--info-background)] rounded-lg border border-[color:var(--info-border)] space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label
                     htmlFor="period"
-                    className="block text-sm font-medium mb-2"
+                    className="block text-sm font-medium mb-2 text-[color:var(--foreground)]"
                   >
                     Périodicité
                   </label>
@@ -339,7 +345,7 @@ export default function TaskForm({
                     name="period"
                     value={formData.period || "weekly"}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700"
+                    className="w-full px-4 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
                   >
                     <option value="daily">Quotidienne</option>
                     <option value="weekly">Hebdomadaire</option>
@@ -352,7 +358,7 @@ export default function TaskForm({
                 <div>
                   <label
                     htmlFor="endDate"
-                    className="block text-sm font-medium mb-2"
+                    className="block text-sm font-medium mb-2 text-[color:var(--foreground)]"
                   >
                     Date de fin (optionnelle)
                   </label>
@@ -369,11 +375,11 @@ export default function TaskForm({
                           : ""
                       }
                       onChange={handleChange}
-                      className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700"
+                      className="w-full px-4 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
                     />
                     <Calendar
                       size={16}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[color:var(--muted-foreground)] pointer-events-none"
                     />
                   </div>
                 </div>
@@ -385,7 +391,7 @@ export default function TaskForm({
             <div>
               <label
                 htmlFor="executantComment"
-                className="block text-sm font-medium mb-2"
+                className="block text-sm font-medium mb-2 text-[color:var(--foreground)]"
               >
                 Commentaire d&apos;exécution
               </label>
@@ -395,17 +401,17 @@ export default function TaskForm({
                 value={formData.executantComment || ""}
                 onChange={handleChange}
                 placeholder="Commentaires sur l'exécution de la tâche"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700"
+                className="w-full px-4 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
                 rows={2}
               />
             </div>
           )}
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex justify-end gap-3 pt-4 border-t border-[color:var(--border)]">
             <button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="px-4 py-2.5 border border-[color:var(--border)] rounded-lg text-sm font-medium hover:bg-[color:var(--muted)] transition-colors text-[color:var(--foreground)]"
               disabled={isLoading}
             >
               Annuler
@@ -414,7 +420,7 @@ export default function TaskForm({
             <button
               type="submit"
               disabled={isLoading}
-              className="px-4 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              className="px-4 py-2.5 bg-[color:var(--primary)] hover:bg-opacity-90 text-[color:var(--primary-foreground)] rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
             >
               {isLoading
                 ? task?.id
