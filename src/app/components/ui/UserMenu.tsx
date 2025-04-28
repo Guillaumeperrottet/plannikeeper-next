@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from "react";
 import {
   LogOut,
   User,
-  Settings,
   ChevronDown,
   LayoutDashboard,
   Users,
@@ -62,11 +61,6 @@ export default function UserMenu({ user, isAdmin = false }: UserMenuProps) {
           },
         ]
       : []),
-    {
-      icon: <Settings size={16} />,
-      label: "Paramètres",
-      href: "/settings",
-    },
     {
       icon: <LogOut size={16} />,
       label: "Déconnexion",

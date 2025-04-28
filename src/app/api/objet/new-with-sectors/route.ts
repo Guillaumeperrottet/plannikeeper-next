@@ -57,6 +57,26 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Récupérer tous les utilisateurs de l'organisation qui ne sont pas admin
+    const orgUsers = await prisma.organizationUser.findMany({
+      where: {
+        organizationId: userDb.Organization.id,
+        role: { not: "admin" },
+      },
+      select: { userId: true },
+    });
+
+    // Créer des entrées d'accès "none" pour chaque utilisateur
+    if (orgUsers.length > 0) {
+      await prisma.objectAccess.createMany({
+        data: orgUsers.map((ou) => ({
+          userId: ou.userId,
+          objectId: objet.id,
+          accessLevel: "none",
+        })),
+      });
+    }
+
     // 2. Traiter les secteurs
     const sectorsData = [];
 

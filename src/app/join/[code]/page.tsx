@@ -28,16 +28,17 @@ export default async function JoinPage({
     return (
       <div className="max-w-md mx-auto mt-10 p-6 bg-background rounded-lg shadow-md text-center">
         <h1 className="text-2xl font-bold text-red-600 mb-4">
-          Code d'invitation invalide
+          Code d&apos;invitation invalide
         </h1>
         <p className="mb-6 text-gray-600">
-          Ce code d'invitation est invalide, a expiré ou a déjà été utilisé.
+          Ce code d&apos;invitation est invalide, a expiré ou a déjà été
+          utilisé.
         </p>
         <Link
           href="/"
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
         >
-          Retour à l'accueil
+          Retour à l&apos;accueil
         </Link>
       </div>
     );
@@ -124,6 +125,26 @@ export default async function JoinPage({
     where: { id: user.id },
     data: { organizationId: invitation.organizationId },
   });
+
+  // Initialiser les accès aux objets si l'utilisateur n'est pas admin
+  if (invitation.role !== "admin") {
+    // Récupérer tous les objets de l'organisation
+    const objects = await prisma.objet.findMany({
+      where: { organizationId: invitation.organizationId },
+      select: { id: true },
+    });
+
+    // Créer des entrées d'accès "none" pour chaque objet
+    if (objects.length > 0) {
+      await prisma.objectAccess.createMany({
+        data: objects.map((obj) => ({
+          userId: user.id,
+          objectId: obj.id,
+          accessLevel: "none",
+        })),
+      });
+    }
+  }
 
   // Marquez le code comme utilisé
   await prisma.invitationCode.update({
