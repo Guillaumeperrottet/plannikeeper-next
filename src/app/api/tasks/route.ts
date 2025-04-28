@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
+import { checkArticleAccess } from "@/lib/auth-session";
 
 export async function POST(req: NextRequest) {
   const user = await getUser();
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Vérifier que l'article existe et que l'utilisateur a le droit d'y accéder
+  // Vérifier que l'article existe
   const article = await prisma.article.findUnique({
     where: { id: articleId },
     include: {
@@ -45,18 +46,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Article non trouvé" }, { status: 404 });
   }
 
-  // Vérifier que l'utilisateur appartient à la même organisation que l'objet
-  const userWithOrg = await prisma.user.findUnique({
-    where: { id: user.id },
-    include: { Organization: true },
-  });
-
-  if (
-    !userWithOrg?.Organization ||
-    userWithOrg.Organization.id !== article.sector.object.organizationId
-  ) {
+  // Vérifier que l'utilisateur a un accès en écriture à cet article
+  const hasWriteAccess = await checkArticleAccess(user.id, articleId, "write");
+  if (!hasWriteAccess) {
     return NextResponse.json(
-      { error: "Vous n'avez pas les droits pour modifier cet article" },
+      {
+        error:
+          "Vous n'avez pas les droits pour créer une tâche dans cet article",
+      },
       { status: 403 }
     );
   }

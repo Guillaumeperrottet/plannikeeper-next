@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
+import { checkObjectAccess } from "@/lib/auth-session";
 
 export async function POST(
   req: NextRequest,
@@ -29,16 +30,9 @@ export async function POST(
     return NextResponse.json({ error: "Objet non trouvé" }, { status: 404 });
   }
 
-  // Vérifier que l'utilisateur appartient à la même organisation que l'objet
-  const userWithOrg = await prisma.user.findUnique({
-    where: { id: user.id },
-    include: { Organization: true },
-  });
-
-  if (
-    !userWithOrg?.Organization ||
-    userWithOrg.Organization.id !== objet.organizationId
-  ) {
+  // Vérifier que l'utilisateur a un accès en écriture à cet objet
+  const hasWriteAccess = await checkObjectAccess(user.id, objectId, "write");
+  if (!hasWriteAccess) {
     return NextResponse.json(
       { error: "Vous n'avez pas les droits pour modifier cet objet" },
       { status: 403 }

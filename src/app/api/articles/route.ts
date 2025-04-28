@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
+import { checkArticleAccess, checkSectorAccess } from "@/lib/auth-session";
 
 export async function POST(req: NextRequest) {
   const user = await getUser();
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
 
   // Si un ID est fourni, c'est une mise à jour
   if (id) {
-    // Vérifier que l'article existe et que l'utilisateur y a accès
+    // Vérifier que l'article existe
     const existingArticle = await prisma.article.findUnique({
       where: { id },
       include: {
@@ -40,17 +41,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Vérifier que l'utilisateur appartient à la même organisation que l'objet
-    const userWithOrg = await prisma.user.findUnique({
-      where: { id: user.id },
-      include: { Organization: true },
-    });
-
-    if (
-      !userWithOrg?.Organization ||
-      userWithOrg.Organization.id !==
-        existingArticle.sector.object.organizationId
-    ) {
+    // Vérifier que l'utilisateur a un accès en écriture à cet article
+    const hasWriteAccess = await checkArticleAccess(user.id, id, "write");
+    if (!hasWriteAccess) {
       return NextResponse.json(
         { error: "Vous n'avez pas les droits pour modifier cet article" },
         { status: 403 }
@@ -74,28 +67,8 @@ export async function POST(req: NextRequest) {
   } else {
     // Sinon, c'est une création
     // Vérifier que l'utilisateur a accès au secteur
-    const sector = await prisma.sector.findUnique({
-      where: { id: sectorId },
-      include: { object: true },
-    });
-
-    if (!sector) {
-      return NextResponse.json(
-        { error: "Secteur non trouvé" },
-        { status: 404 }
-      );
-    }
-
-    // Vérifier que l'utilisateur appartient à la même organisation que l'objet
-    const userWithOrg = await prisma.user.findUnique({
-      where: { id: user.id },
-      include: { Organization: true },
-    });
-
-    if (
-      !userWithOrg?.Organization ||
-      userWithOrg.Organization.id !== sector.object.organizationId
-    ) {
+    const hasWriteAccess = await checkSectorAccess(user.id, sectorId, "write");
+    if (!hasWriteAccess) {
       return NextResponse.json(
         { error: "Vous n'avez pas les droits pour modifier ce secteur" },
         { status: 403 }

@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
+import { checkSectorAccess } from "@/lib/auth-session";
 
 export async function GET(
   req: NextRequest,
@@ -14,7 +15,7 @@ export async function GET(
 
   const sectorId = await params.sectorId;
 
-  // Vérifier que l'utilisateur a accès au secteur
+  // Vérifier que le secteur existe
   const sector = await prisma.sector.findUnique({
     where: { id: sectorId },
     include: { object: true },
@@ -24,16 +25,9 @@ export async function GET(
     return NextResponse.json({ error: "Secteur non trouvé" }, { status: 404 });
   }
 
-  // Vérifier que l'utilisateur appartient à la même organisation que l'objet
-  const userWithOrg = await prisma.user.findUnique({
-    where: { id: user.id },
-    include: { Organization: true },
-  });
-
-  if (
-    !userWithOrg?.Organization ||
-    userWithOrg.Organization.id !== sector.object.organizationId
-  ) {
+  // Vérifier que l'utilisateur a un accès en lecture à ce secteur
+  const hasReadAccess = await checkSectorAccess(user.id, sectorId, "read");
+  if (!hasReadAccess) {
     return NextResponse.json(
       { error: "Vous n'avez pas les droits pour accéder à ce secteur" },
       { status: 403 }

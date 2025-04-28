@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
+import { checkObjectAccess } from "@/lib/auth-session";
 
 export async function GET(
   req: NextRequest,
@@ -14,27 +15,20 @@ export async function GET(
 
   const objectId = await params.objectId;
 
-  // Vérifier que l'utilisateur a accès à cet objet
-  const userWithOrg = await prisma.user.findUnique({
-    where: { id: user.id },
-    include: { Organization: true },
-  });
-
-  if (!userWithOrg?.Organization) {
-    return NextResponse.json(
-      { error: "Aucune organisation trouvée" },
-      { status: 404 }
-    );
-  }
-
-  // Vérifier que l'objet appartient à l'organisation de l'utilisateur
+  // Vérifier que l'objet existe
   const object = await prisma.objet.findUnique({
     where: { id: objectId },
   });
 
-  if (!object || object.organizationId !== userWithOrg.Organization.id) {
+  if (!object) {
+    return NextResponse.json({ error: "Objet non trouvé" }, { status: 404 });
+  }
+
+  // Vérifier que l'utilisateur a un accès en lecture à cet objet
+  const hasReadAccess = await checkObjectAccess(user.id, objectId, "read");
+  if (!hasReadAccess) {
     return NextResponse.json(
-      { error: "Objet non trouvé ou accès refusé" },
+      { error: "Vous n'avez pas les droits pour accéder à cet objet" },
       { status: 403 }
     );
   }

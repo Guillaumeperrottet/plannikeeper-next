@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
+import { checkArticleAccess } from "@/lib/auth-session";
 
 export async function PUT(
   req: NextRequest,
@@ -16,7 +17,7 @@ export async function PUT(
   const { title, description, positionX, positionY, width, height } =
     await req.json();
 
-  // Vérifier que l'article existe et que l'utilisateur y a accès
+  // Vérifier que l'article existe
   const article = await prisma.article.findUnique({
     where: { id: articleId },
     include: {
@@ -30,16 +31,9 @@ export async function PUT(
     return NextResponse.json({ error: "Article non trouvé" }, { status: 404 });
   }
 
-  // Vérifier que l'utilisateur appartient à la même organisation que l'objet
-  const userWithOrg = await prisma.user.findUnique({
-    where: { id: user.id },
-    include: { Organization: true },
-  });
-
-  if (
-    !userWithOrg?.Organization ||
-    userWithOrg.Organization.id !== article.sector.object.organizationId
-  ) {
+  // Vérifier que l'utilisateur a un accès en écriture à cet article
+  const hasWriteAccess = await checkArticleAccess(user.id, articleId, "write");
+  if (!hasWriteAccess) {
     return NextResponse.json(
       { error: "Vous n'avez pas les droits pour modifier cet article" },
       { status: 403 }
@@ -73,7 +67,7 @@ export async function DELETE(
 
   const articleId = await params.id;
 
-  // Vérifier que l'article existe et que l'utilisateur y a accès
+  // Vérifier que l'article existe
   const article = await prisma.article.findUnique({
     where: { id: articleId },
     include: {
@@ -87,16 +81,9 @@ export async function DELETE(
     return NextResponse.json({ error: "Article non trouvé" }, { status: 404 });
   }
 
-  // Vérifier que l'utilisateur appartient à la même organisation que l'objet
-  const userWithOrg = await prisma.user.findUnique({
-    where: { id: user.id },
-    include: { Organization: true },
-  });
-
-  if (
-    !userWithOrg?.Organization ||
-    userWithOrg.Organization.id !== article.sector.object.organizationId
-  ) {
+  // Vérifier que l'utilisateur a un accès en écriture pour supprimer l'article
+  const hasWriteAccess = await checkArticleAccess(user.id, articleId, "write");
+  if (!hasWriteAccess) {
     return NextResponse.json(
       { error: "Vous n'avez pas les droits pour supprimer cet article" },
       { status: 403 }
