@@ -14,10 +14,6 @@ import {
   Filter,
   Search,
   Plus,
-  Edit,
-  Trash,
-  Move,
-  ChevronLeft,
   ArrowLeft,
   ArrowDownUp,
   Check,
@@ -27,9 +23,7 @@ import {
   Calendar as CalendarIcon,
   ChevronDown,
   AlertCircle,
-  Inbox,
   CheckCircle2,
-  TimerOff,
   Paperclip,
   ClipboardList,
   CircleOff,
@@ -592,7 +586,7 @@ export default function TasksPage({
 
       // Ne retourner que les groupes non vides
       return Object.fromEntries(
-        Object.entries(groups).filter(([_, tasks]) => tasks.length > 0)
+        Object.entries(groups).filter(([tasks]) => tasks.length > 0)
       );
     }
 
@@ -616,7 +610,7 @@ export default function TasksPage({
 
       // Ne retourner que les groupes non vides
       return Object.fromEntries(
-        Object.entries(groups).filter(([_, tasks]) => tasks.length > 0)
+        Object.entries(groups).filter(([tasks]) => tasks.length > 0)
       );
     }
 
@@ -1169,7 +1163,7 @@ export default function TasksPage({
       {/* Contenu principal */}
       <div
         ref={contentRef}
-        className="flex-1 overflow-auto bg-[color:var(--background)] p-6"
+        className="flex-1 flex flex-col h-screen bg-[color:var(--background)]"
       >
         <AnimatePresence mode="wait">
           {showAddForm ? (
@@ -1179,6 +1173,7 @@ export default function TasksPage({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
               transition={{ duration: 0.2 }}
+              className="flex-1 overflow-auto p-6"
             >
               <TaskForm
                 users={users}
@@ -1194,9 +1189,11 @@ export default function TasksPage({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
               transition={{ duration: 0.2 }}
+              className="flex-1 overflow-auto p-6"
             >
-              <div className="max-w-3xl mx-auto">
-                <div className="flex items-center justify-between mb-6">
+              <div className="max-w-3xl mx-auto h-max flex flex-col">
+                {/* Entête avec le nom de la tâche et le statut */}
+                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div
                       className="w-3 h-3 rounded-full"
@@ -1218,14 +1215,15 @@ export default function TasksPage({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                  <div className="col-span-2 space-y-6">
+                {/* Contenu principal - réorganisé pour mieux utiliser l'espace */}
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 min-h-0">
+                  <div className="col-span-2 space-y-4 overflow-auto">
                     {selectedTask.description && (
                       <div>
                         <h3 className="text-sm font-medium uppercase text-[color:var(--muted-foreground)] mb-2">
                           Description
                         </h3>
-                        <div className="p-4 bg-[color:var(--muted)] rounded-lg">
+                        <div className="p-4 bg-[color:var(--muted)] rounded-lg max-h-[150px] overflow-auto">
                           <p className="whitespace-pre-wrap text-[color:var(--foreground)]">
                             {selectedTask.description}
                           </p>
@@ -1238,13 +1236,38 @@ export default function TasksPage({
                         <h3 className="text-sm font-medium uppercase text-[color:var(--muted-foreground)] mb-2">
                           Commentaire d&apos;exécution
                         </h3>
-                        <div className="p-4 bg-[color:var(--muted)] rounded-lg border-l-4 border-[color:var(--primary)]">
+                        <div className="p-4 bg-[color:var(--muted)] rounded-lg border-l-4 border-[color:var(--primary)] max-h-[150px] overflow-auto">
                           <p className="whitespace-pre-wrap text-[color:var(--foreground)]">
                             {selectedTask.executantComment}
                           </p>
                         </div>
                       </div>
                     )}
+
+                    {/* Section Documents - compactée */}
+                    <div>
+                      <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                        <Paperclip size={18} />
+                        Documents
+                      </h3>
+                      <div className="max-h-[200px] overflow-auto">
+                        <DocumentsList
+                          taskId={selectedTask.id}
+                          onDocumentsChange={() => {
+                            // Fonction à appeler quand des changements sont faits
+                          }}
+                        />
+                      </div>
+                      <div className="mt-2">
+                        <h4 className="text-sm font-medium mb-1">Ajouter</h4>
+                        <DocumentUpload
+                          taskId={selectedTask.id}
+                          onUploadSuccess={() => {
+                            // Rafraîchir après upload réussi
+                          }}
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   <div className="space-y-4">
@@ -1329,42 +1352,6 @@ export default function TasksPage({
                             </div>
                           </div>
                         )}
-                        {/* Section Documents */}
-                        <div className="mt-8">
-                          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                            <Paperclip size={18} />
-                            Documents
-                          </h3>
-
-                          <div className="space-y-6">
-                            <DocumentsList
-                              taskId={selectedTask.id}
-                              onDocumentsChange={() => {
-                                // Fonction à appeler quand des changements sont faits à la liste des documents
-                                // Par exemple, vous pourriez vouloir mettre à jour d'autres parties de l'interface
-                              }}
-                            />
-
-                            <div className="border-t pt-4">
-                              <h4 className="text-sm font-medium mb-2">
-                                Ajouter un document
-                              </h4>
-                              <DocumentUpload
-                                taskId={selectedTask.id}
-                                onUploadSuccess={() => {
-                                  // Rafraîchir la liste des documents après un téléchargement réussi
-                                  const documentsList = document.querySelector(
-                                    "[data-document-list]"
-                                  );
-                                  if (documentsList) {
-                                    // Vous pourriez implémenter une méthode de rafraîchissement ici
-                                    // ou simplement recharger la liste des documents
-                                  }
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </div>
                       </div>
                     </div>
 
@@ -1395,7 +1382,8 @@ export default function TasksPage({
                   </div>
                 </div>
 
-                <div className="mt-8 flex justify-between">
+                {/* Boutons d'action en bas */}
+                <div className="mt-auto pt-4 flex justify-between">
                   <div className="flex gap-2">
                     {selectedTask.status !== "completed" && (
                       <button
