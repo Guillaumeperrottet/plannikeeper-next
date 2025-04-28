@@ -35,9 +35,9 @@ export default async function RootLayout({
     <html lang="en">
       <body className="bg-background" suppressHydrationWarning>
         {user && <Navbar user={userWithRole} />}
-        <SidebarWrapper user={userWithRole}>
-          <div className="pb-16 md:pb-14">{children}</div>
-        </SidebarWrapper>
+        {/*<SidebarWrapper user={userWithRole}>*/}
+        <div className="pb-16 md:pb-14">{children}</div>
+        {/*}  </SidebarWrapper>*/}
         {user && <TodoListAgendaWrapper />}
         <Toaster position="top-center" richColors />
       </body>
