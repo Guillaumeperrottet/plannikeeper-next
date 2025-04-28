@@ -39,11 +39,11 @@ export default async function DashboardPage() {
   });
 
   return (
-    <div className="max-w-6xl mx-auto p-6 bg-background overflow-hidden">
+    <div className="max-w-6xl mx-auto p-6 bg-background text-foreground overflow-hidden">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
         <Button asChild variant="outline">
-          <Link href={"/dashboard/objet/new"}>
+          <Link href="/dashboard/objet/new">
             <PlusCircle size={20} className="mr-2" />
             Nouvel objet
           </Link>
@@ -51,20 +51,19 @@ export default async function DashboardPage() {
       </div>
 
       {objets.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
-          <h2 className="text-xl font-medium text-gray-600 mb-2">
+        <div className="text-center py-12 bg-card rounded-lg border border-border">
+          <h2 className="text-xl font-medium text-muted-foreground mb-2">
             Aucun objet trouvé
           </h2>
-          <p className="text-gray-500 mb-6">
+          <p className="text-muted-foreground mb-6">
             Commencez par créer votre premier objet pour le voir apparaître ici.
           </p>
-          <Link
-            href="/dashboard/objet/new"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
-          >
-            <PlusCircle size={18} />
-            <span>Créer un objet</span>
-          </Link>
+          <Button asChild>
+            <Link href="/dashboard/objet/new">
+              <PlusCircle size={18} className="mr-2" />
+              Créer un objet
+            </Link>
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
