@@ -1,16 +1,60 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { ChevronUp, ChevronDown, Printer, GripHorizontal } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import {
+  Calendar,
+  Clock,
+  Filter,
+  Search,
+  Plus,
+  ArrowLeft,
+  ArrowDownUp,
+  Check,
+  X,
+  Tag,
+  SlidersHorizontal,
+  Calendar as CalendarIcon,
+  ChevronDown,
+  AlertCircle,
+  CheckCircle2,
+  Paperclip,
+  ClipboardList,
+  CircleOff,
+  GripHorizontal,
+  Printer,
+  ViewIcon,
+  LayoutList,
+  CalendarDays,
+} from "lucide-react";
+
+// Importer le nouveau composant CalendarView
+import CalendarView from "./CalendarView";
+
+type User = {
+  id: string;
+  name: string;
+  email: string;
+};
 
 type Task = {
   id: string;
   name: string;
   description: string | null;
   done: boolean;
-  realizationDate: string | null;
+  realizationDate: Date | null;
   status: string;
+  taskType: string | null;
+  color: string | null;
+  recurring: boolean;
+  period: string | null;
+  endDate: Date | null;
+  recurrenceReminderDate: Date | null;
+  assignedToId: string | null;
+  assignedTo: User | null;
+  createdAt: Date;
+  updatedAt: Date;
   article: {
     id: string;
     title: string;
@@ -23,16 +67,15 @@ type Task = {
       };
     };
   };
-  assignedTo?: {
-    id: string;
-    name: string;
-  } | null;
 };
 
 type AppObject = {
   id: string;
   nom: string;
 };
+
+// Types des modes d'affichage
+type ViewMode = "list" | "calendar";
 
 export default function TodoListAgenda() {
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
@@ -45,6 +88,9 @@ export default function TodoListAgenda() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const agendaRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  // État pour le mode d'affichage (liste ou calendrier)
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   // Constantes pour les limites de hauteur
   const MIN_HEIGHT = 48; // Hauteur minimale (fermé)
@@ -204,12 +250,30 @@ export default function TodoListAgenda() {
     window.print();
   };
 
-  const navigateToTask = (task: Task): void => {
+  const navigateToTask = (taskId: string): void => {
+    // Trouver la tâche correspondante
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
     router.push(
       `/dashboard/objet/${task.article.sector.object.id}` +
         `/secteur/${task.article.sector.id}` +
         `/article/${task.article.id}`
     );
+  };
+
+  // Fonction pour basculer entre les modes d'affichage
+  const toggleViewMode = (): void => {
+    // Si on passe en mode calendrier, s'assurer que l'agenda est ouvert
+    if (viewMode === "list") {
+      setViewMode("calendar");
+      if (agendaHeight < 300) {
+        setAgendaHeight(400);
+        setIsExpanded(true);
+      }
+    } else {
+      setViewMode("list");
+    }
   };
 
   return (
@@ -224,8 +288,30 @@ export default function TodoListAgenda() {
     >
       {/* Barre de titre avec poignée de drag */}
       <div className="flex justify-between items-center bg-[#F2E7D8] text-card-foreground p-3 relative border-b border-border">
-        {/* Colonne gauche (vide ou avec d'autres contrôles si nécessaire) */}
-        <div className="w-1/4"></div>
+        {/* Colonne gauche avec bouton de changement de vue */}
+        <div className="w-1/4 flex items-center">
+          <button
+            onClick={toggleViewMode}
+            className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted/80 text-sm font-medium"
+            title={
+              viewMode === "list"
+                ? "Passer en mode calendrier"
+                : "Passer en mode liste"
+            }
+          >
+            {viewMode === "list" ? (
+              <>
+                <CalendarDays size={18} />
+                <span className="hidden sm:inline">Calendrier</span>
+              </>
+            ) : (
+              <>
+                <LayoutList size={18} />
+                <span className="hidden sm:inline">Liste</span>
+              </>
+            )}
+          </button>
+        </div>
 
         {/* Titre centré avec poignée de drag au-dessus */}
         <div className="flex-1 flex justify-center items-center relative">
@@ -236,7 +322,9 @@ export default function TodoListAgenda() {
           >
             <GripHorizontal size={20} className="text-muted-foreground" />
           </div>
-          <h2 className="text-xl font-semibold">Agenda todo list</h2>
+          <h2 className="text-xl font-semibold">
+            {viewMode === "list" ? "Agenda todo list" : "Vue calendrier"}
+          </h2>
         </div>
 
         {/* Colonne droite avec les contrôles */}
@@ -278,65 +366,98 @@ export default function TodoListAgenda() {
             Chargement des tâches...
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-            {/* Cette semaine */}
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Cette semaine</h3>
-              {thisWeekTasks.length === 0 ? (
-                <p className="text-muted-foreground">
-                  Aucune tâche pour cette semaine.
-                </p>
-              ) : (
-                <ul className="list-disc list-inside space-y-2">
-                  {thisWeekTasks.map((task) => (
-                    <li
-                      key={task.id}
-                      className="cursor-pointer hover:text-primary"
-                      onClick={() => navigateToTask(task)}
-                    >
-                      {task.realizationDate && (
-                        <span className="text-sm text-muted-foreground mr-2">
-                          {formatDate(task.realizationDate)} -
-                        </span>
-                      )}
-                      <span>{task.name}</span>
-                      <span className="text-sm text-muted-foreground ml-1">
-                        - {task.article.sector.name}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={viewMode}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="h-full"
+            >
+              {viewMode === "list" ? (
+                // Mode liste existant
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+                  {/* Cette semaine */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">
+                      Cette semaine
+                    </h3>
+                    {thisWeekTasks.length === 0 ? (
+                      <p className="text-muted-foreground">
+                        Aucune tâche pour cette semaine.
+                      </p>
+                    ) : (
+                      <ul className="list-disc list-inside space-y-2">
+                        {thisWeekTasks.map((task) => (
+                          <li
+                            key={task.id}
+                            className="cursor-pointer hover:text-primary"
+                            onClick={() => navigateToTask(task.id)}
+                          >
+                            {task.realizationDate && (
+                              <span className="text-sm text-muted-foreground mr-2">
+                                {formatDate(
+                                  task.realizationDate as unknown as string
+                                )}{" "}
+                                -
+                              </span>
+                            )}
+                            <span>{task.name}</span>
+                            <span className="text-sm text-muted-foreground ml-1">
+                              - {task.article.sector.name}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
 
-            {/* À venir */}
-            <div>
-              <h3 className="text-lg font-semibold mb-2">À venir</h3>
-              {upcomingTasks.length === 0 ? (
-                <p className="text-muted-foreground">Aucune tâche à venir.</p>
+                  {/* À venir */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">À venir</h3>
+                    {upcomingTasks.length === 0 ? (
+                      <p className="text-muted-foreground">
+                        Aucune tâche à venir.
+                      </p>
+                    ) : (
+                      <ul className="list-disc list-inside space-y-2">
+                        {upcomingTasks.map((task) => (
+                          <li
+                            key={task.id}
+                            className="cursor-pointer hover:text-primary"
+                            onClick={() => navigateToTask(task.id)}
+                          >
+                            {task.realizationDate && (
+                              <span className="text-sm text-muted-foreground mr-2">
+                                {formatDate(
+                                  task.realizationDate as unknown as string
+                                )}{" "}
+                                -
+                              </span>
+                            )}
+                            <span>{task.name}</span>
+                            <span className="text-sm text-muted-foreground ml-1">
+                              - {task.article.sector.name}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
               ) : (
-                <ul className="list-disc list-inside space-y-2">
-                  {upcomingTasks.map((task) => (
-                    <li
-                      key={task.id}
-                      className="cursor-pointer hover:text-primary"
-                      onClick={() => navigateToTask(task)}
-                    >
-                      {task.realizationDate && (
-                        <span className="text-sm text-muted-foreground mr-2">
-                          {formatDate(task.realizationDate)} -
-                        </span>
-                      )}
-                      <span>{task.name}</span>
-                      <span className="text-sm text-muted-foreground ml-1">
-                        - {task.article.sector.name}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                // Nouveau mode calendrier
+                <div className="p-4 h-full">
+                  <CalendarView
+                    tasks={tasks}
+                    onTaskClick={navigateToTask}
+                    objectId={selectedObjectId}
+                  />
+                </div>
               )}
-            </div>
-          </div>
+            </motion.div>
+          </AnimatePresence>
         )}
       </div>
     </div>
