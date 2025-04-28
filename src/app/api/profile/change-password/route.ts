@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth-session";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { compare, hash } from "bcrypt";
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,18 +30,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Récupérer le compte utilisateur avec son mot de passe hashé
-    // Nous cherchons le compte de type "credentials" ou celui qui a un mot de passe
     const account = await prisma.account.findFirst({
       where: {
         userId: user.id,
-        // Soit un compte avec providerId="credentials" (si vous utilisez ce fournisseur)
-        // soit tout compte avec un mot de passe non-null
-        OR: [{ providerId: "credentials" }, { password: { not: null } }],
+        providerId: "credential", // D'après la doc, c'est "credential" (au singulier) et non "credentials"
       },
       select: {
         id: true,
         password: true,
-        providerId: true,
       },
     });
 
@@ -55,8 +51,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Vérifier si le mot de passe actuel est correct
-    const passwordValid = await compare(currentPassword, account.password);
+    // Accéder au context pour utiliser les méthodes de vérification et hachage
+    const ctx = await auth.$context;
+
+    // Vérifier le mot de passe actuel
+    const passwordValid = await ctx.password.verify({
+      hash: account.password,
+      password: currentPassword,
+    });
 
     if (!passwordValid) {
       return NextResponse.json(
@@ -66,15 +68,19 @@ export async function POST(req: NextRequest) {
     }
 
     // Hasher le nouveau mot de passe
-    const hashedNewPassword = await hash(newPassword, 10);
+    const hashedNewPassword = await ctx.password.hash(newPassword);
 
     // Mettre à jour le mot de passe
-    await prisma.account.update({
-      where: { id: account.id },
-      data: {
-        password: hashedNewPassword,
-      },
-    });
+    // Option 1: Utiliser l'adapteur interne
+    await ctx.internalAdapter.updatePassword(user.id, hashedNewPassword);
+
+    // Option 2: Ou mettre à jour directement via Prisma
+    // await prisma.account.update({
+    //   where: { id: account.id },
+    //   data: {
+    //     password: hashedNewPassword,
+    //   },
+    // });
 
     return NextResponse.json({ success: true });
   } catch (error) {
