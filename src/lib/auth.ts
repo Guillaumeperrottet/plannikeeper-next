@@ -9,6 +9,11 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   secret: process.env.BETTER_AUTH_SECRET || "development-secret",
 
+  trustedOrigins: [
+    "https://plannikeeper-next.vercel.app", // Votre URL de production actuelle
+    "http://localhost:3000", // Votre URL de développement local
+  ],
+
   emailAndPassword: { enabled: true },
   socialProviders: {
     github: {
