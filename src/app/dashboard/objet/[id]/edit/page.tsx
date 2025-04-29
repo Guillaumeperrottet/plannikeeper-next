@@ -10,7 +10,7 @@ import EditableField from "@/app/components/ui/EditableField";
 export default async function ObjetEditPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const session = await getUser();
 
@@ -18,7 +18,7 @@ export default async function ObjetEditPage({
     redirect("/signin");
   }
 
-  const objetId = await params.id;
+  const { id: objetId } = await params;
 
   // Récupérer l'objet avec ses secteurs
   const objet = await prisma.objet.findUnique({
