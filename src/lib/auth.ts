@@ -5,8 +5,6 @@ import { createAuthMiddleware } from "better-auth/api";
 
 const prisma = new PrismaClient();
 
-console.log("betterAuth config loaded");
-
 export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: "postgresql" }),
 
