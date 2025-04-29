@@ -6,14 +6,14 @@ import { checkArticleAccess } from "@/lib/auth-session";
 
 export async function PUT(
   req: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const articleId = context.params.id;
+  const articleId = params.id;
   const { title, description, positionX, positionY, width, height } =
     await req.json();
 
@@ -58,14 +58,14 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const articleId = context.params.id;
+  const articleId = params.id;
 
   // Vérifier que l'article existe
   const article = await prisma.article.findUnique({
