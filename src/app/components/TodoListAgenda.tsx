@@ -291,7 +291,7 @@ export default function TodoListAgenda() {
   return (
     <div
       ref={agendaRef}
-      className="fixed bottom-0 left-0 right-0 bg-background transition-height duration-200 shadow-lg print:shadow-none print:relative print:h-auto border-t border-border"
+      className="fixed bottom-0 left-0 right-0 bg-[color:var(--background)] transition-height duration-200 shadow-lg print:shadow-none print:relative print:h-auto border-t border-[color:var(--border)]"
       style={{
         height: `${agendaHeight}px`,
         zIndex: 40,
@@ -299,22 +299,32 @@ export default function TodoListAgenda() {
       data-todo-list-agenda
     >
       {/* Barre de titre avec poignée de drag */}
-      <div className="flex justify-between items-center bg-[#F2E7D8] text-card-foreground p-3 relative border-b border-border">
+      <div className="flex justify-between items-center bg-[color:var(--secondary)] text-[color:var(--secondary-foreground)] p-3 relative border-b border-[color:var(--border)]">
         {/* Colonne gauche avec toggle de vue */}
         <div className="w-1/4 flex items-center">
           <button
             onClick={toggleViewMode}
-            className="flex items-center gap-1.5 rounded-full border border-[color:var(--border)] px-3 py-1 hover:bg-[color:var(--muted)] transition-colors"
+            className="flex items-center gap-1.5 rounded-full border border-[color:var(--border)] px-3 py-1 hover:bg-[color:var(--muted)] transition-colors bg-[color:var(--background)]"
           >
             {viewMode === ViewMode.LIST ? (
               <>
-                <ListIcon size={14} />
-                <span className="text-sm">Liste</span>
+                <ListIcon
+                  size={14}
+                  className="text-[color:var(--foreground)]"
+                />
+                <span className="text-sm text-[color:var(--foreground)]">
+                  Liste
+                </span>
               </>
             ) : (
               <>
-                <CalendarIcon size={14} />
-                <span className="text-sm">Calendrier</span>
+                <CalendarIcon
+                  size={14}
+                  className="text-[color:var(--foreground)]"
+                />
+                <span className="text-sm text-[color:var(--foreground)]">
+                  Calendrier
+                </span>
               </>
             )}
           </button>
@@ -327,15 +337,20 @@ export default function TodoListAgenda() {
             onMouseDown={handleDragStart}
             onTouchStart={handleDragStart}
           >
-            <GripHorizontal size={20} className="text-muted-foreground" />
+            <GripHorizontal
+              size={20}
+              className="text-[color:var(--muted-foreground)]"
+            />
           </div>
-          <h2 className="text-xl font-semibold">Agenda todo list</h2>
+          <h2 className="text-xl font-semibold hidden sm:block">
+            Agenda todo list
+          </h2>
         </div>
 
         {/* Colonne droite avec les contrôles */}
         <div className="flex items-center gap-2 w-1/4 justify-end">
           <select
-            className="bg-background text-foreground px-3 py-1 rounded border border-border text-sm mr-2"
+            className="bg-[color:var(--background)] text-[color:var(--foreground)] px-3 py-1 rounded border border-[color:var(--border)] text-sm mr-2"
             value={selectedObjectId}
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
               setSelectedObjectId(e.target.value)
@@ -349,14 +364,14 @@ export default function TodoListAgenda() {
           </select>
           <button
             onClick={handlePrint}
-            className="p-1 rounded hover:bg-accent print:hidden"
+            className="p-1 rounded hover:bg-[color:var(--accent)] print:hidden text-[color:var(--foreground)]"
             title="Imprimer"
           >
             <Printer size={20} />
           </button>
           <button
             onClick={toggleExpanded}
-            className="print:hidden"
+            className="print:hidden text-[color:var(--foreground)]"
             title={isExpanded ? "Réduire" : "Agrandir"}
           >
             {isExpanded ? <ChevronDown size={24} /> : <ChevronUp size={24} />}
@@ -367,7 +382,7 @@ export default function TodoListAgenda() {
       {/* Contenu: Liste ou Calendrier selon le mode */}
       <div className="overflow-y-auto" style={{ height: `calc(100% - 48px)` }}>
         {isLoading ? (
-          <div className="p-4 text-center text-muted-foreground">
+          <div className="p-4 text-center text-[color:var(--muted-foreground)]">
             Chargement des tâches...
           </div>
         ) : viewMode === ViewMode.CALENDAR ? (
@@ -376,9 +391,11 @@ export default function TodoListAgenda() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
             {/* Cette semaine */}
             <div>
-              <h3 className="text-lg font-semibold mb-2">Cette semaine</h3>
+              <h3 className="text-lg font-semibold mb-2 text-[color:var(--foreground)]">
+                Cette semaine
+              </h3>
               {thisWeekTasks.length === 0 ? (
-                <p className="text-muted-foreground">
+                <p className="text-[color:var(--muted-foreground)]">
                   Aucune tâche pour cette semaine.
                 </p>
               ) : (
@@ -386,16 +403,16 @@ export default function TodoListAgenda() {
                   {thisWeekTasks.map((task) => (
                     <li
                       key={task.id}
-                      className="cursor-pointer hover:text-primary"
+                      className="cursor-pointer hover:text-[color:var(--primary)] text-[color:var(--foreground)]"
                       onClick={() => navigateToTask(task)}
                     >
                       {task.realizationDate && (
-                        <span className="text-sm text-muted-foreground mr-2">
+                        <span className="text-sm text-[color:var(--muted-foreground)] mr-2">
                           {formatDate(task.realizationDate)} -
                         </span>
                       )}
                       <span>{task.name}</span>
-                      <span className="text-sm text-muted-foreground ml-1">
+                      <span className="text-sm text-[color:var(--muted-foreground)] ml-1">
                         - {task.article.sector.name}
                       </span>
                     </li>
@@ -406,24 +423,28 @@ export default function TodoListAgenda() {
 
             {/* À venir */}
             <div>
-              <h3 className="text-lg font-semibold mb-2">À venir</h3>
+              <h3 className="text-lg font-semibold mb-2 text-[color:var(--foreground)]">
+                À venir
+              </h3>
               {upcomingTasks.length === 0 ? (
-                <p className="text-muted-foreground">Aucune tâche à venir.</p>
+                <p className="text-[color:var(--muted-foreground)]">
+                  Aucune tâche à venir.
+                </p>
               ) : (
                 <ul className="list-disc list-inside space-y-2">
                   {upcomingTasks.map((task) => (
                     <li
                       key={task.id}
-                      className="cursor-pointer hover:text-primary"
+                      className="cursor-pointer hover:text-[color:var(--primary)] text-[color:var(--foreground)]"
                       onClick={() => navigateToTask(task)}
                     >
                       {task.realizationDate && (
-                        <span className="text-sm text-muted-foreground mr-2">
+                        <span className="text-sm text-[color:var(--muted-foreground)] mr-2">
                           {formatDate(task.realizationDate)} -
                         </span>
                       )}
                       <span>{task.name}</span>
-                      <span className="text-sm text-muted-foreground ml-1">
+                      <span className="text-sm text-[color:var(--muted-foreground)] ml-1">
                         - {task.article.sector.name}
                       </span>
                     </li>
