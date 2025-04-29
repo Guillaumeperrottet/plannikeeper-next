@@ -6,14 +6,14 @@ import { checkArticleAccess } from "@/lib/auth-session";
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const articleId = await params.id;
+  const articleId = context.params.id;
   const { title, description, positionX, positionY, width, height } =
     await req.json();
 
