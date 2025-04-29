@@ -1,20 +1,21 @@
+// src/app/api/tasks/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
-import { v4 as uuidv4 } from "uuid";
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+// Typage mis à jour : params est une Promise qui résout { id: string }
+type RouteParams = {
+  params: Promise<{ id: string }>;
+};
+
+export async function GET(req: NextRequest, { params }: RouteParams) {
+  // Récupération de l'ID depuis la promesse
+  const { id: taskId } = await params;
+
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
-
-  const taskId = params.id;
 
   try {
     // Vérifier que la tâche existe et que l'utilisateur a accès
@@ -35,7 +36,7 @@ export async function GET(
       return NextResponse.json({ error: "Tâche non trouvée" }, { status: 404 });
     }
 
-    // Vérifier que l'utilisateur appartient à la même organisation que l'objet
+    // Vérifier organisation
     const userWithOrg = await prisma.user.findUnique({
       where: { id: user.id },
       include: { Organization: true },
@@ -59,7 +60,7 @@ export async function GET(
 
     return NextResponse.json(documents);
   } catch (error) {
-    console.error("Erreur lors de la récupération des documents:", error);
+    console.error("Erreur lors de la récupération des documents :", error);
     return NextResponse.json(
       { error: "Erreur lors de la récupération des documents" },
       { status: 500 }
@@ -67,16 +68,14 @@ export async function GET(
   }
 }
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: NextRequest, { params }: RouteParams) {
+  // Récupération de l'ID depuis la promesse
+  const { id: taskId } = await params;
+
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
-
-  const taskId = params.id;
 
   try {
     // Vérifier que la tâche existe et que l'utilisateur a accès
@@ -97,7 +96,7 @@ export async function POST(
       return NextResponse.json({ error: "Tâche non trouvée" }, { status: 404 });
     }
 
-    // Vérifier que l'utilisateur appartient à la même organisation que l'objet
+    // Vérifier organisation
     const userWithOrg = await prisma.user.findUnique({
       where: { id: user.id },
       include: { Organization: true },
@@ -124,7 +123,7 @@ export async function POST(
       );
     }
 
-    // Vérifier le type de fichier
+    // Vérifier le type et la taille du fichier
     const allowedTypes = [
       "application/pdf",
       "image/jpeg",
@@ -141,9 +140,7 @@ export async function POST(
         { status: 400 }
       );
     }
-
-    // Vérifier la taille du fichier (max 10MB)
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
       return NextResponse.json(
         { error: "Le fichier est trop volumineux (max 10MB)" },
@@ -151,34 +148,35 @@ export async function POST(
       );
     }
 
-    // Créer le dossier des documents s'il n'existe pas
+    // Créer et écrire le fichier
+    const { writeFile, mkdir } = await import("fs/promises");
+    const path = await import("path");
+    const { v4: uuidv4 } = await import("uuid");
+
     const uploadDir = path.join(process.cwd(), "public/documents");
     await mkdir(uploadDir, { recursive: true });
 
-    // Générer un nom de fichier unique
     const fileExtension = file.name.split(".").pop() || "";
     const uniqueFileName = `${uuidv4()}.${fileExtension}`;
     const filePath = path.join(uploadDir, uniqueFileName);
     const publicPath = `/documents/${uniqueFileName}`;
-
-    // Écrire le fichier
     const buffer = Buffer.from(await file.arrayBuffer());
     await writeFile(filePath, buffer);
 
-    // Enregistrer le document dans la base de données
+    // Enregistrer en base de données
     const document = await prisma.document.create({
       data: {
         name: file.name,
         filePath: publicPath,
         fileSize: file.size,
         fileType: file.type,
-        taskId: taskId,
+        taskId,
       },
     });
 
     return NextResponse.json(document);
   } catch (error) {
-    console.error("Erreur lors du téléchargement du document:", error);
+    console.error("Erreur lors du téléchargement du document :", error);
     return NextResponse.json(
       { error: "Erreur lors du téléchargement du document" },
       { status: 500 }

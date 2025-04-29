@@ -5,16 +5,19 @@ import { getUser } from "@/lib/auth-session";
 import { unlink } from "fs/promises";
 import path from "path";
 
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+// Typage mis à jour : params est une Promise qui résout { id: string }
+type RouteParams = {
+  params: Promise<{ id: string }>;
+};
+
+export async function DELETE(req: NextRequest, { params }: RouteParams) {
+  // Récupération de l'ID depuis la promesse
+  const { id: documentId } = await params;
+
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
-
-  const documentId = await params.id;
 
   try {
     // Récupérer le document avec sa tâche associée
@@ -64,11 +67,13 @@ export async function DELETE(
       const filePath = path.join(
         process.cwd(),
         "public",
-        document.filePath.slice(1)
-      ); // Remove leading slash
+        document.filePath.startsWith("/")
+          ? document.filePath.slice(1)
+          : document.filePath
+      );
       await unlink(filePath);
     } catch (err) {
-      console.warn("Erreur lors de la suppression du fichier:", err);
+      console.warn("Erreur lors de la suppression du fichier :", err);
       // On continue même si le fichier n'a pas pu être supprimé
     }
 
@@ -77,9 +82,10 @@ export async function DELETE(
       where: { id: documentId },
     });
 
-    return NextResponse.json({ success: true });
+    // Plus idiomatique : 204 No Content
+    return new NextResponse(null, { status: 204 });
   } catch (error) {
-    console.error("Erreur lors de la suppression du document:", error);
+    console.error("Erreur lors de la suppression du document :", error);
     return NextResponse.json(
       { error: "Erreur lors de la suppression du document" },
       { status: 500 }

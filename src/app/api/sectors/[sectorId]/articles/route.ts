@@ -4,23 +4,25 @@ import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 import { checkSectorAccess } from "@/lib/auth-session";
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { sectorId: string } }
-) {
+// Typage mis à jour : params est une Promise qui résout { sectorId: string }
+type RouteParams = {
+  params: Promise<{ sectorId: string }>;
+};
+
+export async function GET(req: NextRequest, { params }: RouteParams) {
+  // Récupération de l'ID depuis la promesse
+  const { sectorId } = await params;
+
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
-
-  const sectorId = await params.sectorId;
 
   // Vérifier que le secteur existe
   const sector = await prisma.sector.findUnique({
     where: { id: sectorId },
     include: { object: true },
   });
-
   if (!sector) {
     return NextResponse.json({ error: "Secteur non trouvé" }, { status: 404 });
   }

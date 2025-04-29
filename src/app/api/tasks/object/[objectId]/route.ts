@@ -4,16 +4,19 @@ import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 import { checkObjectAccess } from "@/lib/auth-session";
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { objectId: Promise<string> } }
-) {
+// Typage mis à jour : params est une Promise qui résout { objectId: string }
+type RouteParams = {
+  params: Promise<{ objectId: string }>;
+};
+
+export async function GET(req: NextRequest, { params }: RouteParams) {
+  // Récupération de l'ID depuis la promesse
+  const { objectId } = await params;
+
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
-
-  const objectId = await params.objectId;
 
   // Vérifier que l'objet existe
   const object = await prisma.objet.findUnique({
@@ -38,7 +41,7 @@ export async function GET(
     where: {
       article: {
         sector: {
-          objectId: objectId,
+          objectId,
         },
       },
     },

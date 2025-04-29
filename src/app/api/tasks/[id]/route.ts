@@ -4,38 +4,33 @@ import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 import { checkTaskAccess } from "@/lib/auth-session";
 
+// Typage mis à jour : params est une Promise qui résout { id: string }
+type RouteParams = {
+  params: Promise<{ id: string }>;
+};
+
 // GET /api/tasks/[id]
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: NextRequest, { params }: RouteParams) {
+  const { id: taskId } = await params;
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const taskId = params.id;
-
-  // Récupérer la tâche avec l'article associé
   const task = await prisma.task.findUnique({
     where: { id: taskId },
     include: {
       article: {
         include: {
-          sector: {
-            include: { object: true },
-          },
+          sector: { include: { object: true } },
         },
       },
       assignedTo: true,
     },
   });
-
   if (!task) {
     return NextResponse.json({ error: "Tâche non trouvée" }, { status: 404 });
   }
-
-  // Vérifier que l'utilisateur a un accès en lecture à cette tâche
   const hasReadAccess = await checkTaskAccess(user.id, taskId, "read");
   if (!hasReadAccess) {
     return NextResponse.json(
@@ -47,16 +42,13 @@ export async function GET(
   return NextResponse.json(task);
 }
 
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(req: NextRequest, { params }: RouteParams) {
+  const { id: taskId } = await params;
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const taskId = params.id;
   const {
     name,
     description,
@@ -71,33 +63,26 @@ export async function PUT(
     executantComment,
   } = await req.json();
 
-  // Vérifier que le nom de la tâche est présent
-  if (!name || !name.trim()) {
+  if (!name?.trim()) {
     return NextResponse.json(
       { error: "Le nom de la tâche est requis" },
       { status: 400 }
     );
   }
 
-  // Récupérer la tâche avec l'article associé
   const task = await prisma.task.findUnique({
     where: { id: taskId },
     include: {
       article: {
         include: {
-          sector: {
-            include: { object: true },
-          },
+          sector: { include: { object: true } },
         },
       },
     },
   });
-
   if (!task) {
     return NextResponse.json({ error: "Tâche non trouvée" }, { status: 404 });
   }
-
-  // Vérifier que l'utilisateur a un accès en écriture à cette tâche
   const hasWriteAccess = await checkTaskAccess(user.id, taskId, "write");
   if (!hasWriteAccess) {
     return NextResponse.json(
@@ -106,7 +91,6 @@ export async function PUT(
     );
   }
 
-  // Mettre à jour la tâche
   const updatedTask = await prisma.task.update({
     where: { id: taskId },
     data: {
@@ -121,7 +105,6 @@ export async function PUT(
       period,
       endDate: endDate ? new Date(endDate) : null,
       executantComment,
-      // Si le statut est "completed", marquer comme terminée
       done: status === "completed",
     },
   });
@@ -129,37 +112,29 @@ export async function PUT(
   return NextResponse.json(updatedTask);
 }
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(req: NextRequest, { params }: RouteParams) {
+  const { id: taskId } = await params;
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const taskId = params.id;
   const updateData = await req.json();
 
-  // Récupérer la tâche avec l'article associé
   const task = await prisma.task.findUnique({
     where: { id: taskId },
     include: {
       article: {
         include: {
-          sector: {
-            include: { object: true },
-          },
+          sector: { include: { object: true } },
         },
       },
     },
   });
-
   if (!task) {
     return NextResponse.json({ error: "Tâche non trouvée" }, { status: 404 });
   }
 
-  // Vérifier que l'utilisateur a un accès en écriture à cette tâche
   const hasWriteAccess = await checkTaskAccess(user.id, taskId, "write");
   if (!hasWriteAccess) {
     return NextResponse.json(
@@ -168,7 +143,6 @@ export async function PATCH(
     );
   }
 
-  // Mettre à jour la tâche avec seulement les champs fournis
   const updatedTask = await prisma.task.update({
     where: { id: taskId },
     data: updateData,
@@ -177,36 +151,26 @@ export async function PATCH(
   return NextResponse.json(updatedTask);
 }
 
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(req: NextRequest, { params }: RouteParams) {
+  const { id: taskId } = await params;
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const taskId = params.id;
-
-  // Récupérer la tâche avec l'article associé
   const task = await prisma.task.findUnique({
     where: { id: taskId },
     include: {
       article: {
         include: {
-          sector: {
-            include: { object: true },
-          },
+          sector: { include: { object: true } },
         },
       },
     },
   });
-
   if (!task) {
     return NextResponse.json({ error: "Tâche non trouvée" }, { status: 404 });
   }
-
-  // Vérifier que l'utilisateur a un accès en écriture à cette tâche pour la supprimer
   const hasWriteAccess = await checkTaskAccess(user.id, taskId, "write");
   if (!hasWriteAccess) {
     return NextResponse.json(
@@ -215,10 +179,6 @@ export async function DELETE(
     );
   }
 
-  // Supprimer la tâche
-  await prisma.task.delete({
-    where: { id: taskId },
-  });
-
-  return NextResponse.json({ success: true });
+  await prisma.task.delete({ where: { id: taskId } });
+  return new NextResponse(null, { status: 204 });
 }
