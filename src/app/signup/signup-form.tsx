@@ -51,7 +51,6 @@ export default function SignUpForm() {
         name,
         image,
         callbackURL: inviteCode ? `/join/${inviteCode}` : "/dashboard",
-        meta: inviteCode ? { inviteCode } : undefined,
       },
       {
         onRequest: () => {
