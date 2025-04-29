@@ -17,13 +17,13 @@ const ModernLandingPage = () => {
   const pricingRef = useRef(null);
   const faqRef = useRef(null);
 
-  // Removed unused isInView variables for each section
+  // Removed unused isInView variables for sections
 
-  // Removed useEffect for setActiveSection as activeSection is not used
+  // Removed useEffect for setActiveSection as activeSection is unused and setActiveSection is undefined
 
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-    // setActiveSection removed as activeSection is no longer used
+    // Removed setActiveSection(id) as activeSection is unused
   };
 
   const features = [
@@ -382,9 +382,9 @@ const ModernLandingPage = () => {
       <section
         id="showcase"
         ref={showcaseRef}
-        className="py-20 md:py-32 bg-gradient-to-b from-[#f9f3ec] to-[#f2e8d9] overflow-hidden"
+        className="py-16 md:py-24 bg-gradient-to-b from-[#f9f3ec] to-[#f2e8d9] overflow-hidden"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 mb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -407,30 +407,44 @@ const ModernLandingPage = () => {
           </motion.div>
         </div>
 
-        <TiltedCarousel
-          className="mb-20"
-          images={showcaseImages}
-          speed={40}
-          tiltAngle={-5}
-          scale={1}
-          imageWidth={400}
-          imageHeight={250}
-          borderWidth={3}
-          gap={24}
-          direction="left"
-        />
-
-        <TiltedCarousel
-          images={[...showcaseImages].reverse()}
-          speed={30}
-          tiltAngle={5}
-          scale={0.9}
-          imageWidth={380}
-          imageHeight={240}
-          borderWidth={3}
-          gap={24}
-          direction="right"
-        />
+        {/* Conteneur des carousels avec hauteur adaptive */}
+        <div
+          className="relative"
+          style={{ height: "500px", maxHeight: "70vh" }}
+        >
+          {/* Premier carousel - positionné en haut */}
+          <div className="absolute top-0 left-0 w-full">
+            <TiltedCarousel
+              className="h-auto"
+              images={showcaseImages}
+              speed={40}
+              tiltAngle={-10}
+              scale={1.25}
+              imageWidth={320}
+              imageHeight={200}
+              borderWidth={4}
+              pauseOnHover={true}
+              gap={16}
+              direction="left"
+            />
+          </div>
+          {/* Second carousel - positionné plus bas */}
+          <div className="absolute top-[250px] md:top-[400px] left-0 w-full">
+            <TiltedCarousel
+              className="h-auto"
+              images={[...showcaseImages].reverse()}
+              speed={30}
+              tiltAngle={10}
+              scale={1.1}
+              imageWidth={280}
+              imageHeight={180}
+              borderWidth={4}
+              pauseOnHover={true}
+              gap={16}
+              direction="right"
+            />
+          </div>
+        </div>
       </section>
 
       {/* Stats Section */}
