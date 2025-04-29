@@ -1699,7 +1699,7 @@ export default function TasksPage({
 
                 {/* Barre d'actions fixe pour mobile */}
                 {isMobileView && selectedTask && (
-                  <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-3 z-20 flex gap-2">
+                  <div className="bottom-0 left-0 right-0 bg-card border-t border-border p-3 z-20 flex gap-2">
                     {selectedTask.status !== "completed" ? (
                       <button
                         onClick={() => {
