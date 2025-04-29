@@ -13,6 +13,7 @@ export default function SignUpForm() {
   const inviteCode = searchParams.get("code");
   const [isInvite, setIsInvite] = useState(false);
   const [organizationName, setOrganizationName] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (inviteCode) {
@@ -63,7 +64,12 @@ export default function SignUpForm() {
             : "/dashboard";
         },
         onError: (ctx) => {
-          alert(ctx.error.message);
+          console.error("Erreur complète:", ctx.error);
+          let errorMessage = "Une erreur est survenue lors de l'inscription.";
+          if (ctx.error && ctx.error.message) {
+            errorMessage = ctx.error.message;
+          }
+          setError(errorMessage); // Ajoutez un état error à votre composant
           submitButton.disabled = false;
           submitButton.textContent = "Sign Up";
         },
@@ -78,12 +84,17 @@ export default function SignUpForm() {
       )}
     >
       <h2 className="text-2xl font-bold text-center mb-6">Sign Up</h2>
-
       {isInvite && (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
           <p className="text-blue-700">
             Vous avez été invité à rejoindre <strong>{organizationName}</strong>
           </p>
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-md text-red-700">
+          {error}
         </div>
       )}
 
