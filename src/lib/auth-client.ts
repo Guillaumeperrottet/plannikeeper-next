@@ -1,17 +1,12 @@
-import { createAuthClient } from "better-auth/react";
+import { createAuthClient } from "better-auth/client";
+
+// Utiliser l'URL correcte en fonction de l'environnement
+const baseUrl =
+  process.env.NODE_ENV === "development"
+    ? "http://localhost:3000"
+    : process.env.NEXT_PUBLIC_BASE_URL ||
+      "https://plannikeeper-next.vercel.app";
 
 export const authClient = createAuthClient({
-  // Utiliser l'URL de déploiement en production, localhost en développement
-  baseURL:
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    (typeof window !== "undefined"
-      ? window.location.origin
-      : "http://localhost:3000"),
-
-  options: {
-    debugging: process.env.NODE_ENV !== "production",
-    onError: (error: unknown) => {
-      console.error("Auth Client Error:", error);
-    },
-  },
+  baseURL: `${baseUrl}/api/auth`,
 });
