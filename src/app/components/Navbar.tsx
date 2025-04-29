@@ -28,7 +28,7 @@ export default function Navbar({ user }: { user: User }) {
 
   return (
     <nav
-      className="w-full border-b px-4 py-2 flex justify-between items-center relative z-50"
+      className="w-full border-b px-3 md:px-4 py-2 flex justify-between items-center relative z-50"
       style={{
         background: "var(--background)",
         borderColor: "var(--border)",
@@ -37,7 +37,7 @@ export default function Navbar({ user }: { user: User }) {
     >
       <Link
         href="/dashboard"
-        className={`text-4xl font-bold text-[color:var(--foreground)] ${vt323.className}`}
+        className={`text-2xl md:text-4xl font-bold text-[color:var(--foreground)] ${vt323.className}`}
         style={{
           transition: "color 0.3s",
         }}
@@ -45,13 +45,13 @@ export default function Navbar({ user }: { user: User }) {
         PlanniKeeper
       </Link>
 
-      {/* Breadcrumbs au centre */}
-      <div className="flex-1 flex justify-center">
+      {/* Breadcrumbs - visible uniquement sur tablette/desktop */}
+      <div className="hidden md:flex flex-1 justify-center">
         <Breadcrumbs />
       </div>
 
       {/* Section droite avec Dark Mode Switch et User Menu */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 md:gap-4">
         <Switch />
         <UserMenu user={user} isAdmin={isAdmin} />
       </div>

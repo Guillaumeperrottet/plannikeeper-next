@@ -8,7 +8,6 @@ import SectorViewer from "@/app/dashboard/objet/[id]/view/sector-viewer";
 export default async function ObjetViewPage({
   params,
 }: {
-  // Typage mis à jour : params est une Promise qui résout { id: string }
   params: Promise<{ id: string }>;
 }) {
   const session = await getUser();
@@ -48,34 +47,40 @@ export default async function ObjetViewPage({
   }
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col w-full overflow-x-hidden">
+      {/* Header - vous pourriez ajouter un en-tête mobile ici si nécessaire */}
+
       {/* Content */}
       {objet.sectors.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center bg-background">
-          <div className="text-center p-6">
-            <h2 className="text-xl font-medium text-foreground mb-2">
+        <div className="flex-1 flex items-center justify-center bg-background px-4 sm:px-6">
+          <div className="text-center p-4 sm:p-6 max-w-md mx-auto">
+            <h2 className="text-lg sm:text-xl font-medium text-foreground mb-2">
               Aucun secteur trouvé
             </h2>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-sm sm:text-base text-muted-foreground mb-4">
               Ajoutez des secteurs à cet objet pour les visualiser ici.
             </p>
             <Link
               href={`/dashboard/objet/${objetId}/secteur/new`}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+              className="inline-flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base bg-primary text-primary-foreground rounded-md hover:bg-primary/90 w-full sm:w-auto justify-center"
             >
               Ajouter un secteur
             </Link>
           </div>
         </div>
       ) : (
-        <SectorViewer
-          sectors={objet.sectors.map((sector) => ({
-            ...sector,
-            image: sector.image || "", // Convert null to empty string
-          }))}
-          objetId={objetId}
-        />
+        <div className="flex-1 w-full">
+          <SectorViewer
+            sectors={objet.sectors.map((sector) => ({
+              ...sector,
+              image: sector.image || "", // Convert null to empty string
+            }))}
+            objetId={objetId}
+          />
+        </div>
       )}
+
+      {/* On pourrait ajouter un footer adaptatif ici si nécessaire */}
     </div>
   );
 }
