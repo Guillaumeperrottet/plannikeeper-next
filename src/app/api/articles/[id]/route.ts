@@ -4,10 +4,14 @@ import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 import { checkArticleAccess } from "@/lib/auth-session";
 
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+// Utilisez le type correct pour les paramètres de route dans Next.js
+type RouteParams = {
+  params: {
+    id: string;
+  };
+};
+
+export async function PUT(request: NextRequest, { params }: RouteParams) {
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
@@ -15,7 +19,7 @@ export async function PUT(
 
   const articleId = params.id;
   const { title, description, positionX, positionY, width, height } =
-    await req.json();
+    await request.json();
 
   // Vérifier que l'article existe
   const article = await prisma.article.findUnique({
@@ -56,10 +60,7 @@ export async function PUT(
   return NextResponse.json(updatedArticle);
 }
 
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
