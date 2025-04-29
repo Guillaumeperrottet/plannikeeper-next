@@ -58,14 +58,14 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const articleId = await params.id;
+  const articleId = context.params.id;
 
   // Vérifier que l'article existe
   const article = await prisma.article.findUnique({
