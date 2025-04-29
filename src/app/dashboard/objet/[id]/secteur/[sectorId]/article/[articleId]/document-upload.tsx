@@ -1,8 +1,7 @@
-// src/app/dashboard/objet/[id]/secteur/[sectorId]/article/[articleId]/document-upload.tsx
 "use client";
 
 import { useState, useRef } from "react";
-import { Upload, X, File, Paperclip } from "lucide-react";
+import { Upload, X, File, Paperclip, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/app/components/ui/button";
 
@@ -18,6 +17,7 @@ export default function DocumentUpload({
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,6 +50,16 @@ export default function DocumentUpload({
     if (!file) return;
 
     setIsUploading(true);
+    setUploadProgress(0);
+
+    // Simuler une progression d'upload (pour l'UX)
+    const progressInterval = setInterval(() => {
+      setUploadProgress((prev) => {
+        const increment = Math.random() * 10;
+        return Math.min(prev + increment, 95); // Jamais 100% jusqu'à confirmation
+      });
+    }, 300);
+
     const formData = new FormData();
     formData.append("file", file);
 
@@ -64,6 +74,9 @@ export default function DocumentUpload({
         throw new Error(errorData.error || "Erreur lors du téléchargement");
       }
 
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
       toast.success("Document téléchargé avec succès");
       setFile(null);
 
@@ -71,6 +84,9 @@ export default function DocumentUpload({
         onUploadSuccess();
       }
     } catch (error) {
+      clearInterval(progressInterval);
+      setUploadProgress(0);
+
       toast.error(
         error instanceof Error
           ? error.message
@@ -84,8 +100,10 @@ export default function DocumentUpload({
   return (
     <div className="space-y-4">
       <div
-        className={`border-2 border-dashed rounded-lg p-6 text-center ${
-          dragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"
+        className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+          dragActive
+            ? "border-blue-500 bg-blue-50 bg-opacity-20"
+            : "border-[color:var(--border)]"
         }`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
@@ -93,28 +111,33 @@ export default function DocumentUpload({
         onDrop={handleDrop}
       >
         {file ? (
-          <div className="flex items-center justify-between p-2 bg-background rounded border">
-            <div className="flex items-center gap-2">
-              <File size={20} className="text-blue-500" />
+          <div className="flex items-center justify-between p-2 bg-[color:var(--background)] rounded border border-[color:var(--border)]">
+            <div className="flex items-center gap-2 flex-1 truncate">
+              <File
+                size={20}
+                className="text-[color:var(--primary)] flex-shrink-0"
+              />
               <span className="text-sm truncate max-w-xs">{file.name}</span>
             </div>
             <button
               onClick={() => setFile(null)}
-              className="p-1 hover:text-red-600 transition-colors"
+              className="p-1 hover:text-[color:var(--destructive)] transition-colors"
+              aria-label="Retirer le fichier"
+              disabled={isUploading}
             >
               <X size={16} />
             </button>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-4">
-            <Upload className="h-10 w-10 text-gray-400 mb-2" />
-            <p className="text-sm text-gray-600 mb-2">
+            <Upload className="h-10 w-10 text-[color:var(--muted-foreground)] mb-2" />
+            <p className="text-sm text-[color:var(--muted-foreground)] mb-2">
               Glissez-déposez un fichier ici, ou
             </p>
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="px-4 py-2 text-sm text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+              className="px-4 py-2 text-sm text-[color:var(--primary)] bg-[color:var(--primary-foreground)] rounded-lg hover:bg-[color:var(--primary)] hover:bg-opacity-10 transition-colors"
             >
               Sélectionnez un fichier
             </button>
@@ -125,7 +148,7 @@ export default function DocumentUpload({
               className="hidden"
               accept=".pdf,image/*"
             />
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-[color:var(--muted-foreground)] mt-2">
               PDF, JPG, PNG, GIF (max. 10MB)
             </p>
           </div>
@@ -133,21 +156,33 @@ export default function DocumentUpload({
       </div>
 
       {file && (
-        <Button
-          onClick={handleUpload}
-          disabled={isUploading}
-          className="w-full"
-        >
-          {isUploading ? (
-            <>
-              <span className="animate-spin mr-2">⏳</span> Téléchargement...
-            </>
-          ) : (
-            <>
-              <Paperclip size={16} className="mr-2" /> Télécharger le document
-            </>
+        <>
+          {isUploading && (
+            <div className="w-full bg-[color:var(--muted)] rounded-full h-2">
+              <div
+                className="bg-[color:var(--primary)] h-2 rounded-full transition-all duration-300"
+                style={{ width: `${uploadProgress}%` }}
+              ></div>
+            </div>
           )}
-        </Button>
+
+          <Button
+            onClick={handleUpload}
+            disabled={isUploading}
+            className="w-full"
+          >
+            {isUploading ? (
+              <>
+                <Loader2 size={16} className="mr-2 animate-spin" />{" "}
+                Téléchargement...
+              </>
+            ) : (
+              <>
+                <Paperclip size={16} className="mr-2" /> Télécharger le document
+              </>
+            )}
+          </Button>
+        </>
       )}
     </div>
   );

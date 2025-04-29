@@ -2,8 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
-import { unlink } from "fs/promises";
-import path from "path";
+import { CloudinaryService } from "@/lib/cloudinary";
 
 // Typage mis à jour : params est une Promise qui résout { id: string }
 type RouteParams = {
@@ -62,19 +61,26 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Supprimer le fichier physique
+    // Supprimer le fichier de Cloudinary
     try {
-      const filePath = path.join(
-        process.cwd(),
-        "public",
-        document.filePath.startsWith("/")
-          ? document.filePath.slice(1)
-          : document.filePath
+      // Extraire le publicId de l'URL Cloudinary
+      const publicId = CloudinaryService.extractPublicIdFromUrl(
+        document.filePath
       );
-      await unlink(filePath);
+
+      if (publicId) {
+        // Déterminer le type de ressource
+        const resourceType = document.fileType.startsWith("image/")
+          ? "image"
+          : document.fileType === "application/pdf"
+          ? "raw"
+          : "auto";
+
+        await CloudinaryService.deleteFile(publicId, resourceType);
+      }
     } catch (err) {
-      console.warn("Erreur lors de la suppression du fichier :", err);
-      // On continue même si le fichier n'a pas pu être supprimé
+      console.warn("Erreur lors de la suppression du fichier Cloudinary:", err);
+      // On continue même si la suppression du fichier Cloudinary a échoué
     }
 
     // Supprimer l'entrée dans la base de données

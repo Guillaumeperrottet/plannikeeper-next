@@ -2,11 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
-import { writeFile } from "fs/promises";
-import { mkdir } from "fs/promises";
-import path from "path";
-import { v4 as uuidv4 } from "uuid";
-import sharp from "sharp";
+import { CloudinaryService } from "@/lib/cloudinary";
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,10 +10,6 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
-
-    // Créer un dossier pour les uploads si nécessaire
-    const uploadDir = path.join(process.cwd(), "public/uploads");
-    await mkdir(uploadDir, { recursive: true });
 
     const formData = await req.formData();
     const name = formData.get("name") as string;
@@ -57,30 +49,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Générer un nom de fichier unique avec UUID
-    const fileExtension = image.name.split(".").pop();
-    const fileName = `${uuidv4()}.${fileExtension}`;
-    const filePath = path.join(uploadDir, fileName);
-    const publicPath = `/uploads/${fileName}`;
-
     // Lire l'image
     const buffer = Buffer.from(await image.arrayBuffer());
 
-    // Obtenir les dimensions de l'image avec sharp
-    const imageMetadata = await sharp(buffer).metadata();
-    const imageWidth = imageMetadata.width || 0;
-    const imageHeight = imageMetadata.height || 0;
-
-    // Écrire l'image dans le dossier public/uploads
-    await writeFile(filePath, buffer);
+    // Upload de l'image vers Cloudinary
+    const uploadResult = await CloudinaryService.uploadFile(
+      buffer,
+      image.name,
+      {
+        folder: `plannikeeper/objets/${objectId}/secteurs`,
+        resourceType: "image",
+        tags: ["secteur", `objet_${objectId}`],
+      }
+    );
 
     // Créer le secteur avec les dimensions de l'image
     const sector = await prisma.sector.create({
       data: {
         name,
-        image: publicPath,
-        imageWidth,
-        imageHeight,
+        image: uploadResult.secureUrl,
+        imageWidth: uploadResult.width || 0,
+        imageHeight: uploadResult.height || 0,
         objectId: objectId,
       },
     });

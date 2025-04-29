@@ -2,11 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
-import { writeFile } from "fs/promises";
-import { mkdir } from "fs/promises";
-import path from "path";
-import { v4 as uuidv4 } from "uuid";
-import sharp from "sharp"; // Ajoutez Sharp pour manipuler les images
+import { CloudinaryService } from "@/lib/cloudinary";
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,10 +23,6 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-
-    // Créer un dossier pour les uploads si nécessaire
-    const uploadDir = path.join(process.cwd(), "public/uploads");
-    await mkdir(uploadDir, { recursive: true });
 
     const formData = await req.formData();
 
@@ -107,29 +99,26 @@ export async function POST(req: NextRequest) {
         continue; // Ignorer les secteurs incomplets
       }
 
-      // Générer un nom de fichier unique avec UUID
-      const fileExtension = sectorImage.name.split(".").pop();
-      const fileName = `${uuidv4()}.${fileExtension}`;
-      const filePath = path.join(uploadDir, fileName);
-      const publicPath = `/uploads/${fileName}`;
-
-      // Lire l'image et obtenir ses dimensions
+      // Lire l'image
       const buffer = Buffer.from(await sectorImage.arrayBuffer());
 
-      // Obtenir les dimensions de l'image avec sharp
-      const imageMetadata = await sharp(buffer).metadata();
-      const imageWidth = imageMetadata.width || 0;
-      const imageHeight = imageMetadata.height || 0;
-
-      // Écrire l'image dans le dossier public/uploads
-      await writeFile(filePath, buffer);
+      // Upload vers Cloudinary
+      const uploadResult = await CloudinaryService.uploadFile(
+        buffer,
+        sectorImage.name,
+        {
+          folder: `plannikeeper/objets/${objet.id}/secteurs`,
+          resourceType: "image",
+          tags: ["secteur", `objet_${objet.id}`],
+        }
+      );
 
       // Ajouter le secteur aux données à créer
       sectorsData.push({
         name: sectorName,
-        image: publicPath,
-        imageWidth,
-        imageHeight,
+        image: uploadResult.secureUrl,
+        imageWidth: uploadResult.width || 0,
+        imageHeight: uploadResult.height || 0,
         objectId: objet.id,
       });
     }

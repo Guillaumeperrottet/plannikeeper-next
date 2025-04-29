@@ -1,7 +1,8 @@
-// src/app/api/tasks/[id]/route.ts
+// src/app/api/tasks/[id]/documents/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
+import { CloudinaryService } from "@/lib/cloudinary";
 
 // Typage mis à jour : params est une Promise qui résout { id: string }
 type RouteParams = {
@@ -148,27 +149,25 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Créer et écrire le fichier
-    const { writeFile, mkdir } = await import("fs/promises");
-    const path = await import("path");
-    const { v4: uuidv4 } = await import("uuid");
-
-    const uploadDir = path.join(process.cwd(), "public/documents");
-    await mkdir(uploadDir, { recursive: true });
-
-    const fileExtension = file.name.split(".").pop() || "";
-    const uniqueFileName = `${uuidv4()}.${fileExtension}`;
-    const filePath = path.join(uploadDir, uniqueFileName);
-    const publicPath = `/documents/${uniqueFileName}`;
+    // Lire le fichier
     const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(filePath, buffer);
+
+    // Déterminer le type de ressource pour Cloudinary
+    const resourceType = CloudinaryService.getResourceTypeFromMime(file.type);
+
+    // Upload du fichier vers Cloudinary
+    const uploadResult = await CloudinaryService.uploadFile(buffer, file.name, {
+      folder: `plannikeeper/tasks/${taskId}/documents`,
+      resourceType,
+      tags: ["document", `task_${taskId}`],
+    });
 
     // Enregistrer en base de données
     const document = await prisma.document.create({
       data: {
         name: file.name,
-        filePath: publicPath,
-        fileSize: file.size,
+        filePath: uploadResult.secureUrl,
+        fileSize: uploadResult.bytes,
         fileType: file.type,
         taskId,
       },
