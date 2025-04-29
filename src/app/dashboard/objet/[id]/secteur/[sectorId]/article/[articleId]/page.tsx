@@ -1,3 +1,4 @@
+// src/app/dashboard/objet/[id]/sector/[sectorId]/article/[articleId]/page.tsx
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
@@ -6,29 +7,26 @@ import TasksPage from "./tasks-page";
 export default async function ArticleDetailPage({
   params,
 }: {
-  params: { id: string; sectorId: string; articleId: string };
+  // params is now a Promise resolving the dynamic route params
+  params: Promise<{ id: string; sectorId: string; articleId: string }>;
 }) {
   const session = await getUser();
-
   if (!session) {
     redirect("/signin");
   }
 
-  const { id: objetId, sectorId, articleId } = params;
+  // await the params promise and destructure the values
+  const { id: objetId, sectorId, articleId } = await params;
 
   // Récupérer l'article avec ses tâches et le secteur parent
   const article = await prisma.article.findUnique({
     where: { id: articleId },
     include: {
       tasks: {
-        include: {
-          assignedTo: true,
-        },
+        include: { assignedTo: true },
         orderBy: { createdAt: "desc" },
       },
-      sector: {
-        include: { object: true },
-      },
+      sector: { include: { object: true } },
     },
   });
 
@@ -41,7 +39,6 @@ export default async function ArticleDetailPage({
     where: { id: session.id },
     include: { Organization: true },
   });
-
   if (
     !userWithOrg?.Organization ||
     userWithOrg.Organization.id !== article.sector.object.organizationId
@@ -58,8 +55,8 @@ export default async function ArticleDetailPage({
 
   const users = orgUsers.map((ou) => ({
     id: ou.user.id,
-    name: ou.user.name || "",
-    email: ou.user.email || "",
+    name: ou.user.name ?? "",
+    email: ou.user.email ?? "",
   }));
 
   return (

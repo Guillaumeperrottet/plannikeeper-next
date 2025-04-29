@@ -7,16 +7,16 @@ import ArticleEditor from "./article-editor";
 export default async function EditSectorPage({
   params,
 }: {
-  params: { id: string; sectorId: string };
+  // Typage mis à jour : params est une Promise qui résout { id: string; sectorId: string }
+  params: Promise<{ id: string; sectorId: string }>;
 }) {
   const session = await getUser();
-
   if (!session) {
     redirect("/signin");
   }
 
-  const objetId = await params.id;
-  const sectorId = await params.sectorId;
+  // Récupération des IDs depuis la promesse
+  const { id: objetId, sectorId } = await params;
 
   // Récupérer le secteur
   const sector = await prisma.sector.findUnique({
@@ -31,12 +31,11 @@ export default async function EditSectorPage({
     redirect(`/dashboard/objet/${objetId}/edit`);
   }
 
-  // Vérifier que l'utilisateur appartient à la même organisation que l'objet
+  // Vérifier l'appartenance organisationnelle
   const userWithOrg = await prisma.user.findUnique({
     where: { id: session.id },
     include: { Organization: true },
   });
-
   if (
     !userWithOrg?.Organization ||
     userWithOrg.Organization.id !== sector.object.organizationId

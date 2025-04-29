@@ -8,16 +8,16 @@ import SectorViewer from "@/app/dashboard/objet/[id]/view/sector-viewer";
 export default async function ObjetViewPage({
   params,
 }: {
-  params: { id: Promise<string> };
+  // Typage mis à jour : params est une Promise qui résout { id: string }
+  params: Promise<{ id: string }>;
 }) {
   const session = await getUser();
-
   if (!session) {
     redirect("/signin");
   }
 
-  // Assurez-vous que params.id est disponible avant de l'utiliser
-  const objetId = await params.id;
+  // Récupération de l'ID depuis la promesse
+  const { id: objetId } = await params;
 
   // Récupérer l'objet avec ses secteurs
   const objet = await prisma.objet.findUnique({

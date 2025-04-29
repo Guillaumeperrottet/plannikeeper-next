@@ -1,3 +1,4 @@
+// src/app/dashboard/objet/[id]/secteur/new/page.tsx
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
@@ -8,31 +9,30 @@ import NewSectorForm from "@/app/dashboard/objet/[id]/secteur/new/new-sector-for
 export default async function NewSectorPage({
   params,
 }: {
-  params: { id: string };
+  // Typage mis à jour : params est une Promise qui résout { id: string }
+  params: Promise<{ id: string }>;
 }) {
   const session = await getUser();
-
   if (!session) {
     redirect("/signin");
   }
 
-  const objetId = await params.id;
+  // Récupération de l'ID depuis la promesse
+  const { id: objetId } = await params;
 
   // Récupérer l'objet
   const objet = await prisma.objet.findUnique({
     where: { id: objetId },
   });
-
   if (!objet) {
     redirect("/dashboard");
   }
 
-  // Vérifier que l'utilisateur appartient à la même organisation que l'objet
+  // Vérifier l'appartenance organisationnelle
   const userWithOrg = await prisma.user.findUnique({
     where: { id: session.id },
     include: { Organization: true },
   });
-
   if (
     !userWithOrg?.Organization ||
     userWithOrg.Organization.id !== objet.organizationId
