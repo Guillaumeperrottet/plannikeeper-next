@@ -4,9 +4,16 @@ import {
   HomeIcon,
   RocketLaunchIcon,
   CurrencyDollarIcon,
+  Bars3Icon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  AnimatePresence,
+} from "framer-motion";
 import { buttonVariants } from "@/app/components/ui/button";
 import { VT323 } from "next/font/google";
 import Link from "next/link";
@@ -26,6 +33,7 @@ const NAV_ITEMS = [
 export default function Header() {
   const [activeSection, setActiveSection] = useState("hero");
   const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { scrollY } = useScroll();
 
   // Transform values for the sidebar elements that will fade out
@@ -62,26 +70,41 @@ export default function Header() {
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     setActiveSection(id);
+    setMobileMenuOpen(false); // Ferme le menu mobile après la sélection
   };
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 py-6 px-8 transition-all duration-300 ${
-        scrolled ? "bg-transparent backdrop-blur-sm py-3" : "bg-transparent"
+      className={`fixed top-0 left-0 right-0 z-50 py-4 md:py-6 px-4 md:px-8 transition-all duration-300 ${
+        scrolled
+          ? "bg-white/80 backdrop-blur-sm py-2 md:py-3 shadow-sm"
+          : "bg-transparent"
       }`}
     >
       <div className="max-w-8xl mx-auto flex items-center justify-between">
-        {/* Logo on the left - fades out on scroll */}
+        {/* Logo on the left - fades out on scroll on desktop only */}
         <motion.div
           style={{ opacity: sideOpacity, scale: sideScale }}
-          className={`text-5xl font-bold ${vt323.className} text-black`}
+          className={`text-3xl md:text-5xl font-bold ${vt323.className} text-black`}
         >
           plannikeeper
         </motion.div>
 
-        {/* Navigation - centered and stays visible */}
+        {/* Mobile menu button - visible only on mobile */}
+        <button
+          className="md:hidden z-50 p-2 rounded-full bg-background/90 shadow-md"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        >
+          {mobileMenuOpen ? (
+            <XMarkIcon className="h-6 w-6 text-black" />
+          ) : (
+            <Bars3Icon className="h-6 w-6 text-black" />
+          )}
+        </button>
+
+        {/* Desktop Navigation - hidden on mobile */}
         <motion.nav
-          className="fixed left-1/2 transform -translate-x-1/2 z-50"
+          className="hidden md:block fixed left-1/2 transform -translate-x-1/2 z-50"
           style={{ scale: navScale }}
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -111,8 +134,49 @@ export default function Header() {
           </div>
         </motion.nav>
 
-        {/* Start button on the right - fades out on scroll */}
-        <motion.div style={{ opacity: sideOpacity, scale: sideScale }}>
+        {/* Mobile Menu Overlay */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="fixed inset-0 bg-white/95 z-40 pt-20 px-6"
+            >
+              <div className="flex flex-col space-y-4 items-center">
+                {NAV_ITEMS.map(({ id, icon: Icon, label }) => (
+                  <button
+                    key={id}
+                    onClick={() => scrollToSection(id)}
+                    className={`w-full p-4 rounded-xl transition duration-300 flex items-center justify-center gap-3 ${
+                      activeSection === id
+                        ? "bg-black text-white"
+                        : "bg-gray-100 text-black"
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span className="text-base font-medium">{label}</span>
+                  </button>
+                ))}
+
+                <Link
+                  href="/dashboard"
+                  className={`${buttonVariants({ variant: "default" })} w-full justify-center mt-4`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  SignIn
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Start button on the right - fades out on scroll and hidden on mobile */}
+        <motion.div
+          style={{ opacity: sideOpacity, scale: sideScale }}
+          className="hidden md:block"
+        >
           <Link
             href="/dashboard"
             className={buttonVariants({ variant: "outline" })}

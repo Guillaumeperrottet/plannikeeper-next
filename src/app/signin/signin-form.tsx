@@ -51,9 +51,9 @@ export default function SignInForm({
           <div className="flex flex-col items-center gap-2">
             <h1 className="text-xl font-bold">Bienvenue sur Plannikeeper</h1>
             <div className="text-center text-sm">
-              Don&apos;t have an account?{" "}
+              Tu n&apos;as pas encore de compte ?{" "}
               <Link href="/signup" className="underline underline-offset-4">
-                Sign up
+                Inscris toi
               </Link>
             </div>
           </div>
