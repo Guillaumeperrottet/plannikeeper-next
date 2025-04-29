@@ -6,13 +6,23 @@ import Switch from "@/app/components/ui/switchmode";
 import Breadcrumbs from "@/app/components/Breadcrumbs";
 import UserMenu from "@/app/components/ui/UserMenu";
 
+interface User {
+  id: string;
+  role?: string;
+  isAdmin?: boolean;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+  // Add other properties as needed based on how user is used
+}
+
 const vt323 = VT323({
   subsets: ["latin"],
   weight: "400",
   variable: "--font-vt323",
 });
 
-export default function Navbar({ user }: { user: any }) {
+export default function Navbar({ user }: { user: User }) {
   // Vérifier si l'utilisateur est admin en se basant sur les propriétés attendues
   const isAdmin = user?.role === "admin" || user?.isAdmin;
 

@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Plus, Move, X, Edit, Trash, ArrowLeft } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import Image from "next/image";
 
 type Article = {
   id: string;
@@ -226,10 +226,13 @@ export default function ArticleEditor({
       setTimeout(updateImageDimensions, 500);
     };
 
-    if (imageRef.current) {
-      imageRef.current.addEventListener("load", handleImageLoad);
+    // Store current image ref to use in cleanup
+    const currentImageRef = imageRef.current;
 
-      if (imageRef.current.complete) {
+    if (currentImageRef) {
+      currentImageRef.addEventListener("load", handleImageLoad);
+
+      if (currentImageRef.complete) {
         handleImageLoad(); // Utiliser la même logique avec délais
       }
     }
@@ -246,8 +249,8 @@ export default function ArticleEditor({
     const initialTimer = setTimeout(updateImageDimensions, 100);
 
     return () => {
-      if (imageRef.current) {
-        imageRef.current.removeEventListener("load", handleImageLoad);
+      if (currentImageRef) {
+        currentImageRef.removeEventListener("load", handleImageLoad);
       }
       window.removeEventListener("resize", handleResize);
       clearTimeout(initialTimer);
@@ -372,7 +375,7 @@ export default function ArticleEditor({
     [imageInfo]
   );
 
-  const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleContainerClick = () => {
     if (isAddingArticle && !isDraggingNew) {
       return;
     }
@@ -536,31 +539,38 @@ export default function ArticleEditor({
       let newX = resizeStart.x;
       let newY = resizeStart.y;
 
-      // Calcul des nouvelles dimensions selon le type de redimensionnement
-      if (["right", "topRight", "bottomRight"].includes(resizeType)) {
-        newWidth = Math.max(
-          20,
-          mouseX - (resizeStart.x - resizeStart.width / 2)
-        );
+      const minPixelSize = 20; // Minimum size in pixels
+
+      // Calculate edges based on center and dimensions from resizeStart
+      const startLeft = resizeStart.x - resizeStart.width / 2;
+      const startRight = resizeStart.x + resizeStart.width / 2;
+      const startTop = resizeStart.y - resizeStart.height / 2;
+      const startBottom = resizeStart.y + resizeStart.height / 2;
+
+      let finalLeft = startLeft;
+      let finalRight = startRight;
+      let finalTop = startTop;
+      let finalBottom = startBottom;
+
+      // Adjust edges based on resize type and mouse position, ensuring minimum size
+      if (resizeType.includes("left")) {
+        finalLeft = Math.min(mouseX, startRight - minPixelSize);
       }
-      if (["left", "topLeft", "bottomLeft"].includes(resizeType)) {
-        const rightEdge = resizeStart.x + resizeStart.width / 2;
-        const newLeftEdge = Math.min(mouseX, rightEdge - 20);
-        newWidth = (rightEdge - newLeftEdge) * 2;
-        newX = (rightEdge + newLeftEdge) / 2;
+      if (resizeType.includes("right")) {
+        finalRight = Math.max(mouseX, startLeft + minPixelSize);
       }
-      if (["bottom", "bottomLeft", "bottomRight"].includes(resizeType)) {
-        newHeight = Math.max(
-          20,
-          mouseY - (resizeStart.y - resizeStart.height / 2)
-        );
+      if (resizeType.includes("top")) {
+        finalTop = Math.min(mouseY, startBottom - minPixelSize);
       }
-      if (["top", "topLeft", "topRight"].includes(resizeType)) {
-        const bottomEdge = resizeStart.y + resizeStart.height / 2;
-        const newTopEdge = Math.min(mouseY, bottomEdge - 20);
-        newHeight = (bottomEdge - newTopEdge) * 2;
-        newY = (bottomEdge + newTopEdge) / 2;
+      if (resizeType.includes("bottom")) {
+        finalBottom = Math.max(mouseY, startTop + minPixelSize);
       }
+
+      // Calculate new dimensions and center position from final edges
+      newWidth = finalRight - finalLeft;
+      newHeight = finalBottom - finalTop;
+      newX = finalLeft + newWidth / 2;
+      newY = finalTop + newHeight / 2;
 
       // Contraintes pour que l'article reste dans l'image
       const halfNewWidth = newWidth / 2;
@@ -854,130 +864,136 @@ export default function ArticleEditor({
         onMouseMove={handleContainerMouseMove}
         onMouseUp={handleContainerMouseUp}
       >
-        <div className="relative">
-          <img
-            ref={imageRef}
-            src={imageSrc}
-            alt={imageAlt}
-            className="block w-full h-auto max-h-[calc(100vh-150px)]"
-            style={{ objectFit: "contain" }}
-          />
+        <Image
+          ref={imageRef}
+          src={imageSrc}
+          alt={imageAlt}
+          className="block w-full h-auto max-h-[calc(100vh-150px)]"
+          style={{ objectFit: "contain" }}
+          width={imageWidth || 1200}
+          height={imageHeight || 900}
+          priority
+          unoptimized={!imageSrc.startsWith("http")}
+        />
 
-          {/* Articles */}
-          {articles.map((article) => {
-            if (article.positionX == null || article.positionY == null)
-              return null;
+        {/* Articles */}
+        {articles.map((article) => {
+          if (article.positionX == null || article.positionY == null)
+            return null;
 
-            const articleStyle = calculateArticleStyle(article);
+          const articleStyle = calculateArticleStyle(article);
+
+          return (
+            <div
+              key={article.id}
+              className={`absolute border ${
+                selectedArticleId === article.id
+                  ? "border-blue-500"
+                  : hoveredArticleId === article.id
+                  ? "border-blue-300"
+                  : "border-white"
+              } rounded-md shadow-md overflow-hidden pointer-events-auto`}
+              style={{
+                ...articleStyle,
+                zIndex: selectedArticleId === article.id ? 10 : 5,
+                backgroundColor:
+                  hoveredArticleId === article.id
+                    ? "rgba(0, 0, 0, 0.3)"
+                    : "rgba(0, 0, 0, 0.2)",
+                cursor: "pointer",
+              }}
+              onClick={(e) => handleArticleClick(e, article)}
+              onMouseEnter={() => setHoveredArticleId(article.id)}
+              onMouseLeave={() => setHoveredArticleId(null)}
+            >
+              {renderResizeHandles(article)}
+            </div>
+          );
+        })}
+
+        {/* Tooltip pour l'article sélectionné */}
+        {selectedArticleId &&
+          (() => {
+            const article = articles.find((a) => a.id === selectedArticleId);
+            if (!article) return null;
 
             return (
               <div
-                key={article.id}
-                className={`absolute border ${
-                  selectedArticleId === article.id
-                    ? "border-blue-500"
-                    : "border-white"
-                } rounded-md shadow-md overflow-hidden pointer-events-auto`}
+                className="absolute z-30 bg-background border shadow-lg rounded-md p-2 flex flex-col gap-2 w-48"
                 style={{
-                  ...articleStyle,
-                  zIndex: selectedArticleId === article.id ? 10 : 5,
-                  backgroundColor: "rgba(0, 0, 0, 0.2)",
-                  cursor: "pointer",
+                  top: `${tooltipPosition.y}px`,
+                  left: `${tooltipPosition.x}px`,
+                  transform: "translate(-50%, -100%)",
                 }}
-                onClick={(e) => handleArticleClick(e, article)}
-                onMouseEnter={() => setHoveredArticleId(article.id)}
-                onMouseLeave={() => setHoveredArticleId(null)}
+                onClick={(e) => e.stopPropagation()}
               >
-                {renderResizeHandles(article)}
+                <div className="flex justify-between items-center mb-1">
+                  <span className="font-bold text-sm truncate">
+                    {article.title}
+                  </span>
+                </div>
+                {article.description && (
+                  <div className="text-xs mb-2 text-gray-600 max-h-20 overflow-y-auto">
+                    {article.description}
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startDragging(e, article);
+                    }}
+                    className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
+                  >
+                    <Move size={14} />
+                    <span>Déplacer</span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditArticle(article);
+                    }}
+                    className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
+                  >
+                    <Edit size={14} />
+                    <span>Modifier</span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteArticle(article);
+                    }}
+                    className="flex items-center gap-1 text-sm text-red-600 hover:text-red-800"
+                  >
+                    <Trash size={14} />
+                    <span>Supprimer</span>
+                  </button>
+                </div>
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white" />
               </div>
             );
-          })}
+          })()}
 
-          {/* Tooltip pour l'article sélectionné */}
-          {selectedArticleId &&
-            (() => {
-              const article = articles.find((a) => a.id === selectedArticleId);
-              if (!article) return null;
-
-              return (
-                <div
-                  className="absolute z-30 bg-background border shadow-lg rounded-md p-2 flex flex-col gap-2 w-48"
-                  style={{
-                    top: `${tooltipPosition.y}px`,
-                    left: `${tooltipPosition.x}px`,
-                    transform: "translate(-50%, -100%)",
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-bold text-sm truncate">
-                      {article.title}
-                    </span>
-                  </div>
-                  {article.description && (
-                    <div className="text-xs mb-2 text-gray-600 max-h-20 overflow-y-auto">
-                      {article.description}
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        startDragging(e, article);
-                      }}
-                      className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
-                    >
-                      <Move size={14} />
-                      <span>Déplacer</span>
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEditArticle(article);
-                      }}
-                      className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
-                    >
-                      <Edit size={14} />
-                      <span>Modifier</span>
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteArticle(article);
-                      }}
-                      className="flex items-center gap-1 text-sm text-red-600 hover:text-red-800"
-                    >
-                      <Trash size={14} />
-                      <span>Supprimer</span>
-                    </button>
-                  </div>
-                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white" />
-                </div>
-              );
-            })()}
-
-          {/* Rectangle de sélection pour nouvel article */}
-          {isDraggingNew && isAddingArticle && (
-            <div
-              className="absolute border-2 border-blue-500 bg-blue-100 bg-opacity-50 rounded-md z-20"
-              style={{
-                left: `${Math.min(
-                  newArticleStart.x,
-                  newArticleStart.x + newArticleSize.width
-                )}px`,
-                top: `${Math.min(
-                  newArticleStart.y,
-                  newArticleStart.y + newArticleSize.height
-                )}px`,
-                width: `${newArticleSize.width}px`,
-                height: `${newArticleSize.height}px`,
-                transform: "none", // Pas de transformation ici car on utilise des coordonnées absolues
-              }}
-            />
-          )}
-        </div>
+        {/* Rectangle de sélection pour nouvel article */}
+        {isDraggingNew && isAddingArticle && (
+          <div
+            className="absolute border-2 border-blue-500 bg-blue-100 bg-opacity-50 rounded-md z-20"
+            style={{
+              left: `${Math.min(
+                newArticleStart.x,
+                newArticleStart.x + newArticleSize.width
+              )}px`,
+              top: `${Math.min(
+                newArticleStart.y,
+                newArticleStart.y + newArticleSize.height
+              )}px`,
+              width: `${newArticleSize.width}px`,
+              height: `${newArticleSize.height}px`,
+              transform: "none", // Pas de transformation ici car on utilise des coordonnées absolues
+            }}
+          />
+        )}
       </div>
-
       {/* Modal pour éditer/créer un article */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

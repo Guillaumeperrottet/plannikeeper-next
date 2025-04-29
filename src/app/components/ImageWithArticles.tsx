@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import Image from "next/image";
 
 type Article = {
   id: string;
@@ -153,11 +154,14 @@ export default function ImageWithArticles({
       setTimeout(() => updateDimensions(), 1000),
     ];
 
-    if (imageRef.current) {
-      imageRef.current.addEventListener("load", handleImageLoad);
+    // Store a reference to the current image element
+    const currentImageRef = imageRef.current;
+
+    if (currentImageRef) {
+      currentImageRef.addEventListener("load", handleImageLoad);
 
       // Si l'image est déjà chargée (depuis le cache), exécuter updateDimensions
-      if (imageRef.current.complete) {
+      if (currentImageRef.complete) {
         updateDimensions();
       }
     }
@@ -166,8 +170,8 @@ export default function ImageWithArticles({
     window.addEventListener("resize", updateDimensions);
 
     return () => {
-      if (imageRef.current) {
-        imageRef.current.removeEventListener("load", handleImageLoad);
+      if (currentImageRef) {
+        currentImageRef.removeEventListener("load", handleImageLoad);
       }
       timers.forEach(clearTimeout);
       resizeObserver.disconnect();
@@ -268,15 +272,19 @@ export default function ImageWithArticles({
       className={`relative overflow-hidden ${className}`}
       style={{ width: "100%", position: "relative" }}
     >
-      <img
-        ref={imageRef}
+      <Image
+        ref={imageRef as React.Ref<HTMLImageElement>}
         src={imageSrc}
         alt={imageAlt}
+        width={originalWidth}
+        height={originalHeight}
         className="block w-full h-auto max-h-[calc(100vh-150px)]"
         style={{ objectFit: "contain" }}
+        onLoadingComplete={updateDimensions}
+        priority
       />
 
-      {articles.map((article) => {
+      {articles.map((article: Article) => {
         if (!article.positionX || !article.positionY) return null;
 
         const articleStyle = calculateArticleStyle(article);

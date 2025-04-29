@@ -44,7 +44,6 @@ export default function SectorViewer({
   const [hoveredArticleId, setHoveredArticleId] = useState<string | null>(null);
   const [selectedSector, setSelectedSector] = useState<Sector | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const viewerRef = useRef<HTMLDivElement>(null);
@@ -85,9 +84,7 @@ export default function SectorViewer({
     const newIndex = sectors.findIndex((s) => s.id === sector.id);
     setSelectedSector(sector);
     setSelectedIndex(newIndex);
-    setIsDropdownOpen(false);
   };
-
   const navigateToPreviousSector = useCallback(() => {
     if (sectors.length <= 1) return;
     const newIndex = (selectedIndex - 1 + sectors.length) % sectors.length;
@@ -108,7 +105,7 @@ export default function SectorViewer({
     }
   };
 
-  const toggleFullscreen = () => {
+  const toggleFullscreen = useCallback(() => {
     setIsFullscreen(!isFullscreen);
 
     // En mode plein écran, nous voulons maximiser l'espace d'affichage
@@ -123,7 +120,7 @@ export default function SectorViewer({
     } else if (document.fullscreenElement) {
       document.exitFullscreen();
     }
-  };
+  }, [isFullscreen]);
 
   // Gestion des touches clavier pour la navigation
   useEffect(() => {
@@ -143,7 +140,12 @@ export default function SectorViewer({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [navigateToNextSector, navigateToPreviousSector, isFullscreen]);
+  }, [
+    navigateToNextSector,
+    navigateToPreviousSector,
+    isFullscreen,
+    toggleFullscreen,
+  ]);
 
   // Gestion de la sortie du mode plein écran via l'API Fullscreen
   useEffect(() => {

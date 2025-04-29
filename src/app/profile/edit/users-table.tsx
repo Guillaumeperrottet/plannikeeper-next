@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Edit,
   ChevronDown,
   Search,
-  CheckCircle2,
   ShieldAlert,
   User as UserIcon,
   X,
@@ -160,9 +160,11 @@ export function UsersTable({ users }: { users: User[] }) {
                   <td className="p-3">
                     <div className="w-8 h-8 rounded-full bg-[color:var(--muted)] flex items-center justify-center overflow-hidden">
                       {user.avatar ? (
-                        <img
+                        <Image
                           src={user.avatar}
                           alt={user.name}
+                          width={32}
+                          height={32}
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -233,9 +235,11 @@ export function UsersTable({ users }: { users: User[] }) {
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full bg-[color:var(--muted)] flex items-center justify-center overflow-hidden flex-shrink-0">
                   {user.avatar ? (
-                    <img
+                    <Image
                       src={user.avatar}
                       alt={user.name}
+                      width={40}
+                      height={40}
                       className="w-full h-full object-cover"
                     />
                   ) : (

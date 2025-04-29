@@ -3,7 +3,6 @@ import Navbar from "./components/Navbar";
 import { getUser } from "../lib/auth-session";
 import "./globals.css";
 import TodoListAgendaWrapper from "./components/TodoListAgendaWrapper";
-import SidebarWrapper from "@/app/components/ui/SidebarWrapper";
 import { prisma } from "@/lib/prisma";
 
 export default async function RootLayout({
@@ -28,13 +27,13 @@ export default async function RootLayout({
       ...user,
       isAdmin: orgUser?.role === "admin",
       role: orgUser?.role,
-    };
+    } as typeof user & { isAdmin: boolean; role?: string };
   }
 
   return (
     <html lang="en">
       <body className="bg-background" suppressHydrationWarning>
-        {user && <Navbar user={userWithRole} />}
+        {userWithRole && <Navbar user={userWithRole} />}
         {/*<SidebarWrapper user={userWithRole}>*/}
         <div className="pb-16 md:pb-14">{children}</div>
         {/*}  </SidebarWrapper>*/}

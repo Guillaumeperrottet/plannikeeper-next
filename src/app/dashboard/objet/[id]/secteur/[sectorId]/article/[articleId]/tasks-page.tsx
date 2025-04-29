@@ -37,7 +37,7 @@ type User = {
 };
 
 type Task = {
-  id: string;
+  id: string; // Assume TaskForm provides an ID, adjust new task logic below
   name: string;
   description: string | null;
   executantComment: string | null;
@@ -328,8 +328,11 @@ export default function TasksPage({
 
   const handleTaskSave = async (updatedTask: Task, documents?: File[]) => {
     try {
+      // Check if the task ID already exists in the state to determine if it's new
+      const isNewTask = !tasks.some((t) => t.id === updatedTask.id);
+
       // Pour une nouvelle tâche
-      if (!updatedTask.id) {
+      if (isNewTask) {
         const response = await fetch("/api/tasks", {
           method: "POST",
           headers: {
@@ -1023,7 +1026,16 @@ export default function TasksPage({
             <div className="relative">
               <select
                 value={groupBy}
-                onChange={(e) => setGroupBy(e.target.value as any)}
+                onChange={(e) =>
+                  setGroupBy(
+                    e.target.value as
+                      | "status"
+                      | "assignee"
+                      | "date"
+                      | "type"
+                      | "none"
+                  )
+                }
                 className="text-sm rounded border border-[color:var(--border)] bg-[color:var(--background)] px-2 py-1 text-[color:var(--foreground)]"
               >
                 <option value="status">Grouper par statut</option>
@@ -1177,7 +1189,9 @@ export default function TasksPage({
               <TaskForm
                 users={users}
                 articleId={articleId}
-                onSave={handleTaskSave}
+                onSave={(task, documents) =>
+                  handleTaskSave(task as Task, documents)
+                }
                 onCancel={() => setShowAddForm(false)}
               />
             </motion.div>
@@ -1249,23 +1263,33 @@ export default function TasksPage({
                         <Paperclip size={18} />
                         Documents
                       </h3>
-                      <div className="max-h-[200px] overflow-auto">
-                        <DocumentsList
-                          taskId={selectedTask.id}
-                          onDocumentsChange={() => {
-                            // Fonction à appeler quand des changements sont faits
-                          }}
-                        />
-                      </div>
-                      <div className="mt-2">
-                        <h4 className="text-sm font-medium mb-1">Ajouter</h4>
-                        <DocumentUpload
-                          taskId={selectedTask.id}
-                          onUploadSuccess={() => {
-                            // Rafraîchir après upload réussi
-                          }}
-                        />
-                      </div>
+                      {selectedTask.id ? (
+                        <>
+                          <div className="max-h-[200px] overflow-auto">
+                            <DocumentsList
+                              taskId={selectedTask.id}
+                              onDocumentsChange={() => {
+                                // Fonction à appeler quand des changements sont faits
+                              }}
+                            />
+                          </div>
+                          <div className="mt-2">
+                            <h4 className="text-sm font-medium mb-1">
+                              Ajouter
+                            </h4>
+                            <DocumentUpload
+                              taskId={selectedTask.id}
+                              onUploadSuccess={() => {
+                                // Rafraîchir après upload réussi
+                              }}
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-sm text-[color:var(--muted-foreground)]">
+                          Sauvegardez la tâche pour ajouter des documents.
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -1386,20 +1410,29 @@ export default function TasksPage({
                   <div className="flex gap-2">
                     {selectedTask.status !== "completed" && (
                       <button
-                        onClick={() =>
-                          handleTaskStatusChange(selectedTask.id, "completed")
-                        }
-                        className="px-4 py-2 text-sm font-medium text-[color:var(--primary-foreground)] bg-[color:var(--primary)] hover:bg-opacity-90 rounded-lg transition-colors"
+                        onClick={() => {
+                          if (selectedTask.id) {
+                            handleTaskStatusChange(
+                              selectedTask.id,
+                              "completed"
+                            );
+                          }
+                        }}
+                        disabled={!selectedTask.id}
+                        className="px-4 py-2 text-sm font-medium text-[color:var(--primary-foreground)] bg-[color:var(--primary)] hover:bg-opacity-90 rounded-lg transition-colors disabled:opacity-50"
                       >
                         Marquer comme terminée
                       </button>
                     )}
                     {selectedTask.status === "completed" && (
                       <button
-                        onClick={() =>
-                          handleTaskStatusChange(selectedTask.id, "pending")
-                        }
-                        className="px-4 py-2 text-sm font-medium text-[color:var(--secondary-foreground)] bg-[color:var(--secondary)] hover:bg-opacity-90 rounded-lg transition-colors"
+                        onClick={() => {
+                          if (selectedTask.id) {
+                            handleTaskStatusChange(selectedTask.id, "pending");
+                          }
+                        }}
+                        disabled={!selectedTask.id}
+                        className="px-4 py-2 text-sm font-medium text-[color:var(--secondary-foreground)] bg-[color:var(--secondary)] hover:bg-opacity-90 rounded-lg transition-colors disabled:opacity-50"
                       >
                         Rouvrir la tâche
                       </button>
@@ -1409,16 +1442,24 @@ export default function TasksPage({
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
-                        setShowAddForm(true);
-                        setSelectedTask(selectedTask);
+                        // Add logic to open the edit form, e.g.,
+                        // setEditingTask(selectedTask);
+                        // setShowEditForm(true);
+                        // For now, just log or show an alert
+                        alert("Fonctionnalité Modifier à implémenter");
                       }}
                       className="px-4 py-2 text-sm font-medium text-[color:var(--secondary-foreground)] bg-[color:var(--secondary)] hover:bg-opacity-90 rounded-lg transition-colors"
                     >
                       Modifier
                     </button>
                     <button
-                      onClick={() => handleTaskDelete(selectedTask.id)}
-                      className="px-4 py-2 text-sm font-medium text-[color:var(--destructive-foreground)] bg-[color:var(--destructive)] hover:bg-opacity-90 rounded-lg transition-colors"
+                      onClick={() => {
+                        if (selectedTask.id) {
+                          handleTaskDelete(selectedTask.id);
+                        }
+                      }}
+                      disabled={!selectedTask.id}
+                      className="px-4 py-2 text-sm font-medium text-[color:var(--destructive-foreground)] bg-[color:var(--destructive)] hover:bg-opacity-90 rounded-lg transition-colors disabled:opacity-50"
                     >
                       Supprimer
                     </button>

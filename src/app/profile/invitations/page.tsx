@@ -52,7 +52,7 @@ export default async function InvitationsPage() {
 
       <div className="mt-8">
         <h2 className="text-xl font-semibold mb-4">
-          Codes d'invitation actifs
+          Codes d&apos;invitation actifs
         </h2>
         <InvitationsList
           invitationCodes={invitationCodes}

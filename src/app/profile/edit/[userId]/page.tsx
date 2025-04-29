@@ -7,6 +7,7 @@ import { UserRoleSelector } from "../user-role-selector";
 import { ObjectAccessManager } from "../object-access-manager";
 import { Button } from "@/app/components/ui/button";
 import { ArrowLeft, Shield, User as UserIcon, Lock } from "lucide-react";
+import Image from "next/image";
 
 export default async function EditUserPage({
   params,
@@ -73,40 +74,40 @@ export default async function EditUserPage({
         </Link>
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-[color:var(--muted)] flex items-center justify-center text-xl text-[color:var(--muted-foreground)]">
-              {userToEdit.image ? (
-                <img
-                  src={userToEdit.image}
-                  alt={userToEdit.name || ""}
-                  className="w-full h-full object-cover rounded-full"
-                />
-              ) : (
-                userToEdit.name?.[0] || "?"
-              )}
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold">
-                {userToEdit.name || "Utilisateur sans nom"}
-                {isCurrentUser && (
-                  <span className="ml-2 text-sm bg-[color:var(--muted)] text-[color:var(--muted-foreground)] px-2 py-0.5 rounded-full">
-                    Vous
-                  </span>
-                )}
-              </h1>
-              <p className="text-[color:var(--muted-foreground)]">
-                {userToEdit.email}
-              </p>
-            </div>
+          <div className="w-16 h-16 rounded-full bg-[color:var(--muted)] flex items-center justify-center text-xl text-[color:var(--muted-foreground)] overflow-hidden">
+            {userToEdit.image ? (
+              <Image
+                src={userToEdit.image}
+                alt={userToEdit.name || ""}
+                width={64}
+                height={64}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              userToEdit.name?.[0] || "?"
+            )}
           </div>
-
-          <Button asChild variant="outline">
-            <Link href="/profile/edit">
-              <ArrowLeft size={16} className="mr-2" />
-              Liste des utilisateurs
-            </Link>
-          </Button>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold">
+              {userToEdit.name || "Utilisateur sans nom"}
+              {isCurrentUser && (
+                <span className="ml-2 text-sm bg-[color:var(--muted)] text-[color:var(--muted-foreground)] px-2 py-0.5 rounded-full">
+                  Vous
+                </span>
+              )}
+            </h1>
+            <p className="text-[color:var(--muted-foreground)]">
+              {userToEdit.email}
+            </p>
+          </div>
         </div>
+
+        <Button asChild variant="outline">
+          <Link href="/profile/edit">
+            <ArrowLeft size={16} className="mr-2" />
+            Liste des utilisateurs
+          </Link>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -183,20 +183,6 @@ export function ObjectAccessManager({
     setHasChanges(false);
   };
 
-  const getAccessIcon = (accessLevel: string) => {
-    const level = ACCESS_LEVELS.find((l) => l.value === accessLevel);
-    if (!level) return null;
-
-    const Icon = level.icon;
-    return <Icon size={16} className={level.color} />;
-  };
-
-  const getAccessLabel = (accessLevel: string) => {
-    return (
-      ACCESS_LEVELS.find((l) => l.value === accessLevel)?.label || "Inconnu"
-    );
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
