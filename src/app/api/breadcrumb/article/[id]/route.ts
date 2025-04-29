@@ -1,18 +1,20 @@
-// src/app/api/breadcrumb/article/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+// Typage mis à jour : params est une Promise qui résout { id: string }
+type RouteParams = {
+  params: Promise<{ id: string }>;
+};
+
+export async function GET(req: NextRequest, { params }: RouteParams) {
+  // Récupération de l'ID depuis la promesse
+  const { id: articleId } = await params;
+
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
-
-  const articleId = params.id;
 
   try {
     // Récupérer l'article avec son secteur et l'objet associé
@@ -55,7 +57,7 @@ export async function GET(
       sectorId: article.sectorId,
     });
   } catch (error) {
-    console.error("Erreur lors de la récupération de l'article:", error);
+    console.error("Erreur lors de la récupération de l'article :", error);
     return NextResponse.json(
       { error: "Erreur lors de la récupération de l'article" },
       { status: 500 }
