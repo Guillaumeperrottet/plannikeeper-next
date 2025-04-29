@@ -3,24 +3,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+// Typage mis à jour : params est une Promise qui résout { id: string }
+type RouteParams = {
+  params: Promise<{ id: string }>;
+};
+
+export async function GET(req: NextRequest, { params }: RouteParams) {
+  // Récupération de l'ID depuis la promesse
+  const { id: sectorId } = await params;
+
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  const sectorId = params.id;
-
   try {
-    // Récupérer le secteur
+    // Récupérer le secteur avec l'objet associé
     const sector = await prisma.sector.findUnique({
       where: { id: sectorId },
-      include: {
-        object: true,
-      },
+      include: { object: true },
     });
 
     if (!sector) {
@@ -53,7 +54,7 @@ export async function GET(
       objectId: sector.objectId,
     });
   } catch (error) {
-    console.error("Erreur lors de la récupération du secteur:", error);
+    console.error("Erreur lors de la récupération du secteur :", error);
     return NextResponse.json(
       { error: "Erreur lors de la récupération du secteur" },
       { status: 500 }
