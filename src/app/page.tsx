@@ -95,24 +95,20 @@ const ModernLandingPage = () => {
     },
   ];
 
-  const showcaseImages = [
-    {
-      src: "/images/plannikeeper-dashboard.png",
-      alt: "Dashboard PlanniKeeper",
-    },
-    {
-      src: "/images/plannikeeper-calendar.png",
-      alt: "Calendrier PlanniKeeper",
-    },
-    {
-      src: "/images/plannikeeper-object.png",
-      alt: "Gestion d'objets PlanniKeeper",
-    },
-    {
-      src: "/images/plannikeeper-tasks.png",
-      alt: "Gestion des tâches PlanniKeeper",
-    },
-    { src: "/images/plannikeeper-sector.png", alt: "Secteurs PlanniKeeper" },
+  const firstCarouselImages = [
+    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
+    { src: "/images/plannikeeper1copy5.png", alt: "Feature 2" },
+    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
+    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
+    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
+  ];
+
+  const secondCarouselImages = [
+    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
+    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
+    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
+    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
+    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
   ];
 
   const faqs = [
@@ -416,15 +412,15 @@ const ModernLandingPage = () => {
           <div className="absolute top-0 left-0 w-full">
             <TiltedCarousel
               className="h-auto"
-              images={showcaseImages}
+              images={firstCarouselImages}
               speed={40}
               tiltAngle={-10}
-              scale={1.25}
-              imageWidth={320}
-              imageHeight={200}
-              borderWidth={4}
-              pauseOnHover={true}
-              gap={16}
+              scale={1} // Réduit pour mobile
+              imageWidth={280} // Taille réduite pour mobile
+              imageHeight={210} // Taille réduite pour mobile
+              borderWidth={2} // Plus petit pour mobile
+              pauseOnHover={false}
+              gap={20} // Gap réduit pour mobile
               direction="left"
             />
           </div>
@@ -432,16 +428,16 @@ const ModernLandingPage = () => {
           <div className="absolute top-[250px] md:top-[400px] left-0 w-full">
             <TiltedCarousel
               className="h-auto"
-              images={[...showcaseImages].reverse()}
+              images={secondCarouselImages}
               speed={30}
-              tiltAngle={10}
-              scale={1.1}
-              imageWidth={280}
-              imageHeight={180}
-              borderWidth={4}
-              pauseOnHover={true}
-              gap={16}
-              direction="right"
+              tiltAngle={-10}
+              scale={1} // Réduit pour mobile
+              imageWidth={280} // Taille réduite pour mobile
+              imageHeight={210} // Taille réduite pour mobile
+              borderWidth={2} // Plus petit pour mobile
+              pauseOnHover={false}
+              gap={20} // Gap réduit pour mobile
+              direction="left"
             />
           </div>
         </div>
