@@ -17,13 +17,15 @@ type Task = {
   name: string;
   description: string | null;
   done: boolean;
-  realizationDate: string | null;
+  realizationDate: Date | null; // Changed from string to Date
   status: string;
   taskType: string | null;
   color: string | null;
   recurring: boolean;
   period: string | null;
   endDate: Date | null;
+  recurrenceReminderDate: Date | null; // Added missing property
+  assignedToId: string | null; // Added missing property
   article: {
     id: string;
     title: string;
@@ -36,12 +38,28 @@ type Task = {
       };
     };
   };
-  assignedTo?: {
+  assignedTo: {
     id: string;
     name: string;
   } | null;
   createdAt: Date;
   updatedAt: Date;
+};
+
+// Raw task type from API before date conversion
+type RawTask = Omit<
+  Task,
+  | "realizationDate"
+  | "recurrenceReminderDate"
+  | "endDate"
+  | "createdAt"
+  | "updatedAt"
+> & {
+  realizationDate: string | null;
+  recurrenceReminderDate: string | null;
+  endDate: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 type AppObject = {
@@ -65,13 +83,20 @@ export default function TodoListAgenda() {
   const [selectedObjectId, setSelectedObjectId] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.LIST);
+  const [maxHeight, setMaxHeight] = useState<number>(600); // valeur par défaut
   const agendaRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   // Constantes pour les limites de hauteur
   const MIN_HEIGHT = 48; // Hauteur minimale (fermé)
-  const MAX_HEIGHT = window.innerHeight * 0.8; // Hauteur maximale (80% de la fenêtre)
   const EXPANDED_THRESHOLD = 100; // Seuil à partir duquel on considère l'agenda comme développé
+
+  // Calculer MAX_HEIGHT côté client
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setMaxHeight(window.innerHeight * 0.8);
+    }
+  }, []);
 
   // Charger la préférence de vue depuis localStorage au chargement
   useEffect(() => {
@@ -108,7 +133,7 @@ export default function TodoListAgenda() {
     fetchObjects();
   }, []);
 
-  // Récupération des tâches quand on change d'objet
+  // Récupération des tâches quand l'objet sélectionné change
   useEffect(() => {
     const fetchTasks = async (): Promise<void> => {
       if (!selectedObjectId) return;
@@ -116,8 +141,22 @@ export default function TodoListAgenda() {
       try {
         const response = await fetch(`/api/tasks/object/${selectedObjectId}`);
         if (response.ok) {
-          const data: Task[] = await response.json();
-          setTasks(data);
+          const data = await response.json();
+          // Convert string dates to Date objects and add missing properties
+          const tasksWithDateObjects: Task[] = data.map((task: RawTask) => ({
+            ...task,
+            realizationDate: task.realizationDate
+              ? new Date(task.realizationDate)
+              : null,
+            recurrenceReminderDate: task.recurrenceReminderDate
+              ? new Date(task.recurrenceReminderDate)
+              : null,
+            endDate: task.endDate ? new Date(task.endDate) : null,
+            createdAt: new Date(task.createdAt),
+            updatedAt: new Date(task.updatedAt),
+            assignedToId: task.assignedToId || null,
+          }));
+          setTasks(tasksWithDateObjects);
         }
       } catch (error) {
         console.error("Erreur lors de la récupération des tâches :", error);
@@ -149,7 +188,7 @@ export default function TodoListAgenda() {
       let newHeight = agendaHeight + deltaY;
 
       // Appliquer les limites de hauteur
-      newHeight = Math.max(MIN_HEIGHT, Math.min(newHeight, MAX_HEIGHT));
+      newHeight = Math.max(MIN_HEIGHT, Math.min(newHeight, maxHeight));
 
       setAgendaHeight(newHeight);
       setIsExpanded(newHeight > EXPANDED_THRESHOLD);
@@ -160,7 +199,7 @@ export default function TodoListAgenda() {
       startY,
       agendaHeight,
       MIN_HEIGHT,
-      MAX_HEIGHT,
+      maxHeight,
       EXPANDED_THRESHOLD,
     ]
   );
@@ -193,66 +232,36 @@ export default function TodoListAgenda() {
     };
   }, [isDragging, handleDragMove, handleDragEnd]);
 
-  // Boutons pour ouvrir/fermer complètement
-  const handleMinimize = (): void => {
-    setAgendaHeight(MIN_HEIGHT);
-    setIsExpanded(false);
-  };
-
-  const handleMaximize = (): void => {
-    setAgendaHeight(MAX_HEIGHT);
-    setIsExpanded(true);
-  };
-
-  const toggleExpanded = (): void => {
-    if (isExpanded) {
-      handleMinimize();
-    } else {
-      handleMaximize();
-    }
-  };
-
+  // Le contrôle d'ouverture/fermeture est géré par toggleExpanded
   // Formatage de date
-  const formatDate = (dateString: string | null): string => {
-    if (!dateString) return "";
-    return new Date(dateString).toLocaleDateString();
+  const formatDate = (date: Date | null): string => {
+    if (!date) return "";
+    return date.toLocaleDateString();
   };
 
   // Regroupement des tâches
-  const groupTasksByPeriod = (): {
-    thisWeekTasks: Task[];
-    upcomingTasks: Task[];
-  } => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const thisWeekEnd = new Date(today);
-    thisWeekEnd.setDate(today.getDate() + (7 - today.getDay()));
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const thisWeekEnd = new Date(today);
+  thisWeekEnd.setDate(today.getDate() + (7 - today.getDay()));
 
-    const thisWeekTasks: Task[] = [];
-    const upcomingTasks: Task[] = [];
+  const thisWeekTasks: Task[] = [];
+  const upcomingTasks: Task[] = [];
 
-    tasks.forEach((task) => {
-      if (task.status === "completed") return;
-      if (!task.realizationDate) {
-        thisWeekTasks.push(task);
-        return;
-      }
-      const taskDate = new Date(task.realizationDate);
-      taskDate.setHours(0, 0, 0, 0);
-      if (taskDate <= thisWeekEnd) thisWeekTasks.push(task);
-      else upcomingTasks.push(task);
-    });
+  tasks.forEach((task) => {
+    if (task.status === "completed") return;
+    if (!task.realizationDate) {
+      thisWeekTasks.push(task);
+      return;
+    }
+    const taskDate = new Date(task.realizationDate);
+    taskDate.setHours(0, 0, 0, 0);
+    if (taskDate <= thisWeekEnd) thisWeekTasks.push(task);
+    else upcomingTasks.push(task);
+  });
 
-    return { thisWeekTasks, upcomingTasks };
-  };
-
-  const { thisWeekTasks, upcomingTasks } = groupTasksByPeriod();
-
-  const handlePrint = (): void => {
-    window.print();
-  };
-
-  const navigateToTask = (task: Task): void => {
+  // Navigation vers la tâche
+  const navigateToTask = (task: Task) => {
     router.push(
       `/dashboard/objet/${task.article.sector.object.id}` +
         `/secteur/${task.article.sector.id}` +
@@ -260,7 +269,21 @@ export default function TodoListAgenda() {
     );
   };
 
-  // Basculer entre les modes d'affichage
+  // Impression
+  const handlePrint = () => {
+    window.print();
+  };
+
+  // Toggle expand/collapse
+  const toggleExpanded = () => {
+    if (isExpanded) {
+      setAgendaHeight(MIN_HEIGHT);
+      setIsExpanded(false);
+    } else {
+      setAgendaHeight(maxHeight);
+      setIsExpanded(true);
+    }
+  };
   const toggleViewMode = () => {
     setViewMode(viewMode === ViewMode.LIST ? ViewMode.CALENDAR : ViewMode.LIST);
   };
