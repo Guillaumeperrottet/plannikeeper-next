@@ -77,6 +77,7 @@ export const SidebarBody = ({
   ...props
 }: React.ComponentProps<typeof motion.div> & {
   userComponent?: (open: boolean) => React.ReactNode;
+  children?: React.ReactNode;
 }) => {
   return (
     <>
@@ -99,6 +100,7 @@ export const DesktopSidebar = ({
   userComponent,
   ...props
 }: React.ComponentProps<typeof motion.div> & {
+  children?: React.ReactNode;
   userComponent?: (open: boolean) => React.ReactNode;
 }) => {
   const { open, setOpen, animate } = useSidebar();
