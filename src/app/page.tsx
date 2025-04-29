@@ -1,208 +1,304 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
-import Header from "@/app/components/landing/Header"; // Assurez-vous d'ajuster le chemin si nécessaire
+import Header from "@/app/components/landing/Header";
 import TiltedCarousel from "@/app/components/landing/DualDirectionCarousel";
-import { Button } from "@/app/components/ui/button"; // Assurez-vous d'ajuster le chemin si nécessaire
+import { Button } from "@/app/components/ui/button";
+import Link from "next/link";
+import Image from "next/image";
+import { ChevronRight, Check } from "lucide-react";
 
 const ModernLandingPage = () => {
-  const [, setActiveSection] = useState("hero");
+  // Removed unused activeSection state
   const heroRef = useRef(null);
   const featuresRef = useRef(null);
+  const showcaseRef = useRef(null);
   const pricingRef = useRef(null);
+  const faqRef = useRef(null);
 
-  const isHeroInView = useInView(heroRef, { amount: 0.5 });
-  const isFeaturesInView = useInView(featuresRef, { amount: 0.5 });
-  const isPricingInView = useInView(pricingRef, { amount: 0.5 });
+  // Removed unused isInView variables for each section
 
-  useEffect(() => {
-    if (isHeroInView) setActiveSection("hero");
-    else if (isFeaturesInView) setActiveSection("features");
-    else if (isPricingInView) setActiveSection("pricing");
-  }, [isHeroInView, isFeaturesInView, isPricingInView]);
+  // Removed useEffect for setActiveSection as activeSection is not used
 
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-    setActiveSection(id);
+    // setActiveSection removed as activeSection is no longer used
   };
 
   const features = [
     {
-      title: "Suivi simplifié",
-      description: "Gérez vos tâches et documents en un seul endroit",
-      icon: "📊",
-      color: "bg-blue-500",
+      title: "Visualisation interactive",
+      description:
+        "Naviguez intuitivement à travers vos biens immobiliers avec notre interface interactive",
+      icon: "/images/map-pin.svg",
+      color: "bg-[#d9840d]",
     },
     {
-      title: "Interface intuitive",
-      description: "Naviguez facilement entre vos projets immobiliers",
-      icon: "🏡",
-      color: "bg-green-500",
+      title: "Gestion des tâches",
+      description:
+        "Planifiez et suivez toutes vos tâches avec notre système intégré d'organisation",
+      icon: "/images/calendar.svg",
+      color: "bg-[#c6780c]",
     },
     {
-      title: "Collaboration",
-      description: "Partagez les informations avec votre équipe en temps réel",
-      icon: "👥",
-      color: "bg-purple-500",
+      title: "Mode collaboratif",
+      description:
+        "Partagez les informations avec votre équipe en temps réel pour une coordination parfaite",
+      icon: "/images/users.svg",
+      color: "bg-[#e36002]",
     },
     {
-      title: "Documentation",
-      description: "Gardez tous vos documents organisés et accessibles",
-      icon: "📄",
-      color: "bg-amber-500",
+      title: "Centralisation documentaire",
+      description:
+        "Gardez tous vos documents organisés et accessibles en un seul endroit",
+      icon: "/images/file.svg",
+      color: "bg-[#b8a589]",
     },
   ];
 
   const plans = [
     {
-      name: "Standard",
-      price: "$4999/m",
+      name: "Essentiel",
+      price: "29€",
+      period: "/mois",
+      description: "L'essentiel pour les petites structures immobilières",
       features: [
-        "Un feature request à la fois",
-        "Pause ou annulation à tout moment",
-        "Support technique",
+        "Jusqu'à 10 propriétés",
+        "Gestion des tâches basique",
+        "Stockage de documents 5GB",
+        "Support par email",
       ],
-      color: "from-gray-700 to-gray-900",
-      textColor: "text-white",
-      buttonColor: "bg-orange-500 hover:bg-orange-600",
+      color: "from-[#f2e8d9] to-[#e8ebe0]",
+      textColor: "text-[#141313]",
+      borderColor: "border-[#beac93]",
+      buttonColor: "bg-[#d9840d] hover:bg-[#c6780c]",
     },
     {
-      name: "Goblin+",
-      price: "$9999/m",
+      name: "Professionnel",
+      price: "79€",
+      period: "/mois",
+      description: "Pour les professionnels de l'immobilier exigeants",
       features: [
-        "Mode goblin - plus rapide que votre équipe",
-        "Plusieurs features en parallèle",
+        "Propriétés illimitées",
+        "Planification avancée",
+        "Stockage de documents 50GB",
         "Support prioritaire 24/7",
+        "Collaboration multi-utilisateurs",
+        "Rapports personnalisés",
       ],
-      color: "from-orange-400 to-orange-600",
+      color: "from-[#d9840d] to-[#e36002]",
       textColor: "text-white",
-      buttonColor: "bg-gray-900 hover:bg-gray-800",
+      borderColor: "border-[#e36002]",
+      buttonColor: "bg-[#19140d] hover:bg-[#000000]",
       popular: true,
     },
   ];
 
-  const firstCarouselImages = [
-    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
-    { src: "/images/plannikeeper1copy5.png", alt: "Feature 2" },
-    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
-    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
-    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
+  const showcaseImages = [
+    {
+      src: "/images/plannikeeper-dashboard.png",
+      alt: "Dashboard PlanniKeeper",
+    },
+    {
+      src: "/images/plannikeeper-calendar.png",
+      alt: "Calendrier PlanniKeeper",
+    },
+    {
+      src: "/images/plannikeeper-object.png",
+      alt: "Gestion d'objets PlanniKeeper",
+    },
+    {
+      src: "/images/plannikeeper-tasks.png",
+      alt: "Gestion des tâches PlanniKeeper",
+    },
+    { src: "/images/plannikeeper-sector.png", alt: "Secteurs PlanniKeeper" },
   ];
 
-  const secondCarouselImages = [
-    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
-    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
-    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
-    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
-    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
+  const faqs = [
+    {
+      question:
+        "Comment PlanniKeeper m'aide-t-il à gérer mes biens immobiliers ?",
+      answer:
+        "PlanniKeeper centralise toutes les informations relatives à vos biens immobiliers, vous permettant de visualiser vos propriétés, programmer des tâches de maintenance, stocker des documents importants et collaborer avec votre équipe, le tout dans une interface intuitive et personnalisable.",
+    },
+    {
+      question: "Puis-je accéder à PlanniKeeper sur mobile ?",
+      answer:
+        "Absolument ! PlanniKeeper est entièrement responsive et s'adapte parfaitement aux smartphones et tablettes. Vous pouvez ainsi gérer vos propriétés où que vous soyez, directement depuis votre appareil mobile.",
+    },
+    {
+      question:
+        "Est-ce que PlanniKeeper est adapté aux grandes agences immobilières ?",
+      answer:
+        "Oui, notre forfait Professionnel est spécialement conçu pour répondre aux besoins des grandes structures avec des propriétés illimitées, une collaboration multi-utilisateurs et des fonctionnalités avancées de reporting.",
+    },
+    {
+      question: "Comment fonctionne la visualisation interactive des biens ?",
+      answer:
+        "Notre système permet de créer une représentation visuelle de chaque propriété. Vous pouvez ajouter des plans, marquer des zones d'intérêt spécifiques et associer des tâches ou documents à des emplacements précis, rendant la navigation et la gestion intuitive et contextuelle.",
+    },
   ];
 
   return (
-    <div className="min-h-screen bg-background text-black overflow-hidden">
-      {/* Header responsive */}
+    <div className="min-h-screen bg-[#f9f3ec] text-[#141313] overflow-hidden">
+      {/* Header */}
       <Header />
 
-      {/* Hero Section avec adaptation mobile */}
+      {/* Hero Section */}
       <section
         id="hero"
         ref={heroRef}
         className="min-h-screen relative flex items-center overflow-hidden pt-16 md:pt-0"
-        style={{
-          background: "linear-gradient(to bottom, #ffffff 0%, #D9840C 100%)",
-        }}
       >
+        <div
+          className="absolute inset-0 w-full h-full -z-10 bg-gradient-to-b from-[#f9f3ec] via-[#f5f3ef] to-[#d9840d]/30"
+          aria-hidden="true"
+        />
+
         <div className="container mx-auto px-4 sm:px-6 pt-8 md:pt-24 z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-left w-full md:w-2/3"
-          >
-            <h1 className="text-4xl sm:text-5xl md:text-[5rem] lg:text-[6rem] leading-none text-gray-900 mb-6">
-              <motion.span
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="font-normal"
-                style={{
-                  display: "inline-block",
-                }}
-              >
-                Organisation
-              </motion.span>
-              <br />
-              <motion.span
-                initial={{ opacity: 0, y: 50 }}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              className="text-left"
+            >
+              <motion.div
+                className="inline-block bg-[#e8ebe0] px-4 py-1 rounded-full mb-6 border border-[#beac93]"
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="font-normal"
               >
-                Gestion
-              </motion.span>{" "}
-              <br />
-              <motion.span
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{
-                  duration: 0.7,
-                  delay: 0.4,
-                  type: "spring",
-                  stiffness: 200,
-                }}
-                className="font-normal"
-                style={{
-                  display: "inline-block",
-                }}
-              >
-                Plannification
-              </motion.span>
-            </h1>
+                <span className="text-[#62605d] font-medium text-sm">
+                  Gestion immobilière simplifiée
+                </span>
+              </motion.div>
 
-            <motion.p
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.6 }}
-              className="text-lg sm:text-xl md:text-2xl text-gray-800 mb-8 max-w-2xl"
-            >
-              Simplifiez la gestion de vos projets immobiliers avec notre
-              solution tout-en-un.
-            </motion.p>
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-[#141313] mb-6">
+                <motion.span
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                  className="block"
+                >
+                  Organisez.
+                </motion.span>
+                <motion.span
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.5 }}
+                  className="block"
+                >
+                  Planifiez.
+                </motion.span>
+                <motion.span
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.7 }}
+                  className="block text-[#d9840d]"
+                >
+                  Maîtrisez.
+                </motion.span>
+              </h1>
+
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.9 }}
+                className="text-lg md:text-xl text-[#62605d] mb-8 max-w-2xl"
+              >
+                Simplifiez la gestion de vos projets immobiliers avec notre
+                solution tout-en-un, conçue pour optimiser votre temps et
+                maximiser votre efficacité.
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 1.1 }}
+                className="flex flex-col sm:flex-row gap-4"
+              >
+                <Link href="/dashboard">
+                  <Button className="w-full sm:w-auto px-6 py-6 text-base bg-[#d9840d] hover:bg-[#c6780c] text-white">
+                    Commencer maintenant
+                    <ChevronRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+                <Button
+                  variant="outline"
+                  className="w-full sm:w-auto px-6 py-6 text-base border-[#beac93] text-[#141313] hover:bg-[#e8ebe0]"
+                  onClick={() => scrollToSection("features")}
+                >
+                  Découvrir les fonctionnalités
+                </Button>
+              </motion.div>
+            </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.8 }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+              className="relative hidden lg:block"
             >
-              <Button
-                onClick={() => scrollToSection("features")}
-                variant="secondary"
-                className="w-full sm:w-auto"
-              >
-                Découvrir
-              </Button>
+              <div className="relative w-full h-[600px]">
+                <div className="absolute top-0 right-0 w-full h-full bg-[#d9840d]/10 rounded-2xl transform rotate-3"></div>
+                <div className="absolute top-4 right-4 w-full h-full overflow-hidden rounded-2xl border-2 border-[#beac93] shadow-xl bg-white">
+                  <Image
+                    src="/images/plannikeeper-hero.png"
+                    alt="PlanniKeeper Dashboard"
+                    fill
+                    className="object-cover"
+                    priority
+                  />
+                </div>
+
+                {/* Floating elements */}
+                <motion.div
+                  className="absolute -top-6 -left-6 bg-white p-4 rounded-lg shadow-lg border border-[#beac93] z-10 flex items-center gap-3"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.5, delay: 1.2 }}
+                >
+                  <div className="w-10 h-10 bg-[#d9840d] rounded-full flex items-center justify-center text-white">
+                    <Check className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#62605d]">Cette semaine</p>
+                    <p className="font-medium">8 tâches terminées</p>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  className="absolute -bottom-6 right-12 bg-white p-4 rounded-lg shadow-lg border border-[#beac93] z-10"
+                  initial={{ y: -20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.5, delay: 1.4 }}
+                >
+                  <p className="text-xs text-[#62605d]">Progression globale</p>
+                  <div className="w-32 h-2 bg-gray-200 rounded-full mt-2">
+                    <div className="w-3/4 h-2 bg-[#d9840d] rounded-full"></div>
+                  </div>
+                  <p className="text-right text-xs font-medium mt-1">75%</p>
+                </motion.div>
+              </div>
             </motion.div>
-          </motion.div>
+          </div>
         </div>
 
-        {/* Animated blobs - taille adaptée pour mobile */}
+        {/* Decorative elements */}
+        <div className="absolute -bottom-16 left-0 w-full h-32 bg-gradient-to-b from-transparent to-[#f9f3ec]/80 z-10"></div>
         <motion.div
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 0.2, scale: 1 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.4 }}
           transition={{ duration: 1.5, delay: 0.3 }}
-          className="absolute -right-32 top-1/3 w-64 md:w-96 h-64 md:h-96 rounded-full bg-gradient-to-br from-white to-orange-200 blur-3xl z-0"
+          className="absolute -right-32 top-1/4 w-64 md:w-96 h-64 md:h-96 rounded-full bg-gradient-to-br from-[#f5f3ef] to-[#d9840d]/30 blur-3xl z-0"
         />
         <motion.div
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 0.3, scale: 1 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.3 }}
           transition={{ duration: 1.5, delay: 0.6 }}
-          className="absolute left-1/4 bottom-1/4 w-48 md:w-72 h-48 md:h-72 rounded-full bg-gradient-to-br from-orange-100 to-orange-300 blur-3xl z-0"
-        />
-        <motion.div
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 0.2, scale: 1 }}
-          transition={{ duration: 1.5, delay: 0.9 }}
-          className="absolute right-1/3 top-1/4 w-40 md:w-64 h-40 md:h-64 rounded-full bg-background blur-3xl z-0"
+          className="absolute left-1/4 bottom-1/4 w-48 md:w-72 h-48 md:h-72 rounded-full bg-gradient-to-br from-[#e8ebe0] to-[#beac93]/30 blur-3xl z-0"
         />
       </section>
 
@@ -210,7 +306,7 @@ const ModernLandingPage = () => {
       <section
         id="features"
         ref={featuresRef}
-        className="py-16 md:py-24 bg-background z-10 relative"
+        className="py-20 md:py-32 bg-[#f9f3ec] z-10 relative"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div
@@ -218,18 +314,24 @@ const ModernLandingPage = () => {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true, amount: 0.3 }}
-            className="text-center mb-12 md:mb-16"
+            className="text-center mb-16 md:mb-20"
           >
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            <div className="inline-block bg-[#e8ebe0] px-4 py-1 rounded-full mb-4 border border-[#beac93]">
+              <span className="text-[#62605d] font-medium text-sm">
+                Fonctionnalités principales
+              </span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold mb-6 text-[#141313]">
               Tout ce dont vous avez besoin
             </h2>
-            <p className="text-base md:text-lg text-gray-600 max-w-3xl mx-auto">
+            <p className="text-lg text-[#62605d] max-w-3xl mx-auto">
               Notre application offre tous les outils nécessaires pour gérer
-              efficacement vos projets immobiliers, vos tâches et vos documents.
+              efficacement vos projets immobiliers, vos tâches et vos documents,
+              le tout dans une interface intuitive et élégante.
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
               <motion.div
                 key={feature.title}
@@ -238,19 +340,24 @@ const ModernLandingPage = () => {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true, amount: 0.3 }}
                 whileHover={{ y: -10 }}
-                className="bg-background p-5 md:p-6 rounded-2xl shadow-xl transition-all duration-300 border border-gray-100"
+                className="bg-white p-8 rounded-2xl shadow-xl transition-all duration-300 border border-[#beac93] hover:border-[#d9840d]"
               >
                 <div
-                  className={`w-12 h-12 md:w-14 md:h-14 ${feature.color} rounded-2xl flex items-center justify-center text-xl md:text-2xl text-white mb-4 md:mb-5`}
+                  className={`w-16 h-16 ${feature.color} rounded-2xl flex items-center justify-center text-white mb-6`}
                 >
-                  {feature.icon}
+                  {feature.icon && (
+                    <Image
+                      src={feature.icon}
+                      alt={feature.title}
+                      width={32}
+                      height={32}
+                    />
+                  )}
                 </div>
-                <h3 className="text-lg md:text-xl font-semibold mb-2 md:mb-3">
+                <h3 className="text-xl font-semibold mb-4 text-[#141313]">
                   {feature.title}
                 </h3>
-                <p className="text-sm md:text-base text-gray-600">
-                  {feature.description}
-                </p>
+                <p className="text-[#62605d]">{feature.description}</p>
               </motion.div>
             ))}
           </div>
@@ -260,74 +367,199 @@ const ModernLandingPage = () => {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.5 }}
             viewport={{ once: true, amount: 0.3 }}
-            className="mt-12 md:mt-16 text-center"
+            className="mt-16 text-center"
           >
-            <button
-              onClick={() => scrollToSection("pricing")}
-              className="w-full sm:w-auto px-6 md:px-8 py-3 bg-black text-white rounded-xl font-semibold text-base md:text-lg transition-all duration-300 hover:bg-gray-800 hover:shadow-lg transform hover:scale-105"
-            >
-              Voir nos forfaits
-            </button>
+            <Link href="/dashboard">
+              <Button className="px-8 py-6 bg-[#d9840d] hover:bg-[#c6780c] text-white text-lg">
+                Essayer gratuitement pendant 14 jours
+              </Button>
+            </Link>
           </motion.div>
         </div>
       </section>
 
-      {/* Section Carousel adaptée pour mobile */}
-      <section className="py-16 md:py-24 w-full overflow-hidden">
+      {/* Showcase Section */}
+      <section
+        id="showcase"
+        ref={showcaseRef}
+        className="py-20 md:py-32 bg-gradient-to-b from-[#f9f3ec] to-[#f2e8d9] overflow-hidden"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 mb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true, amount: 0.3 }}
+            className="text-center mb-16"
+          >
+            <div className="inline-block bg-[#e8ebe0] px-4 py-1 rounded-full mb-4 border border-[#beac93]">
+              <span className="text-[#62605d] font-medium text-sm">
+                Interface intuitive
+              </span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold mb-6 text-[#141313]">
+              Un aperçu de PlanniKeeper
+            </h2>
+            <p className="text-lg text-[#62605d] max-w-3xl mx-auto">
+              Découvrez notre interface élégante et intuitive à travers ces
+              aperçus.
+            </p>
+          </motion.div>
+        </div>
+
+        <TiltedCarousel
+          className="mb-20"
+          images={showcaseImages}
+          speed={40}
+          tiltAngle={-5}
+          scale={1}
+          imageWidth={400}
+          imageHeight={250}
+          borderWidth={3}
+          gap={24}
+          direction="left"
+        />
+
+        <TiltedCarousel
+          images={[...showcaseImages].reverse()}
+          speed={30}
+          tiltAngle={5}
+          scale={0.9}
+          imageWidth={380}
+          imageHeight={240}
+          borderWidth={3}
+          gap={24}
+          direction="right"
+        />
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-16 md:py-24 bg-[#19140d] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true, amount: 0.3 }}
-            className="text-center mb-12 md:mb-16"
+            className="text-center mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-bold mb-3 md:mb-4">
-              Quelques Snippets
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">
+              Pourquoi les professionnels nous font confiance
             </h2>
-            <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto">
-              Découvrez notre plateforme à travers ces aperçus.
-            </p>
           </motion.div>
 
-          {/* Conteneur des carousels avec hauteur adaptive */}
-          <div
-            className="relative"
-            style={{ height: "500px", maxHeight: "70vh" }}
-          >
-            {/* Premier carousel - positionné en haut, adapté pour mobile */}
-            <div className="absolute top-0 left-0 w-full">
-              <TiltedCarousel
-                className="h-auto"
-                images={firstCarouselImages}
-                speed={40}
-                tiltAngle={-10}
-                scale={1} // Réduit pour mobile
-                imageWidth={280} // Taille réduite pour mobile
-                imageHeight={210} // Taille réduite pour mobile
-                borderWidth={2} // Plus petit pour mobile
-                pauseOnHover={false}
-                gap={20} // Gap réduit pour mobile
-                direction="left"
-              />
-            </div>
-            {/* Second carousel - positionné plus bas, adapté pour mobile */}
-            <div className="absolute top-[250px] md:top-[400px] left-0 w-full">
-              <TiltedCarousel
-                className="h-auto"
-                images={secondCarouselImages}
-                speed={30}
-                tiltAngle={-10}
-                scale={1} // Réduit pour mobile
-                imageWidth={280} // Taille réduite pour mobile
-                imageHeight={210} // Taille réduite pour mobile
-                borderWidth={2} // Plus petit pour mobile
-                pauseOnHover={false}
-                gap={20} // Gap réduit pour mobile
-                direction="left"
-              />
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              viewport={{ once: true }}
+              className="text-center"
+            >
+              <p className="text-4xl md:text-5xl font-bold text-[#d9840d] mb-2">
+                98%
+              </p>
+              <p className="text-sm md:text-base text-gray-400">
+                Satisfaction client
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+              viewport={{ once: true }}
+              className="text-center"
+            >
+              <p className="text-4xl md:text-5xl font-bold text-[#d9840d] mb-2">
+                10k+
+              </p>
+              <p className="text-sm md:text-base text-gray-400">
+                Utilisateurs actifs
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
+              viewport={{ once: true }}
+              className="text-center"
+            >
+              <p className="text-4xl md:text-5xl font-bold text-[#d9840d] mb-2">
+                30%
+              </p>
+              <p className="text-sm md:text-base text-gray-400">
+                Gain de temps
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.4 }}
+              viewport={{ once: true }}
+              className="text-center"
+            >
+              <p className="text-4xl md:text-5xl font-bold text-[#d9840d] mb-2">
+                5+
+              </p>
+              <p className="text-sm md:text-base text-gray-400">
+                Années d&apos;expérience
+              </p>
+            </motion.div>
           </div>
+        </div>
+      </section>
+
+      {/* Testimonial Section */}
+      <section className="py-20 bg-gradient-to-b from-[#19140d] to-[#211b12]">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true, amount: 0.3 }}
+            className="bg-[#2e281f] p-8 md:p-12 rounded-2xl relative overflow-hidden"
+          >
+            <div className="relative z-10">
+              <div className="flex flex-col md:flex-row gap-8 items-center">
+                <div className="w-full md:w-1/4">
+                  <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-[#d9840d] mx-auto md:mx-0">
+                    <Image
+                      src="/images/testimonial-user.jpg"
+                      alt="Témoignage utilisateur"
+                      width={128}
+                      height={128}
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
+                </div>
+
+                <div className="w-full md:w-3/4">
+                  <div className="text-[#d9840d] text-4xl mb-4">❝</div>
+                  <p className="text-white text-lg md:text-xl italic mb-6">
+                    PlanniKeeper a transformé la façon dont nous gérons notre
+                    portefeuille immobilier. L&apos;interface intuitive et les
+                    fonctionnalités de suivi des tâches nous ont permis
+                    d&apos;augmenter notre productivité de 40% tout en réduisant
+                    les erreurs administratives.
+                  </p>
+                  <div>
+                    <p className="text-white font-bold">Sophie Martin</p>
+                    <p className="text-[#a2a09d] text-sm">
+                      Directrice, Immobilier Premium
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="absolute top-0 left-0 w-full h-full opacity-10">
+              <div className="absolute -right-20 -top-20 w-64 h-64 rounded-full bg-[#d9840d] blur-3xl"></div>
+              <div className="absolute -left-20 -bottom-20 w-64 h-64 rounded-full bg-[#d9840d] blur-3xl"></div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
@@ -335,7 +567,7 @@ const ModernLandingPage = () => {
       <section
         id="pricing"
         ref={pricingRef}
-        className="py-16 md:py-24 bg-black text-white"
+        className="py-20 md:py-32 bg-[#f9f3ec]"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div
@@ -343,17 +575,23 @@ const ModernLandingPage = () => {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true, amount: 0.3 }}
-            className="text-center mb-12 md:mb-16"
+            className="text-center mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-bold mb-3 md:mb-4">
-              Memberships levels
+            <div className="inline-block bg-[#e8ebe0] px-4 py-1 rounded-full mb-4 border border-[#beac93]">
+              <span className="text-[#62605d] font-medium text-sm">
+                Tarifs flexibles
+              </span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold mb-6 text-[#141313]">
+              Choisissez votre formule
             </h2>
-            <p className="text-base md:text-lg text-gray-400 max-w-3xl mx-auto">
-              Choose a plan that&apos;s right for you.
+            <p className="text-lg text-[#62605d] max-w-3xl mx-auto">
+              Des tarifs adaptés à tous les besoins, avec la possibilité
+              d&apos;évoluer à mesure que votre activité se développe.
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
             {plans.map((plan, index) => (
               <motion.div
                 key={plan.name}
@@ -363,26 +601,33 @@ const ModernLandingPage = () => {
                 viewport={{ once: true, amount: 0.3 }}
                 whileHover={{ y: -10, scale: 1.02 }}
                 className={`rounded-2xl overflow-hidden transition-all duration-300 relative ${
-                  plan.popular ? "border-2 border-orange-500" : ""
+                  plan.popular
+                    ? `border-2 border-[${plan.borderColor}]`
+                    : "border border-[#beac93]"
                 }`}
               >
                 <div
-                  className={`p-6 md:p-8 bg-gradient-to-br ${plan.color} ${plan.textColor}`}
+                  className={`p-8 md:p-10 bg-gradient-to-br ${plan.color} ${plan.textColor}`}
                 >
                   {plan.popular && (
-                    <span className="absolute top-2 right-2 md:top-4 md:right-4 bg-orange-500 text-white text-xs font-bold px-2 py-1 md:px-3 md:py-1 rounded-full">
-                      POPULAIRE
+                    <span className="absolute top-4 right-4 bg-[#e36002] text-white text-xs font-bold px-3 py-1 rounded-full">
+                      RECOMMANDÉ
                     </span>
                   )}
 
-                  <h3 className="text-xl md:text-2xl font-semibold mb-2">
-                    {plan.name}
-                  </h3>
-                  <p className="text-3xl md:text-5xl font-bold mb-4">
-                    {plan.price}
-                  </p>
+                  <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                  <p className="text-[#62605d] mb-6">{plan.description}</p>
 
-                  <ul className="space-y-2 md:space-y-3 mb-6 md:mb-8">
+                  <div className="flex items-end mb-8">
+                    <span className="text-4xl md:text-5xl font-bold">
+                      {plan.price}
+                    </span>
+                    <span className="text-lg text-[#62605d] ml-1">
+                      {plan.period}
+                    </span>
+                  </div>
+
+                  <ul className="space-y-4 mb-8">
                     {plan.features.map((feature, i) => (
                       <motion.li
                         key={i}
@@ -390,28 +635,18 @@ const ModernLandingPage = () => {
                         whileInView={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.3, delay: 0.5 + i * 0.1 }}
                         viewport={{ once: true }}
-                        className="flex items-center gap-2 text-sm md:text-base"
+                        className="flex items-start gap-3"
                       >
-                        <svg
-                          className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clipRule="evenodd"
-                          ></path>
-                        </svg>
-                        {feature}
+                        <Check className="w-5 h-5 text-[#d9840d] flex-shrink-0 mt-0.5" />
+                        <span>{feature}</span>
                       </motion.li>
                     ))}
                   </ul>
 
                   <button
-                    className={`w-full py-2 md:py-3 rounded-xl font-bold text-base md:text-lg ${plan.buttonColor} transition-all duration-300 hover:shadow-lg transform hover:scale-105`}
+                    className={`w-full py-4 rounded-xl font-bold text-base ${plan.buttonColor} transition-all duration-300 hover:shadow-lg`}
                   >
-                    start <span className="ml-2">↗</span>
+                    Choisir {plan.name}
                   </button>
                 </div>
               </motion.div>
@@ -421,93 +656,217 @@ const ModernLandingPage = () => {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-16 md:py-20 bg-background">
+      <section
+        id="faq"
+        ref={faqRef}
+        className="py-20 md:py-32 bg-gradient-to-b from-[#f9f3ec] to-[#f5f3ef]"
+      >
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true, amount: 0.3 }}
-            className="text-center mb-10 md:mb-12"
+            className="text-center mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-bold mb-2 md:mb-4">
-              Frequently asked
+            <div className="inline-block bg-[#e8ebe0] px-4 py-1 rounded-full mb-4 border border-[#beac93]">
+              <span className="text-[#62605d] font-medium text-sm">
+                Questions fréquentes
+              </span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold mb-6 text-[#141313]">
+              Besoin d&apos;aide ?
             </h2>
-            <h2 className="text-3xl md:text-4xl font-bold dot-pattern">
-              questions.
-            </h2>
+            <p className="text-lg text-[#62605d] max-w-3xl mx-auto">
+              Voici les réponses aux questions les plus fréquemment posées par
+              nos utilisateurs.
+            </p>
           </motion.div>
 
           <motion.div
-            className="space-y-4 md:space-y-6"
+            className="space-y-6 md:space-y-8"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true, amount: 0.3 }}
           >
-            <FaqItem
-              question="Why not just hire a full-time design engineer?"
-              answer="Hiring a full-time employee comes with overhead costs like benefits, onboarding, and management. Our service provides specialized expertise on-demand without the commitment of a full-time hire, allowing you to scale resources up or down as needed."
-            />
+            {faqs.map((faq, index) => (
+              <FaqItem
+                key={index}
+                question={faq.question}
+                answer={faq.answer}
+              />
+            ))}
+          </motion.div>
 
-            <FaqItem
-              question="Is there a limit to how many requests I can have?"
-              answer="This depends on your plan. The Standard plan allows one feature request at a time, while the Goblin+ plan enables multiple parallel requests for faster development and implementation."
-            />
-
-            <FaqItem
-              question="How long will it take to build a full stack feature?"
-              answer="Timeframes vary depending on the complexity of the feature. Simple features might take days, while more complex ones could take weeks. We provide estimates before beginning work and keep you updated throughout the process."
-            />
-
-            <FaqItem
-              question="What if I want a different tech stack?"
-              answer="We're flexible and can work with various tech stacks. During our initial consultation, we'll discuss your preferences and recommend the best approach for your specific needs and long-term goals."
-            />
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            viewport={{ once: true, amount: 0.3 }}
+            className="mt-16 text-center"
+          >
+            <p className="text-lg text-[#62605d] mb-6">
+              Vous avez d&apos;autres questions ? Contactez-nous directement.
+            </p>
+            <Button
+              variant="outline"
+              className="px-8 py-4 border-[#beac93] text-[#141313] hover:bg-[#e8ebe0] text-base"
+            >
+              Contacter le support
+            </Button>
           </motion.div>
         </div>
       </section>
 
+      {/* CTA Section */}
+      <section className="py-20 bg-[#d9840d]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="text-center md:text-left">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                Prêt à optimiser votre gestion immobilière ?
+              </h2>
+              <p className="text-lg text-white/90 max-w-2xl">
+                Rejoignez des milliers de professionnels qui ont déjà transformé
+                leur façon de travailler.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link href="/dashboard">
+                <Button className="px-8 py-4 bg-white text-[#d9840d] hover:bg-white/90 text-base font-bold">
+                  Commencer gratuitement
+                </Button>
+              </Link>
+              <Button
+                variant="outline"
+                className="px-8 py-4 border-white text-white hover:bg-white/10 text-base"
+              >
+                Voir une démo
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
-      <footer className="py-10 md:py-12 bg-gray-900 text-white">
+      <footer className="py-16 bg-[#19140d] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex flex-col md:flex-row justify-center md:justify-between items-center">
-            <div className="text-2xl md:text-3xl font-bold tracking-widest font-mono mb-6 md:mb-0">
-              plannikeeper
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+            <div className="md:col-span-2">
+              <h3 className="text-2xl font-bold mb-4 font-mono">
+                plannikeeper
+              </h3>
+              <p className="text-gray-400 mb-4 max-w-md">
+                La solution complète pour la gestion immobilière
+                professionnelle. Simplifiez vos opérations et optimisez votre
+                temps.
+              </p>
+              <div className="flex space-x-4">
+                <a href="#" className="text-gray-400 hover:text-[#d9840d]">
+                  <svg
+                    className="w-6 h-6"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"
+                      clipRule="evenodd"
+                    ></path>
+                  </svg>
+                </a>
+                <a href="#" className="text-gray-400 hover:text-[#d9840d]">
+                  <svg
+                    className="w-6 h-6"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84"></path>
+                  </svg>
+                </a>
+                <a href="#" className="text-gray-400 hover:text-[#d9840d]">
+                  <svg
+                    className="w-6 h-6"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z"
+                      clipRule="evenodd"
+                    ></path>
+                  </svg>
+                </a>
+              </div>
             </div>
 
-            <div className="flex flex-wrap justify-center gap-4 md:gap-6 lg:gap-12">
-              <a
-                href="#"
-                className="hover:text-orange-400 transition-colors text-sm md:text-base"
-              >
-                Accueil
-              </a>
-              <a
-                href="#"
-                className="hover:text-orange-400 transition-colors text-sm md:text-base"
-              >
-                Fonctionnalités
-              </a>
-              <a
-                href="#"
-                className="hover:text-orange-400 transition-colors text-sm md:text-base"
-              >
-                Tarifs
-              </a>
-              <a
-                href="#"
-                className="hover:text-orange-400 transition-colors text-sm md:text-base"
-              >
-                Contact
-              </a>
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Produit</h3>
+              <ul className="space-y-2">
+                <li>
+                  <a
+                    href="#features"
+                    className="text-gray-400 hover:text-[#d9840d]"
+                  >
+                    Fonctionnalités
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#pricing"
+                    className="text-gray-400 hover:text-[#d9840d]"
+                  >
+                    Tarifs
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-gray-400 hover:text-[#d9840d]">
+                    Témoignages
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-gray-400 hover:text-[#d9840d]">
+                    Mises à jour
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Entreprise</h3>
+              <ul className="space-y-2">
+                <li>
+                  <a href="#" className="text-gray-400 hover:text-[#d9840d]">
+                    À propos
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-gray-400 hover:text-[#d9840d]">
+                    Contact
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-gray-400 hover:text-[#d9840d]">
+                    Careers
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-gray-400 hover:text-[#d9840d]">
+                    Blog
+                  </a>
+                </li>
+              </ul>
             </div>
           </div>
 
-          <div className="border-t border-gray-800 mt-6 md:mt-8 pt-6 md:pt-8 text-center text-gray-400 text-sm">
-            <p>
-              &copy; {new Date().getFullYear()} Plannikeeper. All rights
-              reserved.
+          <div className="border-t border-gray-800 pt-8 mt-8 text-center">
+            <p className="text-gray-400 text-sm">
+              &copy; {new Date().getFullYear()} PlanniKeeper. Tous droits
+              réservés.
             </p>
           </div>
         </div>
@@ -516,7 +875,7 @@ const ModernLandingPage = () => {
   );
 };
 
-// FAQ Item Component avec adaptation mobile
+// FAQ Item Component
 type FaqItemProps = {
   question: string;
   answer: string;
@@ -533,28 +892,18 @@ const FaqItem = ({ question, answer }: FaqItemProps) => {
       animate={isInView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.5 }}
       ref={contentRef}
-      className="border-b border-gray-200 pb-4 md:pb-6"
+      className="border border-[#beac93] rounded-xl overflow-hidden"
     >
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex justify-between items-center w-full text-left focus:outline-none"
+        className="flex justify-between items-center w-full text-left p-6 focus:outline-none bg-white"
       >
-        <h3 className="text-lg md:text-xl font-semibold pr-4">{question}</h3>
-        <svg
-          className={`w-5 h-5 md:w-6 md:h-6 flex-shrink-0 transform transition-transform ${
-            isOpen ? "rotate-180" : ""
-          }`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+        <h3 className="text-lg md:text-xl font-medium pr-8">{question}</h3>
+        <span
+          className={`transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
+          <ChevronRight className="w-5 h-5 transform rotate-90" />
+        </span>
       </button>
 
       <AnimatePresence>
@@ -564,11 +913,9 @@ const FaqItem = ({ question, answer }: FaqItemProps) => {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="overflow-hidden"
+            className="overflow-hidden bg-[#f5f3ef]"
           >
-            <p className="text-sm md:text-base text-gray-600 mt-3 md:mt-4">
-              {answer}
-            </p>
+            <p className="p-6 text-[#62605d]">{answer}</p>
           </motion.div>
         )}
       </AnimatePresence>

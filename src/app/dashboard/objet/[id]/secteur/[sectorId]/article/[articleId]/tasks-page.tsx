@@ -1290,9 +1290,9 @@ export default function TasksPage({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
                 transition={{ duration: 0.2 }}
-                className="flex-1 overflow-auto p-3 sm:p-6"
+                className="flex-1 overflow-auto p-3 sm:p-6 pb-28 sm:pb-6" // Ajout de padding-bottom important pour mobile
               >
-                <div className="max-w-3xl mx-auto h-max flex flex-col">
+                <div className="max-w-3xl mx-auto flex flex-col">
                   {/* Entête avec le nom de la tâche et le statut - pour desktop seulement */}
                   {!isMobileView && (
                     <div className="flex items-center justify-between mb-4">
@@ -1635,8 +1635,8 @@ export default function TasksPage({
                     )}
                   </div>
 
-                  {/* Boutons d'action en bas */}
-                  <div className="mt-auto pt-4 flex flex-col sm:flex-row justify-between gap-2 sm:gap-0">
+                  {/* Boutons d'action en bas - version desktop */}
+                  <div className="hidden sm:flex pt-4 justify-between gap-2">
                     <div className="flex gap-2">
                       {selectedTask.status !== "completed" && (
                         <button
@@ -1649,7 +1649,7 @@ export default function TasksPage({
                             }
                           }}
                           disabled={!selectedTask.id}
-                          className="flex-1 sm:flex-none px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-[color:var(--primary-foreground)] bg-[color:var(--primary)] hover:bg-opacity-90 rounded-lg transition-colors disabled:opacity-50"
+                          className="px-4 py-2 text-sm font-medium text-[color:var(--primary-foreground)] bg-[color:var(--primary)] hover:bg-opacity-90 rounded-lg transition-colors disabled:opacity-50"
                         >
                           Marquer comme terminée
                         </button>
@@ -1665,7 +1665,7 @@ export default function TasksPage({
                             }
                           }}
                           disabled={!selectedTask.id}
-                          className="flex-1 sm:flex-none px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-[color:var(--secondary-foreground)] bg-[color:var(--secondary)] hover:bg-opacity-90 rounded-lg transition-colors disabled:opacity-50"
+                          className="px-4 py-2 text-sm font-medium text-[color:var(--secondary-foreground)] bg-[color:var(--secondary)] hover:bg-opacity-90 rounded-lg transition-colors disabled:opacity-50"
                         >
                           Rouvrir la tâche
                         </button>
@@ -1678,7 +1678,7 @@ export default function TasksPage({
                           // Add logic to open the edit form
                           alert("Fonctionnalité Modifier à implémenter");
                         }}
-                        className="flex-1 sm:flex-none px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-[color:var(--secondary-foreground)] bg-[color:var(--secondary)] hover:bg-opacity-90 rounded-lg transition-colors"
+                        className="px-4 py-2 text-sm font-medium text-[color:var(--secondary-foreground)] bg-[color:var(--secondary)] hover:bg-opacity-90 rounded-lg transition-colors"
                       >
                         Modifier
                       </button>
@@ -1689,13 +1689,68 @@ export default function TasksPage({
                           }
                         }}
                         disabled={!selectedTask.id}
-                        className="flex-1 sm:flex-none px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-[color:var(--destructive-foreground)] bg-[color:var(--destructive)] hover:bg-opacity-90 rounded-lg transition-colors disabled:opacity-50"
+                        className="px-4 py-2 text-sm font-medium text-[color:var(--destructive-foreground)] bg-[color:var(--destructive)] hover:bg-opacity-90 rounded-lg transition-colors disabled:opacity-50"
                       >
                         Supprimer
                       </button>
                     </div>
                   </div>
                 </div>
+
+                {/* Barre d'actions fixe pour mobile */}
+                {isMobileView && selectedTask && (
+                  <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-3 z-20 flex gap-2">
+                    {selectedTask.status !== "completed" ? (
+                      <button
+                        onClick={() => {
+                          if (selectedTask.id) {
+                            handleTaskStatusChange(
+                              selectedTask.id,
+                              "completed"
+                            );
+                          }
+                        }}
+                        disabled={!selectedTask.id}
+                        className="flex-1 px-3 py-2 text-xs font-medium text-[color:var(--primary-foreground)] bg-[color:var(--primary)] rounded-lg"
+                      >
+                        Terminer
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          if (selectedTask.id) {
+                            handleTaskStatusChange(selectedTask.id, "pending");
+                          }
+                        }}
+                        disabled={!selectedTask.id}
+                        className="flex-1 px-3 py-2 text-xs font-medium text-[color:var(--secondary-foreground)] bg-[color:var(--secondary)] rounded-lg"
+                      >
+                        Rouvrir
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() =>
+                        alert("Fonctionnalité Modifier à implémenter")
+                      }
+                      className="flex-1 px-3 py-2 text-xs font-medium text-[color:var(--secondary-foreground)] bg-[color:var(--secondary)] rounded-lg"
+                    >
+                      Modifier
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        if (selectedTask.id) {
+                          handleTaskDelete(selectedTask.id);
+                        }
+                      }}
+                      disabled={!selectedTask.id}
+                      className="flex-1 px-3 py-2 text-xs font-medium text-[color:var(--destructive-foreground)] bg-[color:var(--destructive)] rounded-lg"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                )}
               </motion.div>
             ) : (
               <motion.div
