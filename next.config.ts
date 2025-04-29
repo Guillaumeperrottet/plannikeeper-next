@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "10mb",
     },
   },
-  // Ajout d'une configuration CORS spécifique pour Next.js
+  // Configuration CORS améliorée pour Next.js
   async headers() {
     return [
       {
@@ -32,6 +32,15 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // Amélioration des paramètres de débogage
+  logging:
+    process.env.NODE_ENV === "development"
+      ? {
+          fetches: {
+            fullUrl: true,
+          },
+        }
+      : undefined,
 };
 
 export default nextConfig;

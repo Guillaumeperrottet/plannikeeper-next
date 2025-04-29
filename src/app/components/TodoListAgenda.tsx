@@ -339,7 +339,7 @@ export default function TodoListAgenda() {
           >
             <GripHorizontal
               size={20}
-              className="text-[color:var(--muted-foreground)]"
+              className="hidden sm:block text-[color:var(--muted-foreground)]"
             />
           </div>
           <h2 className="text-xl font-semibold hidden sm:block">
