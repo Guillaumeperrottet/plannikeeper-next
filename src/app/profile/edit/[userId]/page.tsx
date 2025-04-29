@@ -1,3 +1,4 @@
+// src/app/profile/users/[userId]/edit/page.tsx
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
@@ -12,9 +13,11 @@ import Image from "next/image";
 export default async function EditUserPage({
   params,
 }: {
-  params: { userId: string };
+  // Typage mis à jour : params est une Promise qui résout { userId: string }
+  params: Promise<{ userId: string }>;
 }) {
-  const { userId } = params;
+  // Récupération de l'userId depuis la promesse
+  const { userId } = await params;
   const currentUser = await getUser();
 
   // Vérifiez que l'utilisateur est connecté

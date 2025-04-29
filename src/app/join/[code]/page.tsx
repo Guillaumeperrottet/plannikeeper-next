@@ -1,3 +1,4 @@
+// src/app/join/[code]/page.tsx
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
@@ -7,9 +8,11 @@ import { getAccessibleObjects } from "@/lib/auth-session";
 export default async function JoinPage({
   params,
 }: {
-  params: { code: string };
+  // Typage mis à jour : params est une Promise qui résout { code: string }
+  params: Promise<{ code: string }>;
 }) {
-  const { code } = params;
+  // Récupération du code depuis la promesse
+  const { code } = await params;
   const user = await getUser();
 
   // Vérifiez si le code est valide
@@ -17,9 +20,7 @@ export default async function JoinPage({
     where: {
       code,
       isUsed: false,
-      expiresAt: {
-        gt: new Date(),
-      },
+      expiresAt: { gt: new Date() },
     },
     include: { organization: true },
   });
@@ -100,7 +101,6 @@ export default async function JoinPage({
   }
 
   // Vérifier et supprimer toute appartenance existante à une organisation
-  // (résout l'erreur de contrainte unique)
   const currentOrgUser = await prisma.organizationUser.findFirst({
     where: { userId: user.id },
   });
@@ -133,7 +133,6 @@ export default async function JoinPage({
       user.id,
       invitation.organizationId
     );
-
     if (objets.length > 0) {
       await prisma.objectAccess.createMany({
         data: objets.map((obj) => ({
