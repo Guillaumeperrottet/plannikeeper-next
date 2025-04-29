@@ -211,14 +211,14 @@ export default function TaskFormWithDocuments({
 
   return (
     <motion.div
-      className="max-w-3xl mx-auto bg-[color:var(--card)] rounded-lg overflow-hidden shadow-lg border border-[color:var(--border)]"
+      className="w-full max-w-3xl mx-auto bg-[color:var(--card)] rounded-lg overflow-hidden shadow-lg border border-[color:var(--border)]"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="flex justify-between items-center bg-[color:var(--muted)] px-6 py-4 border-b border-[color:var(--border)]">
-        <h2 className="text-xl font-semibold text-[color:var(--foreground)]">
+      <div className="flex justify-between items-center bg-[color:var(--muted)] px-3 sm:px-6 py-3 sm:py-4 border-b border-[color:var(--border)]">
+        <h2 className="text-base sm:text-xl font-semibold text-[color:var(--foreground)]">
           {task?.id ? "Modifier la tâche" : "Nouvelle tâche"}
         </h2>
         <button
@@ -230,19 +230,22 @@ export default function TaskFormWithDocuments({
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-6">
+      <form
+        onSubmit={handleSubmit}
+        className="p-3 sm:p-6 overflow-y-auto max-h-[calc(100vh-8rem)]"
+      >
         {formError && (
-          <div className="mb-6 flex items-center gap-2 p-3 bg-[color:var(--destructive-background)] border border-[color:var(--destructive-border)] rounded-lg text-[color:var(--destructive-foreground)]">
-            <AlertCircle size={16} />
+          <div className="mb-4 flex items-center gap-2 p-2 sm:p-3 bg-[color:var(--destructive-background)] border border-[color:var(--destructive-border)] rounded-lg text-[color:var(--destructive-foreground)] text-xs sm:text-sm">
+            <AlertCircle size={14} className="sm:w-4 sm:h-4" />
             <span>{formError}</span>
           </div>
         )}
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           <div>
             <label
               htmlFor="name"
-              className="block text-sm font-medium mb-2 text-[color:var(--foreground)]"
+              className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-[color:var(--foreground)]"
             >
               Nom de la tâche *
             </label>
@@ -253,7 +256,7 @@ export default function TaskFormWithDocuments({
               value={formData.name}
               onChange={handleChange}
               placeholder="Saisir le nom de la tâche"
-              className="w-full px-4 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
+              className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
               required
             />
           </div>
@@ -261,7 +264,7 @@ export default function TaskFormWithDocuments({
           <div>
             <label
               htmlFor="description"
-              className="block text-sm font-medium mb-2 text-[color:var(--foreground)]"
+              className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-[color:var(--foreground)]"
             >
               Description
             </label>
@@ -271,16 +274,16 @@ export default function TaskFormWithDocuments({
               value={formData.description || ""}
               onChange={handleChange}
               placeholder="Description détaillée (optionnelle)"
-              className="w-full px-4 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
+              className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
               rows={3}
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
             <div>
               <label
                 htmlFor="status"
-                className="block text-sm font-medium mb-2 text-[color:var(--foreground)]"
+                className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-[color:var(--foreground)]"
               >
                 Statut
               </label>
@@ -289,7 +292,7 @@ export default function TaskFormWithDocuments({
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
+                className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
               >
                 <option value="pending">À faire</option>
                 <option value="in_progress">En cours</option>
@@ -301,7 +304,7 @@ export default function TaskFormWithDocuments({
             <div>
               <label
                 htmlFor="taskType"
-                className="block text-sm font-medium mb-2 text-[color:var(--foreground)]"
+                className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-[color:var(--foreground)]"
               >
                 Type de tâche
               </label>
@@ -311,17 +314,17 @@ export default function TaskFormWithDocuments({
                 name="taskType"
                 value={formData.taskType || ""}
                 onChange={handleChange}
-                placeholder="Ex: Maintenance, Nettoyage, Réparation..."
-                className="w-full px-4 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
+                placeholder="Ex: Maintenance, Nettoyage..."
+                className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
             <div>
               <label
                 htmlFor="realizationDate"
-                className="block text-sm font-medium mb-2 text-[color:var(--foreground)]"
+                className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-[color:var(--foreground)]"
               >
                 Date de réalisation prévue
               </label>
@@ -338,11 +341,11 @@ export default function TaskFormWithDocuments({
                       : ""
                   }
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
                 />
                 <Calendar
-                  size={16}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[color:var(--muted-foreground)] pointer-events-none"
+                  size={14}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[color:var(--muted-foreground)] pointer-events-none sm:w-4 sm:h-4"
                 />
               </div>
             </div>
@@ -350,7 +353,7 @@ export default function TaskFormWithDocuments({
             <div>
               <label
                 htmlFor="assignedToId"
-                className="block text-sm font-medium mb-2 text-[color:var(--foreground)]"
+                className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-[color:var(--foreground)]"
               >
                 Attribuer à
               </label>
@@ -359,7 +362,7 @@ export default function TaskFormWithDocuments({
                 name="assignedToId"
                 value={formData.assignedToId || ""}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
+                className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
               >
                 <option value="">Non assignée</option>
                 {users.map((user) => (
@@ -371,43 +374,43 @@ export default function TaskFormWithDocuments({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6 items-end">
             <div>
               <label
                 htmlFor="color"
-                className="block text-sm font-medium mb-2 text-[color:var(--foreground)]"
+                className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-[color:var(--foreground)]"
               >
                 Couleur
               </label>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <input
                   type="color"
                   id="color"
                   name="color"
                   value={formData.color || defaultColor}
                   onChange={handleColorChange}
-                  className="w-12 h-12 p-1 border-0 rounded-md cursor-pointer"
+                  className="w-10 h-10 sm:w-12 sm:h-12 p-1 border-0 rounded-md cursor-pointer"
                 />
                 <div
-                  className="w-12 h-8 rounded border border-[color:var(--border)]"
+                  className="w-10 h-6 sm:w-12 sm:h-8 rounded border border-[color:var(--border)]"
                   style={{ backgroundColor: formData.color || defaultColor }}
                 />
               </div>
             </div>
 
             <div className="col-span-2">
-              <div className="flex items-center h-12">
+              <div className="flex items-center h-10 sm:h-12">
                 <input
                   type="checkbox"
                   id="recurring"
                   name="recurring"
                   checked={formData.recurring}
                   onChange={handleCheckboxChange}
-                  className="h-5 w-5 text-[color:var(--primary)] rounded focus:ring-[color:var(--ring)]"
+                  className="h-4 w-4 sm:h-5 sm:w-5 text-[color:var(--primary)] rounded focus:ring-[color:var(--ring)]"
                 />
                 <label
                   htmlFor="recurring"
-                  className="ml-2 block text-sm font-medium text-[color:var(--foreground)]"
+                  className="ml-2 block text-xs sm:text-sm font-medium text-[color:var(--foreground)]"
                 >
                   Tâche récurrente
                 </label>
@@ -416,12 +419,12 @@ export default function TaskFormWithDocuments({
           </div>
 
           {isRecurring && (
-            <div className="p-5 bg-[color:var(--info-background)] rounded-lg border border-[color:var(--info-border)] space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-3 sm:p-5 bg-[color:var(--info-background)] rounded-lg border border-[color:var(--info-border)] space-y-3 sm:space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
                 <div>
                   <label
                     htmlFor="period"
-                    className="block text-sm font-medium mb-2 text-[color:var(--foreground)]"
+                    className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-[color:var(--foreground)]"
                   >
                     Périodicité
                   </label>
@@ -430,7 +433,7 @@ export default function TaskFormWithDocuments({
                     name="period"
                     value={formData.period || "weekly"}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
+                    className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
                   >
                     <option value="daily">Quotidienne</option>
                     <option value="weekly">Hebdomadaire</option>
@@ -443,7 +446,7 @@ export default function TaskFormWithDocuments({
                 <div>
                   <label
                     htmlFor="endDate"
-                    className="block text-sm font-medium mb-2 text-[color:var(--foreground)]"
+                    className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-[color:var(--foreground)]"
                   >
                     Date de fin (optionnelle)
                   </label>
@@ -460,11 +463,11 @@ export default function TaskFormWithDocuments({
                           : ""
                       }
                       onChange={handleChange}
-                      className="w-full px-4 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
+                      className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
                     />
                     <Calendar
-                      size={16}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[color:var(--muted-foreground)] pointer-events-none"
+                      size={14}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[color:var(--muted-foreground)] pointer-events-none sm:w-4 sm:h-4"
                     />
                   </div>
                 </div>
@@ -476,7 +479,7 @@ export default function TaskFormWithDocuments({
             <div>
               <label
                 htmlFor="executantComment"
-                className="block text-sm font-medium mb-2 text-[color:var(--foreground)]"
+                className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-[color:var(--foreground)]"
               >
                 Commentaire d&apos;exécution
               </label>
@@ -486,7 +489,7 @@ export default function TaskFormWithDocuments({
                 value={formData.executantComment || ""}
                 onChange={handleChange}
                 placeholder="Commentaires sur l'exécution de la tâche"
-                className="w-full px-4 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
+                className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
                 rows={2}
               />
             </div>
@@ -494,11 +497,11 @@ export default function TaskFormWithDocuments({
 
           {/* Section pour l'upload de documents */}
           <div>
-            <label className="block text-sm font-medium mb-2 text-[color:var(--foreground)]">
+            <label className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-[color:var(--foreground)]">
               Documents
             </label>
             <div
-              className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+              className={`border-2 border-dashed rounded-lg p-3 sm:p-4 text-center transition-colors ${
                 isDragging
                   ? "border-blue-500 bg-blue-50 bg-opacity-30"
                   : "border-[color:var(--border)]"
@@ -517,19 +520,19 @@ export default function TaskFormWithDocuments({
                 accept=".pdf,image/*"
               />
 
-              <div className="flex flex-col items-center justify-center py-4">
-                <Paperclip className="h-10 w-10 text-[color:var(--muted-foreground)] mb-2" />
-                <p className="text-sm text-[color:var(--muted-foreground)] mb-2">
+              <div className="flex flex-col items-center justify-center py-2 sm:py-4">
+                <Paperclip className="h-8 w-8 sm:h-10 sm:w-10 text-[color:var(--muted-foreground)] mb-2" />
+                <p className="text-xs sm:text-sm text-[color:var(--muted-foreground)] mb-2">
                   Glissez-déposez des fichiers ici, ou
                 </p>
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="px-4 py-2 text-sm text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                  className="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
                 >
                   Sélectionnez des fichiers
                 </button>
-                <p className="text-xs text-[color:var(--muted-foreground)] mt-2">
+                <p className="text-[10px] sm:text-xs text-[color:var(--muted-foreground)] mt-2">
                   PDF, JPG, PNG, GIF (max. 10MB)
                 </p>
               </div>
@@ -537,9 +540,11 @@ export default function TaskFormWithDocuments({
 
             {/* Liste des fichiers à uploader */}
             {documents.length > 0 && (
-              <div className="mt-4 space-y-2">
-                <h4 className="text-sm font-medium">Fichiers à télécharger:</h4>
-                <div className="max-h-40 overflow-y-auto pr-2">
+              <div className="mt-3 sm:mt-4 space-y-2">
+                <h4 className="text-xs sm:text-sm font-medium">
+                  Fichiers à télécharger:
+                </h4>
+                <div className="max-h-32 sm:max-h-40 overflow-y-auto pr-2">
                   {documents.map((file, index) => (
                     <div
                       key={`${file.name}-${index}`}
@@ -547,18 +552,26 @@ export default function TaskFormWithDocuments({
                     >
                       <div className="flex items-center gap-2 truncate">
                         {file.type.startsWith("image/") ? (
-                          <ImageIcon size={16} className="text-blue-500" />
+                          <ImageIcon
+                            size={14}
+                            className="text-blue-500 sm:w-4 sm:h-4"
+                          />
                         ) : (
-                          <FileText size={16} className="text-red-500" />
+                          <FileText
+                            size={14}
+                            className="text-red-500 sm:w-4 sm:h-4"
+                          />
                         )}
-                        <span className="text-sm truncate">{file.name}</span>
+                        <span className="text-xs sm:text-sm truncate max-w-[180px] sm:max-w-[250px]">
+                          {file.name}
+                        </span>
                       </div>
                       <button
                         type="button"
                         onClick={() => removeDocument(index)}
                         className="text-red-500 hover:text-red-700"
                       >
-                        <X size={16} />
+                        <X size={14} className="sm:w-4 sm:h-4" />
                       </button>
                     </div>
                   ))}
@@ -567,11 +580,11 @@ export default function TaskFormWithDocuments({
             )}
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-[color:var(--border)]">
+          <div className="flex justify-end gap-2 sm:gap-3 pt-4 border-t border-[color:var(--border)]">
             <button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2.5 border border-[color:var(--border)] rounded-lg text-sm font-medium hover:bg-[color:var(--muted)] transition-colors text-[color:var(--foreground)]"
+              className="px-3 py-2 sm:px-4 sm:py-2.5 border border-[color:var(--border)] rounded-lg text-xs sm:text-sm font-medium hover:bg-[color:var(--muted)] transition-colors text-[color:var(--foreground)]"
               disabled={isLoading}
             >
               Annuler
@@ -580,15 +593,15 @@ export default function TaskFormWithDocuments({
             <button
               type="submit"
               disabled={isLoading}
-              className="px-4 py-2.5 bg-[color:var(--primary)] hover:bg-opacity-90 text-[color:var(--primary-foreground)] rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              className="px-3 py-2 sm:px-4 sm:py-2.5 bg-[color:var(--primary)] hover:bg-opacity-90 text-[color:var(--primary-foreground)] rounded-lg text-xs sm:text-sm font-medium transition-colors disabled:opacity-50"
             >
               {isLoading
                 ? task?.id
                   ? "Mise à jour..."
                   : "Création..."
                 : task?.id
-                ? "Mettre à jour"
-                : "Créer la tâche"}
+                  ? "Mettre à jour"
+                  : "Créer la tâche"}
             </button>
           </div>
         </div>

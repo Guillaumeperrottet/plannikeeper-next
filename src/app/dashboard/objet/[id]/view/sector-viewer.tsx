@@ -11,6 +11,7 @@ import {
   Layers,
   Maximize2,
   Minimize2,
+  Menu,
 } from "lucide-react";
 import ImageWithArticles from "@/app/components/ImageWithArticles";
 
@@ -46,7 +47,23 @@ export default function SectorViewer({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const viewerRef = useRef<HTMLDivElement>(null);
+
+  // Détection du mode mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => {
+      window.removeEventListener("resize", checkMobile);
+    };
+  }, []);
 
   // Sélectionner le premier secteur au chargement si aucun n'est sélectionné
   useEffect(() => {
@@ -84,7 +101,9 @@ export default function SectorViewer({
     const newIndex = sectors.findIndex((s) => s.id === sector.id);
     setSelectedSector(sector);
     setSelectedIndex(newIndex);
+    setIsMobileMenuOpen(false); // Ferme le menu mobile après la sélection
   };
+
   const navigateToPreviousSector = useCallback(() => {
     if (sectors.length <= 1) return;
     const newIndex = (selectedIndex - 1 + sectors.length) % sectors.length;
@@ -161,6 +180,10 @@ export default function SectorViewer({
     };
   }, [isFullscreen]);
 
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
   return (
     <div
       ref={viewerRef}
@@ -169,33 +192,56 @@ export default function SectorViewer({
       }`}
     >
       {!isFullscreen && (
-        <div className="p-4 flex justify-center items-center relative bg-transparent">
-          <div className="relative">
-            <DropdownMenu
-              items={sectors.map((s) => ({ id: s.id, label: s.name }))}
-              selectedId={selectedSector?.id}
-              onSelect={(id) => {
-                const sector = sectors.find((s) => s.id === id);
-                if (sector) handleSectorChange(sector);
-              }}
-              label={
-                selectedSector ? selectedSector.name : "Sélectionner un secteur"
-              }
-            />
-          </div>
+        <div className="p-2 md:p-4 flex flex-col md:flex-row justify-between md:justify-center items-center relative bg-transparent">
+          {/* Menu hamburger pour mobile */}
+          {isMobile && (
+            <button
+              onClick={toggleMobileMenu}
+              className="absolute top-2 left-2 p-2 rounded-md bg-background border border-input hover:bg-accent"
+              aria-label="Menu"
+            >
+              <Menu size={20} />
+            </button>
+          )}
 
-          <div className="flex items-center gap-3 absolute right-40">
-            {selectedSector && (
-              <Button asChild variant="outline">
+          {/* DropdownMenu - affiché normalement sur desktop, conditionnel sur mobile */}
+          {(!isMobile || (isMobile && isMobileMenuOpen)) && (
+            <div className={`relative ${isMobile ? "mt-12 w-full" : ""}`}>
+              <DropdownMenu
+                items={sectors.map((s) => ({ id: s.id, label: s.name }))}
+                selectedId={selectedSector?.id}
+                onSelect={(id) => {
+                  const sector = sectors.find((s) => s.id === id);
+                  if (sector) handleSectorChange(sector);
+                }}
+                label={
+                  selectedSector
+                    ? selectedSector.name
+                    : "Sélectionner un secteur"
+                }
+              />
+            </div>
+          )}
+
+          {/* Bouton Ajouter/Déplacer un article - affiché normalement sur desktop, conditionnel sur mobile */}
+          {selectedSector && (!isMobile || (isMobile && isMobileMenuOpen)) && (
+            <div
+              className={`${isMobile ? "mt-2 w-full" : "absolute right-4 md:right-40"}`}
+            >
+              <Button
+                asChild
+                variant="outline"
+                className={`${isMobile ? "w-full justify-center" : ""}`}
+              >
                 <Link
                   href={`/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?addArticle=1`}
                 >
-                  <PlusCircle size={20} className="mr-2" />
-                  Ajouter/Déplacer un article
+                  <PlusCircle size={isMobile ? 16 : 20} className="mr-2" />
+                  {isMobile ? "Ajouter article" : "Ajouter/Déplacer un article"}
                 </Link>
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -210,24 +256,24 @@ export default function SectorViewer({
               <>
                 <button
                   onClick={navigateToPreviousSector}
-                  className="absolute left-2 top-1/2 transform -translate-y-1/2 p-2 bg-background bg-opacity-80 rounded-full shadow-md hover:bg-opacity-100 z-10"
+                  className="absolute left-1 md:left-2 top-1/2 transform -translate-y-1/2 p-1 md:p-2 bg-background bg-opacity-80 rounded-full shadow-md hover:bg-opacity-100 z-10"
                   aria-label="Secteur précédent"
                 >
-                  <ChevronLeft size={24} />
+                  <ChevronLeft size={isMobile ? 16 : 24} />
                 </button>
                 <button
                   onClick={navigateToNextSector}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-background bg-opacity-80 rounded-full shadow-md hover:bg-opacity-100 z-10"
+                  className="absolute right-1 md:right-2 top-1/2 transform -translate-y-1/2 p-1 md:p-2 bg-background bg-opacity-80 rounded-full shadow-md hover:bg-opacity-100 z-10"
                   aria-label="Secteur suivant"
                 >
-                  <ChevronRight size={24} />
+                  <ChevronRight size={isMobile ? 16 : 24} />
                 </button>
               </>
             )}
 
             {isLoading ? (
               <div className="flex items-center justify-center h-64 w-full">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                <div className="animate-spin rounded-full h-8 w-8 md:h-12 md:w-12 border-t-2 border-b-2 border-blue-500"></div>
               </div>
             ) : (
               <div>
@@ -247,10 +293,10 @@ export default function SectorViewer({
               </div>
             )}
 
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-background bg-opacity-80 px-4 py-2 rounded-full shadow-md z-10 flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Layers size={16} />
-                <span>
+            <div className="absolute bottom-2 md:bottom-4 left-1/2 transform -translate-x-1/2 bg-background bg-opacity-80 px-2 md:px-4 py-1 md:py-2 rounded-full shadow-md z-10 flex items-center gap-2 md:gap-4 text-xs md:text-base">
+              <div className="flex items-center gap-1 md:gap-2">
+                <Layers size={isMobile ? 12 : 16} />
+                <span className="truncate max-w-[150px] md:max-w-none">
                   {selectedIndex + 1} / {sectors.length}: {selectedSector.name}
                 </span>
               </div>
@@ -262,15 +308,15 @@ export default function SectorViewer({
                 }
               >
                 {isFullscreen ? (
-                  <Minimize2 size={16} />
+                  <Minimize2 size={isMobile ? 12 : 16} />
                 ) : (
-                  <Maximize2 size={16} />
+                  <Maximize2 size={isMobile ? 12 : 16} />
                 )}
               </button>
             </div>
           </div>
         ) : (
-          <div className="text-center text-gray-500">
+          <div className="text-center text-gray-500 p-4">
             Sélectionnez un secteur pour afficher son image
           </div>
         )}

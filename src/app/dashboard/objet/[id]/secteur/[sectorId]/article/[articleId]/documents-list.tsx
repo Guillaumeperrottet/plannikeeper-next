@@ -61,15 +61,15 @@ export default function DocumentsList({
   const getFileIcon = (fileType: string) => {
     if (fileType.startsWith("image/")) {
       return (
-        <Image size={20} className="text-blue-500" aria-label="Image file" />
+        <Image size={18} className="text-blue-500" aria-label="Image file" />
       );
     } else if (fileType === "application/pdf") {
       return (
-        <FileText size={20} className="text-red-500" aria-label="PDF file" />
+        <FileText size={18} className="text-red-500" aria-label="PDF file" />
       );
     } else {
       return (
-        <File size={20} className="text-gray-500" aria-label="Generic file" />
+        <File size={18} className="text-gray-500" aria-label="Generic file" />
       );
     }
   };
@@ -120,26 +120,30 @@ export default function DocumentsList({
 
   if (isLoading) {
     return (
-      <div className="text-center py-4">
-        <div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-        <p className="text-sm text-gray-500">Chargement des documents...</p>
+      <div className="text-center py-3">
+        <div className="animate-spin w-5 h-5 sm:w-6 sm:h-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+        <p className="text-xs sm:text-sm text-gray-500">
+          Chargement des documents...
+        </p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center py-4 text-red-600 flex items-center justify-center gap-2">
-        <AlertCircle size={16} />
-        <span>{error}</span>
+      <div className="text-center py-3 text-red-600 flex items-center justify-center gap-2">
+        <AlertCircle size={14} />
+        <span className="text-xs sm:text-sm">{error}</span>
       </div>
     );
   }
 
   if (!documents || documents.length === 0) {
     return (
-      <div className="text-center py-4 text-gray-500">
-        <p>Aucun document attaché à cette tâche</p>
+      <div className="text-center py-3 text-gray-500">
+        <p className="text-xs sm:text-sm">
+          Aucun document attaché à cette tâche
+        </p>
       </div>
     );
   }
@@ -149,37 +153,37 @@ export default function DocumentsList({
       {documents.map((doc, index) => (
         <div
           key={doc.id}
-          className="flex items-center justify-between p-3 bg-background rounded-lg border shadow-sm hover:bg-muted/50 transition-colors"
+          className="flex items-center justify-between p-2 sm:p-3 bg-background rounded-lg border shadow-sm hover:bg-muted/50 transition-colors"
         >
-          <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
             {getFileIcon(doc.fileType)}
             <div className="flex-1 min-w-0">
               <div
-                className="block text-sm font-medium hover:underline truncate cursor-pointer"
+                className="block text-xs sm:text-sm font-medium hover:underline truncate cursor-pointer"
                 onClick={() => openPreview(doc, index)}
               >
                 {doc.name}
               </div>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-[10px] sm:text-xs text-muted-foreground">
                 {formatFileSize(doc.fileSize)} •{" "}
                 {new Date(doc.createdAt).toLocaleDateString()}
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <button
               onClick={() => openPreview(doc, index)}
               className="p-1 hover:text-blue-600 transition-colors"
               title="Prévisualiser"
             >
-              <Eye size={16} />
+              <Eye size={14} className="sm:w-4 sm:h-4" />
             </button>
             <button
               onClick={() => handleDelete(doc.id)}
               className="p-1 hover:text-red-600 transition-colors"
               title="Supprimer"
             >
-              <Trash2 size={16} />
+              <Trash2 size={14} className="sm:w-4 sm:h-4" />
             </button>
           </div>
         </div>
@@ -192,6 +196,10 @@ export default function DocumentsList({
           onClose={closePreview}
           documents={documents}
           currentIndex={currentDocumentIndex}
+          onNavigate={(index) => {
+            setCurrentDocumentIndex(index);
+            setPreviewDocument(documents[index]);
+          }}
         />
       )}
     </div>

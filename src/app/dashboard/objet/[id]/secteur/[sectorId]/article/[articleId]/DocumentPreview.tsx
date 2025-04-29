@@ -71,11 +71,13 @@ export default function DocumentPreview({
 
   return (
     <Dialog open={!!document} onOpenChange={() => onClose()}>
-      <DialogContent className="max-w-5xl w-[calc(100vw-2rem)] h-[calc(100vh-5rem)] flex flex-col">
+      <DialogContent className="max-w-5xl w-[calc(100vw-2rem)] h-[calc(100vh-4rem)] flex flex-col">
         <DialogHeader className="flex flex-row items-center justify-between">
           <DialogTitle className="flex items-center">
             <File className="mr-2 h-5 w-5" />
-            <span className="truncate max-w-[300px]">{document.name}</span>
+            <span className="truncate max-w-[150px] sm:max-w-[300px]">
+              {document.name}
+            </span>
           </DialogTitle>
 
           <div className="flex items-center gap-2">
@@ -108,10 +110,12 @@ export default function DocumentPreview({
               size="sm"
               onClick={navigateToPrevious}
               disabled={currentIndex === 0}
+              className="px-2 py-1 text-xs sm:text-sm sm:px-4 sm:py-2"
             >
-              <ChevronLeft className="mr-1" /> Précédent
+              <ChevronLeft className="mr-1" />
+              <span className="hidden sm:inline">Précédent</span>
             </Button>
-            <span className="text-sm text-muted-foreground">
+            <span className="text-xs sm:text-sm text-muted-foreground">
               {currentIndex + 1} / {documents.length}
             </span>
             <Button
@@ -119,8 +123,10 @@ export default function DocumentPreview({
               size="sm"
               onClick={navigateToNext}
               disabled={currentIndex === documents.length - 1}
+              className="px-2 py-1 text-xs sm:text-sm sm:px-4 sm:py-2"
             >
-              Suivant <ChevronRight className="ml-1" />
+              <span className="hidden sm:inline">Suivant</span>
+              <ChevronRight className="ml-1" />
             </Button>
           </div>
         )}
@@ -129,16 +135,16 @@ export default function DocumentPreview({
         <div className="flex-grow overflow-auto relative">
           {loading && (
             <div className="absolute inset-0 flex items-center justify-center bg-background bg-opacity-50">
-              <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full"></div>
+              <div className="animate-spin h-8 w-8 sm:h-10 sm:w-10 border-4 border-primary border-t-transparent rounded-full"></div>
             </div>
           )}
 
           {error && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-destructive text-center p-4 bg-destructive-background rounded-md">
+              <div className="text-destructive text-center p-4 bg-destructive-background rounded-md mx-2">
                 <p>Impossible d&apos;afficher ce document.</p>
                 <p className="text-sm">{error}</p>
-                <Button variant="outline" className="mt-2">
+                <Button variant="outline" className="mt-2 text-sm">
                   <a
                     href={document.filePath}
                     target="_blank"
@@ -175,8 +181,8 @@ export default function DocumentPreview({
               className="w-full h-full"
               // onLoad/onError ne sont pas supportés sur <object>
             >
-              <div className="flex items-center justify-center h-full">
-                <p>
+              <div className="flex flex-col items-center justify-center h-full p-4">
+                <p className="text-center mb-2 text-sm">
                   Votre navigateur ne prend pas en charge l&apos;affichage des
                   PDF.
                 </p>
@@ -184,6 +190,7 @@ export default function DocumentPreview({
                   href={document.filePath}
                   target="_blank"
                   rel="noopener noreferrer"
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm"
                 >
                   Télécharger le PDF
                 </a>
@@ -193,13 +200,15 @@ export default function DocumentPreview({
 
           {!isImage && !isPdf && (
             <div className="flex items-center justify-center h-full">
-              <div className="text-center p-6">
+              <div className="text-center p-4 sm:p-6">
                 <File
-                  size={48}
+                  size={40}
                   className="mx-auto mb-4 text-muted-foreground"
                 />
-                <p>Ce type de fichier ne peut pas être prévisualisé</p>
-                <Button variant="outline" className="mt-4">
+                <p className="text-sm sm:text-base">
+                  Ce type de fichier ne peut pas être prévisualisé
+                </p>
+                <Button variant="outline" className="mt-4 text-sm">
                   <a
                     href={document.filePath}
                     target="_blank"

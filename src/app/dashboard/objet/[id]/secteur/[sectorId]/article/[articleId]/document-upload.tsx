@@ -98,9 +98,9 @@ export default function DocumentUpload({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div
-        className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+        className={`border-2 border-dashed rounded-lg p-3 sm:p-6 text-center transition-colors ${
           dragActive
             ? "border-blue-500 bg-blue-50 bg-opacity-20"
             : "border-[color:var(--border)]"
@@ -114,10 +114,12 @@ export default function DocumentUpload({
           <div className="flex items-center justify-between p-2 bg-[color:var(--background)] rounded border border-[color:var(--border)]">
             <div className="flex items-center gap-2 flex-1 truncate">
               <File
-                size={20}
+                size={18}
                 className="text-[color:var(--primary)] flex-shrink-0"
               />
-              <span className="text-sm truncate max-w-xs">{file.name}</span>
+              <span className="text-xs sm:text-sm truncate max-w-[160px] sm:max-w-xs">
+                {file.name}
+              </span>
             </div>
             <button
               onClick={() => setFile(null)}
@@ -129,15 +131,15 @@ export default function DocumentUpload({
             </button>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-4">
-            <Upload className="h-10 w-10 text-[color:var(--muted-foreground)] mb-2" />
-            <p className="text-sm text-[color:var(--muted-foreground)] mb-2">
+          <div className="flex flex-col items-center justify-center py-3 sm:py-4">
+            <Upload className="h-8 w-8 sm:h-10 sm:w-10 text-[color:var(--muted-foreground)] mb-2" />
+            <p className="text-xs sm:text-sm text-[color:var(--muted-foreground)] mb-2">
               Glissez-déposez un fichier ici, ou
             </p>
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="px-4 py-2 text-sm text-[color:var(--primary)] bg-[color:var(--primary-foreground)] rounded-lg hover:bg-[color:var(--primary)] hover:bg-opacity-10 transition-colors"
+              className="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm text-[color:var(--primary)] bg-[color:var(--primary-foreground)] rounded-lg hover:bg-[color:var(--primary)] hover:bg-opacity-10 transition-colors"
             >
               Sélectionnez un fichier
             </button>
@@ -148,9 +150,7 @@ export default function DocumentUpload({
               className="hidden"
               accept=".pdf,image/*"
             />
-            <p className="text-xs text-[color:var(--muted-foreground)] mt-2">
-              PDF, JPG, PNG, GIF (max. 10MB)
-            </p>
+            <p className="text-xs mt-2">PDF, JPG, PNG, GIF (max. 10MB)</p>
           </div>
         )}
       </div>
@@ -169,7 +169,7 @@ export default function DocumentUpload({
           <Button
             onClick={handleUpload}
             disabled={isUploading}
-            className="w-full"
+            className="w-full text-xs sm:text-sm py-1.5 sm:py-2"
           >
             {isUploading ? (
               <>
