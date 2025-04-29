@@ -1,14 +1,17 @@
+// src/app/api/users/[userId]/route.ts
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
+// Typage mis à jour : params est une Promise qui résout { userId: string }
+type RouteParams = {
+  params: Promise<{ userId: string }>;
+};
+
 // GET - Récupérer tous les accès d'un utilisateur
-export async function GET(
-  req: Request,
-  { params }: { params: { userId: string } }
-) {
-  // Utiliser la destructuration pour extraire l'userId
-  const { userId } = params;
+export async function GET(req: Request, { params }: RouteParams) {
+  // Récupération de l'userId depuis la promesse
+  const { userId } = await params;
   const currentUser = await getUser();
 
   if (!currentUser) {
@@ -28,7 +31,7 @@ export async function GET(
     // Vérifier que l'utilisateur cible appartient à la même organisation
     const targetUserOrg = await prisma.organizationUser.findFirst({
       where: {
-        userId: userId,
+        userId,
         organizationId: userOrg.organizationId,
       },
     });
@@ -44,7 +47,7 @@ export async function GET(
   try {
     // Récupérer les accès de l'utilisateur
     const access = await prisma.objectAccess.findMany({
-      where: { userId: userId },
+      where: { userId },
       select: {
         objectId: true,
         accessLevel: true,
@@ -53,7 +56,7 @@ export async function GET(
 
     return NextResponse.json({ access });
   } catch (error) {
-    console.error("Erreur lors de la récupération des accès:", error);
+    console.error("Erreur lors de la récupération des accès :", error);
     return NextResponse.json(
       { error: "Erreur lors de la récupération des accès" },
       { status: 500 }
@@ -62,12 +65,9 @@ export async function GET(
 }
 
 // POST - Mettre à jour les accès d'un utilisateur
-export async function POST(
-  req: Request,
-  { params }: { params: { userId: string } }
-) {
-  // Utiliser la destructuration pour extraire l'userId
-  const { userId } = params;
+export async function POST(req: Request, { params }: RouteParams) {
+  // Récupération de l'userId depuis la promesse
+  const { userId } = await params;
   const currentUser = await getUser();
 
   if (!currentUser) {
@@ -98,7 +98,7 @@ export async function POST(
     // Vérifier que l'utilisateur cible appartient à la même organisation
     const targetUserOrg = await prisma.organizationUser.findFirst({
       where: {
-        userId: userId,
+        userId,
         organizationId,
       },
     });
@@ -110,22 +110,20 @@ export async function POST(
       );
     }
 
-    // Pour chaque accès, nous créons ou mettons à jour l'enregistrement
+    // Pour chaque accès, créer, mettre à jour ou supprimer
     for (const item of access) {
       if (item.accessLevel === "none") {
-        // Supprimer l'accès
         await prisma.objectAccess.deleteMany({
           where: {
-            userId: userId,
+            userId,
             objectId: item.objectId,
           },
         });
       } else {
-        // Créer ou mettre à jour l'accès
         await prisma.objectAccess.upsert({
           where: {
             userId_objectId: {
-              userId: userId,
+              userId,
               objectId: item.objectId,
             },
           },
@@ -133,7 +131,7 @@ export async function POST(
             accessLevel: item.accessLevel,
           },
           create: {
-            userId: userId,
+            userId,
             objectId: item.objectId,
             accessLevel: item.accessLevel,
           },
@@ -143,7 +141,7 @@ export async function POST(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Erreur lors de la mise à jour des accès:", error);
+    console.error("Erreur lors de la mise à jour des accès :", error);
     return NextResponse.json(
       { error: "Erreur lors de la mise à jour des accès" },
       { status: 500 }
