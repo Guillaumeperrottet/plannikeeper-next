@@ -378,7 +378,7 @@ const ModernLandingPage = () => {
       <section
         id="showcase"
         ref={showcaseRef}
-        className="pt-16 pb-12 md:py-24 bg-gradient-to-b from-[#f9f3ec] to-[#f2e8d9] overflow-hidden"
+        className="py-16 md:pt-24 pb-32 bg-gradient-to-b from-[#f9f3ec] to-[#f2e8d9] overflow-hidden"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div
