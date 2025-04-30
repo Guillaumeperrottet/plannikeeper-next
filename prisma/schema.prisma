@@ -28,6 +28,7 @@ model User {
   Organization     Organization?      @relation(fields: [organizationId], references: [id])
   objectAccess     ObjectAccess[]
   assignedTasks   Task[]
+  deviceTokens     DeviceToken[]
 
   @@unique([email])
   @@map("user")
@@ -221,4 +222,14 @@ model Document {
   taskId    String
 
   @@index([taskId])
+}
+
+model DeviceToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  device    String?  // Information sur le type d'appareil
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
