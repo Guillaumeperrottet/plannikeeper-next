@@ -378,7 +378,7 @@ const ModernLandingPage = () => {
       <section
         id="showcase"
         ref={showcaseRef}
-        className="py-16 md:py-24 bg-gradient-to-b from-[#f9f3ec] to-[#f2e8d9] overflow-hidden"
+        className="pt-16 pb-12 md:py-24 bg-gradient-to-b from-[#f9f3ec] to-[#f2e8d9] overflow-hidden"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div
@@ -416,9 +416,9 @@ const ModernLandingPage = () => {
               speed={40}
               tiltAngle={-10}
               scale={1} // Réduit pour mobile
-              imageWidth={280} // Taille réduite pour mobile
-              imageHeight={210} // Taille réduite pour mobile
-              borderWidth={2} // Plus petit pour mobile
+              imageWidth={380} // Taille réduite pour mobile
+              imageHeight={310} // Taille réduite pour mobile
+              borderWidth={3} // Plus petit pour mobile
               pauseOnHover={false}
               gap={20} // Gap réduit pour mobile
               direction="left"
@@ -432,9 +432,9 @@ const ModernLandingPage = () => {
               speed={30}
               tiltAngle={-10}
               scale={1} // Réduit pour mobile
-              imageWidth={280} // Taille réduite pour mobile
-              imageHeight={210} // Taille réduite pour mobile
-              borderWidth={2} // Plus petit pour mobile
+              imageWidth={380} // Taille réduite pour mobile
+              imageHeight={310} // Taille réduite pour mobile
+              borderWidth={3} // Plus petit pour mobile
               pauseOnHover={false}
               gap={20} // Gap réduit pour mobile
               direction="left"
