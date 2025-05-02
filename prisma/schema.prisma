@@ -29,6 +29,7 @@ model User {
   objectAccess     ObjectAccess[]
   assignedTasks   Task[]
   deviceTokens     DeviceToken[]
+  notifications     Notification[]
 
   @@unique([email])
   @@map("user")
@@ -204,6 +205,7 @@ model Task {
   assignedTo            User?     @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
+  notifications        Notification[]
 
   @@map("task")
 }
@@ -232,4 +234,18 @@ model DeviceToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id          Int       @id @default(autoincrement())
+  type        String
+  content     String
+  link        String?
+  isRead      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  // Relations
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  task        Task?     @relation(fields: [taskId], references: [id])
+  taskId      String?
 }
