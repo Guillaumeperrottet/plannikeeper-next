@@ -4,6 +4,7 @@ import { getUser } from "../lib/auth-session";
 import "./globals.css";
 import TodoListAgendaWrapper from "./components/TodoListAgendaWrapper";
 import { prisma } from "@/lib/prisma";
+import { SocketProvider } from "./components/socket-provider";
 
 export default async function RootLayout({
   children,
@@ -33,11 +34,15 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className="bg-background" suppressHydrationWarning>
-        {userWithRole && <Navbar user={userWithRole} />}
-        {/*<SidebarWrapper user={userWithRole}>*/}
-        <div className="pb-16 md:pb-14">{children}</div>
-        {/*}  </SidebarWrapper>*/}
-        {user && <TodoListAgendaWrapper />}
+        {userWithRole ? (
+          <SocketProvider userId={userWithRole.id}>
+            <Navbar user={userWithRole} />
+            <div className="pb-16 md:pb-14">{children}</div>
+            <TodoListAgendaWrapper />
+          </SocketProvider>
+        ) : (
+          <>{children}</>
+        )}
         <Toaster position="top-center" richColors />
       </body>
     </html>

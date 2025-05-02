@@ -75,5 +75,28 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  // Si un utilisateur est assigné et ce n'est pas l'utilisateur actuel
+  if (assignedToId && assignedToId !== user.id) {
+    // Vérifier que l'utilisateur a les notifications activées
+    const assignedUser = await prisma.user.findUnique({
+      where: { id: assignedToId },
+      select: { notificationsEnabled: true },
+    });
+
+    if (assignedUser?.notificationsEnabled) {
+      // Créer une notification pour l'utilisateur assigné
+      await prisma.notification.create({
+        data: {
+          title: "Nouvelle tâche assignée",
+          message: `Vous avez été assigné à la tâche "${name}"`,
+          link: `/dashboard/tasks/${task.id}`,
+          user: {
+            connect: { id: assignedToId },
+          },
+        },
+      });
+    }
+  }
+
   return NextResponse.json(task);
 }

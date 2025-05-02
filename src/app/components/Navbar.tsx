@@ -5,6 +5,7 @@ import { VT323 } from "next/font/google";
 import Switch from "@/app/components/ui/switchmode";
 import Breadcrumbs from "@/app/components/Breadcrumbs";
 import UserMenu from "@/app/components/ui/UserMenu";
+import NotificationIndicator from "./NotificationIndicator";
 
 interface User {
   id: string;
@@ -53,6 +54,7 @@ export default function Navbar({ user }: { user: User }) {
       {/* Section droite avec Dark Mode Switch et User Menu */}
       <div className="flex items-center gap-2 md:gap-4">
         <Switch />
+        <NotificationIndicator />
         <UserMenu user={user} isAdmin={isAdmin} />
       </div>
     </nav>
