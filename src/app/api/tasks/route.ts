@@ -77,24 +77,54 @@ export async function POST(req: NextRequest) {
 
   // Si un utilisateur est assigné et ce n'est pas l'utilisateur actuel
   if (assignedToId && assignedToId !== user.id) {
-    // Vérifier que l'utilisateur a les notifications activées
+    // Vérifier que l'utilisateur existe
     const assignedUser = await prisma.user.findUnique({
       where: { id: assignedToId },
-      select: { notificationsEnabled: true },
+      select: { notificationsEnabled: true, name: true },
     });
 
     if (assignedUser?.notificationsEnabled) {
-      // Créer une notification pour l'utilisateur assigné
+      // Préparer les données pour la notification
+      const notificationData = {
+        userId: assignedToId,
+        title: "Nouvelle tâche assignée",
+        message: `Vous avez été assigné à la tâche "${name}"`,
+        category: "TASK_ASSIGNED",
+        link: `/dashboard/tasks/${task.id}`,
+        data: {
+          taskId: task.id,
+          objectName: article.sector.object.nom,
+          sectorName: article.sector.name,
+          articleTitle: article.title,
+        },
+      };
+
+      // Créer la notification en base de données
       await prisma.notification.create({
         data: {
-          title: "Nouvelle tâche assignée",
-          message: `Vous avez été assigné à la tâche "${name}"`,
-          link: `/dashboard/tasks/${task.id}`,
-          user: {
-            connect: { id: assignedToId },
-          },
+          userId: assignedToId,
+          title: notificationData.title,
+          message: notificationData.message,
+          category: notificationData.category,
+          link: notificationData.link,
+          data: notificationData.data,
         },
       });
+
+      // Envoyer la notification via Firebase
+      try {
+        const response = await fetch("/api/notifications/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(notificationData),
+        });
+
+        if (!response.ok) {
+          console.error("Failed to send notification:", await response.json());
+        }
+      } catch (error) {
+        console.error("Error sending notification:", error);
+      }
     }
   }
 

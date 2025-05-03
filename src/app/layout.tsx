@@ -1,10 +1,11 @@
+// src/app/layout.tsx (mise à jour)
 import { Toaster } from "sonner";
 import Navbar from "./components/Navbar";
 import { getUser } from "../lib/auth-session";
 import "./globals.css";
 import TodoListAgendaWrapper from "./components/TodoListAgendaWrapper";
 import { prisma } from "@/lib/prisma";
-import { SocketProvider } from "./components/socket-provider";
+import { NotificationProvider } from "./components/notification-provider";
 
 export default async function RootLayout({
   children,
@@ -35,11 +36,11 @@ export default async function RootLayout({
     <html lang="en">
       <body className="bg-background" suppressHydrationWarning>
         {userWithRole ? (
-          <SocketProvider userId={userWithRole.id}>
+          <NotificationProvider userId={userWithRole.id}>
             <Navbar user={userWithRole} />
             <div className="pb-16 md:pb-14">{children}</div>
             <TodoListAgendaWrapper />
-          </SocketProvider>
+          </NotificationProvider>
         ) : (
           <>{children}</>
         )}
@@ -52,19 +53,32 @@ export default async function RootLayout({
 <script
   dangerouslySetInnerHTML={{
     __html: `
-      (function() {
-        try {
-          var theme = localStorage.getItem('theme');
-          if (
-            theme === 'dark' ||
-            (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)
-          ) {
-            document.documentElement.classList.add('dark');
-          } else {
-            document.documentElement.classList.remove('dark');
-          }
-        } catch(e){}
-      })();
+      if ('serviceWorker' in navigator) {
+        // Charger la configuration Firebase
+        fetch('/api/firebase-config')
+          .then(response => response.json())
+          .then(config => {
+            // Exposer la configuration à self pour le service worker
+            window.FIREBASE_API_KEY = config.apiKey;
+            window.FIREBASE_AUTH_DOMAIN = config.authDomain;
+            window.FIREBASE_PROJECT_ID = config.projectId;
+            window.FIREBASE_STORAGE_BUCKET = config.storageBucket;
+            window.FIREBASE_MESSAGING_SENDER_ID = config.messagingSenderId;
+            window.FIREBASE_APP_ID = config.appId;
+
+            // Enregistrer le service worker
+            navigator.serviceWorker.register('/firebase-messaging-sw.js')
+              .then(registration => {
+                console.log('Service Worker registered with scope:', registration.scope);
+              })
+              .catch(err => {
+                console.error('Service Worker registration failed:', err);
+              });
+          })
+          .catch(err => {
+            console.error('Failed to load Firebase config:', err);
+          });
+      }
     `,
   }}
 />;

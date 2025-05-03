@@ -1,36 +1,16 @@
-// src/app/components/NotificationIndicator.tsx
+// src/app/components/NotificationIndicator.tsx (mise à jour)
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Bell } from "lucide-react";
 import { Button } from "./ui/button";
 import NotificationsPanel from "@/app/components/NotificationsPanel";
+import { useNotifications } from "./notification-provider";
 
 export default function NotificationIndicator() {
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { unreadCount, requestPermission, hasPermission } = useNotifications();
   const [showPanel, setShowPanel] = useState(false);
 
-  useEffect(() => {
-    fetchUnreadCount();
-
-    // Mettre en place un intervalle pour vérifier régulièrement les nouvelles notifications
-    const interval = setInterval(fetchUnreadCount, 60000); // Toutes les minutes
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchUnreadCount = async () => {
-    try {
-      const response = await fetch("/api/notifications?unread=true&limit=1");
-      const data = await response.json();
-
-      if (response.ok) {
-        setUnreadCount(data.unreadCount || 0);
-      }
-    } catch (error) {
-      console.error("Erreur lors de la récupération des notifications:", error);
-    }
-  };
   const togglePanel = () => {
     setShowPanel(!showPanel);
   };
@@ -40,7 +20,22 @@ export default function NotificationIndicator() {
   };
 
   const handleNotificationsRead = () => {
-    fetchUnreadCount(); // Rafraîchir le compteur
+    // Le compteur est mis à jour automatiquement par le NotificationProvider
+  };
+
+  // Demander l'autorisation si on clique sur l'icône et que les notifications ne sont pas autorisées
+  const handleClick = async () => {
+    if (hasPermission === false) {
+      // Si les permissions sont explicitement refusées, afficher un message
+      alert(
+        "Les notifications sont désactivées pour ce site. Veuillez les activer dans les paramètres de votre navigateur."
+      );
+    } else if (hasPermission === null) {
+      // Si les permissions n'ont pas encore été demandées
+      await requestPermission();
+    }
+
+    togglePanel();
   };
 
   return (
@@ -48,7 +43,7 @@ export default function NotificationIndicator() {
       <Button
         variant="ghost"
         size="sm"
-        onClick={togglePanel}
+        onClick={handleClick}
         className="relative p-2 rounded-full"
         aria-label="Notifications"
       >

@@ -1,10 +1,12 @@
-// src/app/profile/notifications/notification-preferences.tsx
+// src/app/profile/notifications/notification-preferences.tsx (mise à jour)
 "use client";
 
 import { useState } from "react";
 import { toast } from "sonner";
-import Switch from "@/app/components/ui/switch"; // Use the new Switch component
+import Switch from "@/app/components/ui/switch";
 import { Bell, BellOff } from "lucide-react";
+import { useNotifications } from "@/app/components/notification-provider";
+import { Button } from "@/app/components/ui/button";
 
 interface NotificationPreferencesProps {
   initialEnabled: boolean;
@@ -13,6 +15,7 @@ interface NotificationPreferencesProps {
 export function NotificationPreferences({
   initialEnabled,
 }: NotificationPreferencesProps) {
+  const { hasPermission, requestPermission } = useNotifications();
   const [enabled, setEnabled] = useState(initialEnabled);
   const [loading, setLoading] = useState(false);
 
@@ -20,6 +23,19 @@ export function NotificationPreferences({
     try {
       setLoading(true);
       const newState = !enabled;
+
+      // Si on active les notifications et qu'on n'a pas encore de permission
+      if (newState && hasPermission !== true) {
+        // Demander la permission pour les notifications push
+        const granted = await requestPermission();
+        if (!granted) {
+          // Si la permission n'est pas accordée, ne pas activer les notifications
+          toast.error(
+            "Les notifications ne peuvent pas être activées sans votre permission"
+          );
+          return;
+        }
+      }
 
       const response = await fetch("/api/notifications/preferences", {
         method: "POST",
@@ -80,6 +96,31 @@ export function NotificationPreferences({
       </div>
 
       <div className="mt-6 space-y-4">
+        {hasPermission === false && (
+          <div className="p-4 rounded-lg bg-[color:var(--destructive-background)] text-sm mb-4">
+            <h3 className="font-medium mb-2 text-[color:var(--destructive-foreground)]">
+              Permissions de notification bloquées
+            </h3>
+            <p className="text-[color:var(--destructive-foreground)] mb-2">
+              Vous avez bloqué les notifications pour ce site. Pour les
+              recevoir, vous devez modifier les paramètres de votre navigateur.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2"
+              onClick={() => {
+                window.open(
+                  "https://support.google.com/chrome/answer/3220216?hl=fr",
+                  "_blank"
+                );
+              }}
+            >
+              Comment activer les notifications
+            </Button>
+          </div>
+        )}
+
         <div className="p-4 rounded-lg bg-[color:var(--muted)] text-sm">
           <h3 className="font-medium mb-2">À propos des notifications</h3>
           <p className="text-[color:var(--muted-foreground)] mb-2">
