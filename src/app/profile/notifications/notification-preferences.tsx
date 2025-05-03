@@ -1,10 +1,9 @@
-// src/app/profile/notifications/notification-preferences.tsx (mise à jour)
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import Switch from "@/app/components/ui/switch";
-import { Bell, BellOff } from "lucide-react";
+import { Bell, BellOff, RefreshCw } from "lucide-react";
 import { useNotifications } from "@/app/components/notification-provider";
 import { Button } from "@/app/components/ui/button";
 
@@ -18,25 +17,64 @@ export function NotificationPreferences({
   const { hasPermission, requestPermission } = useNotifications();
   const [enabled, setEnabled] = useState(initialEnabled);
   const [loading, setLoading] = useState(false);
+  const [deviceToken, setDeviceToken] = useState<string | null>(null);
+
+  // Vérifie si un token d'appareil existe
+  useEffect(() => {
+    const checkDeviceToken = async () => {
+      try {
+        // Vérification de la présence d'un token dans localStorage
+        const storedToken = localStorage.getItem("fcmToken");
+        if (storedToken) {
+          setDeviceToken(storedToken);
+          console.log("Token trouvé en local:", storedToken);
+        } else {
+          console.log("Aucun token FCM trouvé en local");
+        }
+      } catch (error) {
+        console.error("Erreur lors de la vérification du token:", error);
+      }
+    };
+
+    checkDeviceToken();
+  }, []);
 
   const handleToggle = async () => {
     try {
       setLoading(true);
       const newState = !enabled;
 
-      // Si on active les notifications et qu'on n'a pas encore de permission
-      if (newState && hasPermission !== true) {
-        // Demander la permission pour les notifications push
+      // Si on active les notifications
+      if (newState) {
+        console.log(
+          "Demande d'activation des notifications, statut permission:",
+          hasPermission
+        );
+
+        // Demander la permission pour les notifications push (qu'on ait déjà la permission ou non)
+        // Cette étape va générer un nouveau token
+        console.log("Demande de permission pour les notifications...");
         const granted = await requestPermission();
+
+        console.log("Réponse de la demande de permission:", granted);
+
         if (!granted) {
           // Si la permission n'est pas accordée, ne pas activer les notifications
           toast.error(
             "Les notifications ne peuvent pas être activées sans votre permission"
           );
+          setLoading(false);
           return;
         }
+
+        // Vérification du nouveau token après la demande de permission
+        const storedToken = localStorage.getItem("fcmToken");
+        setDeviceToken(storedToken);
+        console.log("Nouveau token après demande de permission:", storedToken);
       }
 
+      // Mise à jour de la préférence utilisateur dans la base de données
+      console.log("Mise à jour de la préférence utilisateur:", newState);
       const response = await fetch("/api/notifications/preferences", {
         method: "POST",
         headers: {
@@ -58,9 +96,37 @@ export function NotificationPreferences({
           : "Les notifications ont été désactivées"
       );
     } catch (error) {
+      console.error("Erreur complète:", error);
       toast.error(
         error instanceof Error ? error.message : "Une erreur est survenue"
       );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fonction pour forcer le rafraichissement du token
+  const forceRefreshToken = async () => {
+    try {
+      setLoading(true);
+      console.log("Demande de rafraîchissement du token...");
+
+      // Force une nouvelle demande de token
+      const newToken = await requestPermission();
+      console.log("Résultat du rafraîchissement:", newToken);
+
+      // Mettre à jour l'état local
+      const storedToken = localStorage.getItem("fcmToken");
+      setDeviceToken(storedToken);
+
+      if (newToken) {
+        toast.success("Le token a été rafraîchi avec succès");
+      } else {
+        toast.error("Impossible de rafraîchir le token");
+      }
+    } catch (error) {
+      console.error("Erreur lors du rafraîchissement du token:", error);
+      toast.error("Erreur lors du rafraîchissement du token");
     } finally {
       setLoading(false);
     }
@@ -96,6 +162,36 @@ export function NotificationPreferences({
       </div>
 
       <div className="mt-6 space-y-4">
+        {/* Statut du token */}
+        <div
+          className={`p-4 rounded-lg ${deviceToken ? "bg-[color:var(--success-background)]" : "bg-[color:var(--warning-background)]"} text-sm mb-4`}
+        >
+          <h3 className="font-medium mb-2">Statut du token d&apos;appareil</h3>
+          <p className="mb-2">
+            {deviceToken
+              ? "Un token d'appareil est enregistré pour ce navigateur."
+              : "Aucun token d'appareil n'est enregistré pour ce navigateur."}
+          </p>
+          {deviceToken && (
+            <div className="mt-2 overflow-x-auto">
+              <p className="text-xs font-mono break-all bg-black/10 p-2 rounded">
+                {deviceToken.substring(0, 20)}...
+                {deviceToken.substring(deviceToken.length - 20)}
+              </p>
+            </div>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3 flex items-center gap-1"
+            onClick={forceRefreshToken}
+            disabled={loading}
+          >
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+            Rafraîchir le token
+          </Button>
+        </div>
+
         {hasPermission === false && (
           <div className="p-4 rounded-lg bg-[color:var(--destructive-background)] text-sm mb-4">
             <h3 className="font-medium mb-2 text-[color:var(--destructive-foreground)]">
