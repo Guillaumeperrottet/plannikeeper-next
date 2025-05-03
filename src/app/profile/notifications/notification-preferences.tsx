@@ -3,8 +3,8 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import Switch from "@/app/components/ui/switchmode";
-import { Bell, BellOff, Loader2 } from "lucide-react";
+import Switch from "@/app/components/ui/switch"; // Use the new Switch component
+import { Bell, BellOff } from "lucide-react";
 
 interface NotificationPreferencesProps {
   initialEnabled: boolean;
@@ -71,14 +71,11 @@ export function NotificationPreferences({
         <div className="relative">
           <Switch
             checked={enabled}
-            onCheckedChange={() => handleToggle()}
+            onCheckedChange={handleToggle}
             disabled={loading}
+            checkedIcon={<Bell className="h-4 w-4 text-blue-800" />}
+            uncheckedIcon={<BellOff className="h-4 w-4 text-gray-500" />}
           />
-          {loading && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="h-4 w-4 animate-spin text-[color:var(--muted-foreground)]" />
-            </div>
-          )}
         </div>
       </div>
 
