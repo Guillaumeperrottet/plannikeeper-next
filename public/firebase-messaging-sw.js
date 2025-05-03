@@ -32,6 +32,16 @@ console.log(
   !!self.firebaseConfig
 );
 
+self.addEventListener("install", (event) => {
+  console.log("[firebase-messaging-sw.js] Service Worker installation");
+  event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener("activate", (event) => {
+  console.log("[firebase-messaging-sw.js] Service Worker activation");
+  event.waitUntil(self.clients.claim());
+});
+
 // Initialiser Firebase
 try {
   firebase.initializeApp(self.firebaseConfig);

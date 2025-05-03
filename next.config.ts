@@ -30,6 +30,22 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        // Configuration critique pour le service worker Firebase
+        source: "/firebase-messaging-sw.js",
+        headers: [
+          { key: "Service-Worker-Allowed", value: "/" },
+          {
+            key: "Cache-Control",
+            value: "no-cache, no-store, must-revalidate",
+          },
+        ],
+      },
+      {
+        // Configuration pour tous les chemins (important pour les service workers)
+        source: "/(.*)",
+        headers: [{ key: "Service-Worker-Allowed", value: "/" }],
+      },
     ];
   },
   // Amélioration des paramètres de débogage
