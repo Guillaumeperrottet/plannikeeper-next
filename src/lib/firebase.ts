@@ -42,32 +42,65 @@ if (typeof window !== "undefined") {
 export const requestNotificationPermission = async (): Promise<
   string | null
 > => {
-  if (!messaging) return null;
+  if (!messaging) {
+    console.error("Messaging n'est pas initialisé");
+    return null;
+  }
 
   try {
     // Demander la permission Notification au navigateur
+    console.log("Demande de permission de notification...");
     const permission = await Notification.requestPermission();
+    console.log("Statut de permission reçu:", permission);
 
     if (permission !== "granted") {
-      console.log("Notification permission not granted");
+      console.log("Permission de notification non accordée");
       return null;
     }
 
-    // Obtenir le token FCM
-    const currentToken = await getToken(messaging, {
-      vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-    });
+    // Vérifier que la clé VAPID est bien définie
+    console.log(
+      "VAPID key disponible:",
+      !!process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
+    );
 
-    if (currentToken) {
-      // Enregistrer le token sur le serveur
-      await registerDeviceToken(currentToken);
-      return currentToken;
-    } else {
-      console.log("No registration token available");
+    try {
+      // Obtenir le token FCM avec plus de détails sur l'erreur
+      console.log("Tentative d'obtention du token FCM...");
+      const currentToken = await getToken(messaging, {
+        vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+      }).catch((error) => {
+        console.error("Erreur détaillée getToken:", error);
+        throw error;
+      });
+
+      if (currentToken) {
+        console.log("Token FCM obtenu:", currentToken);
+        // Stocker le token localement
+        localStorage.setItem("fcmToken", currentToken);
+
+        // Enregistrer le token sur le serveur
+        console.log("Enregistrement du token sur le serveur...");
+        await registerDeviceToken(currentToken).catch((error) => {
+          console.error(
+            "Erreur lors de l'enregistrement du token sur le serveur:",
+            error
+          );
+          throw error;
+        });
+
+        console.log("Token enregistré avec succès!");
+        return currentToken;
+      } else {
+        console.log("Aucun token d'enregistrement disponible");
+        return null;
+      }
+    } catch (error) {
+      console.error("Erreur complète de getToken:", error);
       return null;
     }
   } catch (error) {
-    console.error("An error occurred while retrieving token", error);
+    console.error("Erreur complète de requestNotificationPermission:", error);
     return null;
   }
 };

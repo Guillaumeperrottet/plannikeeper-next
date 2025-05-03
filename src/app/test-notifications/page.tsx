@@ -11,6 +11,20 @@ export default function TestNotifications() {
     message: string;
   }>(null);
 
+  const testVAPIDKey = () => {
+    const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+    console.log("VAPID Key disponible:", !!vapidKey);
+    console.log(
+      "VAPID Key (premiers caractères):",
+      vapidKey ? vapidKey.substring(0, 10) + "..." : "non définie"
+    );
+
+    // La clé VAPID doit commencer par 'B' pour être au format correct
+    if (vapidKey && !vapidKey.startsWith("B")) {
+      console.error("VAPID Key invalide: doit commencer par 'B'");
+    }
+  };
+
   const sendTestNotification = async () => {
     setLoading(true);
     try {
@@ -48,6 +62,18 @@ export default function TestNotifications() {
         className="w-full mb-4"
       >
         {loading ? "Envoi en cours..." : "Envoyer une notification de test"}
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          testVAPIDKey();
+          console.log("Test d'environnement...");
+          console.log("Mode:", process.env.NODE_ENV);
+          console.log("Domaine:", window.location.origin);
+        }}
+      >
+        Tester la configuration
       </Button>
 
       {result && (

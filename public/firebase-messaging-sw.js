@@ -1,9 +1,17 @@
-// public/firebase-messaging-sw.js
+// Vérifiez dans public/firebase-messaging-sw.js
+// Ajoutez des logs détaillés
+console.log("[firebase-messaging-sw.js] Script de service worker chargé");
+
 importScripts(
   "https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"
 );
+console.log("[firebase-messaging-sw.js] Script firebase-app-compat.js chargé");
+
 importScripts(
   "https://www.gstatic.com/firebasejs/9.15.0/firebase-messaging-compat.js"
+);
+console.log(
+  "[firebase-messaging-sw.js] Script firebase-messaging-compat.js chargé"
 );
 
 // Récupérer les variables d'environnement exposées
@@ -19,29 +27,43 @@ self.firebaseConfig = {
   measurementId: "G-291XG7LXT7",
 };
 
+console.log(
+  "[firebase-messaging-sw.js] Configuration Firebase disponible:",
+  !!self.firebaseConfig
+);
+
 // Initialiser Firebase
-firebase.initializeApp(self.firebaseConfig);
+try {
+  firebase.initializeApp(self.firebaseConfig);
+  console.log("[firebase-messaging-sw.js] Firebase initialisé avec succès");
 
-// Récupérer une instance de Firebase Messaging
-const messaging = firebase.messaging();
+  // Récupérer une instance de Firebase Messaging
+  const messaging = firebase.messaging();
+  console.log("[firebase-messaging-sw.js] Instance de messaging créée");
 
-// Gestionnaire pour les notifications en arrière-plan
-messaging.onBackgroundMessage((payload) => {
-  console.log(
-    "[firebase-messaging-sw.js] Received background message:",
-    payload
+  // Gestionnaire pour les notifications en arrière-plan
+  messaging.onBackgroundMessage((payload) => {
+    console.log(
+      "[firebase-messaging-sw.js] Received background message:",
+      payload
+    );
+
+    const notificationTitle = payload.notification.title;
+    const notificationOptions = {
+      body: payload.notification.body,
+      icon: "/logo192.png", // Assurez-vous d'avoir cette icône dans votre dossier public
+      badge: "/badge.png",
+      data: payload.data,
+    };
+
+    self.registration.showNotification(notificationTitle, notificationOptions);
+  });
+} catch (error) {
+  console.error(
+    "[firebase-messaging-sw.js] Erreur lors de l'initialisation de Firebase:",
+    error
   );
-
-  const notificationTitle = payload.notification.title;
-  const notificationOptions = {
-    body: payload.notification.body,
-    icon: "/logo192.png", // Assurez-vous d'avoir cette icône dans votre dossier public
-    badge: "/badge.png",
-    data: payload.data,
-  };
-
-  self.registration.showNotification(notificationTitle, notificationOptions);
-});
+}
 
 // Gestionnaire pour le clic sur une notification
 self.addEventListener("notificationclick", (event) => {
@@ -68,3 +90,5 @@ self.addEventListener("notificationclick", (event) => {
     })
   );
 });
+
+console.log("[firebase-messaging-sw.js] Service worker configuré avec succès");

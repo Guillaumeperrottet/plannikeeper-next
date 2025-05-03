@@ -53,11 +53,17 @@ export default async function RootLayout({
 <script
   dangerouslySetInnerHTML={{
     __html: `
+      console.log("Script d'enregistrement du Service Worker commencé");
       if ('serviceWorker' in navigator) {
+        console.log("ServiceWorker API disponible");
         // Charger la configuration Firebase
         fetch('/api/firebase-config')
-          .then(response => response.json())
+          .then(response => {
+            console.log("Réponse reçue de /api/firebase-config:", response.status);
+            return response.json();
+          })
           .then(config => {
+            console.log("Configuration Firebase reçue:", config);
             // Exposer la configuration à self pour le service worker
             window.FIREBASE_API_KEY = config.apiKey;
             window.FIREBASE_AUTH_DOMAIN = config.authDomain;
@@ -67,17 +73,20 @@ export default async function RootLayout({
             window.FIREBASE_APP_ID = config.appId;
 
             // Enregistrer le service worker
-            navigator.serviceWorker.register('/firebase-messaging-sw.js')
+            console.log("Tentative d'enregistrement du Service Worker...");
+            return navigator.serviceWorker.register('/firebase-messaging-sw.js')
               .then(registration => {
-                console.log('Service Worker registered with scope:', registration.scope);
+                console.log('Service Worker enregistré avec succès:', registration);
               })
               .catch(err => {
-                console.error('Service Worker registration failed:', err);
+                console.error('Erreur lors de l\'enregistrement du Service Worker:', err);
               });
           })
           .catch(err => {
-            console.error('Failed to load Firebase config:', err);
+            console.error('Erreur lors du chargement de la configuration Firebase:', err);
           });
+      } else {
+        console.warn("ServiceWorker API non disponible dans ce navigateur");
       }
     `,
   }}
