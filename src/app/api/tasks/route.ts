@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
         title: "Nouvelle tâche assignée",
         message: `Vous avez été assigné à la tâche "${name}"`,
         category: "TASK_ASSIGNED",
-        link: `/dashboard/tasks/${task.id}`,
+        link: `/dashboard/objet/${article.sector.object.id}/secteur/${article.sector.id}/article/${article.id}`,
         data: {
           taskId: task.id,
           objectName: article.sector.object.nom,
