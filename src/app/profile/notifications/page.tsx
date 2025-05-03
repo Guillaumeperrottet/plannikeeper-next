@@ -31,9 +31,8 @@ export default async function NotificationsPage() {
 
   const notificationsEnabled = userWithPrefs?.notificationsEnabled ?? true;
 
-  // Adapter les notifications au type attendu par NotificationsList
   const mappedNotifications = notifications.map((n) => ({
-    id: typeof n.id === "string" ? Number(n.id) : n.id,
+    id: typeof n.id === "string" ? parseInt(n.id, 10) : n.id,
     createdAt:
       n.createdAt instanceof Date ? n.createdAt.toISOString() : n.createdAt,
     userId: n.userId,
@@ -42,13 +41,12 @@ export default async function NotificationsPage() {
     message: n.message,
     category: n.category,
     data: n.data,
-    // Ajoutez les propriétés manquantes avec des valeurs par défaut ou mappées
+    // Map the fields correctly
     type: n.category ?? "default",
     content: n.message,
     isRead: n.read,
-    // Ajoutez d'autres propriétés si nécessaire selon la définition de Notification
+    read: n.read, // Add this line to satisfy Notification type
   }));
-
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
       <div className="mb-8">

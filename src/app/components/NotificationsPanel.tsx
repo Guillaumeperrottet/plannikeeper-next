@@ -12,7 +12,7 @@ type Notification = {
   type: string;
   content: string;
   link?: string | null;
-  isRead: boolean;
+  read: boolean;
   createdAt: string;
   task?: {
     id: string;
@@ -95,7 +95,7 @@ export default function NotificationsPanel({
         setNotifications(
           notifications.map((notification) =>
             notification.id === notificationId
-              ? { ...notification, isRead: true }
+              ? { ...notification, read: true }
               : notification
           )
         );
@@ -117,7 +117,7 @@ export default function NotificationsPanel({
         setNotifications(
           notifications.map((notification) => ({
             ...notification,
-            isRead: true,
+            read: true,
           }))
         );
         onNotificationsRead();
@@ -129,7 +129,7 @@ export default function NotificationsPanel({
 
   const handleNotificationClick = (notification: Notification) => {
     // Marquer comme lue
-    if (!notification.isRead) {
+    if (!notification.read) {
       markAsRead(notification.id);
     }
 
@@ -198,7 +198,7 @@ export default function NotificationsPanel({
               <li
                 key={notification.id}
                 className={`border-b border-[color:var(--border)] last:border-b-0 hover:bg-[color:var(--muted)] transition-colors cursor-pointer ${
-                  !notification.isRead
+                  !notification.read
                     ? "bg-[color:var(--info-background)]/10"
                     : ""
                 }`}
@@ -228,7 +228,7 @@ export default function NotificationsPanel({
                       })}
                     </p>
                   </div>
-                  {!notification.isRead && (
+                  {!notification.read && (
                     <button
                       className="flex-shrink-0 text-[color:var(--primary)]"
                       onClick={(e) => {

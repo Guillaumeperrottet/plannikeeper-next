@@ -13,7 +13,7 @@ type Notification = {
   type: string;
   content: string;
   link?: string | null;
-  isRead: boolean;
+  read: boolean;
   createdAt: string;
   task?: {
     id: string;
@@ -45,7 +45,7 @@ export function NotificationsList({
   const router = useRouter();
 
   const filteredNotifications =
-    filter === "all" ? notifications : notifications.filter((n) => !n.isRead);
+    filter === "all" ? notifications : notifications.filter((n) => !n.read);
 
   const markAsRead = async (notificationId: number) => {
     try {
@@ -61,7 +61,7 @@ export function NotificationsList({
         setNotifications(
           notifications.map((notification) =>
             notification.id === notificationId
-              ? { ...notification, isRead: true }
+              ? { ...notification, read: true }
               : notification
           )
         );
@@ -82,7 +82,7 @@ export function NotificationsList({
         setNotifications(
           notifications.map((notification) => ({
             ...notification,
-            isRead: true,
+            read: true,
           }))
         );
       }
@@ -93,7 +93,7 @@ export function NotificationsList({
 
   const handleNotificationClick = (notification: Notification) => {
     // Marquer comme lue si nécessaire
-    if (!notification.isRead) {
+    if (!notification.read) {
       markAsRead(notification.id);
     }
 
@@ -120,7 +120,7 @@ export function NotificationsList({
     }
   };
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
     <div>
@@ -166,9 +166,7 @@ export function NotificationsList({
             <li
               key={notification.id}
               className={`hover:bg-[color:var(--muted)] transition-colors cursor-pointer ${
-                !notification.isRead
-                  ? "bg-[color:var(--info-background)]/10"
-                  : ""
+                !notification.read ? "bg-[color:var(--info-background)]/10" : ""
               }`}
             >
               <div
@@ -196,7 +194,7 @@ export function NotificationsList({
                     })}
                   </p>
                 </div>
-                {!notification.isRead && (
+                {!notification.read && (
                   <button
                     className="flex-shrink-0 text-[color:var(--primary)]"
                     onClick={(e) => {
