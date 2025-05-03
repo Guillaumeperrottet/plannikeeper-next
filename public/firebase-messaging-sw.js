@@ -8,12 +8,15 @@ importScripts(
 
 // Récupérer les variables d'environnement exposées
 self.firebaseConfig = {
-  apiKey: self.FIREBASE_API_KEY,
-  authDomain: self.FIREBASE_AUTH_DOMAIN,
-  projectId: self.FIREBASE_PROJECT_ID,
-  storageBucket: self.FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: self.FIREBASE_MESSAGING_SENDER_ID,
-  appId: self.FIREBASE_APP_ID,
+  apiKey: "AIzaSyCLfw4jnCT-OD3wUjLKLZa4TaJf-4lngvA",
+  authDomain: "plannikeeper-next.firebaseapp.com",
+  databaseURL:
+    "https://plannikeeper-next-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "plannikeeper-next",
+  storageBucket: "plannikeeper-next.firebasestorage.app",
+  messagingSenderId: "1037649122480",
+  appId: "1:1037649122480:web:d66ab9101b7b5d61fb5775",
+  measurementId: "G-291XG7LXT7",
 };
 
 // Initialiser Firebase
