@@ -29,6 +29,26 @@ if (!getApps().length) {
 // Initialiser Firebase Cloud Messaging
 let messaging: Messaging | null = null;
 
+navigator.serviceWorker
+  .register("/firebase-messaging-sw.js")
+  .then((registration) => {
+    return Notification.requestPermission().then((status) => {
+      if (status === "granted") {
+        if (!messaging) {
+          throw new Error("Firebase Messaging n'est pas initialisé");
+        }
+        return getToken(messaging, {
+          vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+          serviceWorkerRegistration: registration,
+        });
+      } else {
+        throw new Error("Permission non accordée");
+      }
+    });
+  })
+  .then((token) => console.log("Token FCM:", token))
+  .catch((err) => console.error("Erreur getToken:", err));
+
 // Firebase Messaging n'est disponible que dans le navigateur
 if (typeof window !== "undefined") {
   try {

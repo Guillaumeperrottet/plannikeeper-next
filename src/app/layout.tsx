@@ -34,6 +34,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
+      <link rel="manifest" href="/manifest.json" />
       <body className="bg-background" suppressHydrationWarning>
         {userWithRole ? (
           <NotificationProvider userId={userWithRole.id}>
