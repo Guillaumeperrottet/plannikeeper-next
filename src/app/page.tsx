@@ -140,7 +140,6 @@ const ModernLandingPage = () => {
     <div className="min-h-screen bg-[#f9f3ec] text-[#141313] overflow-hidden">
       {/* Header */}
       <Header />
-
       {/* Hero Section */}
       <section
         id="hero"
@@ -297,7 +296,6 @@ const ModernLandingPage = () => {
           className="absolute left-1/4 bottom-1/4 w-48 md:w-72 h-48 md:h-72 rounded-full bg-gradient-to-br from-[#e8ebe0] to-[#beac93]/30 blur-3xl z-0"
         />
       </section>
-
       {/* Features Section */}
       <section
         id="features"
@@ -374,6 +372,228 @@ const ModernLandingPage = () => {
         </div>
       </section>
 
+      {/* For Whom Section */}
+      <section className="py-16 md:py-24 bg-[#19140d] text-white overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true, amount: 0.3 }}
+            className="text-center mb-16"
+          >
+            <div className="inline-block bg-[#d9840d]/10 px-4 py-2 rounded-full mb-6 border border-[#d9840d]/20">
+              <span className="text-[#d9840d] font-medium text-sm">
+                Qui peut utiliser PlanniKeeper
+              </span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold mb-6">Pour qui ?</h2>
+            <p className="text-lg text-gray-400 max-w-3xl mx-auto">
+              PlanniKeeper s&apos;adapte à différents profils professionnels de
+              l&apos;immobilier, offrant une solution personnalisée selon vos
+              besoins.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Agences immobilières */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              viewport={{ once: true, amount: 0.3 }}
+              whileHover={{ y: -10 }}
+              className="relative group"
+            >
+              <div className="absolute -inset-0.5 bg-gradient-to-br from-[#d9840d] to-[#e36002] rounded-xl blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
+              <div className="relative bg-[#2e281f] p-8 rounded-xl border border-[#d9840d]/20 group-hover:border-[#d9840d]/30 transition-all duration-300">
+                <div className="mb-6">
+                  <div className="w-16 h-16 bg-[#d9840d]/10 rounded-full flex items-center justify-center mb-6">
+                    <svg
+                      className="w-8 h-8 text-[#d9840d]"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-2xl font-bold mb-3">
+                    Agences immobilières
+                  </h3>
+                  <p className="text-gray-400 mb-6">
+                    Gestion optimisée du portefeuille complet avec collaboration
+                    d&apos;équipe avancée.
+                  </p>
+                </div>
+                <ul className="space-y-3">
+                  <li className="flex items-center text-sm text-gray-300">
+                    <div className="w-1.5 h-1.5 bg-[#d9840d] rounded-full mr-3"></div>
+                    Gestion de portefeuille
+                  </li>
+                  <li className="flex items-center text-sm text-gray-300">
+                    <div className="w-1.5 h-1.5 bg-[#d9840d] rounded-full mr-3"></div>
+                    Collaboration multi-agents
+                  </li>
+                  <li className="flex items-center text-sm text-gray-300">
+                    <div className="w-1.5 h-1.5 bg-[#d9840d] rounded-full mr-3"></div>
+                    Reporting automatisé
+                  </li>
+                </ul>
+              </div>
+            </motion.div>
+
+            {/* Property managers */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              viewport={{ once: true, amount: 0.3 }}
+              whileHover={{ y: -10 }}
+              className="relative group"
+            >
+              <div className="absolute -inset-0.5 bg-gradient-to-br from-[#d9840d] to-[#e36002] rounded-xl blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
+              <div className="relative bg-[#2e281f] p-8 rounded-xl border border-[#d9840d]/20 group-hover:border-[#d9840d]/30 transition-all duration-300">
+                <div className="mb-6">
+                  <div className="w-16 h-16 bg-[#d9840d]/10 rounded-full flex items-center justify-center mb-6">
+                    <svg
+                      className="w-8 h-8 text-[#d9840d]"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-2xl font-bold mb-3">Property managers</h3>
+                  <p className="text-gray-400 mb-6">
+                    Simplifiez la gestion quotidienne avec suivi des
+                    interventions et planning.
+                  </p>
+                </div>
+                <ul className="space-y-3">
+                  <li className="flex items-center text-sm text-gray-300">
+                    <div className="w-1.5 h-1.5 bg-[#d9840d] rounded-full mr-3"></div>
+                    Suivi des interventions
+                  </li>
+                  <li className="flex items-center text-sm text-gray-300">
+                    <div className="w-1.5 h-1.5 bg-[#d9840d] rounded-full mr-3"></div>
+                    Planning locataires
+                  </li>
+                  <li className="flex items-center text-sm text-gray-300">
+                    <div className="w-1.5 h-1.5 bg-[#d9840d] rounded-full mr-3"></div>
+                    Archivage documents
+                  </li>
+                </ul>
+              </div>
+            </motion.div>
+
+            {/* Indépendants */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              viewport={{ once: true, amount: 0.3 }}
+              whileHover={{ y: -10 }}
+              className="relative group"
+            >
+              <div className="absolute -inset-0.5 bg-gradient-to-br from-[#d9840d] to-[#e36002] rounded-xl blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
+              <div className="relative bg-[#2e281f] p-8 rounded-xl border border-[#d9840d]/20 group-hover:border-[#d9840d]/30 transition-all duration-300">
+                <div className="mb-6">
+                  <div className="w-16 h-16 bg-[#d9840d]/10 rounded-full flex items-center justify-center mb-6">
+                    <svg
+                      className="w-8 h-8 text-[#d9840d]"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-2xl font-bold mb-3">Indépendants</h3>
+                  <p className="text-gray-400 mb-6">
+                    Solution légère et efficace pour les professionnels en solo.
+                  </p>
+                </div>
+                <ul className="space-y-3">
+                  <li className="flex items-center text-sm text-gray-300">
+                    <div className="w-1.5 h-1.5 bg-[#d9840d] rounded-full mr-3"></div>
+                    Organisation personnelle
+                  </li>
+                  <li className="flex items-center text-sm text-gray-300">
+                    <div className="w-1.5 h-1.5 bg-[#d9840d] rounded-full mr-3"></div>
+                    Interface simplifiée
+                  </li>
+                  <li className="flex items-center text-sm text-gray-300">
+                    <div className="w-1.5 h-1.5 bg-[#d9840d] rounded-full mr-3"></div>
+                    Prix adapté aux freelances
+                  </li>
+                </ul>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Stats */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            viewport={{ once: true, amount: 0.3 }}
+            className="mt-24"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#d9840d]/5 to-transparent rounded-lg blur-xl"></div>
+                <div className="relative">
+                  <p className="text-4xl md:text-5xl font-bold text-[#d9840d] mb-2">
+                    1000+
+                  </p>
+                  <p className="text-sm md:text-base text-gray-400">
+                    Utilisateurs actifs
+                  </p>
+                </div>
+              </div>
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#d9840d]/5 to-transparent rounded-lg blur-xl"></div>
+                <div className="relative">
+                  <p className="text-4xl md:text-5xl font-bold text-[#d9840d] mb-2">
+                    50M€
+                  </p>
+                  <p className="text-sm md:text-base text-gray-400">
+                    Portefeuille géré
+                  </p>
+                </div>
+              </div>
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#d9840d]/5 to-transparent rounded-lg blur-xl"></div>
+                <div className="relative">
+                  <p className="text-4xl md:text-5xl font-bold text-[#d9840d] mb-2">
+                    24h
+                  </p>
+                  <p className="text-sm md:text-base text-gray-400">
+                    Temps économisé/semaine
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
       {/* Showcase Section */}
       <section
         id="showcase"
@@ -442,86 +662,6 @@ const ModernLandingPage = () => {
           </div>
         </div>
       </section>
-
-      {/* Stats Section */}
-      <section className="py-16 md:py-24 bg-[#19140d] text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true, amount: 0.3 }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">
-              Pourquoi les professionnels nous font confiance
-            </h2>
-          </motion.div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
-              viewport={{ once: true }}
-              className="text-center"
-            >
-              <p className="text-4xl md:text-5xl font-bold text-[#d9840d] mb-2">
-                98%
-              </p>
-              <p className="text-sm md:text-base text-gray-400">
-                Satisfaction client
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.2 }}
-              viewport={{ once: true }}
-              className="text-center"
-            >
-              <p className="text-4xl md:text-5xl font-bold text-[#d9840d] mb-2">
-                10k+
-              </p>
-              <p className="text-sm md:text-base text-gray-400">
-                Utilisateurs actifs
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.3 }}
-              viewport={{ once: true }}
-              className="text-center"
-            >
-              <p className="text-4xl md:text-5xl font-bold text-[#d9840d] mb-2">
-                30%
-              </p>
-              <p className="text-sm md:text-base text-gray-400">
-                Gain de temps
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.4 }}
-              viewport={{ once: true }}
-              className="text-center"
-            >
-              <p className="text-4xl md:text-5xl font-bold text-[#d9840d] mb-2">
-                5+
-              </p>
-              <p className="text-sm md:text-base text-gray-400">
-                Années d&apos;expérience
-              </p>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
       {/* Testimonial Section */}
       <section className="py-20 bg-gradient-to-b from-[#19140d] to-[#211b12]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
@@ -572,7 +712,6 @@ const ModernLandingPage = () => {
           </motion.div>
         </div>
       </section>
-
       {/* Pricing Section */}
       <section
         id="pricing"
@@ -664,7 +803,6 @@ const ModernLandingPage = () => {
           </div>
         </div>
       </section>
-
       {/* FAQ Section */}
       <section
         id="faq"
@@ -728,7 +866,6 @@ const ModernLandingPage = () => {
           </motion.div>
         </div>
       </section>
-
       {/* CTA Section */}
       <section className="py-20 bg-[#d9840d]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -758,7 +895,6 @@ const ModernLandingPage = () => {
           </div>
         </div>
       </section>
-
       {/* Footer */}
       <footer className="py-16 bg-[#19140d] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
