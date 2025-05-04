@@ -110,6 +110,12 @@ export default async function ProfilePage() {
               >
                 Gestion des utilisateurs
               </Link>
+              <Link
+                href="/profile/notifications"
+                className="mt-2 block w-full py-3 sm:py-2 text-center sm:text-left rounded-md bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:bg-[color:var(--primary)]/90 text-sm font-medium transition-colors sm:px-3 sm:w-auto"
+              >
+                Gestion des notifications
+              </Link>
             </div>
           )}
         </div>
