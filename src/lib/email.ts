@@ -1,8 +1,6 @@
 import { Resend } from "resend";
 import { Task } from "@prisma/client";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export type TaskWithDetails = Task & {
   article: {
     title: string;
@@ -19,21 +17,33 @@ export type TaskWithDetails = Task & {
   } | null;
 };
 
+let resend: Resend | null = null;
+
+function getResend(): Resend {
+  if (!resend) {
+    if (!process.env.RESEND_API_KEY) {
+      throw new Error("RESEND_API_KEY is not defined");
+    }
+    resend = new Resend(process.env.RESEND_API_KEY);
+  }
+  return resend;
+}
+
 export const EmailService = {
-  /**
-   * Envoie un email de notification pour les tâches assignées
-   */
   async sendTaskAssignmentEmail(
     to: string,
     userName: string,
     tasks: TaskWithDetails[]
   ) {
     try {
-      const { data, error } = await resend.emails.send({
-        from: "PlanniKeeper <notifications@your-domain.com>",
+      const { data, error } = await getResend().emails.send({
+        from:
+          process.env.RESEND_FROM_EMAIL ||
+          "PlanniKeeper <notifications@resend.dev>",
         to: [to],
         subject: `Nouvelles tâches assignées - ${new Date().toLocaleDateString()}`,
         html: generateTaskAssignmentEmailTemplate(userName, tasks),
+        replyTo: process.env.RESEND_REPLY_TO_EMAIL,
       });
 
       if (error) {
