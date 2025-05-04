@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { NotificationsList } from "@/app/profile/notifications/notifications-list";
 import { NotificationPreferences } from "@/app/profile/notifications/notification-preferences";
+import { EmailPreferences } from "@/app/profile/email-preferences";
+
 import { ArrowLeft } from "lucide-react";
 
 export default async function NotificationsPage() {
@@ -26,10 +28,13 @@ export default async function NotificationsPage() {
     where: { id: user.id },
     select: {
       notificationsEnabled: true,
+      emailNotificationsEnabled: true,
     },
   });
 
   const notificationsEnabled = userWithPrefs?.notificationsEnabled ?? true;
+  const emailNotificationsEnabled =
+    userWithPrefs?.emailNotificationsEnabled ?? true;
 
   const mappedNotifications = notifications.map((n) => ({
     id: typeof n.id === "string" ? parseInt(n.id, 10) : n.id,
@@ -71,6 +76,7 @@ export default async function NotificationsPage() {
                 <NotificationPreferences
                   initialEnabled={notificationsEnabled}
                 />
+                <EmailPreferences initialEnabled={emailNotificationsEnabled} />
               </div>
             </div>
           </div>

@@ -27,6 +27,7 @@ model User {
   accounts         Account[]
   OrganizationUser OrganizationUser[]
   Organization     Organization?      @relation(fields: [organizationId], references: [id])
+  emailNotificationsEnabled Boolean @default(true)
   objectAccess     ObjectAccess[]
   assignedTasks   Task[]
   deviceTokens     DeviceToken[]
