@@ -106,21 +106,52 @@ PlanniKeeper est une application web moderne conçue pour révolutionner la gest
 
 ### Configuration environnement
 
+```env
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/plannikeeper"
+
+# Authentication
+BETTER_AUTH_SECRET="your-secret-key"
+
+# Services
+CLOUDINARY_CLOUD_NAME="your-cloud-name"
+CLOUDINARY_API_KEY="your-api-key"
+CLOUDINARY_API_SECRET="your-api-secret"
+
+NEXT_PUBLIC_FIREBASE_API_KEY="your-api-key"
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="your-sender-id"
+NEXT_PUBLIC_FIREBASE_VAPID_KEY="your-vapid-key"
+
+RESEND_API_KEY="your-resend-key"
+Installation
+bash# Cloner le repo
+git clone https://github.com/yourusername/plannikeeper.git
+
+# Installation des dépendances
+cd plannikeeper
+yarn install
+
+# Setup de la base de données
+yarn prisma generate
+yarn prisma migrate dev
+
+# Lancer en développement
+yarn dev
 🏗️ Architecture
 Organisation du code
 src/
-├── app/ # Next.js App Router
-│ ├── api/ # API endpoints
-│ ├── components/ # Composants réutilisables
-│ ├── dashboard/ # Interface principale
-│ ├── profile/ # Gestion utilisateur
-│ └── ...
-├── lib/ # Utilities et services
-│ ├── auth-session.ts # Gestion d'authentification
-│ ├── firebase-admin.ts # Service notifications
-│ ├── cloudinary.ts # Upload de fichiers
-│ └── ...
-└── prisma/ # Schéma de base de données
+├── app/                    # Next.js App Router
+│   ├── api/               # API endpoints
+│   ├── components/        # Composants réutilisables
+│   ├── dashboard/         # Interface principale
+│   ├── profile/           # Gestion utilisateur
+│   └── ...
+├── lib/                   # Utilities et services
+│   ├── auth-session.ts    # Gestion d'authentification
+│   ├── firebase-admin.ts  # Service notifications
+│   ├── cloudinary.ts      # Upload de fichiers
+│   └── ...
+└── prisma/                # Schéma de base de données
 Base de données
 Le schéma utilise Prisma avec PostgreSQL et inclut :
 
@@ -156,12 +187,12 @@ Export des données en CSV/PDF
 🚢 Déploiement
 L'application est configurée pour Vercel avec Cron jobs pour les emails quotidiens :
 json{
-"crons": [
-{
-"path": "/api/cron/daily-emails",
-"schedule": "0 6 * * *"
-}
-]
+  "crons": [
+    {
+      "path": "/api/cron/daily-emails",
+      "schedule": "0 6 * * *"
+    }
+  ]
 }
 📱 PWA Support
 L'application supporte les Progressive Web Apps :
@@ -204,7 +235,4 @@ LE LOGICIEL EST FOURNI "TEL QUEL", SANS GARANTIE D'AUCUNE SORTE, EXPRESSE OU IMP
 👥 Équipe
 
 Développé avec ❤️ par l'équipe PlanniKeeper
-
-```
-
 ```
