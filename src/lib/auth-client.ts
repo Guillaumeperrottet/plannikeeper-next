@@ -1,6 +1,10 @@
 import { createAuthClient } from "better-auth/client";
 
 export const authClient = createAuthClient({
-  baseURL: "/api/auth", // Utiliser toujours une URL relative
-  // Supprimer la logique conditionnelle pour une meilleure cohérence
+  baseURL:
+    typeof window !== "undefined"
+      ? `${window.location.origin}/api/auth`
+      : process.env.NODE_ENV === "development"
+        ? "http://localhost:3000/api/auth"
+        : "https://plannikeeper-next.vercel.app/api/auth", // URL complète en production
 });
