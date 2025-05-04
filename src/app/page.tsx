@@ -371,9 +371,8 @@ const ModernLandingPage = () => {
           </motion.div>
         </div>
       </section>
-
       {/* For Whom Section */}
-      <section className="py-16 md:py-24 bg-[#19140d] text-white overflow-hidden">
+      <section className="py-16 md:py-24 bg-[#f9f3ec] text-[#141313] overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -388,7 +387,7 @@ const ModernLandingPage = () => {
               </span>
             </div>
             <h2 className="text-3xl md:text-5xl font-bold mb-6">Pour qui ?</h2>
-            <p className="text-lg text-gray-400 max-w-3xl mx-auto">
+            <p className="text-lg text-[#62605d] max-w-3xl mx-auto">
               PlanniKeeper s&apos;adapte à différents profils professionnels de
               l&apos;immobilier, offrant une solution personnalisée selon vos
               besoins.
@@ -405,8 +404,8 @@ const ModernLandingPage = () => {
               whileHover={{ y: -10 }}
               className="relative group"
             >
-              <div className="absolute -inset-0.5 bg-gradient-to-br from-[#d9840d] to-[#e36002] rounded-xl blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
-              <div className="relative bg-[#2e281f] p-8 rounded-xl border border-[#d9840d]/20 group-hover:border-[#d9840d]/30 transition-all duration-300">
+              <div className="absolute -inset-0.5 bg-gradient-to-br from-[#d9840d] to-[#e36002] rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+              <div className="relative bg-white p-8 rounded-xl border border-[#beac93] group-hover:border-[#d9840d] transition-all duration-300 shadow-sm hover:shadow-md">
                 <div className="mb-6">
                   <div className="w-16 h-16 bg-[#d9840d]/10 rounded-full flex items-center justify-center mb-6">
                     <svg
@@ -423,24 +422,24 @@ const ModernLandingPage = () => {
                       />
                     </svg>
                   </div>
-                  <h3 className="text-2xl font-bold mb-3">
+                  <h3 className="text-2xl font-bold mb-3 text-[#141313]">
                     Agences immobilières
                   </h3>
-                  <p className="text-gray-400 mb-6">
+                  <p className="text-[#62605d] mb-6">
                     Gestion optimisée du portefeuille complet avec collaboration
                     d&apos;équipe avancée.
                   </p>
                 </div>
                 <ul className="space-y-3">
-                  <li className="flex items-center text-sm text-gray-300">
+                  <li className="flex items-center text-sm text-[#62605d]">
                     <div className="w-1.5 h-1.5 bg-[#d9840d] rounded-full mr-3"></div>
                     Gestion de portefeuille
                   </li>
-                  <li className="flex items-center text-sm text-gray-300">
+                  <li className="flex items-center text-sm text-[#62605d]">
                     <div className="w-1.5 h-1.5 bg-[#d9840d] rounded-full mr-3"></div>
                     Collaboration multi-agents
                   </li>
-                  <li className="flex items-center text-sm text-gray-300">
+                  <li className="flex items-center text-sm text-[#62605d]">
                     <div className="w-1.5 h-1.5 bg-[#d9840d] rounded-full mr-3"></div>
                     Reporting automatisé
                   </li>
@@ -448,7 +447,7 @@ const ModernLandingPage = () => {
               </div>
             </motion.div>
 
-            {/* Property managers */}
+            {/* Propriétaires de biens */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -457,8 +456,8 @@ const ModernLandingPage = () => {
               whileHover={{ y: -10 }}
               className="relative group"
             >
-              <div className="absolute -inset-0.5 bg-gradient-to-br from-[#d9840d] to-[#e36002] rounded-xl blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
-              <div className="relative bg-[#2e281f] p-8 rounded-xl border border-[#d9840d]/20 group-hover:border-[#d9840d]/30 transition-all duration-300">
+              <div className="absolute -inset-0.5 bg-gradient-to-br from-[#d9840d] to-[#e36002] rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+              <div className="relative bg-white p-8 rounded-xl border border-[#beac93] group-hover:border-[#d9840d] transition-all duration-300 shadow-sm hover:shadow-md">
                 <div className="mb-6">
                   <div className="w-16 h-16 bg-[#d9840d]/10 rounded-full flex items-center justify-center mb-6">
                     <svg
@@ -471,28 +470,30 @@ const ModernLandingPage = () => {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={1.5}
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
                       />
                     </svg>
                   </div>
-                  <h3 className="text-2xl font-bold mb-3">Property managers</h3>
-                  <p className="text-gray-400 mb-6">
-                    Simplifiez la gestion quotidienne avec suivi des
-                    interventions et planning.
+                  <h3 className="text-2xl font-bold mb-3 text-[#141313]">
+                    Propriétaires de biens
+                  </h3>
+                  <p className="text-[#62605d] mb-6">
+                    Gérez tous vos biens immobiliers avec simplicité et
+                    efficacité.
                   </p>
                 </div>
                 <ul className="space-y-3">
-                  <li className="flex items-center text-sm text-gray-300">
+                  <li className="flex items-center text-sm text-[#62605d]">
                     <div className="w-1.5 h-1.5 bg-[#d9840d] rounded-full mr-3"></div>
-                    Suivi des interventions
+                    Campings & villages vacances
                   </li>
-                  <li className="flex items-center text-sm text-gray-300">
+                  <li className="flex items-center text-sm text-[#62605d]">
                     <div className="w-1.5 h-1.5 bg-[#d9840d] rounded-full mr-3"></div>
-                    Planning locataires
+                    Hôtels & résidences
                   </li>
-                  <li className="flex items-center text-sm text-gray-300">
+                  <li className="flex items-center text-sm text-[#62605d]">
                     <div className="w-1.5 h-1.5 bg-[#d9840d] rounded-full mr-3"></div>
-                    Archivage documents
+                    Immeubles & patrimoines
                   </li>
                 </ul>
               </div>
@@ -507,8 +508,8 @@ const ModernLandingPage = () => {
               whileHover={{ y: -10 }}
               className="relative group"
             >
-              <div className="absolute -inset-0.5 bg-gradient-to-br from-[#d9840d] to-[#e36002] rounded-xl blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
-              <div className="relative bg-[#2e281f] p-8 rounded-xl border border-[#d9840d]/20 group-hover:border-[#d9840d]/30 transition-all duration-300">
+              <div className="absolute -inset-0.5 bg-gradient-to-br from-[#d9840d] to-[#e36002] rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
+              <div className="relative bg-white p-8 rounded-xl border border-[#beac93] group-hover:border-[#d9840d] transition-all duration-300 shadow-sm hover:shadow-md">
                 <div className="mb-6">
                   <div className="w-16 h-16 bg-[#d9840d]/10 rounded-full flex items-center justify-center mb-6">
                     <svg
@@ -525,21 +526,23 @@ const ModernLandingPage = () => {
                       />
                     </svg>
                   </div>
-                  <h3 className="text-2xl font-bold mb-3">Indépendants</h3>
-                  <p className="text-gray-400 mb-6">
+                  <h3 className="text-2xl font-bold mb-3 text-[#141313]">
+                    Indépendants
+                  </h3>
+                  <p className="text-[#62605d] mb-6">
                     Solution légère et efficace pour les professionnels en solo.
                   </p>
                 </div>
                 <ul className="space-y-3">
-                  <li className="flex items-center text-sm text-gray-300">
+                  <li className="flex items-center text-sm text-[#62605d]">
                     <div className="w-1.5 h-1.5 bg-[#d9840d] rounded-full mr-3"></div>
                     Organisation personnelle
                   </li>
-                  <li className="flex items-center text-sm text-gray-300">
+                  <li className="flex items-center text-sm text-[#62605d]">
                     <div className="w-1.5 h-1.5 bg-[#d9840d] rounded-full mr-3"></div>
                     Interface simplifiée
                   </li>
-                  <li className="flex items-center text-sm text-gray-300">
+                  <li className="flex items-center text-sm text-[#62605d]">
                     <div className="w-1.5 h-1.5 bg-[#d9840d] rounded-full mr-3"></div>
                     Prix adapté aux freelances
                   </li>
@@ -548,48 +551,18 @@ const ModernLandingPage = () => {
             </motion.div>
           </div>
 
-          {/* Stats */}
+          {/* Et bien plus message */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.5 }}
             viewport={{ once: true, amount: 0.3 }}
-            className="mt-24"
+            className="mt-16 text-center"
           >
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#d9840d]/5 to-transparent rounded-lg blur-xl"></div>
-                <div className="relative">
-                  <p className="text-4xl md:text-5xl font-bold text-[#d9840d] mb-2">
-                    1000+
-                  </p>
-                  <p className="text-sm md:text-base text-gray-400">
-                    Utilisateurs actifs
-                  </p>
-                </div>
-              </div>
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#d9840d]/5 to-transparent rounded-lg blur-xl"></div>
-                <div className="relative">
-                  <p className="text-4xl md:text-5xl font-bold text-[#d9840d] mb-2">
-                    50M€
-                  </p>
-                  <p className="text-sm md:text-base text-gray-400">
-                    Portefeuille géré
-                  </p>
-                </div>
-              </div>
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#d9840d]/5 to-transparent rounded-lg blur-xl"></div>
-                <div className="relative">
-                  <p className="text-4xl md:text-5xl font-bold text-[#d9840d] mb-2">
-                    24h
-                  </p>
-                  <p className="text-sm md:text-base text-gray-400">
-                    Temps économisé/semaine
-                  </p>
-                </div>
-              </div>
+            <div className="inline-block bg-[#d9840d]/5 px-8 py-4 rounded-full border border-[#d9840d]/20">
+              <span className="text-xl font-medium text-[#d9840d] italic">
+                Et bien plus encore...
+              </span>
             </div>
           </motion.div>
         </div>
@@ -660,56 +633,6 @@ const ModernLandingPage = () => {
               direction="left"
             />
           </div>
-        </div>
-      </section>
-      {/* Testimonial Section */}
-      <section className="py-20 bg-gradient-to-b from-[#19140d] to-[#211b12]">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true, amount: 0.3 }}
-            className="bg-[#2e281f] p-8 md:p-12 rounded-2xl relative overflow-hidden"
-          >
-            <div className="relative z-10">
-              <div className="flex flex-col md:flex-row gap-8 items-center">
-                <div className="w-full md:w-1/4">
-                  <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-[#d9840d] mx-auto md:mx-0">
-                    <Image
-                      src="/images/testimonial-user.jpg"
-                      alt="Témoignage utilisateur"
-                      width={128}
-                      height={128}
-                      className="object-cover w-full h-full"
-                    />
-                  </div>
-                </div>
-
-                <div className="w-full md:w-3/4">
-                  <div className="text-[#d9840d] text-4xl mb-4">❝</div>
-                  <p className="text-white text-lg md:text-xl italic mb-6">
-                    PlanniKeeper a transformé la façon dont nous gérons notre
-                    portefeuille immobilier. L&apos;interface intuitive et les
-                    fonctionnalités de suivi des tâches nous ont permis
-                    d&apos;augmenter notre productivité de 40% tout en réduisant
-                    les erreurs administratives.
-                  </p>
-                  <div>
-                    <p className="text-white font-bold">Sophie Martin</p>
-                    <p className="text-[#a2a09d] text-sm">
-                      Directrice, Immobilier Premium
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="absolute top-0 left-0 w-full h-full opacity-10">
-              <div className="absolute -right-20 -top-20 w-64 h-64 rounded-full bg-[#d9840d] blur-3xl"></div>
-              <div className="absolute -left-20 -bottom-20 w-64 h-64 rounded-full bg-[#d9840d] blur-3xl"></div>
-            </div>
-          </motion.div>
         </div>
       </section>
       {/* Pricing Section */}
