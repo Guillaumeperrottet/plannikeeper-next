@@ -7,6 +7,7 @@ import TodoListAgendaWrapper from "./components/TodoListAgendaWrapper";
 import { prisma } from "@/lib/prisma";
 import { NotificationProvider } from "./components/notification-provider";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export default async function RootLayout({
   children,
@@ -39,6 +40,7 @@ export default async function RootLayout({
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#3367D6" />
         <Analytics />
+        <SpeedInsights />
       </head>
       <body className="bg-background" suppressHydrationWarning>
         {userWithRole ? (
