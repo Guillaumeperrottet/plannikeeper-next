@@ -2,18 +2,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
-  // Obtenir l'origine de la requête pour le CORS
+  // Améliorer le middleware pour mieux gérer les requêtes auth
   const origin = request.headers.get("Origin") || "*";
   const isDevelopment = process.env.NODE_ENV === "development";
 
-  // Log de débogage en développement
-  if (isDevelopment) {
-    console.log(
-      `Middleware - Method: ${request.method}, Path: ${request.nextUrl.pathname}, Origin: ${origin}`
-    );
-  }
-
-  // Pour les requêtes OPTIONS (preflight), renvoyer directement une réponse CORS
+  // Pour les requêtes OPTIONS (preflight)
   if (request.method === "OPTIONS") {
     return new NextResponse(null, {
       status: 204,
@@ -22,7 +15,7 @@ export function middleware(request: NextRequest) {
         "Access-Control-Allow-Methods":
           "GET, POST, OPTIONS, PUT, DELETE, PATCH",
         "Access-Control-Allow-Headers":
-          "Content-Type, Authorization, X-Requested-With",
+          "Content-Type, Authorization, X-Requested-With, Cookie",
         "Access-Control-Allow-Credentials": "true",
         "Access-Control-Max-Age": "86400",
       },
@@ -32,9 +25,17 @@ export function middleware(request: NextRequest) {
   // Pour les autres requêtes, ajouter les headers CORS à la réponse
   const response = NextResponse.next();
 
-  // Ajouter les headers CORS nécessaires
+  // Headers CORS de base
   response.headers.set("Access-Control-Allow-Origin", origin);
   response.headers.set("Access-Control-Allow-Credentials", "true");
+  response.headers.set(
+    "Access-Control-Allow-Methods",
+    "GET, POST, OPTIONS, PUT, DELETE, PATCH"
+  );
+  response.headers.set(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, X-Requested-With, Cookie"
+  );
 
   // En développement, permettre l'accès depuis n'importe quelle origine
   if (isDevelopment) {
@@ -44,7 +45,6 @@ export function middleware(request: NextRequest) {
   return response;
 }
 
-// Spécifier les chemins pour lesquels ce middleware doit s'exécuter
 export const config = {
   matcher: ["/api/:path*"],
 };

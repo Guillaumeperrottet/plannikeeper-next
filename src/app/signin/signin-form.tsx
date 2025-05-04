@@ -26,22 +26,29 @@ export default function SignInForm({
     setIsLoading(true);
     setError(null);
 
-    await authClient.signIn.email(
-      {
+    try {
+      const { error: authError } = await authClient.signIn.email({
         email,
         password,
         callbackURL: redirectPath,
-      },
-      {
-        onSuccess: () => {
-          window.location.href = redirectPath;
-        },
-        onError: () => {
-          setError("Invalid email or password");
-          setIsLoading(false);
-        },
+      });
+
+      if (authError) {
+        setError("Invalid email or password");
+        return;
       }
-    );
+
+      // Petite pause pour permettre aux cookies d'être définis
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Utiliser window.location.href pour une redirection forcée
+      window.location.href = redirectPath;
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Une erreur est survenue, veuillez réessayer");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -90,7 +97,6 @@ export default function SignInForm({
               {isLoading ? "Signing in..." : "Login"}
             </Button>
           </div>
-          {/* ... (social login buttons et autres éléments si tu veux les garder) ... */}
         </div>
       </form>
       <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary">
