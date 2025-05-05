@@ -32,6 +32,7 @@ model User {
   assignedTasks   Task[]
   deviceTokens     DeviceToken[]
   notifications     Notification[]
+  comments         Comment[]
 
   @@unique([email])
   @@map("user")
@@ -208,6 +209,7 @@ model Task {
   assignedTo            User?     @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
+  comments              Comment[]
 
   @@map("task")
 }
@@ -300,6 +302,20 @@ model Subscription {
   
   @@index([organizationId])
   @@index([stripeSubscriptionId])
+}
+
+model Comment {
+  id          String   @id @default(uuid())
+  content     String
+  taskId      String
+  userId      String
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([taskId])
+  @@index([userId])
 }
 
 enum Platform {

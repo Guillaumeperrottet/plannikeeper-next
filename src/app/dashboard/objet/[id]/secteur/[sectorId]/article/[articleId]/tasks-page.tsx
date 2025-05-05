@@ -2,6 +2,7 @@
 
 import DocumentsList from "./documents-list";
 import DocumentUpload from "./document-upload";
+import TaskComments from "./TaskComments";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -1516,8 +1517,14 @@ export default function TasksPage({
                           </p>
                         )}
                       </div>
-                    </div>
 
+                      {/* Section Commentaires */}
+                      {selectedTask.id && (
+                        <div className="mt-6">
+                          <TaskComments taskId={selectedTask.id} />
+                        </div>
+                      )}
+                    </div>
                     {/* Informations latérales - uniquement pour desktop */}
                     {!isMobileView && (
                       <div className="hidden md:block space-y-4">
