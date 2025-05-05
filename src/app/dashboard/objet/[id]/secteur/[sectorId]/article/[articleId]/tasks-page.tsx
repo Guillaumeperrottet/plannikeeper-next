@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import TaskForm from "./task-form";
 import { toast } from "sonner";
+import TaskFormMobileOptimized from "@/app/dashboard/objet/[id]/secteur/[sectorId]/article/[articleId]/TaskFormMobileOptimized";
 import {
   Calendar,
   Clock,
@@ -160,6 +161,18 @@ export default function TasksPage({
   // État pour le mode mobile
   const [isMobileView, setIsMobileView] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
+  const [useOptimizedForm, setUseOptimizedForm] = useState(false);
+
+  // Détecter si on est sur mobile
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setUseOptimizedForm(window.innerWidth < 768);
+    };
+
+    checkIfMobile();
+    window.addEventListener("resize", checkIfMobile);
+    return () => window.removeEventListener("resize", checkIfMobile);
+  }, []);
 
   // État pour le filtre avancé
   const [advancedFilter, setAdvancedFilter] = useState<FilterState>({
@@ -1245,15 +1258,9 @@ export default function TasksPage({
         >
           <AnimatePresence mode="wait">
             {showAddForm ? (
-              <motion.div
-                key="add-form"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                transition={{ duration: 0.2 }}
-                className="flex-1 overflow-auto p-3 sm:p-6"
-              >
-                <TaskForm
+              // Utiliser le formulaire optimisé pour mobile ou le standard selon la taille d'écran
+              useOptimizedForm ? (
+                <TaskFormMobileOptimized
                   users={users}
                   articleId={articleId}
                   onSave={(task, documents) =>
@@ -1264,7 +1271,28 @@ export default function TasksPage({
                     if (isMobileView) setShowSidebar(true);
                   }}
                 />
-              </motion.div>
+              ) : (
+                <motion.div
+                  key="add-form"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex-1 overflow-auto p-3 sm:p-6"
+                >
+                  <TaskForm
+                    users={users}
+                    articleId={articleId}
+                    onSave={(task, documents) =>
+                      handleTaskSave(task as Task, documents)
+                    }
+                    onCancel={() => {
+                      setShowAddForm(false);
+                      if (isMobileView) setShowSidebar(true);
+                    }}
+                  />
+                </motion.div>
+              )
             ) : selectedTask ? (
               <motion.div
                 key={selectedTask.id}
