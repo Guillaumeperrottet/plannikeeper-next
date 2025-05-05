@@ -37,8 +37,8 @@ export default function Breadcrumbs() {
           type === "objet"
             ? `/api/breadcrumb/objet/${id}`
             : type === "secteur"
-            ? `/api/breadcrumb/sector/${id}`
-            : `/api/breadcrumb/article/${id}`;
+              ? `/api/breadcrumb/sector/${id}`
+              : `/api/breadcrumb/article/${id}`;
 
         const response = await fetch(endpoint);
 
@@ -49,8 +49,8 @@ export default function Breadcrumbs() {
             type === "objet"
               ? data.nom
               : type === "secteur"
-              ? data.name
-              : data.title;
+                ? data.name
+                : data.title;
 
           // Mettre en cache le nom récupéré
           if (name) {
@@ -212,7 +212,9 @@ export default function Breadcrumbs() {
 
   // Affichage d'un squelette de chargement
   if (isLoading) {
-    return <div className="animate-pulse h-4 w-40 bg-gray-200 rounded"></div>;
+    return (
+      <div className="animate-pulse h-4 w-40 bg-[color:var(--muted)] rounded"></div>
+    );
   }
 
   // Ne pas afficher si pas de chemin significatif
@@ -227,7 +229,7 @@ export default function Breadcrumbs() {
           <li key={breadcrumb.href} className="flex items-center">
             {index > 0 && (
               <ChevronRight
-                className="mx-1 h-4 w-4 text-gray-400"
+                className="mx-1 h-4 w-4 text-[color:var(--muted-foreground)]"
                 aria-hidden="true"
               />
             )}
@@ -235,11 +237,13 @@ export default function Breadcrumbs() {
               className={index === breadcrumbs.length - 1 ? "font-medium" : ""}
             >
               {breadcrumb.current ? (
-                <span className="text-gray-500">{breadcrumb.label}</span>
+                <span className="text-[color:var(--muted-foreground)]">
+                  {breadcrumb.label}
+                </span>
               ) : (
                 <Link
                   href={breadcrumb.href}
-                  className="text-primary hover:text-primary/80"
+                  className="text-[color:var(--primary)] hover:text-[color:var(--primary)]/80 transition-colors"
                 >
                   {breadcrumb.label}
                 </Link>
