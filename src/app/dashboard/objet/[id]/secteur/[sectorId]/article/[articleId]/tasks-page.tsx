@@ -1197,9 +1197,6 @@ export default function TasksPage({
                               />
                             </div>
                             <div className="mt-2">
-                              <h4 className="text-xs sm:text-sm font-medium mb-1">
-                                Ajouter
-                              </h4>
                               <DocumentUpload
                                 taskId={selectedTask.id}
                                 onUploadSuccess={() => {}}
