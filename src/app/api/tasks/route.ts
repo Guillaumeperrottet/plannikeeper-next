@@ -83,6 +83,12 @@ export async function POST(req: NextRequest) {
       select: { notificationsEnabled: true, name: true },
     });
 
+    // Récupérer les infos de l'utilisateur qui crée la tâche
+    const assignerUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { name: true },
+    });
+
     if (assignedUser?.notificationsEnabled) {
       // Préparer les données pour la notification
       const notificationData = {
@@ -93,9 +99,11 @@ export async function POST(req: NextRequest) {
         link: `/dashboard/objet/${article.sector.object.id}/secteur/${article.sector.id}/article/${article.id}`,
         data: {
           taskId: task.id,
+          taskName: name, // Ajout du nom de la tâche
           objectName: article.sector.object.nom,
           sectorName: article.sector.name,
           articleTitle: article.title,
+          assignerName: assignerUser?.name || "Un utilisateur", // Ajout de qui a assigné la tâche
         },
       };
 

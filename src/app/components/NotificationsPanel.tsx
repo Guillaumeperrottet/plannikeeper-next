@@ -7,6 +7,15 @@ import { fr } from "date-fns/locale";
 import { Bell, X, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+type NotificationData = {
+  taskId?: string;
+  taskName?: string;
+  objectName?: string;
+  sectorName?: string;
+  articleTitle?: string;
+  assignerName?: string;
+};
+
 type Notification = {
   id: number;
   type: string;
@@ -30,6 +39,7 @@ type Notification = {
       };
     };
   } | null;
+  data?: NotificationData;
 };
 
 interface NotificationsPanelProps {
@@ -214,13 +224,29 @@ export default function NotificationsPanel({
                     <p className="text-sm text-[color:var(--foreground)] mb-1">
                       {notification.content}
                     </p>
-                    {notification.task && (
-                      <p className="text-xs text-[color:var(--muted-foreground)] truncate">
-                        {notification.task.article.sector.object.nom} ›{" "}
-                        {notification.task.article.sector.name} ›{" "}
-                        {notification.task.name}
-                      </p>
+
+                    {/* Afficher les informations détaillées de la tâche */}
+                    {notification.data && notification.data.objectName && (
+                      <div className="text-xs text-[color:var(--muted-foreground)] space-y-1 mt-1">
+                        {notification.data.taskName && (
+                          <p className="flex items-center gap-1">
+                            <span className="font-medium">Tâche:</span>
+                            {notification.data.taskName}
+                          </p>
+                        )}
+                        <p className="flex items-center gap-1">
+                          <span className="font-medium">Objet:</span>
+                          {notification.data.objectName}
+                        </p>
+                        {notification.data.assignerName && (
+                          <p className="flex items-center gap-1">
+                            <span className="font-medium">Assignée par:</span>
+                            {notification.data.assignerName}
+                          </p>
+                        )}
+                      </div>
                     )}
+
                     <p className="text-xs text-[color:var(--muted-foreground)] mt-1">
                       {formatDistanceToNow(new Date(notification.createdAt), {
                         addSuffix: true,
