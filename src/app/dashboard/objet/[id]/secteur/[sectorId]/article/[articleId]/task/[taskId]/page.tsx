@@ -41,7 +41,7 @@ export default async function TaskPage({
     );
   }
 
-  // Vérifier que l'utilisateur appartient à la même organisation
+  // Vérifier que l'utilisateur appartient à la même organisatio
   const userWithOrg = await prisma.user.findUnique({
     where: { id: session.id },
     include: { Organization: true },
