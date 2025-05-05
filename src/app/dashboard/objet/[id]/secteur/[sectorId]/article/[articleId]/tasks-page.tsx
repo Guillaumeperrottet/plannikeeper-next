@@ -1243,25 +1243,6 @@ export default function TasksPage({
             isMobileView && showSidebar ? "hidden" : "block"
           } bg-[color:var(--background)]`}
         >
-          {/* Barre de navigation pour mobile - uniquement pour les détails de tâche en mode mobile */}
-          {isMobileView && (selectedTask || showAddForm) && (
-            <div className="bg-[color:var(--card)] border-b border-[color:var(--border)] p-3 flex items-center">
-              <button
-                onClick={() => {
-                  setSelectedTask(null);
-                  setShowAddForm(false);
-                  setShowSidebar(true);
-                }}
-                className="mr-2 p-1 rounded-full hover:bg-[color:var(--muted)]"
-              >
-                <ArrowLeft size={18} />
-              </button>
-              <h1 className="font-medium text-sm">
-                {showAddForm ? "Nouvelle tâche" : selectedTask?.name}
-              </h1>
-            </div>
-          )}
-
           <AnimatePresence mode="wait">
             {showAddForm ? (
               <motion.div
