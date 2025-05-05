@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
 import TaskForm from "./task-form";
 import { toast } from "sonner";
 import TaskFormMobileOptimized from "@/app/dashboard/objet/[id]/secteur/[sectorId]/article/[articleId]/TaskFormMobileOptimized";
@@ -19,12 +18,13 @@ import {
   Tag,
   SlidersHorizontal,
   ChevronDown,
-  AlertCircle,
   CheckCircle2,
   ClipboardList,
   CircleOff,
   LayoutList,
   ChevronRight,
+  Clock,
+  FileText,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -54,7 +54,6 @@ type Task = {
   updatedAt: Date;
 };
 
-// Options de tri disponibles
 type SortOption = {
   id: string;
   label: string;
@@ -95,13 +94,12 @@ const sortOptions: SortOption[] = [
   },
   {
     id: "createdDesc",
-    label: "Date de création (plus récente)",
+    label: "Plus récentes",
     sortFn: (a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   },
 ];
 
-// État du filtre avancé
 type FilterState = {
   status: string[];
   assignedToId: string | null;
@@ -113,7 +111,6 @@ type FilterState = {
   recurring: boolean | null;
 };
 
-// État des sections repliées
 type CollapsedSections = {
   [key: string]: boolean;
 };
@@ -129,7 +126,6 @@ interface TaskGroupProps {
   isMobileView: boolean;
 }
 
-// Move formatDate here so it's available in TaskGroup
 const formatDate = (date: Date | null) => {
   if (!date) return "Non définie";
   const d = new Date(date);
@@ -153,36 +149,54 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
-        return "bg-[color:var(--warning-background)] text-[color:var(--warning-foreground)] border-[color:var(--warning-border)]";
+        return "bg-amber-50 text-amber-700 border-amber-200";
       case "in_progress":
-        return "bg-[color:var(--info-background)] text-[color:var(--info-foreground)] border-[color:var(--info-border)]";
+        return "bg-blue-50 text-blue-700 border-blue-200";
       case "completed":
-        return "bg-[color:var(--success-background)] text-[color:var(--success-foreground)] border-[color:var(--success-border)]";
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
       case "cancelled":
-        return "bg-[color:var(--destructive-background)] text-[color:var(--destructive-foreground)] border-[color:var(--destructive-border)]";
+        return "bg-red-50 text-red-700 border-red-200";
       default:
-        return "bg-[color:var(--muted)] text-[color:var(--muted-foreground)] border-[color:var(--border)]";
+        return "bg-gray-50 text-gray-700 border-gray-200";
+    }
+  };
+
+  const getTaskStatusColor = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "border-l-amber-500 bg-amber-50/30";
+      case "in_progress":
+        return "border-l-blue-500 bg-blue-50/30";
+      case "completed":
+        return "border-l-emerald-500 bg-emerald-50/30";
+      case "cancelled":
+        return "border-l-red-500 bg-red-50/30";
+      default:
+        return "border-l-gray-300 bg-gray-50";
     }
   };
 
   return (
-    <div className="border border-[color:var(--border)] rounded-lg overflow-hidden mb-2">
+    <div className="rounded-lg border border-gray-200 overflow-hidden shadow-sm mb-3">
       <button
         onClick={onToggle}
-        className={`w-full px-4 py-3 flex items-center justify-between hover:bg-[color:var(--muted)]/50 transition-colors ${getStatusColor(
+        className={`w-full px-4 py-3.5 flex items-center justify-between hover:bg-gray-50 transition-all duration-200 ${getStatusColor(
           status
         )}`}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <motion.div
             animate={{ rotate: isCollapsed ? 0 : 90 }}
             transition={{ duration: 0.2 }}
+            className="text-gray-500"
           >
             <ChevronRight size={18} />
           </motion.div>
-          {icon}
-          <span className="font-medium text-sm sm:text-base">{title}</span>
-          <span className="bg-white/20 text-sm px-2 py-0.5 rounded-full">
+          <div className="flex items-center gap-3">
+            {icon}
+            <span className="font-medium text-base">{title}</span>
+          </div>
+          <span className="bg-white/40 px-2.5 py-0.5 rounded-full text-sm font-medium">
             {taskCount}
           </span>
         </div>
@@ -197,57 +211,65 @@ const TaskGroup: React.FC<TaskGroupProps> = ({
             transition={{ duration: 0.2 }}
             style={{ overflow: "hidden" }}
           >
-            <div className="max-h-[300px] overflow-y-auto">
+            <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100 bg-white">
               {tasks.map((task) => (
-                <button
+                <motion.button
                   key={task.id}
+                  whileHover={{ backgroundColor: "#f9fafb" }}
                   onClick={() => onTaskClick(task)}
-                  className={cn(
-                    "w-full px-4 py-2 text-left text-xs sm:text-sm transition-colors border-b border-[color:var(--border)] last:border-0",
-                    "hover:bg-[color:var(--accent)] text-[color:var(--foreground)] flex items-center justify-between"
-                  )}
+                  className={`w-full px-4 py-3 text-left border-l-4 ${getTaskStatusColor(
+                    task.status
+                  )} hover:shadow-sm transition-all duration-200`}
                 >
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="font-medium truncate mr-2">
-                        {task.name}
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-1.5">
+                        <div
+                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{
+                            backgroundColor: task.color || "var(--primary)",
+                          }}
+                        />
+                        <h3 className="font-medium text-base text-gray-900 truncate">
+                          {task.name}
+                        </h3>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        {task.taskType && (
+                          <span className="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
+                            <Tag size={12} />
+                            <span>{task.taskType}</span>
+                          </span>
+                        )}
+
+                        {task.realizationDate && (
+                          <span className="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
+                            <Calendar size={12} />
+                            <span>{formatDate(task.realizationDate)}</span>
+                          </span>
+                        )}
+
+                        {task.assignedTo && (
+                          <span className="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
+                            <User size={12} />
+                            <span className="truncate max-w-[120px]">
+                              {task.assignedTo.name}
+                            </span>
+                          </span>
+                        )}
                       </div>
                     </div>
-
-                    <div className="flex flex-wrap items-center text-[10px] sm:text-xs text-[color:var(--muted-foreground)] gap-2">
-                      {task.taskType && (
-                        <span className="flex items-center">
-                          <Tag size={10} className="mr-1 sm:w-3 sm:h-3" />
-                          <span className="truncate">{task.taskType}</span>
-                        </span>
-                      )}
-
-                      {task.realizationDate && (
-                        <span className="flex items-center">
-                          <Calendar size={10} className="mr-1 sm:w-3 sm:h-3" />
-                          <span>{formatDate(task.realizationDate)}</span>
-                        </span>
-                      )}
-
-                      {task.assignedTo && (
-                        <span className="flex items-center">
-                          <User size={10} className="mr-1 sm:w-3 sm:h-3" />
-                          <span className="truncate">
-                            {task.assignedTo.name}
-                          </span>
-                        </span>
-                      )}
-                    </div>
+                    <ChevronRight
+                      size={18}
+                      className="flex-shrink-0 text-gray-400"
+                    />
                   </div>
-                  <ChevronRight
-                    size={16}
-                    className="flex-shrink-0 ml-2 text-[color:var(--muted-foreground)]"
-                  />
-                </button>
+                </motion.button>
               ))}
 
               {tasks.length === 0 && (
-                <div className="px-4 py-3 text-sm text-[color:var(--muted-foreground)]">
+                <div className="px-4 py-6 text-sm text-gray-500 text-center bg-gray-50">
                   Aucune tâche dans cette catégorie
                 </div>
               )}
@@ -287,22 +309,19 @@ export default function TasksPage({
   const [showSortOptions, setShowSortOptions] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // État pour le mode mobile
   const [isMobileView, setIsMobileView] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
   const [useOptimizedForm, setUseOptimizedForm] = useState(false);
 
-  // État pour les sections repliées
   const [collapsedSections, setCollapsedSections] = useState<CollapsedSections>(
     {
       pending: false,
       in_progress: false,
-      completed: true, // Par défaut, les tâches terminées sont repliées
-      cancelled: true, // Par défaut, les tâches annulées sont repliées
+      completed: true,
+      cancelled: true,
     }
   );
 
-  // Détecter si on est sur mobile
   useEffect(() => {
     const checkIfMobile = () => {
       setUseOptimizedForm(window.innerWidth < 768);
@@ -314,7 +333,6 @@ export default function TasksPage({
     return () => window.removeEventListener("resize", checkIfMobile);
   }, []);
 
-  // État pour le filtre avancé
   const [advancedFilter, setAdvancedFilter] = useState<FilterState>({
     status: [],
     assignedToId: null,
@@ -326,16 +344,13 @@ export default function TasksPage({
     recurring: null,
   });
 
-  // Filtrer les tâches
   useEffect(() => {
     let result = [...tasks];
 
-    // Appliquer le filtre de statut simple
     if (filter !== "all") {
       result = result.filter((task) => task.status === filter);
     }
 
-    // Appliquer la recherche
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(
@@ -347,7 +362,6 @@ export default function TasksPage({
       );
     }
 
-    // Appliquer les filtres avancés
     if (showAdvancedFilters) {
       if (advancedFilter.status.length > 0) {
         result = result.filter((task) =>
@@ -393,7 +407,6 @@ export default function TasksPage({
     setFilteredTasks(result);
   }, [filter, searchQuery, tasks, showAdvancedFilters, advancedFilter]);
 
-  // Appliquer le tri
   useEffect(() => {
     const sortOption = sortOptions.find((opt) => opt.id === sortBy);
     if (sortOption) {
@@ -404,7 +417,6 @@ export default function TasksPage({
     }
   }, [filteredTasks, sortBy]);
 
-  // Grouper les tâches par statut
   const groupedTasksByStatus = useMemo(() => {
     const groups = {
       pending: displayedTasks.filter((task) => task.status === "pending"),
@@ -545,15 +557,15 @@ export default function TasksPage({
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "pending":
-        return <ClipboardList size={18} />;
+        return <ClipboardList size={18} className="text-amber-500" />;
       case "in_progress":
-        return <AlertCircle size={18} />;
+        return <Clock size={18} className="text-blue-500" />;
       case "completed":
-        return <CheckCircle2 size={18} />;
+        return <CheckCircle2 size={18} className="text-emerald-500" />;
       case "cancelled":
-        return <CircleOff size={18} />;
+        return <CircleOff size={18} className="text-red-500" />;
       default:
-        return <ClipboardList size={18} />;
+        return <ClipboardList size={18} className="text-gray-500" />;
     }
   };
 
@@ -568,29 +580,46 @@ export default function TasksPage({
         advancedFilter.dateRange.to !== null ||
         advancedFilter.recurring !== null));
 
+  const getTaskCounts = () => {
+    const counts = {
+      all: tasks.length,
+      pending: tasks.filter((t) => t.status === "pending").length,
+      in_progress: tasks.filter((t) => t.status === "in_progress").length,
+      completed: tasks.filter((t) => t.status === "completed").length,
+      cancelled: tasks.filter((t) => t.status === "cancelled").length,
+    };
+    return counts;
+  };
+
+  const taskCounts = getTaskCounts();
+
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-[color:var(--background)]">
+    <div className="flex flex-col h-screen bg-gray-50 overflow-hidden">
       {/* Barre de navigation mobile */}
       {isMobileView && (
-        <div className="bg-[color:var(--card)] border-b border-[color:var(--border)] p-3 flex justify-between items-center">
+        <div className="bg-white border-b border-gray-200 p-4 flex justify-between items-center shadow-sm">
           <Link
             href={`/dashboard/objet/${objetId}/view`}
             className="flex items-center"
           >
-            <ArrowLeft size={18} className="mr-2" />
-            <span className="font-medium truncate max-w-[200px]">
+            <ArrowLeft size={20} className="mr-3 text-gray-600" />
+            <span className="font-medium text-lg truncate max-w-[200px] text-gray-900">
               {articleTitle}
             </span>
           </Link>
 
           <button
             onClick={() => setShowSidebar(!showSidebar)}
-            className="p-2 rounded-full hover:bg-[color:var(--muted)]"
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
             aria-label={
               showSidebar ? "Masquer les tâches" : "Afficher les tâches"
             }
           >
-            {showSidebar ? <X size={18} /> : <LayoutList size={18} />}
+            {showSidebar ? (
+              <X size={20} className="text-gray-600" />
+            ) : (
+              <LayoutList size={20} className="text-gray-600" />
+            )}
           </button>
         </div>
       )}
@@ -602,45 +631,49 @@ export default function TasksPage({
           <div
             className={`${
               isMobileView
-                ? "absolute inset-0 z-20 bg-[color:var(--background)]"
+                ? "absolute inset-0 z-20 bg-gray-50"
                 : "relative w-96 flex-shrink-0"
-            } border-r border-[color:var(--border)] bg-[color:var(--card)] flex flex-col`}
+            } border-r border-gray-200 bg-white flex flex-col shadow-sm`}
           >
             {!isMobileView && (
-              <div className="border-b border-[color:var(--border)] flex items-center">
+              <div className="border-b border-gray-200 bg-white p-6 flex items-center">
                 <Link
                   href={`/dashboard/objet/${objetId}/view`}
-                  className="mr-2 p-2 rounded-full hover:bg-[color:var(--muted)] transition-colors"
+                  className="mr-3 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
                 >
-                  <ArrowLeft
-                    size={18}
-                    className="text-[color:var(--muted-foreground)]"
-                  />
+                  <ArrowLeft size={20} className="text-gray-600" />
                 </Link>
-                <h1 className="font-medium truncate text-[color:var(--foreground)]">
-                  {articleTitle}
-                </h1>
+                <div className="flex-1 min-w-0">
+                  <h1 className="font-semibold text-lg text-gray-900 truncate">
+                    {articleTitle}
+                  </h1>
+                  {articleDescription && (
+                    <p className="text-sm text-gray-500 truncate">
+                      {articleDescription}
+                    </p>
+                  )}
+                </div>
               </div>
             )}
 
-            {/* Barre de recherche */}
-            <div className="p-3 border-b border-[color:var(--border)]">
+            {/* Barre de recherche améliorée */}
+            <div className="p-6 border-b border-gray-200 bg-white">
               <div className="relative">
                 <Search
-                  size={16}
-                  className="absolute left-2.5 top-2.5 text-[color:var(--muted-foreground)]"
+                  size={18}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
                 />
                 <input
                   type="text"
                   placeholder="Rechercher des tâches..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-[color:var(--border)] bg-[color:var(--background)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent text-[color:var(--foreground)]"
+                  className="w-full pl-11 pr-10 py-2.5 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 text-gray-900 placeholder-gray-400 transition-all"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery("")}
-                    className="absolute right-2.5 top-2.5 text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)]"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                   >
                     <X size={16} />
                   </button>
@@ -648,57 +681,53 @@ export default function TasksPage({
               </div>
             </div>
 
-            {/* Contrôles de filtrage et tri */}
-            <div className="p-3 border-b border-[color:var(--border)]">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Filter
-                    size={16}
-                    className="text-[color:var(--muted-foreground)]"
-                  />
-                  <span className="text-sm text-[color:var(--muted-foreground)]">
-                    Filtres
-                  </span>
-                </div>
+            {/* Contrôles de filtrage modernisés */}
+            <div className="p-6 border-b border-gray-200 bg-white">
+              <div className="flex items-center gap-2">
+                <select
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  className="flex-1 text-sm rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer"
+                >
+                  <option value="all">Tous ({taskCounts.all})</option>
+                  <option value="pending">
+                    À faire ({taskCounts.pending})
+                  </option>
+                  <option value="in_progress">
+                    En cours ({taskCounts.in_progress})
+                  </option>
+                  <option value="completed">
+                    Terminées ({taskCounts.completed})
+                  </option>
+                  <option value="cancelled">
+                    Annulées ({taskCounts.cancelled})
+                  </option>
+                </select>
 
-                <div className="flex">
-                  <select
-                    value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
-                    className="text-xs sm:text-sm rounded border border-[color:var(--border)] bg-[color:var(--background)] px-2 py-1 text-[color:var(--foreground)]"
-                  >
-                    <option value="all">Toutes</option>
-                    <option value="pending">À faire</option>
-                    <option value="in_progress">En cours</option>
-                    <option value="completed">Terminées</option>
-                    <option value="cancelled">Annulées</option>
-                  </select>
-
-                  <button
-                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                    className={`ml-2 p-1 rounded ${
-                      showAdvancedFilters
-                        ? "bg-[color:var(--primary)] text-white"
-                        : "hover:bg-[color:var(--muted)]"
-                    }`}
-                    title="Filtres avancés"
-                  >
-                    <SlidersHorizontal size={16} />
-                  </button>
-                </div>
+                <button
+                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                  className={`p-2 rounded-lg transition-all hover:bg-gray-100 ${
+                    showAdvancedFilters
+                      ? "bg-blue-100 text-blue-600"
+                      : "text-gray-600"
+                  }`}
+                  title="Filtres avancés"
+                >
+                  <SlidersHorizontal size={18} />
+                </button>
               </div>
 
-              {/* Options de tri - Optimisées pour mobile */}
-              <div className="flex justify-between items-center">
+              {/* Options de tri modernisées */}
+              <div className="flex justify-between items-center mt-4">
                 <div className="relative">
                   <button
                     onClick={() => setShowSortOptions(!showSortOptions)}
-                    className="flex items-center gap-1 text-xs sm:text-sm font-medium px-2 py-1 rounded hover:bg-[color:var(--muted)]"
+                    className="flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-gray-100 text-gray-700"
                   >
-                    <ArrowDownUp size={12} className="sm:w-4 sm:h-4" />
-                    <span>Trier</span>
+                    <ArrowDownUp size={14} />
+                    <span>Trier par</span>
                     <ChevronDown
-                      size={12}
+                      size={14}
                       className={`transition-transform ${
                         showSortOptions ? "rotate-180" : ""
                       }`}
@@ -706,12 +735,14 @@ export default function TasksPage({
                   </button>
 
                   {showSortOptions && (
-                    <div className="absolute z-10 left-0 mt-1 bg-background border border-border rounded-md shadow-lg w-48">
+                    <div className="absolute z-10 left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg w-48 py-1">
                       {sortOptions.map((option) => (
                         <button
                           key={option.id}
-                          className={`w-full text-left px-3 py-2 text-xs sm:text-sm hover:bg-muted flex justify-between items-center ${
-                            sortBy === option.id ? "bg-muted" : ""
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex justify-between items-center ${
+                            sortBy === option.id
+                              ? "text-blue-600 bg-blue-50"
+                              : "text-gray-700"
                           }`}
                           onClick={() => {
                             setSortBy(option.id);
@@ -720,7 +751,7 @@ export default function TasksPage({
                         >
                           {option.label}
                           {sortBy === option.id && (
-                            <Check size={12} className="sm:w-4 sm:h-4" />
+                            <Check size={14} className="text-blue-600" />
                           )}
                         </button>
                       ))}
@@ -730,37 +761,63 @@ export default function TasksPage({
               </div>
             </div>
 
-            {/* Bouton Nouvelle tâche */}
-            <button
-              onClick={handleNewTask}
-              className="mx-3 mt-3 mb-2 flex items-center justify-center gap-2 py-1.5 sm:py-2 px-3 rounded-lg text-xs sm:text-sm font-medium text-[color:var(--primary-foreground)] bg-[color:var(--primary)] hover:bg-opacity-90 transition-colors"
-            >
-              <Plus size={14} className="sm:w-4 sm:h-4" />
-              Nouvelle tâche
-            </button>
+            {/* Bouton Nouvelle tâche modernisé */}
+            <div className="p-6 bg-white border-b border-gray-200">
+              <button
+                onClick={handleNewTask}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-sm active:scale-98"
+              >
+                <Plus size={18} />
+                Nouvelle tâche
+              </button>
+            </div>
 
             {/* Liste des tâches avec sections repliables */}
-            <div className="overflow-y-auto flex-1 py-2 px-1">
+            <div className="overflow-y-auto flex-1 p-4 bg-gray-50">
               {displayedTasks.length === 0 ? (
-                <div className="text-center py-6 text-[color:var(--muted-foreground)] text-xs sm:text-sm">
-                  {hasActiveFilters
-                    ? "Aucune tâche ne correspond aux filtres sélectionnés"
-                    : "Aucune tâche trouvée"}
-                  {hasActiveFilters && (
-                    <button
-                      onClick={() => {
-                        setFilter("all");
-                        setSearchQuery("");
-                        resetAdvancedFilters();
-                      }}
-                      className="block mx-auto mt-2 text-[color:var(--primary)] hover:underline text-xs"
-                    >
-                      Réinitialiser tous les filtres
-                    </button>
+                <div className="text-center py-12 text-gray-500">
+                  {hasActiveFilters ? (
+                    <>
+                      <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                        <Filter size={24} className="text-gray-400" />
+                      </div>
+                      <p className="text-base font-medium mb-1">
+                        Aucun résultat
+                      </p>
+                      <p className="text-sm mb-4">
+                        Essayez d&apos;ajuster vos filtres
+                      </p>
+                      <button
+                        onClick={() => {
+                          setFilter("all");
+                          setSearchQuery("");
+                          resetAdvancedFilters();
+                        }}
+                        className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
+                      >
+                        <X size={14} />
+                        Réinitialiser les filtres
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                        <ClipboardList size={24} className="text-gray-400" />
+                      </div>
+                      <p className="text-base font-medium mb-1">Aucune tâche</p>
+                      <p className="text-sm mb-4">Créez votre première tâche</p>
+                      <button
+                        onClick={handleNewTask}
+                        className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        <Plus size={14} />
+                        Nouvelle tâche
+                      </button>
+                    </>
                   )}
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <TaskGroup
                     title="À faire"
                     status="pending"
@@ -810,10 +867,10 @@ export default function TasksPage({
 
             {/* Bouton de fermeture pour mobile */}
             {isMobileView && (
-              <div className="p-3 border-t border-[color:var(--border)]">
+              <div className="p-6 border-t border-gray-200 bg-white">
                 <button
                   onClick={() => setShowSidebar(false)}
-                  className="w-full py-2 text-center bg-[color:var(--muted)] rounded-lg text-xs sm:text-sm font-medium"
+                  className="w-full py-2.5 text-center bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
                 >
                   Fermer
                 </button>
@@ -822,12 +879,12 @@ export default function TasksPage({
           </div>
         )}
 
-        {/* Contenu principal */}
+        {/* Contenu principal modernisé */}
         <div
           ref={contentRef}
           className={`flex-1 flex flex-col h-screen ${
             isMobileView && showSidebar ? "hidden" : "block"
-          } bg-[color:var(--background)]`}
+          } bg-gray-50`}
         >
           <AnimatePresence mode="wait">
             {showAddForm ? (
@@ -850,7 +907,7 @@ export default function TasksPage({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
                   transition={{ duration: 0.2 }}
-                  className="flex-1 overflow-auto p-3 sm:p-6"
+                  className="flex-1 overflow-auto p-6"
                 >
                   <TaskForm
                     users={users}
@@ -872,26 +929,23 @@ export default function TasksPage({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="h-full flex flex-col items-center justify-center text-center p-4 sm:p-6"
+                className="h-full flex flex-col items-center justify-center text-center p-6"
               >
-                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[color:var(--muted)] rounded-full flex items-center justify-center mb-4">
-                  <ClipboardList
-                    size={24}
-                    className="sm:w-8 sm:h-8 text-[color:var(--muted-foreground)]"
-                  />
+                <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center mb-8 shadow-sm border border-gray-200">
+                  <FileText size={40} className="text-gray-400" />
                 </div>
-                <h2 className="text-lg sm:text-xl font-semibold mb-2 text-[color:var(--foreground)]">
+                <h2 className="text-2xl font-semibold mb-3 text-gray-900">
                   Gestion des tâches
                 </h2>
-                <p className="text-xs sm:text-sm text-[color:var(--muted-foreground)] max-w-md mb-6">
+                <p className="text-base text-gray-500 max-w-md mb-8">
                   {articleDescription ||
                     "Sélectionnez une tâche dans la liste ou créez-en une nouvelle pour commencer."}
                 </p>
                 <button
                   onClick={handleNewTask}
-                  className="flex items-center justify-center gap-2 py-1.5 sm:py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-medium text-[color:var(--primary-foreground)] bg-[color:var(--primary)] hover:bg-opacity-90 transition-colors"
+                  className="flex items-center justify-center gap-2 py-3 px-6 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-sm active:scale-98"
                 >
-                  <Plus size={14} className="sm:w-4 sm:h-4" />
+                  <Plus size={18} />
                   Nouvelle tâche
                 </button>
               </motion.div>
