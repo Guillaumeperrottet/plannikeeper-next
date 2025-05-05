@@ -68,10 +68,6 @@ export default async function ArticleDetailPage({
       articleDescription={article.description}
       objetId={objetId}
       sectorId={sectorId}
-      currentUser={{
-        id: session.id,
-        name: session.name || "Utilisateur",
-      }}
     />
   );
 }
