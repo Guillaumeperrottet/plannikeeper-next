@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import CalendarView from "./CalendarView";
+import { LoadingIndicator } from "@/app/components/LoadingIndicator";
 
 type Task = {
   id: string;
@@ -84,6 +85,7 @@ export default function TodoListAgenda() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.LIST);
   const [maxHeight, setMaxHeight] = useState<number>(600); // valeur par défaut
+  const [isNavigating, setIsNavigating] = useState(false);
   const agendaRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -261,14 +263,19 @@ export default function TodoListAgenda() {
   });
 
   // Navigation vers la tâche
-  const navigateToTask = (task: Task) => {
-    router.push(
-      `/dashboard/objet/${task.article.sector.object.id}` +
-        `/secteur/${task.article.sector.id}` +
-        `/article/${task.article.id}`
-    );
+  const navigateToTask = async (task: Task) => {
+    try {
+      setIsNavigating(true);
+      router.push(
+        `/dashboard/objet/${task.article.sector.object.id}` +
+          `/secteur/${task.article.sector.id}` +
+          `/article/${task.article.id}`
+      );
+    } catch (error) {
+      console.error("Erreur de navigation:", error);
+      setIsNavigating(false);
+    }
   };
-
   // Impression
   const handlePrint = () => {
     window.print();
@@ -295,9 +302,13 @@ export default function TodoListAgenda() {
       style={{
         height: `${agendaHeight}px`,
         zIndex: 40,
+        position: isNavigating ? "relative" : "fixed",
       }}
       data-todo-list-agenda
     >
+      {/* Overlay de chargement */}
+      {isNavigating && <LoadingIndicator message="Chargement de la tâche..." />}
+
       {/* Barre de titre avec poignée de drag */}
       <div className="flex justify-between items-center bg-[color:var(--secondary)] text-[color:var(--secondary-foreground)] p-3 relative border-b border-[color:var(--border)]">
         {/* Colonne gauche avec toggle de vue */}
@@ -388,8 +399,8 @@ export default function TodoListAgenda() {
         ) : viewMode === ViewMode.CALENDAR ? (
           <CalendarView
             tasks={tasks}
-            navigateToTask={(task) => {
-              navigateToTask(task);
+            navigateToTask={async (task) => {
+              await navigateToTask(task);
               // Fermer l'agenda après la navigation
               setAgendaHeight(MIN_HEIGHT);
               setIsExpanded(false);
