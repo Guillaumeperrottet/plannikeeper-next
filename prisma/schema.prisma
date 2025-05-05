@@ -91,6 +91,7 @@ model Organization {
   Objet            Objet[]
   OrganizationUser OrganizationUser[]
   invitationCodes  InvitationCode[]
+  subscription      Subscription?
 
   @@map("organization")
 }
@@ -261,9 +262,66 @@ model Notification {
   @@index([createdAt])
 }
 
+model Plan {
+  id                String       @id @default(uuid())
+  name              PlanType     @unique
+  stripeProductId   String?      // ID Stripe du produit
+  stripePriceId     String?      // ID Stripe du prix
+  price             Decimal      // Prix en euros
+  monthlyPrice      Decimal      // Prix mensuel
+  yearlyPrice       Decimal?     // Prix annuel (optionnel)
+  maxUsers          Int?         // Null = illimité
+  maxObjects        Int?         // Null = illimité
+  hasCustomPricing  Boolean      @default(false)
+  trialDays         Int          @default(0)
+  features          String[]     // Liste des fonctionnalités
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  
+  subscriptions     Subscription[]
+}
+
+model Subscription {
+  id                    String            @id @default(uuid())
+  organizationId        String            @unique
+  organization          Organization      @relation(fields: [organizationId], references: [id])
+  planId                String
+  plan                  Plan              @relation(fields: [planId], references: [id])
+  stripeSubscriptionId  String?           @unique
+  stripeCustomerId      String?
+  status                SubscriptionStatus
+  currentPeriodStart    DateTime
+  currentPeriodEnd      DateTime
+  trialStart            DateTime?
+  trialEnd              DateTime?
+  cancelAtPeriodEnd     Boolean           @default(false)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  
+  @@index([organizationId])
+  @@index([stripeSubscriptionId])
+}
+
 enum Platform {
   WEB
   ANDROID
   IOS
   DESKTOP
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  TRIALING
+}
+
+enum PlanType {
+  FREE
+  PERSONAL
+  PROFESSIONAL
+  ENTERPRISE
 }
