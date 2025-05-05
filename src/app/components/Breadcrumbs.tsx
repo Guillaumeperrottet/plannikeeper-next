@@ -136,9 +136,10 @@ export default function Breadcrumbs() {
             const sectorName = await fetchEntityName("secteur", sectorId);
 
             const objetId = pathArray[i - 1].breadcrumb;
+            // Modifiez le href pour pointer vers l'objet au lieu du secteur
             breadcrumbsWithLabels.push({
               label: sectorName,
-              href: `/dashboard/objet/${objetId}/secteur/${sectorId}`,
+              href: `/dashboard/objet/${objetId}/view`, // Changé de /dashboard/objet/${objetId}/secteur/${sectorId} à /dashboard/objet/${objetId}/view
               current: i + 2 >= pathArray.length,
             });
 
