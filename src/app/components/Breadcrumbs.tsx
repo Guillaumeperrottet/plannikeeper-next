@@ -111,7 +111,11 @@ export default function Breadcrumbs() {
             breadcrumbsWithLabels.push({
               label: objetName,
               href: `/dashboard/objet/${objetId}/view`,
-              current: i + 2 >= pathArray.length,
+              current:
+                i + 2 >= pathArray.length &&
+                !["edit", "view", "secteur", "task"].includes(
+                  pathArray[i + 2]?.breadcrumb
+                ),
             });
 
             // Sauter l'ID d'objet
@@ -134,13 +138,14 @@ export default function Breadcrumbs() {
           if (sectorId && sectorId !== "new") {
             // Récupérer le nom du secteur
             const sectorName = await fetchEntityName("secteur", sectorId);
-
             const objetId = pathArray[i - 1].breadcrumb;
-            // Modifiez le href pour pointer vers l'objet au lieu du secteur
+
             breadcrumbsWithLabels.push({
               label: sectorName,
-              href: `/dashboard/objet/${objetId}/view`, // Changé de /dashboard/objet/${objetId}/secteur/${sectorId} à /dashboard/objet/${objetId}/view
-              current: i + 2 >= pathArray.length,
+              href: `/dashboard/objet/${objetId}/secteur/${sectorId}`,
+              current:
+                i + 2 >= pathArray.length &&
+                !["edit", "article"].includes(pathArray[i + 2]?.breadcrumb),
             });
 
             // Sauter l'ID du secteur
@@ -163,11 +168,15 @@ export default function Breadcrumbs() {
           if (articleId && articleId !== "new") {
             // Récupérer le nom de l'article
             const articleName = await fetchEntityName("article", articleId);
+            const sectorId = pathArray[i - 2].breadcrumb;
+            const objetId = pathArray[i - 4].breadcrumb;
 
             breadcrumbsWithLabels.push({
               label: articleName,
-              href: pathname,
-              current: true,
+              href: `/dashboard/objet/${objetId}/secteur/${sectorId}/article/${articleId}`,
+              current:
+                i + 2 >= pathArray.length &&
+                !["task"].includes(pathArray[i + 2]?.breadcrumb),
             });
 
             // Sauter l'ID de l'article
@@ -181,8 +190,23 @@ export default function Breadcrumbs() {
             });
             i++;
           }
+        } else if (segment.breadcrumb === "task" && i + 1 < pathArray.length) {
+          const taskId = pathArray[i + 1].breadcrumb;
+
+          if (taskId) {
+            breadcrumbsWithLabels.push({
+              label: "Tâche",
+              href: pathname,
+              current: true,
+            });
+            i++;
+          }
         } else if (segment.breadcrumb === "view") {
-          // Ignorer ce segment spécifique
+          // Ignorer ce segment spécifique mais marquer le précédent comme courant
+          if (breadcrumbsWithLabels.length > 0) {
+            breadcrumbsWithLabels[breadcrumbsWithLabels.length - 1].current =
+              true;
+          }
           continue;
         } else if (segment.breadcrumb === "edit") {
           breadcrumbsWithLabels.push({
@@ -193,10 +217,18 @@ export default function Breadcrumbs() {
         } else {
           // Pour les autres segments, utiliser le nom du segment tel quel avec première lettre en majuscule
           const isLast = i === pathArray.length - 1;
-          breadcrumbsWithLabels.push({
-            label:
+
+          // Traitement spécial pour certains segments communs
+          let label = segment.breadcrumb;
+          if (segment.breadcrumb === "profile") label = "Profil";
+          else if (segment.breadcrumb === "settings") label = "Paramètres";
+          else
+            label =
               segment.breadcrumb.charAt(0).toUpperCase() +
-              segment.breadcrumb.slice(1),
+              segment.breadcrumb.slice(1);
+
+          breadcrumbsWithLabels.push({
+            label: label,
             href: segment.href,
             current: isLast,
           });
