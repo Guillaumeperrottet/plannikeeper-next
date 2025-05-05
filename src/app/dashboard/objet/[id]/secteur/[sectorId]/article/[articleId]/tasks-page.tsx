@@ -3,7 +3,7 @@
 import DocumentsList from "./documents-list";
 import DocumentUpload from "./document-upload";
 import TaskComments from "./TaskComments";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import TaskForm from "./task-form";
@@ -22,7 +22,6 @@ import {
   X,
   Tag,
   SlidersHorizontal,
-  Calendar as CalendarIcon,
   ChevronDown,
   AlertCircle,
   CheckCircle2,
@@ -30,6 +29,7 @@ import {
   ClipboardList,
   CircleOff,
   LayoutList,
+  ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -99,17 +99,6 @@ const sortOptions: SortOption[] = [
     sortFn: (a, b) => a.name.localeCompare(b.name),
   },
   {
-    id: "nameDesc",
-    label: "Nom (Z-A)",
-    sortFn: (a, b) => b.name.localeCompare(a.name),
-  },
-  {
-    id: "createdAsc",
-    label: "Date de création (plus ancienne)",
-    sortFn: (a, b) =>
-      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-  },
-  {
     id: "createdDesc",
     label: "Date de création (plus récente)",
     sortFn: (a, b) =>
@@ -127,6 +116,145 @@ type FilterState = {
     to: Date | null;
   };
   recurring: boolean | null;
+};
+
+// État des sections repliées
+type CollapsedSections = {
+  [key: string]: boolean;
+};
+
+interface TaskGroupProps {
+  title: string;
+  status: string;
+  icon: React.ReactNode;
+  tasks: Task[];
+  isCollapsed: boolean;
+  onToggle: () => void;
+  onTaskClick: (task: Task) => void;
+  selectedTaskId: string | null;
+  isMobileView: boolean;
+}
+
+const TaskGroup: React.FC<TaskGroupProps> = ({
+  title,
+  status,
+  icon,
+  tasks,
+  isCollapsed,
+  onToggle,
+  onTaskClick,
+  selectedTaskId,
+}) => {
+  const taskCount = tasks.length;
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "bg-[color:var(--warning-background)] text-[color:var(--warning-foreground)] border-[color:var(--warning-border)]";
+      case "in_progress":
+        return "bg-[color:var(--info-background)] text-[color:var(--info-foreground)] border-[color:var(--info-border)]";
+      case "completed":
+        return "bg-[color:var(--success-background)] text-[color:var(--success-foreground)] border-[color:var(--success-border)]";
+      case "cancelled":
+        return "bg-[color:var(--destructive-background)] text-[color:var(--destructive-foreground)] border-[color:var(--destructive-border)]";
+      default:
+        return "bg-[color:var(--muted)] text-[color:var(--muted-foreground)] border-[color:var(--border)]";
+    }
+  };
+
+  const formatDate = (date: Date | null) => {
+    if (!date) return "Non définie";
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${day}/${month}/${year}`;
+  };
+
+  return (
+    <div className="border border-[color:var(--border)] rounded-lg overflow-hidden mb-2">
+      <button
+        onClick={onToggle}
+        className={`w-full px-4 py-3 flex items-center justify-between hover:bg-[color:var(--muted)]/50 transition-colors ${getStatusColor(
+          status
+        )}`}
+      >
+        <div className="flex items-center gap-3">
+          <motion.div
+            animate={{ rotate: isCollapsed ? 0 : 90 }}
+            transition={{ duration: 0.2 }}
+          >
+            <ChevronRight size={18} />
+          </motion.div>
+          {icon}
+          <span className="font-medium text-sm sm:text-base">{title}</span>
+          <span className="bg-white/20 text-sm px-2 py-0.5 rounded-full">
+            {taskCount}
+          </span>
+        </div>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {!isCollapsed && (
+          <motion.div
+            initial={{ height: 0 }}
+            animate={{ height: "auto" }}
+            exit={{ height: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ overflow: "hidden" }}
+          >
+            <div className="max-h-[300px] overflow-y-auto">
+              {tasks.map((task) => (
+                <button
+                  key={task.id}
+                  onClick={() => onTaskClick(task)}
+                  className={cn(
+                    "w-full px-4 py-2 text-left text-xs sm:text-sm transition-colors border-b border-[color:var(--border)] last:border-0",
+                    selectedTaskId === task.id
+                      ? "bg-[color:var(--accent)] border-l-4 border-[color:var(--primary)]"
+                      : "border-l-4 border-transparent hover:bg-[color:var(--accent)] text-[color:var(--foreground)]"
+                  )}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="font-medium truncate mr-2">{task.name}</div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center text-[10px] sm:text-xs text-[color:var(--muted-foreground)] gap-2">
+                    {task.taskType && (
+                      <span className="flex items-center">
+                        <Tag size={10} className="mr-1 sm:w-3 sm:h-3" />
+                        <span className="truncate">{task.taskType}</span>
+                      </span>
+                    )}
+
+                    {task.realizationDate && (
+                      <span className="flex items-center">
+                        <Calendar size={10} className="mr-1 sm:w-3 sm:h-3" />
+                        <span>{formatDate(task.realizationDate)}</span>
+                      </span>
+                    )}
+
+                    {task.assignedTo && (
+                      <span className="flex items-center">
+                        <User size={10} className="mr-1 sm:w-3 sm:h-3" />
+                        <span className="truncate">{task.assignedTo.name}</span>
+                      </span>
+                    )}
+                  </div>
+                </button>
+              ))}
+
+              {tasks.length === 0 && (
+                <div className="px-4 py-3 text-sm text-[color:var(--muted-foreground)]">
+                  Aucune tâche dans cette catégorie
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 };
 
 export default function TasksPage({
@@ -155,7 +283,6 @@ export default function TasksPage({
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [sortBy, setSortBy] = useState<string>("dateAsc");
   const [showSortOptions, setShowSortOptions] = useState(false);
-  const [taskTypes, setTaskTypes] = useState<string[]>([]);
   const contentRef = useRef<HTMLDivElement>(null);
 
   // État pour le mode mobile
@@ -163,10 +290,21 @@ export default function TasksPage({
   const [showSidebar, setShowSidebar] = useState(true);
   const [useOptimizedForm, setUseOptimizedForm] = useState(false);
 
+  // État pour les sections repliées
+  const [collapsedSections, setCollapsedSections] = useState<CollapsedSections>(
+    {
+      pending: false,
+      in_progress: false,
+      completed: true, // Par défaut, les tâches terminées sont repliées
+      cancelled: true, // Par défaut, les tâches annulées sont repliées
+    }
+  );
+
   // Détecter si on est sur mobile
   useEffect(() => {
     const checkIfMobile = () => {
       setUseOptimizedForm(window.innerWidth < 768);
+      setIsMobileView(window.innerWidth < 768);
     };
 
     checkIfMobile();
@@ -186,46 +324,8 @@ export default function TasksPage({
     recurring: null,
   });
 
-  // État pour l'organisation des tâches par section
-  const [groupBy, setGroupBy] = useState<
-    "status" | "assignee" | "date" | "type" | "none"
-  >("status");
-
-  // Effet pour détecter les appareils mobiles
+  // Filtrer les tâches
   useEffect(() => {
-    const checkIfMobile = () => {
-      setIsMobileView(window.innerWidth < 768);
-    };
-
-    // Vérification initiale
-    checkIfMobile();
-
-    // Écouter les changements de taille d'écran
-    window.addEventListener("resize", checkIfMobile);
-
-    // Nettoyage
-    return () => window.removeEventListener("resize", checkIfMobile);
-  }, []);
-
-  // Cacher automatiquement la sidebar en mode mobile si une tâche est sélectionnée
-  useEffect(() => {
-    if (isMobileView && (selectedTask || showAddForm)) {
-      setShowSidebar(false);
-    }
-  }, [selectedTask, showAddForm, isMobileView]);
-
-  // Effet pour extraire tous les types de tâches uniques
-  useEffect(() => {
-    const types = new Set<string>();
-    tasks.forEach((task) => {
-      if (task.taskType) types.add(task.taskType);
-    });
-    setTaskTypes(Array.from(types).sort());
-  }, [tasks]);
-
-  // Filtrer les tâches quand le filtre ou la recherche change
-  useEffect(() => {
-    // Étape 1: Appliquer le filtre de base
     let result = [...tasks];
 
     // Appliquer le filtre de statut simple
@@ -245,30 +345,26 @@ export default function TasksPage({
       );
     }
 
-    // Étape 2: Appliquer les filtres avancés si activés
+    // Appliquer les filtres avancés
     if (showAdvancedFilters) {
-      // Filtre par statut (multiple)
       if (advancedFilter.status.length > 0) {
         result = result.filter((task) =>
           advancedFilter.status.includes(task.status)
         );
       }
 
-      // Filtre par assigné
       if (advancedFilter.assignedToId) {
         result = result.filter(
           (task) => task.assignedToId === advancedFilter.assignedToId
         );
       }
 
-      // Filtre par type de tâche
       if (advancedFilter.taskType) {
         result = result.filter(
           (task) => task.taskType === advancedFilter.taskType
         );
       }
 
-      // Filtre par date
       if (advancedFilter.dateRange.from) {
         result = result.filter((task) => {
           if (!task.realizationDate) return false;
@@ -285,7 +381,6 @@ export default function TasksPage({
         });
       }
 
-      // Filtre par récurrence
       if (advancedFilter.recurring !== null) {
         result = result.filter(
           (task) => task.recurring === advancedFilter.recurring
@@ -296,7 +391,7 @@ export default function TasksPage({
     setFilteredTasks(result);
   }, [filter, searchQuery, tasks, showAdvancedFilters, advancedFilter]);
 
-  // Appliquer le tri aux tâches filtrées
+  // Appliquer le tri
   useEffect(() => {
     const sortOption = sortOptions.find((opt) => opt.id === sortBy);
     if (sortOption) {
@@ -306,6 +401,20 @@ export default function TasksPage({
       setDisplayedTasks(filteredTasks);
     }
   }, [filteredTasks, sortBy]);
+
+  // Grouper les tâches par statut
+  const groupedTasksByStatus = useMemo(() => {
+    const groups = {
+      pending: displayedTasks.filter((task) => task.status === "pending"),
+      in_progress: displayedTasks.filter(
+        (task) => task.status === "in_progress"
+      ),
+      completed: displayedTasks.filter((task) => task.status === "completed"),
+      cancelled: displayedTasks.filter((task) => task.status === "cancelled"),
+    };
+
+    return groups;
+  }, [displayedTasks]);
 
   const handleTaskClick = (task: Task) => {
     setSelectedTask(task);
@@ -325,10 +434,8 @@ export default function TasksPage({
 
   const handleTaskSave = async (updatedTask: Task, documents?: File[]) => {
     try {
-      // Check if the task ID already exists in the state to determine if it's new
       const isNewTask = !tasks.some((t) => t.id === updatedTask.id);
 
-      // Pour une nouvelle tâche
       if (isNewTask) {
         const response = await fetch("/api/tasks", {
           method: "POST",
@@ -348,13 +455,10 @@ export default function TasksPage({
         setTasks((prev) => [newTask, ...prev]);
         toast.success("Tâche créée avec succès");
 
-        // Uploader les documents si présents
         if (documents && documents.length > 0) {
           await uploadDocumentsForTask(newTask.id, documents);
         }
-      }
-      // Pour une tâche existante
-      else {
+      } else {
         const response = await fetch(`/api/tasks/${updatedTask.id}`, {
           method: "PUT",
           headers: {
@@ -372,7 +476,6 @@ export default function TasksPage({
         );
         toast.success("Tâche mise à jour avec succès");
 
-        // Uploader les documents si présents
         if (documents && documents.length > 0) {
           await uploadDocumentsForTask(updated.id, documents);
         }
@@ -380,7 +483,6 @@ export default function TasksPage({
 
       setSelectedTask(null);
       setShowAddForm(false);
-      // Revenir à la liste de tâches en mobile après la création/modification
       if (isMobileView) {
         setShowSidebar(true);
       }
@@ -391,10 +493,8 @@ export default function TasksPage({
     }
   };
 
-  // Fonction d'upload de documents pour une tâche
   const uploadDocumentsForTask = async (taskId: string, documents: File[]) => {
     try {
-      // Upload des documents un par un
       const uploadPromises = documents.map(async (document) => {
         const formData = new FormData();
         formData.append("file", document);
@@ -414,9 +514,7 @@ export default function TasksPage({
         return response.json();
       });
 
-      // Attendre que tous les uploads soient terminés
       await Promise.all(uploadPromises);
-
       toast.success(`${documents.length} document(s) ajouté(s) à la tâche`);
     } catch (error) {
       console.error("Erreur lors de l'upload des documents:", error);
@@ -491,27 +589,41 @@ export default function TasksPage({
     });
   };
 
-  // Toggle du statut dans le filtre avancé
-  const toggleStatusFilter = (status: string) => {
-    setAdvancedFilter((prev) => {
-      if (prev.status.includes(status)) {
-        return { ...prev, status: prev.status.filter((s) => s !== status) };
-      } else {
-        return { ...prev, status: [...prev.status, status] };
-      }
-    });
+  const toggleSection = (status: string) => {
+    setCollapsedSections((prev) => ({
+      ...prev,
+      [status]: !prev[status],
+    }));
   };
 
-  const formatDate = (date: Date | null) => {
-    if (!date) return "Non définie";
+  const getStatusName = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "À faire";
+      case "in_progress":
+        return "En cours";
+      case "completed":
+        return "Terminées";
+      case "cancelled":
+        return "Annulées";
+      default:
+        return status;
+    }
+  };
 
-    // Format avec année-mois-jour pour être cohérent entre serveur et client
-    const d = new Date(date);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-
-    return `${day}/${month}/${year}`;
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "pending":
+        return <ClipboardList size={18} />;
+      case "in_progress":
+        return <Clock size={18} />;
+      case "completed":
+        return <CheckCircle2 size={18} />;
+      case "cancelled":
+        return <CircleOff size={18} />;
+      default:
+        return <AlertCircle size={18} />;
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -529,175 +641,15 @@ export default function TasksPage({
     }
   };
 
-  const getStatusName = (status: string) => {
-    switch (status) {
-      case "pending":
-        return "À faire";
-      case "in_progress":
-        return "En cours";
-      case "completed":
-        return "Terminée";
-      case "cancelled":
-        return "Annulée";
-      default:
-        return status;
-    }
+  const formatDate = (date: Date | null) => {
+    if (!date) return "Non définie";
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${day}/${month}/${year}`;
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "pending":
-        return <ClipboardList size={16} />;
-      case "in_progress":
-        return <Clock size={16} />;
-      case "completed":
-        return <CheckCircle2 size={16} />;
-      case "cancelled":
-        return <CircleOff size={16} />;
-      default:
-        return <AlertCircle size={16} />;
-    }
-  };
-
-  // Fonction pour grouper les tâches selon le critère choisi
-  const getGroupedTasks = () => {
-    if (groupBy === "none") {
-      return { "Toutes les tâches": displayedTasks };
-    }
-
-    if (groupBy === "status") {
-      const groups: Record<string, Task[]> = {
-        "À faire": [],
-        "En cours": [],
-        Terminées: [],
-        Annulées: [],
-      };
-
-      displayedTasks.forEach((task) => {
-        switch (task.status) {
-          case "pending":
-            groups["À faire"].push(task);
-            break;
-          case "in_progress":
-            groups["En cours"].push(task);
-            break;
-          case "completed":
-            groups["Terminées"].push(task);
-            break;
-          case "cancelled":
-            groups["Annulées"].push(task);
-            break;
-        }
-      });
-
-      // Ne retourner que les groupes non vides
-      return Object.fromEntries(
-        Object.entries(groups).filter(([tasks]) => tasks.length > 0)
-      );
-    }
-
-    if (groupBy === "assignee") {
-      const groups: Record<string, Task[]> = {
-        "Non assignées": [],
-      };
-
-      // Préparer tous les assignés possibles
-      users.forEach((user) => {
-        groups[user.name] = [];
-      });
-
-      displayedTasks.forEach((task) => {
-        if (task.assignedTo) {
-          groups[task.assignedTo.name].push(task);
-        } else {
-          groups["Non assignées"].push(task);
-        }
-      });
-
-      // Ne retourner que les groupes non vides
-      return Object.fromEntries(
-        Object.entries(groups).filter(([tasks]) => tasks.length > 0)
-      );
-    }
-
-    if (groupBy === "date") {
-      const now = new Date();
-      const tomorrow = new Date();
-      tomorrow.setDate(now.getDate() + 1);
-      const nextWeek = new Date();
-      nextWeek.setDate(now.getDate() + 7);
-      const nextMonth = new Date();
-      nextMonth.setMonth(now.getMonth() + 1);
-
-      const groups: Record<string, Task[]> = {
-        "Aujourd'hui": [],
-        Demain: [],
-        "Cette semaine": [],
-        "Ce mois-ci": [],
-        "Plus tard": [],
-        "Sans date": [],
-      };
-
-      displayedTasks.forEach((task) => {
-        if (!task.realizationDate) {
-          groups["Sans date"].push(task);
-          return;
-        }
-
-        const taskDate = new Date(task.realizationDate);
-
-        // Comparer seulement les dates sans l'heure
-        const taskDateStr = taskDate.toDateString();
-        const nowStr = now.toDateString();
-        const tomorrowStr = tomorrow.toDateString();
-
-        if (taskDateStr === nowStr) {
-          groups["Aujourd'hui"].push(task);
-        } else if (taskDateStr === tomorrowStr) {
-          groups["Demain"].push(task);
-        } else if (taskDate <= nextWeek && taskDate > tomorrow) {
-          groups["Cette semaine"].push(task);
-        } else if (taskDate <= nextMonth && taskDate > nextWeek) {
-          groups["Ce mois-ci"].push(task);
-        } else {
-          groups["Plus tard"].push(task);
-        }
-      });
-
-      // Ne retourner que les groupes non vides
-      return Object.fromEntries(
-        Object.entries(groups).filter(([tasks]) => tasks.length > 0)
-      );
-    }
-
-    if (groupBy === "type") {
-      const groups: Record<string, Task[]> = {
-        "Sans type": [],
-      };
-
-      // Préparer tous les types possibles
-      taskTypes.forEach((type) => {
-        groups[type] = [];
-      });
-
-      displayedTasks.forEach((task) => {
-        if (task.taskType) {
-          groups[task.taskType].push(task);
-        } else {
-          groups["Sans type"].push(task);
-        }
-      });
-
-      // Ne retourner que les groupes non vides
-      return Object.fromEntries(
-        Object.entries(groups).filter(([tasks]) => tasks.length > 0)
-      );
-    }
-
-    return { "Toutes les tâches": displayedTasks };
-  };
-
-  const groupedTasks = getGroupedTasks();
   const hasActiveFilters =
     searchQuery ||
     filter !== "all" ||
@@ -711,7 +663,7 @@ export default function TasksPage({
 
   return (
     <div className="flex flex-col md:flex-row h-screen overflow-hidden bg-[color:var(--background)]">
-      {/* Barre de navigation mobile - visible uniquement sur mobile */}
+      {/* Barre de navigation mobile */}
       {isMobileView && (
         <div className="bg-[color:var(--card)] border-b border-[color:var(--border)] p-3 flex justify-between items-center">
           <Link
@@ -738,7 +690,7 @@ export default function TasksPage({
 
       {/* Conteneur principal flex adaptatif */}
       <div className="flex flex-grow overflow-hidden">
-        {/* Sidebar des tâches - Adaptée pour mobile */}
+        {/* Sidebar des tâches */}
         {(showSidebar || !isMobileView) && (
           <div
             className={`${
@@ -764,7 +716,7 @@ export default function TasksPage({
               </div>
             )}
 
-            {/* Barre de recherche améliorée */}
+            {/* Barre de recherche */}
             <div className="p-3 border-b border-[color:var(--border)]">
               <div className="relative">
                 <Search
@@ -802,7 +754,6 @@ export default function TasksPage({
                   </span>
                 </div>
 
-                {/* Options de filtrage simples - statuts */}
                 <div className="flex">
                   <select
                     value={filter}
@@ -830,204 +781,8 @@ export default function TasksPage({
                 </div>
               </div>
 
-              {/* Filtres avancés */}
-              <AnimatePresence>
-                {showAdvancedFilters && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="p-3 bg-[color:var(--muted)] rounded-lg mt-2 text-sm">
-                      <div className="flex justify-between mb-2">
-                        <h3 className="font-medium text-xs sm:text-sm">
-                          Filtres avancés
-                        </h3>
-                        <button
-                          onClick={resetAdvancedFilters}
-                          className="text-[color:var(--primary)] hover:text-[color:var(--primary)]/80 text-xs"
-                        >
-                          Réinitialiser
-                        </button>
-                      </div>
-
-                      {/* Statuts multiples */}
-                      <div className="mb-3">
-                        <label className="block text-xs font-medium mb-1">
-                          Statut
-                        </label>
-                        <div className="flex flex-wrap gap-1">
-                          {[
-                            "pending",
-                            "in_progress",
-                            "completed",
-                            "cancelled",
-                          ].map((status) => (
-                            <button
-                              key={status}
-                              onClick={() => toggleStatusFilter(status)}
-                              className={`px-2 py-1 text-xs rounded-full flex items-center gap-1 ${
-                                advancedFilter.status.includes(status)
-                                  ? getStatusColor(status)
-                                  : "bg-[color:var(--background)] hover:bg-[color:var(--background)]/80"
-                              }`}
-                            >
-                              {getStatusIcon(status)}
-                              <span>{getStatusName(status)}</span>
-                              {advancedFilter.status.includes(status) && (
-                                <Check size={12} />
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Assigné à */}
-                      <div className="mb-3">
-                        <label className="block text-xs font-medium mb-1">
-                          Assigné à
-                        </label>
-                        <select
-                          value={advancedFilter.assignedToId || ""}
-                          onChange={(e) =>
-                            setAdvancedFilter((prev) => ({
-                              ...prev,
-                              assignedToId: e.target.value || null,
-                            }))
-                          }
-                          className="w-full px-2 py-1 text-xs rounded border border-[color:var(--border)] bg-[color:var(--background)]"
-                        >
-                          <option value="">Tous</option>
-                          <option value="unassigned">Non assigné</option>
-                          {users.map((user) => (
-                            <option key={user.id} value={user.id}>
-                              {user.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Type de tâche */}
-                      <div className="mb-3">
-                        <label className="block text-xs font-medium mb-1">
-                          Type de tâche
-                        </label>
-                        <select
-                          value={advancedFilter.taskType || ""}
-                          onChange={(e) =>
-                            setAdvancedFilter((prev) => ({
-                              ...prev,
-                              taskType: e.target.value || null,
-                            }))
-                          }
-                          className="w-full px-2 py-1 text-xs rounded border border-[color:var(--border)] bg-[color:var(--background)]"
-                        >
-                          <option value="">Tous</option>
-                          <option value="no-type">Sans type</option>
-                          {taskTypes.map((type) => (
-                            <option key={type} value={type}>
-                              {type}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Récurrence */}
-                      <div className="mb-3">
-                        <label className="block text-xs font-medium mb-1">
-                          Récurrence
-                        </label>
-                        <select
-                          value={
-                            advancedFilter.recurring === null
-                              ? ""
-                              : advancedFilter.recurring
-                                ? "true"
-                                : "false"
-                          }
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            setAdvancedFilter((prev) => ({
-                              ...prev,
-                              recurring: value === "" ? null : value === "true",
-                            }));
-                          }}
-                          className="w-full px-2 py-1 text-xs rounded border border-[color:var(--border)] bg-[color:var(--background)]"
-                        >
-                          <option value="">Toutes</option>
-                          <option value="true">Récurrentes</option>
-                          <option value="false">Non récurrentes</option>
-                        </select>
-                      </div>
-
-                      {/* Plage de dates */}
-                      <div className="mb-2">
-                        <label className="block text-xs font-medium mb-1">
-                          Plage de dates
-                        </label>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="block text-xs mb-1">Du</label>
-                            <input
-                              type="date"
-                              value={
-                                advancedFilter.dateRange.from
-                                  ? new Date(advancedFilter.dateRange.from)
-                                      .toISOString()
-                                      .split("T")[0]
-                                  : ""
-                              }
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                setAdvancedFilter((prev) => ({
-                                  ...prev,
-                                  dateRange: {
-                                    ...prev.dateRange,
-                                    from: value ? new Date(value) : null,
-                                  },
-                                }));
-                              }}
-                              className="w-full px-2 py-1 text-xs rounded border border-[color:var(--border)] bg-[color:var(--background)]"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs mb-1">Au</label>
-                            <input
-                              type="date"
-                              value={
-                                advancedFilter.dateRange.to
-                                  ? new Date(advancedFilter.dateRange.to)
-                                      .toISOString()
-                                      .split("T")[0]
-                                  : ""
-                              }
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                setAdvancedFilter((prev) => ({
-                                  ...prev,
-                                  dateRange: {
-                                    ...prev.dateRange,
-                                    to: value ? new Date(value) : null,
-                                  },
-                                }));
-                              }}
-                              className="w-full px-2 py-1 text-xs rounded border border-[color:var(--border)] bg-[color:var(--background)]"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Options de tri et d'organisation - Optimisées pour mobile */}
-            <div className="p-3 border-b border-[color:var(--border)]">
+              {/* Options de tri - Optimisées pour mobile */}
               <div className="flex justify-between items-center">
-                {/* Tri */}
                 <div className="relative">
                   <button
                     onClick={() => setShowSortOptions(!showSortOptions)}
@@ -1065,30 +820,6 @@ export default function TasksPage({
                     </div>
                   )}
                 </div>
-
-                {/* Groupement */}
-                <div className="relative">
-                  <select
-                    value={groupBy}
-                    onChange={(e) =>
-                      setGroupBy(
-                        e.target.value as
-                          | "status"
-                          | "assignee"
-                          | "date"
-                          | "type"
-                          | "none"
-                      )
-                    }
-                    className="text-xs sm:text-sm rounded border border-[color:var(--border)] bg-[color:var(--background)] px-2 py-1 text-[color:var(--foreground)]"
-                  >
-                    <option value="status">Par statut</option>
-                    <option value="assignee">Par assigné</option>
-                    <option value="date">Par date</option>
-                    <option value="type">Par type</option>
-                    <option value="none">Sans groupe</option>
-                  </select>
-                </div>
               </div>
             </div>
 
@@ -1101,7 +832,7 @@ export default function TasksPage({
               Nouvelle tâche
             </button>
 
-            {/* Liste des tâches avec des groupes */}
+            {/* Liste des tâches avec sections repliables */}
             <div className="overflow-y-auto flex-1 py-2 px-1">
               {displayedTasks.length === 0 ? (
                 <div className="text-center py-6 text-[color:var(--muted-foreground)] text-xs sm:text-sm">
@@ -1122,120 +853,59 @@ export default function TasksPage({
                   )}
                 </div>
               ) : (
-                <div className="space-y-3 sm:space-y-4">
-                  {/* Affichage par groupes */}
-                  {Object.entries(groupedTasks).map(
-                    ([groupName, groupTasks]) => (
-                      <div key={groupName} className="mb-1">
-                        <div className="px-3 py-1 text-xs sm:text-sm font-medium text-[color:var(--muted-foreground)] flex items-center gap-1">
-                          {groupBy === "status" && groupName === "À faire" && (
-                            <ClipboardList
-                              size={12}
-                              className="sm:w-4 sm:h-4"
-                            />
-                          )}
-                          {groupBy === "status" && groupName === "En cours" && (
-                            <Clock size={12} className="sm:w-4 sm:h-4" />
-                          )}
-                          {groupBy === "status" &&
-                            groupName === "Terminées" && (
-                              <CheckCircle2
-                                size={12}
-                                className="sm:w-4 sm:h-4"
-                              />
-                            )}
-                          {groupBy === "status" && groupName === "Annulées" && (
-                            <CircleOff size={12} className="sm:w-4 sm:h-4" />
-                          )}
-                          {groupBy === "assignee" &&
-                            groupName === "Non assignées" && (
-                              <User size={12} className="sm:w-4 sm:h-4" />
-                            )}
-                          {groupBy === "date" && (
-                            <CalendarIcon size={12} className="sm:w-4 sm:h-4" />
-                          )}
-                          {groupBy === "type" && (
-                            <Tag size={12} className="sm:w-4 sm:h-4" />
-                          )}
-                          {groupName}{" "}
-                          <span className="text-[10px] sm:text-xs ml-1">
-                            ({groupTasks.length})
-                          </span>
-                        </div>
-                        {groupTasks.map((task) => (
-                          <button
-                            key={task.id}
-                            onClick={() => handleTaskClick(task)}
-                            className={cn(
-                              "w-full px-3 py-2 text-left text-xs sm:text-sm transition-colors rounded-md hover:bg-[color:var(--accent)] mb-1",
-                              selectedTask?.id === task.id
-                                ? "bg-[color:var(--accent)] border-l-4 border-[color:var(--primary)]"
-                                : "border-l-4 border-transparent text-[color:var(--foreground)]"
-                            )}
-                          >
-                            <div className="flex items-center justify-between mb-1">
-                              <div className="font-medium truncate mr-2">
-                                {task.name}
-                              </div>
-                              <div
-                                className={`px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs rounded-full flex items-center gap-1 ${getStatusColor(
-                                  task.status
-                                )}`}
-                              >
-                                {getStatusIcon(task.status)}
-                                <span className="hidden xs:inline">
-                                  {getStatusName(task.status)}
-                                </span>
-                              </div>
-                            </div>
+                <div className="space-y-2">
+                  <TaskGroup
+                    title="À faire"
+                    status="pending"
+                    icon={getStatusIcon("pending")}
+                    tasks={groupedTasksByStatus.pending}
+                    isCollapsed={collapsedSections.pending}
+                    onToggle={() => toggleSection("pending")}
+                    onTaskClick={handleTaskClick}
+                    selectedTaskId={selectedTask?.id || null}
+                    isMobileView={isMobileView}
+                  />
 
-                            <div className="flex flex-wrap items-center text-[10px] sm:text-xs text-[color:var(--muted-foreground)] gap-2">
-                              {task.taskType && (
-                                <span className="flex items-center">
-                                  <Tag
-                                    size={10}
-                                    className="mr-1 sm:w-3 sm:h-3"
-                                  />
-                                  <span className="truncate">
-                                    {task.taskType}
-                                  </span>
-                                </span>
-                              )}
+                  <TaskGroup
+                    title="En cours"
+                    status="in_progress"
+                    icon={getStatusIcon("in_progress")}
+                    tasks={groupedTasksByStatus.in_progress}
+                    isCollapsed={collapsedSections.in_progress}
+                    onToggle={() => toggleSection("in_progress")}
+                    onTaskClick={handleTaskClick}
+                    selectedTaskId={selectedTask?.id || null}
+                    isMobileView={isMobileView}
+                  />
 
-                              {task.realizationDate && (
-                                <span className="flex items-center">
-                                  <Calendar
-                                    size={10}
-                                    className="mr-1 sm:w-3 sm:h-3"
-                                  />
-                                  <span>
-                                    {formatDate(task.realizationDate)}
-                                  </span>
-                                </span>
-                              )}
+                  <TaskGroup
+                    title="Terminées"
+                    status="completed"
+                    icon={getStatusIcon("completed")}
+                    tasks={groupedTasksByStatus.completed}
+                    isCollapsed={collapsedSections.completed}
+                    onToggle={() => toggleSection("completed")}
+                    onTaskClick={handleTaskClick}
+                    selectedTaskId={selectedTask?.id || null}
+                    isMobileView={isMobileView}
+                  />
 
-                              {task.assignedTo && (
-                                <span className="flex items-center">
-                                  <User
-                                    size={10}
-                                    className="mr-1 sm:w-3 sm:h-3"
-                                  />
-                                  <span className="truncate">
-                                    {task.assignedTo.name}
-                                  </span>
-                                </span>
-                              )}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )
-                  )}
+                  <TaskGroup
+                    title="Annulées"
+                    status="cancelled"
+                    icon={getStatusIcon("cancelled")}
+                    tasks={groupedTasksByStatus.cancelled}
+                    isCollapsed={collapsedSections.cancelled}
+                    onToggle={() => toggleSection("cancelled")}
+                    onTaskClick={handleTaskClick}
+                    selectedTaskId={selectedTask?.id || null}
+                    isMobileView={isMobileView}
+                  />
                 </div>
               )}
             </div>
 
-            {/* Bouton de fermeture pour mobile - En bas de la sidebar */}
+            {/* Bouton de fermeture pour mobile */}
             {isMobileView && (
               <div className="p-3 border-t border-[color:var(--border)]">
                 <button
@@ -1258,7 +928,6 @@ export default function TasksPage({
         >
           <AnimatePresence mode="wait">
             {showAddForm ? (
-              // Utiliser le formulaire optimisé pour mobile ou le standard selon la taille d'écran
               useOptimizedForm ? (
                 <TaskFormMobileOptimized
                   users={users}
@@ -1300,10 +969,10 @@ export default function TasksPage({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
                 transition={{ duration: 0.2 }}
-                className="flex-1 overflow-auto p-3 sm:p-6 pb-28 sm:pb-6" // Ajout de padding-bottom important pour mobile
+                className="flex-1 overflow-auto p-3 sm:p-6 pb-28 sm:pb-6"
               >
                 <div className="max-w-3xl mx-auto flex flex-col">
-                  {/* Entête avec le nom de la tâche et le statut - pour desktop seulement */}
+                  {/* Entête avec le nom de la tâche et le statut */}
                   {!isMobileView && (
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
@@ -1329,28 +998,28 @@ export default function TasksPage({
                     </div>
                   )}
 
-                  {/* Contenu principal - réorganisé pour mieux utiliser l'espace */}
+                  {/* Contenu principal */}
                   <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mb-4 min-h-0">
                     <div className="col-span-3 md:col-span-2 space-y-3 sm:space-y-4 overflow-auto">
-                      <div
-                        className={`flex ${!isMobileView ? "hidden" : "flex"} items-center gap-2 mb-2`}
-                      >
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{
-                            backgroundColor:
-                              selectedTask.color || "var(--primary)",
-                          }}
-                        />
-                        <div
-                          className={`px-2 py-0.5 text-xs rounded-full flex items-center gap-1 ${getStatusColor(
-                            selectedTask.status
-                          )}`}
-                        >
-                          {getStatusIcon(selectedTask.status)}
-                          <span>{getStatusName(selectedTask.status)}</span>
+                      {isMobileView && (
+                        <div className="flex items-center gap-2 mb-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{
+                              backgroundColor:
+                                selectedTask.color || "var(--primary)",
+                            }}
+                          />
+                          <div
+                            className={`px-2 py-0.5 text-xs rounded-full flex items-center gap-1 ${getStatusColor(
+                              selectedTask.status
+                            )}`}
+                          >
+                            {getStatusIcon(selectedTask.status)}
+                            <span>{getStatusName(selectedTask.status)}</span>
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       {selectedTask.description && (
                         <div>
@@ -1378,7 +1047,7 @@ export default function TasksPage({
                         </div>
                       )}
 
-                      {/* Information cards for mobile */}
+                      {/* Information cards pour mobile */}
                       {isMobileView && (
                         <div className="p-3 bg-[color:var(--muted)] rounded-lg">
                           <h3 className="text-xs font-medium uppercase text-[color:var(--muted-foreground)] mb-2">
@@ -1492,7 +1161,7 @@ export default function TasksPage({
                         </div>
                       )}
 
-                      {/* Section Documents - compactée */}
+                      {/* Section Documents */}
                       <div>
                         <h3 className="text-sm sm:text-lg font-semibold mb-2 flex items-center gap-2">
                           <Paperclip size={14} className="sm:w-5 sm:h-5" />
@@ -1503,9 +1172,7 @@ export default function TasksPage({
                             <div className="max-h-[200px] overflow-auto">
                               <DocumentsList
                                 taskId={selectedTask.id}
-                                onDocumentsChange={() => {
-                                  // Fonction à appeler quand des changements sont faits
-                                }}
+                                onDocumentsChange={() => {}}
                               />
                             </div>
                             <div className="mt-2">
@@ -1514,9 +1181,7 @@ export default function TasksPage({
                               </h4>
                               <DocumentUpload
                                 taskId={selectedTask.id}
-                                onUploadSuccess={() => {
-                                  // Rafraîchir après upload réussi
-                                }}
+                                onUploadSuccess={() => {}}
                               />
                             </div>
                           </>
@@ -1534,6 +1199,7 @@ export default function TasksPage({
                         </div>
                       )}
                     </div>
+
                     {/* Informations latérales - uniquement pour desktop */}
                     {!isMobileView && (
                       <div className="hidden md:block space-y-4">
@@ -1691,7 +1357,6 @@ export default function TasksPage({
                     <div className="flex gap-2">
                       <button
                         onClick={() => {
-                          // Add logic to open the edit form
                           alert("Fonctionnalité Modifier à implémenter");
                         }}
                         className="px-4 py-2 text-sm font-medium text-[color:var(--secondary-foreground)] bg-[color:var(--secondary)] hover:bg-opacity-90 rounded-lg transition-colors"
@@ -1715,7 +1380,7 @@ export default function TasksPage({
 
                 {/* Barre d'actions fixe pour mobile */}
                 {isMobileView && selectedTask && (
-                  <div className="bottom-0 left-0 right-0 bg-card border-t border-border p-3 z-20 flex gap-2">
+                  <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-3 z-20 flex gap-2">
                     {selectedTask.status !== "completed" ? (
                       <button
                         onClick={() => {
