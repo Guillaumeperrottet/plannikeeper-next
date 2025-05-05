@@ -721,7 +721,7 @@ export default function TasksPage({
             } border-r border-[color:var(--border)] bg-[color:var(--card)] flex flex-col`}
           >
             {!isMobileView && (
-              <div className="p-4 border-b border-[color:var(--border)] flex items-center">
+              <div className="border-b border-[color:var(--border)] flex items-center">
                 <Link
                   href={`/dashboard/objet/${objetId}/view`}
                   className="mr-2 p-2 rounded-full hover:bg-[color:var(--muted)] transition-colors"
@@ -990,7 +990,7 @@ export default function TasksPage({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
                 transition={{ duration: 0.2 }}
-                className="flex-1 overflow-auto p-3 sm:p-6 pb-28 sm:pb-6"
+                className="flex-1 overflow-hidden p-3 sm:p-6 pb-28 sm:pb-6"
               >
                 <div className="max-w-3xl mx-auto flex flex-col">
                   {/* Entête avec le nom de la tâche et le statut */}

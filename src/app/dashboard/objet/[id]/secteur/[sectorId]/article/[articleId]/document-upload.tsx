@@ -100,7 +100,7 @@ export default function DocumentUpload({
   return (
     <div className="space-y-3">
       <div
-        className={`border-2 border-dashed rounded-lg p-3 sm:p-6 text-center transition-colors ${
+        className={`border-2 border-dashed rounded-lg sm:p-6 text-center transition-colors ${
           dragActive
             ? "border-blue-500 bg-blue-50 bg-opacity-20"
             : "border-[color:var(--border)]"
@@ -111,7 +111,7 @@ export default function DocumentUpload({
         onDrop={handleDrop}
       >
         {file ? (
-          <div className="flex items-center justify-between p-2 bg-[color:var(--background)] rounded border border-[color:var(--border)]">
+          <div className="flex items-center justify-between bg-[color:var(--background)] rounded border border-[color:var(--border)]">
             <div className="flex items-center gap-2 flex-1 truncate">
               <File
                 size={18}
