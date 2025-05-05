@@ -262,22 +262,26 @@ export default function TodoListAgenda() {
     else upcomingTasks.push(task);
   });
 
-  // Navigation vers la tâche
+  // Met à jour l'état de navigation lors de la navigation vers une tâche
   const navigateToTask = async (task: Task) => {
     try {
       setIsNavigating(true);
 
-      // Naviguez vers la tâche
+      // Naviguez sans attendre
       router.push(
         `/dashboard/objet/${task.article.sector.object.id}` +
           `/secteur/${task.article.sector.id}` +
           `/article/${task.article.id}`
       );
 
-      // Fermez l'agenda mais ne réinitialisez pas isNavigating ici
-      // La réinitialisation se fera dans la page de destination
+      // Fermez l'agenda
       setAgendaHeight(MIN_HEIGHT);
       setIsExpanded(false);
+
+      // Réinitialiser le chargement après un court délai (puisque router.push est synchrone dans app dir)
+      setTimeout(() => {
+        setIsNavigating(false);
+      }, 1000);
     } catch (error) {
       console.error("Erreur de navigation:", error);
       setIsNavigating(false);
