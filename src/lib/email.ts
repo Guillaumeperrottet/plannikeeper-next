@@ -66,32 +66,27 @@ function generateTaskAssignmentEmailTemplate(
   userName: string,
   tasks: TaskWithDetails[]
 ): string {
-  // Date formatée pour l'affichage
-  const formattedDate = new Date().toLocaleDateString("fr-FR", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
+  const formattedDate = new Date().toLocaleDateString("fr-FR");
   return `
     <!DOCTYPE html>
-    <html>
+    <html lang="fr">
     <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Tâches assignées - PlanniKeeper</title>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+      <title>Tâches assignées</title>
       <style>
         body {
           font-family: Arial, sans-serif;
-          line-height: 1.6;
-          color: #333;
+          background-color: #f4f4f4;
           margin: 0;
           padding: 0;
         }
         .container {
           max-width: 600px;
-          margin: 0 auto;
+          margin: 30px auto;
+          background: #fff;
+          border-radius: 8px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.05);
           padding: 20px;
         }
         .header {

@@ -4,10 +4,16 @@ import { prisma } from "@/lib/prisma";
 import { EmailService, TaskWithDetails } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
+  console.log("Email API endpoint called");
   try {
     // Vérifier le secret d'API pour sécuriser cet endpoint
     const apiSecret = req.headers.get("x-api-secret");
+    console.log(`Received API secret: ${apiSecret ? "Yes" : "No"}`);
+    console.log(
+      `Expected API secret: ${process.env.EMAIL_API_SECRET ? process.env.EMAIL_API_SECRET.substring(0, 3) + "..." : "Not set"}`
+    );
     if (apiSecret !== process.env.EMAIL_API_SECRET) {
+      console.log("API secret mismatch");
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
@@ -18,6 +24,9 @@ export async function POST(req: NextRequest) {
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    console.log(
+      `Looking for notifications between ${yesterday.toISOString()} and ${today.toISOString()}`
+    );
 
     // Récupérer les notifications non lues pour les tâches assignées
     const notifications = await prisma.notification.findMany({
@@ -40,6 +49,8 @@ export async function POST(req: NextRequest) {
         },
       },
     });
+
+    console.log(`Found ${notifications.length} notifications`);
 
     // Regrouper les notifications par utilisateur
     const userNotifications: Record<
