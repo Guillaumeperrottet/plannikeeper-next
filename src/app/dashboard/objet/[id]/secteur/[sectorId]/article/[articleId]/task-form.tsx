@@ -232,7 +232,7 @@ export default function TaskFormWithDocuments({
 
       <form
         onSubmit={handleSubmit}
-        className="p-3 sm:p-6 overflow-y-auto max-h-[calc(100vh-8rem)]"
+        className="p-3 sm:p-6 overflow-y-auto max-h-[calc(100vh-8rem)] sm:max-h-none"
       >
         {formError && (
           <div className="mb-4 flex items-center gap-2 p-2 sm:p-3 bg-[color:var(--destructive-background)] border border-[color:var(--destructive-border)] rounded-lg text-[color:var(--destructive-foreground)] text-xs sm:text-sm">

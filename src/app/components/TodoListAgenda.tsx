@@ -386,7 +386,15 @@ export default function TodoListAgenda() {
             Chargement des tâches...
           </div>
         ) : viewMode === ViewMode.CALENDAR ? (
-          <CalendarView tasks={tasks} navigateToTask={navigateToTask} />
+          <CalendarView
+            tasks={tasks}
+            navigateToTask={(task) => {
+              navigateToTask(task);
+              // Fermer l'agenda après la navigation
+              setAgendaHeight(MIN_HEIGHT);
+              setIsExpanded(false);
+            }}
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
             {/* Cette semaine */}
