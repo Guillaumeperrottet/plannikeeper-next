@@ -990,7 +990,7 @@ export default function TasksPage({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
                 transition={{ duration: 0.2 }}
-                className="flex-1 overflow-hidden p-3 sm:p-6 pb-28 sm:pb-6"
+                className="flex-1 overflow-auto p-3 sm:p-6 pb-28 sm:pb-6"
               >
                 <div className="max-w-3xl mx-auto flex flex-col">
                   {/* Entête avec le nom de la tâche et le statut */}
