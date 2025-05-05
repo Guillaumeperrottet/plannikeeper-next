@@ -267,17 +267,15 @@ export default function TodoListAgenda() {
     try {
       setIsNavigating(true);
 
-      // Utiliser router.push avec une callback pour gérer la fin de navigation
+      // Utilisez router.push et attendez sa complétion
       await router.push(
         `/dashboard/objet/${task.article.sector.object.id}` +
           `/secteur/${task.article.sector.id}` +
           `/article/${task.article.id}`
       );
 
-      // Réinitialiser l'état après un court délai
-      setTimeout(() => {
-        setIsNavigating(false);
-      }, 100);
+      // Réinitialiser l'état après la navigation
+      setIsNavigating(false);
     } catch (error) {
       console.error("Erreur de navigation:", error);
       setIsNavigating(false);
