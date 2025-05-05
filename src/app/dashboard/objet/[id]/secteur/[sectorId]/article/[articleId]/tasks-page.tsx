@@ -7,7 +7,8 @@ import {
   Droppable,
   Draggable,
   DropResult,
-} from "react-beautiful-dnd";
+} from "@hello-pangea/dnd";
+
 import { toast } from "sonner";
 import TaskFormMobileOptimized from "./TaskFormMobileOptimized";
 import TaskForm from "./task-form";
