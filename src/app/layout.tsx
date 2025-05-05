@@ -8,6 +8,31 @@ import { prisma } from "@/lib/prisma";
 import { NotificationProvider } from "./components/notification-provider";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import Script from "next/script";
+
+export const metadata = {
+  title: {
+    default: "PlanniKeeper - Gestion Immobilière Simplifiée",
+    template: "%s | PlanniKeeper",
+  },
+  description:
+    "PlanniKeeper est la solution tout-en-un pour la gestion de vos projets immobiliers. Organisez vos propriétés, planifiez vos tâches et maximisez votre efficacité.",
+  keywords:
+    "plannikeeper, planikeeper, gestion immobilière, logiciel immobilier, gestion de biens, gestion de propriétés",
+  openGraph: {
+    title: "PlanniKeeper - Gestion Immobilière Simplifiée",
+    description: "Simplifiez la gestion de vos projets immobiliers",
+    url: "https://plannikeeper.ch",
+    siteName: "PlanniKeeper",
+    images: [
+      {
+        url: "/logo.png",
+        width: 1200,
+        height: 630,
+      },
+    ],
+  },
+};
 
 export default async function RootLayout({
   children,
@@ -35,14 +60,31 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="en">
+    <html lang="fr">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta
-          name="google-site-verification"
-          content="n6Fs9Kd4TRf83FadX1gRcQucUvEGYRBfI-qRnlMfbMQ"
+        <meta name="theme-color" content="#d9840d" />
+        <meta name="robots" content="index, follow" />
+        <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+
+        {/* Favicon et icônes */}
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        {/* Google tag (gtag.js) */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-291XG7LXT7"
+          strategy="afterInteractive"
         />
+        <Script id="gtag-init" strategy="afterInteractive">
+          {`
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-291XG7LXT7');
+  `}
+        </Script>
         <Analytics />
+        <SpeedInsights />
         <SpeedInsights />
       </head>
       <body className="bg-background" suppressHydrationWarning>
@@ -60,45 +102,3 @@ export default async function RootLayout({
     </html>
   );
 }
-
-<script
-  dangerouslySetInnerHTML={{
-    __html: `
-      console.log("Script d'enregistrement du Service Worker commencé");
-      if ('serviceWorker' in navigator) {
-        console.log("ServiceWorker API disponible");
-        // Charger la configuration Firebase
-        fetch('/api/firebase-config')
-          .then(response => {
-            console.log("Réponse reçue de /api/firebase-config:", response.status);
-            return response.json();
-          })
-          .then(config => {
-            console.log("Configuration Firebase reçue:", config);
-            // Exposer la configuration à self pour le service worker
-            window.FIREBASE_API_KEY = config.apiKey;
-            window.FIREBASE_AUTH_DOMAIN = config.authDomain;
-            window.FIREBASE_PROJECT_ID = config.projectId;
-            window.FIREBASE_STORAGE_BUCKET = config.storageBucket;
-            window.FIREBASE_MESSAGING_SENDER_ID = config.messagingSenderId;
-            window.FIREBASE_APP_ID = config.appId;
-
-            // Enregistrer le service worker
-            console.log("Tentative d'enregistrement du Service Worker...");
-            return navigator.serviceWorker.register('/firebase-messaging-sw.js')
-              .then(registration => {
-                console.log('Service Worker enregistré avec succès:', registration);
-              })
-              .catch(err => {
-                console.error('Erreur lors de l\'enregistrement du Service Worker:', err);
-              });
-          })
-          .catch(err => {
-            console.error('Erreur lors du chargement de la configuration Firebase:', err);
-          });
-      } else {
-        console.warn("ServiceWorker API non disponible dans ce navigateur");
-      }
-    `,
-  }}
-/>;
