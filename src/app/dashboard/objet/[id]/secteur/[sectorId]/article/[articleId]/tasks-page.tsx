@@ -27,6 +27,9 @@ import {
   MoreHorizontal,
   Edit,
   Trash2,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
 } from "lucide-react";
 
 type User = {
@@ -54,6 +57,9 @@ type Task = {
   createdAt: Date;
   updatedAt: Date;
 };
+
+// Type pour la direction de tri
+type SortDirection = "asc" | "desc" | null;
 
 export default function ModernTasksPage({
   initialTasks,
@@ -86,6 +92,16 @@ export default function ModernTasksPage({
   const contentRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // État pour gérer le tri par date
+  const [sortDirection, setSortDirection] = useState<
+    Record<string, SortDirection>
+  >({
+    pending: null,
+    in_progress: null,
+    completed: null,
+    cancelled: null,
+  });
+
   // Detect mobile view
   useEffect(() => {
     const checkMobile = () => {
@@ -99,9 +115,39 @@ export default function ModernTasksPage({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Group tasks by status for column display
+  // Fonction pour trier les tâches
+  const sortTasksByDate = (
+    tasks: Task[],
+    status: string,
+    direction: SortDirection
+  ): Task[] => {
+    if (!direction) return tasks;
+
+    return [...tasks].sort((a, b) => {
+      // Priorité aux dates de réalisation
+      const dateA = a.realizationDate
+        ? new Date(a.realizationDate).getTime()
+        : new Date(a.createdAt).getTime();
+      const dateB = b.realizationDate
+        ? new Date(b.realizationDate).getTime()
+        : new Date(b.createdAt).getTime();
+
+      return direction === "asc" ? dateA - dateB : dateB - dateA;
+    });
+  };
+
+  // Toggle the sort direction for a specific status
+  const toggleSort = (status: string) => {
+    setSortDirection((prev) => ({
+      ...prev,
+      [status]:
+        prev[status] === null ? "desc" : prev[status] === "desc" ? "asc" : null,
+    }));
+  };
+
+  // Group tasks by status for column display, with sorting applied
   const taskColumns = useMemo(() => {
-    return {
+    const columns = {
       pending: filteredTasks.filter((task) => task.status === "pending"),
       in_progress: filteredTasks.filter(
         (task) => task.status === "in_progress"
@@ -109,7 +155,31 @@ export default function ModernTasksPage({
       completed: filteredTasks.filter((task) => task.status === "completed"),
       cancelled: filteredTasks.filter((task) => task.status === "cancelled"),
     };
-  }, [filteredTasks]);
+
+    // Apply sorting to each column if direction is set
+    return {
+      pending: sortTasksByDate(
+        columns.pending,
+        "pending",
+        sortDirection.pending
+      ),
+      in_progress: sortTasksByDate(
+        columns.in_progress,
+        "in_progress",
+        sortDirection.in_progress
+      ),
+      completed: sortTasksByDate(
+        columns.completed,
+        "completed",
+        sortDirection.completed
+      ),
+      cancelled: sortTasksByDate(
+        columns.cancelled,
+        "cancelled",
+        sortDirection.cancelled
+      ),
+    };
+  }, [filteredTasks, sortDirection]);
 
   // Apply filters to tasks
   useEffect(() => {
@@ -149,6 +219,37 @@ export default function ModernTasksPage({
 
     return [...new Set(types)];
   }, [tasks]);
+
+  // Render the sort button with appropriate icon
+  const renderSortButton = (status: string) => {
+    let icon;
+    switch (sortDirection[status]) {
+      case "asc":
+        icon = <ArrowUp size={12} />;
+        break;
+      case "desc":
+        icon = <ArrowDown size={12} />;
+        break;
+      default:
+        icon = <ArrowUpDown size={12} />;
+    }
+
+    return (
+      <button
+        onClick={() => toggleSort(status)}
+        className="ml-1 p-1 rounded-full hover:bg-gray-200 focus:outline-none"
+        title={
+          sortDirection[status]
+            ? sortDirection[status] === "asc"
+              ? "Tri croissant"
+              : "Tri décroissant"
+            : "Trier par date"
+        }
+      >
+        {icon}
+      </button>
+    );
+  };
 
   // Handle drag and drop between columns
   const handleDragEnd = async (result: DropResult) => {
@@ -645,6 +746,8 @@ export default function ModernTasksPage({
                               <h3 className="font-medium text-xs">
                                 {getStatusName(status)}
                               </h3>
+                              {/* Bouton de tri par date */}
+                              {renderSortButton(status)}
                             </div>
                             <span className="text-xs px-1.5 py-0.5 bg-white bg-opacity-70 rounded-full">
                               {

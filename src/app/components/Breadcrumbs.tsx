@@ -142,7 +142,7 @@ export default function Breadcrumbs() {
 
             breadcrumbsWithLabels.push({
               label: sectorName,
-              href: `/dashboard/objet/${objetId}/secteur/${sectorId}`,
+              href: `/dashboard/objet/${objetId}/view`,
               current:
                 i + 2 >= pathArray.length &&
                 !["edit", "article"].includes(pathArray[i + 2]?.breadcrumb),
