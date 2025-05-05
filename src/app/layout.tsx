@@ -38,7 +38,10 @@ export default async function RootLayout({
     <html lang="en">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#3367D6" />
+        <meta
+          name="google-site-verification"
+          content="n6Fs9Kd4TRf83FadX1gRcQucUvEGYRBfI-qRnlMfbMQ"
+        />
         <Analytics />
         <SpeedInsights />
       </head>
