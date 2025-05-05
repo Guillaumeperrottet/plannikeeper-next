@@ -284,6 +284,7 @@ export default function TasksPage({
   const [sortBy, setSortBy] = useState<string>("dateAsc");
   const [showSortOptions, setShowSortOptions] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // État pour le mode mobile
   const [isMobileView, setIsMobileView] = useState(false);
@@ -299,6 +300,15 @@ export default function TasksPage({
       cancelled: true, // Par défaut, les tâches annulées sont repliées
     }
   );
+
+  useEffect(() => {
+    // Réinitialiser l'état de navigation quand la page se monte
+    const timer = setTimeout(() => {
+      setIsNavigating(false);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Détecter si on est sur mobile
   useEffect(() => {
@@ -663,6 +673,17 @@ export default function TasksPage({
 
   return (
     <div className="flex flex-col md:flex-row h-screen overflow-hidden bg-[color:var(--background)]">
+      {/* Overlay de chargement global */}
+      {isNavigating && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[color:var(--primary)] mx-auto mb-4"></div>
+            <p className="text-lg font-medium text-[color:var(--foreground)]">
+              Chargement de la tâche...
+            </p>
+          </div>
+        </div>
+      )}
       {/* Barre de navigation mobile */}
       {isMobileView && (
         <div className="bg-[color:var(--card)] border-b border-[color:var(--border)] p-3 flex justify-between items-center">

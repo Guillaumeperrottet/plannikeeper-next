@@ -64,6 +64,7 @@ export default function CalendarView({
     setIsNavigating(true);
     try {
       await navigateToTask(task);
+      closeDialog();
     } catch (error) {
       console.error("Erreur de navigation:", error);
       setIsNavigating(false);
