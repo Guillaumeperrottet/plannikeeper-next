@@ -266,16 +266,24 @@ export default function TodoListAgenda() {
   const navigateToTask = async (task: Task) => {
     try {
       setIsNavigating(true);
-      router.push(
+
+      // Utiliser router.push avec une callback pour gérer la fin de navigation
+      await router.push(
         `/dashboard/objet/${task.article.sector.object.id}` +
           `/secteur/${task.article.sector.id}` +
           `/article/${task.article.id}`
       );
+
+      // Réinitialiser l'état après un court délai
+      setTimeout(() => {
+        setIsNavigating(false);
+      }, 100);
     } catch (error) {
       console.error("Erreur de navigation:", error);
       setIsNavigating(false);
     }
   };
+
   // Impression
   const handlePrint = () => {
     window.print();
