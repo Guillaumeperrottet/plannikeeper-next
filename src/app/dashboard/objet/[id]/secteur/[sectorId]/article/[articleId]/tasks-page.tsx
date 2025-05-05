@@ -12,14 +12,12 @@ import {
 import { toast } from "sonner";
 import TaskFormMobileOptimized from "./TaskFormMobileOptimized";
 import TaskForm from "./task-form";
-import Link from "next/link";
 import {
   Calendar,
   User,
   Filter,
   Search,
   Plus,
-  ArrowLeft,
   Clock,
   CheckCircle2,
   CircleOff,
@@ -90,15 +88,15 @@ export default function ModernTasksPage({
 
   // Detect mobile view
   useEffect(() => {
-    const checkIfMobile = () => {
+    const checkMobile = () => {
       const isMobile = window.innerWidth < 768;
       setUseOptimizedForm(isMobile);
       setIsMobileView(isMobile);
     };
 
-    checkIfMobile();
-    window.addEventListener("resize", checkIfMobile);
-    return () => window.removeEventListener("resize", checkIfMobile);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   // Group tasks by status for column display
@@ -443,153 +441,7 @@ export default function ModernTasksPage({
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
-      {/* Top navigation for mobile */}
-      <div className="bg-white border-b border-gray-200 p-3 flex justify-between items-center">
-        <Link
-          href={`/dashboard/objet/${objetId}/view`}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
-          <span className="font-medium text-gray-900 truncate max-w-[200px]">
-            {articleTitle}
-          </span>
-        </Link>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`p-2 rounded-full ${showFilters ? "bg-blue-50 text-blue-600" : "text-gray-600 hover:bg-gray-100"}`}
-            aria-label="Filter tasks"
-          >
-            <Filter className="w-5 h-5" />
-          </button>
-          <button
-            onClick={handleNewTask}
-            className="bg-blue-600 text-white p-2 rounded-full shadow-sm hover:bg-blue-700"
-            aria-label="Add task"
-          >
-            <Plus className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Filter panel (expandable) */}
-      <AnimatePresence>
-        {showFilters && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="bg-white border-b border-gray-200 overflow-hidden"
-          >
-            <div className="p-3 space-y-3">
-              {/* Search input */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  placeholder="Search tasks..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-
-              {/* Status filter */}
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Status
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {["pending", "in_progress", "completed", "cancelled"].map(
-                    (status) => (
-                      <button
-                        key={status}
-                        onClick={() => {
-                          setFilterStatus((prev) =>
-                            prev.includes(status)
-                              ? prev.filter((s) => s !== status)
-                              : [...prev, status]
-                          );
-                        }}
-                        className={`px-2.5 py-1 text-xs rounded-full border ${
-                          filterStatus.includes(status)
-                            ? getStatusColor(status)
-                            : "border-gray-300 bg-white text-gray-700"
-                        }`}
-                      >
-                        {getStatusName(status)}
-                      </button>
-                    )
-                  )}
-                </div>
-              </div>
-
-              {/* Assignee filter */}
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Assignee
-                </label>
-                <select
-                  value={filterAssignee || ""}
-                  onChange={(e) => setFilterAssignee(e.target.value || null)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">All assignees</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Task type filter if types exist */}
-              {uniqueTaskTypes.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Task type
-                  </label>
-                  <select
-                    value={filterTaskType || ""}
-                    onChange={(e) => setFilterTaskType(e.target.value || null)}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">All types</option>
-                    {uniqueTaskTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Reset filters button */}
-              <div className="pt-2 flex justify-end">
-                <button
-                  onClick={resetFilters}
-                  className="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                >
-                  Reset filters
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Main content area */}
+      {/* Main content area with integrated filter area */}
       <div
         ref={contentRef}
         className="flex-1 overflow-hidden flex flex-col md:flex-row"
@@ -630,223 +482,372 @@ export default function ModernTasksPage({
             )
           ) : (
             <DragDropContext onDragEnd={handleDragEnd}>
-              <div className="flex-1 flex flex-col md:flex-row overflow-x-auto md:space-x-3 pb-4 pt-2 px-2">
-                {/* Render each status column */}
-                {["pending", "in_progress", "completed", "cancelled"].map(
-                  (status) => (
-                    <div
-                      key={status}
-                      className="flex-1 min-w-[300px] md:min-w-0 mb-3 md:mb-0"
+              <div className="flex-1 flex flex-col">
+                {/* Compact header with title, search and actions */}
+                <div className="bg-white border-b p-2 flex justify-between items-center gap-2">
+                  <div className="font-medium truncate text-sm md:text-base">
+                    {articleTitle}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="relative w-40 md:w-52">
+                      <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
+                      <input
+                        ref={searchInputRef}
+                        type="text"
+                        placeholder="Search tasks..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-8 pr-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                      {searchQuery && (
+                        <button
+                          onClick={() => setSearchQuery("")}
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setShowFilters(!showFilters)}
+                      className={`p-1 rounded-md ${showFilters ? "bg-blue-50 text-blue-600" : "text-gray-600 hover:bg-gray-100"}`}
                     >
-                      <div
-                        className={`rounded-t-md px-3 py-2 ${getStatusColor(status)}`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(status)}
-                            <h3 className="font-medium text-sm">
-                              {getStatusName(status)}
-                            </h3>
+                      <Filter className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={handleNewTask}
+                      className="bg-blue-600 text-white p-1 rounded-md shadow-sm hover:bg-blue-700"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filter panel (expandable) */}
+                <AnimatePresence>
+                  {showFilters && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="bg-white border-b border-gray-200 overflow-hidden"
+                    >
+                      <div className="p-3 space-y-3">
+                        {/* Status filter */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Status
+                          </label>
+                          <div className="flex flex-wrap gap-2">
+                            {[
+                              "pending",
+                              "in_progress",
+                              "completed",
+                              "cancelled",
+                            ].map((status) => (
+                              <button
+                                key={status}
+                                onClick={() => {
+                                  setFilterStatus((prev) =>
+                                    prev.includes(status)
+                                      ? prev.filter((s) => s !== status)
+                                      : [...prev, status]
+                                  );
+                                }}
+                                className={`px-2 py-0.5 text-xs rounded-full border ${
+                                  filterStatus.includes(status)
+                                    ? getStatusColor(status)
+                                    : "border-gray-300 bg-white text-gray-700"
+                                }`}
+                              >
+                                {getStatusName(status)}
+                              </button>
+                            ))}
                           </div>
-                          <span className="text-xs px-2 py-0.5 bg-white bg-opacity-70 rounded-full">
-                            {
-                              taskColumns[status as keyof typeof taskColumns]
-                                .length
-                            }
-                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* Assignee filter */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Assignee
+                            </label>
+                            <select
+                              value={filterAssignee || ""}
+                              onChange={(e) =>
+                                setFilterAssignee(e.target.value || null)
+                              }
+                              className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            >
+                              <option value="">All assignees</option>
+                              {users.map((user) => (
+                                <option key={user.id} value={user.id}>
+                                  {user.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Task type filter if types exist */}
+                          {uniqueTaskTypes.length > 0 && (
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                Task type
+                              </label>
+                              <select
+                                value={filterTaskType || ""}
+                                onChange={(e) =>
+                                  setFilterTaskType(e.target.value || null)
+                                }
+                                className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              >
+                                <option value="">All types</option>
+                                {uniqueTaskTypes.map((type) => (
+                                  <option key={type} value={type}>
+                                    {type}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Reset filters button */}
+                        <div className="flex justify-end">
+                          <button
+                            onClick={resetFilters}
+                            className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                          >
+                            Reset filters
+                          </button>
                         </div>
                       </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
-                      <Droppable droppableId={status}>
-                        {(provided, snapshot) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.droppableProps}
-                            className={`bg-white rounded-b-md p-2 shadow-sm border border-t-0 border-gray-200 h-[calc(100vh-200px)] overflow-y-auto ${
-                              snapshot.isDraggingOver ? "bg-blue-50" : ""
-                            }`}
-                          >
-                            {taskColumns[status as keyof typeof taskColumns]
-                              .length === 0 ? (
-                              <div className="text-center py-4 text-gray-500 text-sm">
-                                {status === "pending"
-                                  ? "No tasks yet. Add one!"
-                                  : `No ${getStatusName(status).toLowerCase()} tasks`}
-                              </div>
-                            ) : (
-                              taskColumns[
-                                status as keyof typeof taskColumns
-                              ].map((task, index) => (
-                                <Draggable
-                                  key={task.id}
-                                  draggableId={task.id}
-                                  index={index}
-                                >
-                                  {(provided, snapshot) => (
-                                    <div
-                                      ref={provided.innerRef}
-                                      {...provided.draggableProps}
-                                      {...provided.dragHandleProps}
-                                      className={`relative p-3 mb-2 bg-white border rounded-md shadow-sm ${
-                                        snapshot.isDragging ? "shadow-md" : ""
-                                      }`}
-                                      style={{
-                                        ...provided.draggableProps.style,
-                                        borderLeftWidth: "4px",
-                                        borderLeftColor:
-                                          task.color || "#d9840d",
-                                      }}
-                                      onClick={() => handleTaskClick(task.id)}
-                                    >
-                                      <div className="flex justify-between items-start mb-2">
-                                        <h4 className="font-medium text-sm">
-                                          {task.name}
-                                        </h4>
-                                        <div className="relative">
-                                          <button
-                                            onClick={(e) =>
-                                              handleTaskMenuToggle(task.id, e)
-                                            }
-                                            className="text-gray-500 hover:text-gray-700 p-1"
-                                          >
-                                            <MoreHorizontal className="w-4 h-4" />
-                                          </button>
-
-                                          {/* Dropdown menu */}
-                                          {taskMenuOpen === task.id && (
-                                            <div className="absolute right-0 z-10 mt-1 bg-white border rounded-md shadow-lg w-48">
-                                              <ul className="py-1 text-sm">
-                                                <li>
-                                                  <button
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      handleEditTask(task.id);
-                                                    }}
-                                                    className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
-                                                  >
-                                                    <Edit className="w-4 h-4" />
-                                                    Edit
-                                                  </button>
-                                                </li>
-                                                {status !== "completed" && (
-                                                  <li>
-                                                    <button
-                                                      onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleTaskStatusChange(
-                                                          task.id,
-                                                          "completed"
-                                                        );
-                                                      }}
-                                                      className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 text-emerald-600"
-                                                    >
-                                                      <CheckCircle2 className="w-4 h-4" />
-                                                      Mark completed
-                                                    </button>
-                                                  </li>
-                                                )}
-                                                {status === "completed" && (
-                                                  <li>
-                                                    <button
-                                                      onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleTaskStatusChange(
-                                                          task.id,
-                                                          "pending"
-                                                        );
-                                                      }}
-                                                      className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
-                                                    >
-                                                      <Clock className="w-4 h-4" />
-                                                      Reopen task
-                                                    </button>
-                                                  </li>
-                                                )}
-                                                <li>
-                                                  <button
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      handleDeleteTask(task.id);
-                                                    }}
-                                                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600 flex items-center gap-2"
-                                                  >
-                                                    <Trash2 className="w-4 h-4" />
-                                                    Delete
-                                                  </button>
-                                                </li>
-                                              </ul>
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-
-                                      {/* Task details */}
-                                      <div className="space-y-1.5">
-                                        {task.description && (
-                                          <p className="text-xs text-gray-600 line-clamp-2">
-                                            {task.description}
-                                          </p>
-                                        )}
-
-                                        <div className="flex flex-wrap gap-1.5 pt-1">
-                                          {task.realizationDate && (
-                                            <span className="flex items-center gap-1 text-xs bg-gray-100 px-1.5 py-0.5 rounded">
-                                              <Calendar className="w-3 h-3 text-gray-500" />
-                                              <span>
-                                                {formatDate(
-                                                  task.realizationDate
-                                                )}
-                                              </span>
-                                            </span>
-                                          )}
-
-                                          {task.assignedTo && (
-                                            <span className="flex items-center gap-1 text-xs bg-gray-100 px-1.5 py-0.5 rounded">
-                                              <User className="w-3 h-3 text-gray-500" />
-                                              <span className="truncate max-w-[100px]">
-                                                {task.assignedTo.name}
-                                              </span>
-                                            </span>
-                                          )}
-
-                                          {task.taskType && (
-                                            <span className="flex items-center gap-1 text-xs bg-gray-100 px-1.5 py-0.5 rounded">
-                                              <Tag className="w-3 h-3 text-gray-500" />
-                                              <span>{task.taskType}</span>
-                                            </span>
-                                          )}
-
-                                          {task.recurring && (
-                                            <span className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">
-                                              <Clock className="w-3 h-3" />
-                                              <span>Recurring</span>
-                                            </span>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
-                                </Draggable>
-                              ))
-                            )}
-                            {provided.placeholder}
-
-                            {/* Add task button at bottom of pending column */}
-                            {status === "pending" && (
-                              <button
-                                onClick={handleNewTask}
-                                className="w-full p-2 mt-1 flex items-center justify-center gap-1 text-sm text-gray-600 hover:bg-gray-50 rounded-md border border-dashed border-gray-300"
-                              >
-                                <Plus className="w-4 h-4" />
-                                <span>Add task</span>
-                              </button>
-                            )}
+                {/* Task columns */}
+                <div className="flex-1 flex overflow-x-auto md:space-x-2 pb-1 pt-1 px-1">
+                  {/* Render each status column */}
+                  {["pending", "in_progress", "completed", "cancelled"].map(
+                    (status) => (
+                      <div
+                        key={status}
+                        className="flex-1 min-w-[250px] md:min-w-0"
+                      >
+                        <div
+                          className={`rounded-t-md px-2 py-1.5 ${getStatusColor(status)}`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1">
+                              {getStatusIcon(status)}
+                              <h3 className="font-medium text-xs">
+                                {getStatusName(status)}
+                              </h3>
+                            </div>
+                            <span className="text-xs px-1.5 py-0.5 bg-white bg-opacity-70 rounded-full">
+                              {
+                                taskColumns[status as keyof typeof taskColumns]
+                                  .length
+                              }
+                            </span>
                           </div>
-                        )}
-                      </Droppable>
-                    </div>
-                  )
-                )}
+                        </div>
+
+                        <Droppable droppableId={status}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.droppableProps}
+                              className={`bg-white rounded-b-md p-1 shadow-sm border border-t-0 border-gray-200 h-[calc(100vh-110px)] overflow-y-auto ${
+                                snapshot.isDraggingOver ? "bg-blue-50" : ""
+                              }`}
+                            >
+                              {taskColumns[status as keyof typeof taskColumns]
+                                .length === 0 ? (
+                                <div className="text-center py-2 text-gray-500 text-xs">
+                                  {status === "pending"
+                                    ? "No tasks yet. Add one!"
+                                    : `No ${getStatusName(status).toLowerCase()} tasks`}
+                                </div>
+                              ) : (
+                                taskColumns[
+                                  status as keyof typeof taskColumns
+                                ].map((task, index) => (
+                                  <Draggable
+                                    key={task.id}
+                                    draggableId={task.id}
+                                    index={index}
+                                  >
+                                    {(provided, snapshot) => (
+                                      <div
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        className={`relative p-2 mb-1 bg-white border rounded-md shadow-sm ${
+                                          snapshot.isDragging ? "shadow-md" : ""
+                                        }`}
+                                        style={{
+                                          ...provided.draggableProps.style,
+                                          borderLeftWidth: "3px",
+                                          borderLeftColor:
+                                            task.color || "#d9840d",
+                                        }}
+                                        onClick={() => handleTaskClick(task.id)}
+                                      >
+                                        <div className="flex justify-between items-start mb-1">
+                                          <h4 className="font-medium text-xs">
+                                            {task.name}
+                                          </h4>
+                                          <div className="relative">
+                                            <button
+                                              onClick={(e) =>
+                                                handleTaskMenuToggle(task.id, e)
+                                              }
+                                              className="text-gray-500 hover:text-gray-700 p-0.5"
+                                            >
+                                              <MoreHorizontal className="w-3 h-3" />
+                                            </button>
+
+                                            {/* Dropdown menu */}
+                                            {taskMenuOpen === task.id && (
+                                              <div className="absolute right-0 z-10 mt-1 bg-white border rounded-md shadow-lg w-36">
+                                                <ul className="py-1 text-xs">
+                                                  <li>
+                                                    <button
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleEditTask(task.id);
+                                                      }}
+                                                      className="w-full text-left px-3 py-1 hover:bg-gray-100 flex items-center gap-2"
+                                                    >
+                                                      <Edit className="w-3 h-3" />
+                                                      Edit
+                                                    </button>
+                                                  </li>
+                                                  {status !== "completed" && (
+                                                    <li>
+                                                      <button
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          handleTaskStatusChange(
+                                                            task.id,
+                                                            "completed"
+                                                          );
+                                                        }}
+                                                        className="w-full text-left px-3 py-1 hover:bg-gray-100 flex items-center gap-2 text-emerald-600"
+                                                      >
+                                                        <CheckCircle2 className="w-3 h-3" />
+                                                        Complete
+                                                      </button>
+                                                    </li>
+                                                  )}
+                                                  {status === "completed" && (
+                                                    <li>
+                                                      <button
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          handleTaskStatusChange(
+                                                            task.id,
+                                                            "pending"
+                                                          );
+                                                        }}
+                                                        className="w-full text-left px-3 py-1 hover:bg-gray-100 flex items-center gap-2"
+                                                      >
+                                                        <Clock className="w-3 h-3" />
+                                                        Reopen
+                                                      </button>
+                                                    </li>
+                                                  )}
+                                                  <li>
+                                                    <button
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDeleteTask(
+                                                          task.id
+                                                        );
+                                                      }}
+                                                      className="w-full text-left px-3 py-1 hover:bg-gray-100 text-red-600 flex items-center gap-2"
+                                                    >
+                                                      <Trash2 className="w-3 h-3" />
+                                                      Delete
+                                                    </button>
+                                                  </li>
+                                                </ul>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+
+                                        {/* Task details */}
+                                        <div>
+                                          {task.description && (
+                                            <p className="text-[10px] text-gray-600 line-clamp-1 mb-1">
+                                              {task.description}
+                                            </p>
+                                          )}
+
+                                          <div className="flex flex-wrap gap-1">
+                                            {task.realizationDate && (
+                                              <span className="flex items-center gap-0.5 text-[10px] bg-gray-100 px-1 py-0.5 rounded">
+                                                <Calendar className="w-2 h-2 text-gray-500" />
+                                                <span>
+                                                  {formatDate(
+                                                    task.realizationDate
+                                                  )}
+                                                </span>
+                                              </span>
+                                            )}
+
+                                            {task.assignedTo && (
+                                              <span className="flex items-center gap-0.5 text-[10px] bg-gray-100 px-1 py-0.5 rounded">
+                                                <User className="w-2 h-2 text-gray-500" />
+                                                <span className="truncate max-w-[80px]">
+                                                  {task.assignedTo.name}
+                                                </span>
+                                              </span>
+                                            )}
+
+                                            {task.taskType && (
+                                              <span className="flex items-center gap-0.5 text-[10px] bg-gray-100 px-1 py-0.5 rounded">
+                                                <Tag className="w-2 h-2 text-gray-500" />
+                                                <span>{task.taskType}</span>
+                                              </span>
+                                            )}
+
+                                            {task.recurring && (
+                                              <span className="flex items-center gap-0.5 text-[10px] bg-blue-50 text-blue-700 px-1 py-0.5 rounded">
+                                                <Clock className="w-2 h-2" />
+                                                <span>Recurring</span>
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                ))
+                              )}
+                              {provided.placeholder}
+
+                              {/* Add task button at bottom of pending column */}
+                              {status === "pending" && (
+                                <button
+                                  onClick={handleNewTask}
+                                  className="w-full p-1 mt-1 flex items-center justify-center gap-1 text-xs text-gray-600 hover:bg-gray-50 rounded-md border border-dashed border-gray-300"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                  <span>Add task</span>
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </Droppable>
+                      </div>
+                    )
+                  )}
+                </div>
               </div>
             </DragDropContext>
           )}
@@ -861,8 +862,8 @@ export default function ModernTasksPage({
           filterAssignee ||
           filterTaskType ? (
             <div className="text-center max-w-sm">
-              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                <Filter className="w-6 h-6 text-gray-400" />
+              <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                <Filter className="w-5 h-5 text-gray-400" />
               </div>
               <h2 className="text-lg font-medium mb-2 text-gray-900">
                 No matching tasks
@@ -879,8 +880,8 @@ export default function ModernTasksPage({
             </div>
           ) : (
             <div className="text-center max-w-sm">
-              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                <LayoutList className="w-8 h-8 text-gray-400" />
+              <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                <LayoutList className="w-7 h-7 text-gray-400" />
               </div>
               <h2 className="text-xl font-medium mb-2 text-gray-900">
                 No tasks yet
@@ -905,7 +906,7 @@ export default function ModernTasksPage({
         <div className="md:hidden fixed bottom-5 right-5 z-10">
           <button
             onClick={handleNewTask}
-            className="bg-blue-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700"
+            className="bg-blue-600 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700"
           >
             <Plus className="w-6 h-6" />
           </button>
