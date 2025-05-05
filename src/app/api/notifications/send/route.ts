@@ -2,7 +2,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
-import { sendNotificationToUser } from "@/lib/firebase-admin";
 
 export async function POST(req: NextRequest) {
   // Vérifier l'authentification et les permissions
@@ -41,14 +40,6 @@ export async function POST(req: NextRequest) {
         link,
         data: data || {},
       },
-    });
-
-    // Envoyer la notification via Firebase
-    await sendNotificationToUser(userId, title, message, {
-      ...data,
-      notificationId: notification.id.toString(),
-      category: category || "",
-      link: link || "",
     });
 
     return NextResponse.json({

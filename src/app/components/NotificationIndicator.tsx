@@ -1,4 +1,4 @@
-// src/app/components/NotificationIndicator.tsx (mise à jour)
+// src/app/components/NotificationIndicator.tsx
 "use client";
 
 import { useState } from "react";
@@ -8,7 +8,7 @@ import NotificationsPanel from "@/app/components/NotificationsPanel";
 import { useNotifications } from "./notification-provider";
 
 export default function NotificationIndicator() {
-  const { unreadCount, requestPermission, hasPermission } = useNotifications();
+  const { unreadCount } = useNotifications();
   const [showPanel, setShowPanel] = useState(false);
 
   const togglePanel = () => {
@@ -23,27 +23,12 @@ export default function NotificationIndicator() {
     // Le compteur est mis à jour automatiquement par le NotificationProvider
   };
 
-  // Demander l'autorisation si on clique sur l'icône et que les notifications ne sont pas autorisées
-  const handleClick = async () => {
-    if (hasPermission === false) {
-      // Si les permissions sont explicitement refusées, afficher un message
-      alert(
-        "Les notifications sont désactivées pour ce site. Veuillez les activer dans les paramètres de votre navigateur."
-      );
-    } else if (hasPermission === null) {
-      // Si les permissions n'ont pas encore été demandées
-      await requestPermission();
-    }
-
-    togglePanel();
-  };
-
   return (
     <div className="relative">
       <Button
         variant="ghost"
         size="sm"
-        onClick={handleClick}
+        onClick={togglePanel}
         className="relative p-2 rounded-full"
         aria-label="Notifications"
       >
