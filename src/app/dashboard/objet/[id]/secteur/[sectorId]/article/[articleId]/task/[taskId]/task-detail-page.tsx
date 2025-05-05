@@ -2,21 +2,24 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
   ArrowLeft,
   Calendar,
-  User,
   Clock,
   CheckCircle2,
   AlertCircle,
-  Paperclip,
+  X,
   MessageCircle,
+  Paperclip,
   Edit,
   Trash2,
+  MoreVertical,
+  User,
   Save,
-  X,
+  RefreshCcw,
 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import DocumentsList from "@/app/dashboard/objet/[id]/secteur/[sectorId]/article/[articleId]/documents-list";
@@ -60,7 +63,7 @@ type Task = {
   };
 };
 
-interface TaskDetailPageProps {
+interface ModernTaskDetailPageProps {
   task: Task;
   users: User[];
   objetId: string;
@@ -68,69 +71,73 @@ interface TaskDetailPageProps {
   articleId: string;
 }
 
-export default function TaskDetailPage({
+export default function ModernTaskDetailPage({
   task: initialTask,
   users,
   objetId,
   sectorId,
   articleId,
-}: TaskDetailPageProps) {
+}: ModernTaskDetailPageProps) {
   const router = useRouter();
   const [task, setTask] = useState(initialTask);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [editedTask, setEditedTask] = useState(task);
+  const [activeTab, setActiveTab] = useState<
+    "details" | "documents" | "comments"
+  >("details");
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showActionMenu, setShowActionMenu] = useState(false);
 
+  // Detect mobile screen size
+  const isMobile =
+    typeof window !== "undefined"
+      ? window.matchMedia("(max-width: 767px)").matches
+      : false;
+
+  // Format date for display
   const formatDate = (date: Date | null) => {
     if (!date) return "Non définie";
     return new Date(date).toLocaleDateString();
   };
 
-  const getStatusName = (status: string) => {
+  // Get status display information
+  const getStatusInfo = (status: string) => {
     switch (status) {
       case "pending":
-        return "À faire";
+        return {
+          label: "À faire",
+          icon: <Clock className="h-4 w-4" />,
+          color: "bg-amber-50 text-amber-700 border-amber-200",
+        };
       case "in_progress":
-        return "En cours";
+        return {
+          label: "En cours",
+          icon: <Clock className="h-4 w-4 text-blue-500" />,
+          color: "bg-blue-50 text-blue-700 border-blue-200",
+        };
       case "completed":
-        return "Terminée";
+        return {
+          label: "Terminée",
+          icon: <CheckCircle2 className="h-4 w-4 text-green-500" />,
+          color: "bg-emerald-50 text-emerald-700 border-emerald-200",
+        };
       case "cancelled":
-        return "Annulée";
+        return {
+          label: "Annulée",
+          icon: <X className="h-4 w-4 text-red-500" />,
+          color: "bg-red-50 text-red-700 border-red-200",
+        };
       default:
-        return status;
+        return {
+          label: status,
+          icon: <AlertCircle className="h-4 w-4" />,
+          color: "bg-gray-100 text-gray-700 border-gray-300",
+        };
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "pending":
-        return <Clock size={18} />;
-      case "in_progress":
-        return <Clock size={18} className="text-blue-500" />;
-      case "completed":
-        return <CheckCircle2 size={18} className="text-green-500" />;
-      case "cancelled":
-        return <X size={18} className="text-red-500" />;
-      default:
-        return <AlertCircle size={18} />;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pending":
-        return "bg-[color:var(--warning-background)] text-[color:var(--warning-foreground)] border-[color:var(--warning-border)]";
-      case "in_progress":
-        return "bg-[color:var(--info-background)] text-[color:var(--info-foreground)] border-[color:var(--info-border)]";
-      case "completed":
-        return "bg-[color:var(--success-background)] text-[color:var(--success-foreground)] border-[color:var(--success-border)]";
-      case "cancelled":
-        return "bg-[color:var(--destructive-background)] text-[color:var(--destructive-foreground)] border-[color:var(--destructive-border)]";
-      default:
-        return "bg-[color:var(--muted)] text-[color:var(--muted-foreground)] border-[color:var(--border)]";
-    }
-  };
-
+  // Handle task edit/save
   const handleSave = async () => {
     setIsLoading(true);
     try {
@@ -155,6 +162,7 @@ export default function TaskDetailPage({
     }
   };
 
+  // Handle task deletion
   const handleDelete = async () => {
     if (!confirm("Êtes-vous sûr de vouloir supprimer cette tâche ?")) return;
 
@@ -177,8 +185,11 @@ export default function TaskDetailPage({
     }
   };
 
+  // Handle status change
   const handleStatusChange = async (newStatus: string) => {
     setIsLoading(true);
+    setShowStatusDropdown(false);
+
     try {
       const response = await fetch(`/api/tasks/${task.id}`, {
         method: "PATCH",
@@ -203,39 +214,154 @@ export default function TaskDetailPage({
     }
   };
 
+  // Get period label
+  const getPeriodLabel = (period: string | null) => {
+    if (!period) return "";
+
+    switch (period) {
+      case "daily":
+        return "Quotidienne";
+      case "weekly":
+        return "Hebdomadaire";
+      case "monthly":
+        return "Mensuelle";
+      case "quarterly":
+        return "Trimestrielle";
+      case "yearly":
+        return "Annuelle";
+      default:
+        return period;
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[color:var(--background)]">
-      {/* Header fixe pour mobile */}
-      <div className="sticky top-0 z-10 bg-[color:var(--card)] border-b border-[color:var(--border)]">
-        <div className="p-4 flex items-center justify-between">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Fixed header with actions */}
+      <header className="sticky top-0 z-10 bg-white border-b shadow-sm">
+        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link
             href={`/dashboard/objet/${objetId}/secteur/${sectorId}/article/${articleId}`}
-            className="flex items-center gap-2 hover:text-[color:var(--primary)]"
+            className="flex items-center gap-2 text-gray-700 hover:text-gray-900"
           >
             <ArrowLeft size={20} />
-            <span className="hidden sm:inline">Retour aux tâches</span>
+            <span className="hidden sm:inline font-medium">Retour</span>
           </Link>
 
           <div className="flex items-center gap-2">
             {!isEditing ? (
               <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditing(true)}
-                  className="hidden sm:flex"
-                >
-                  <Edit size={16} className="mr-2" />
-                  Modifier
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditing(true)}
-                  className="sm:hidden"
-                >
-                  <Edit size={16} />
-                </Button>
+                <div className="relative">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                    className={`${getStatusInfo(task.status).color} border`}
+                  >
+                    <div className="flex items-center gap-1">
+                      {getStatusInfo(task.status).icon}
+                      <span className="ml-1">
+                        {getStatusInfo(task.status).label}
+                      </span>
+                    </div>
+                  </Button>
+
+                  {/* Status dropdown */}
+                  <AnimatePresence>
+                    {showStatusDropdown && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -5 }}
+                        className="absolute right-0 mt-1 w-40 bg-white rounded-md shadow-lg z-10 border overflow-hidden"
+                      >
+                        {[
+                          "pending",
+                          "in_progress",
+                          "completed",
+                          "cancelled",
+                        ].map((status) => (
+                          <button
+                            key={status}
+                            onClick={() => handleStatusChange(status)}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-1.5 ${
+                              task.status === status
+                                ? "font-medium bg-gray-50"
+                                : ""
+                            }`}
+                            disabled={isLoading}
+                          >
+                            {getStatusInfo(status).icon}
+                            <span>{getStatusInfo(status).label}</span>
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Action menu (mobile) */}
+                <div className="relative sm:hidden">
+                  <button
+                    onClick={() => setShowActionMenu(!showActionMenu)}
+                    className="p-2 rounded-full hover:bg-gray-100"
+                    aria-label="Plus d'options"
+                  >
+                    <MoreVertical size={20} />
+                  </button>
+
+                  <AnimatePresence>
+                    {showActionMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -5 }}
+                        className="absolute right-0 mt-1 w-40 bg-white rounded-md shadow-lg z-10 border overflow-hidden"
+                      >
+                        <button
+                          onClick={() => {
+                            setIsEditing(true);
+                            setShowActionMenu(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-1.5"
+                        >
+                          <Edit size={16} />
+                          <span>Modifier</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleDelete();
+                            setShowActionMenu(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-red-600 flex items-center gap-1.5"
+                        >
+                          <Trash2 size={16} />
+                          <span>Supprimer</span>
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Desktop action buttons */}
+                <div className="hidden sm:flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    <Edit size={16} className="mr-1" />
+                    Modifier
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDelete}
+                    className="text-red-600 border-red-200 hover:bg-red-50"
+                  >
+                    <Trash2 size={16} className="mr-1" />
+                    Supprimer
+                  </Button>
+                </div>
               </>
             ) : (
               <>
@@ -245,27 +371,26 @@ export default function TaskDetailPage({
                   onClick={() => setIsEditing(false)}
                   disabled={isLoading}
                 >
-                  <X size={16} className="sm:mr-2" />
+                  <X size={16} className="mr-1 sm:mr-2" />
                   <span className="hidden sm:inline">Annuler</span>
                 </Button>
                 <Button size="sm" onClick={handleSave} disabled={isLoading}>
-                  <Save size={16} className="sm:mr-2" />
+                  <Save size={16} className="mr-1 sm:mr-2" />
                   <span className="hidden sm:inline">Enregistrer</span>
                 </Button>
               </>
             )}
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Contenu principal */}
-      <div className="max-w-4xl mx-auto p-4 sm:p-6">
-        {/* En-tête de la tâche */}
+      <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-4 md:py-6">
+        {/* Task title and badges */}
         <div className="mb-6">
           <div className="flex items-start gap-3 mb-2">
             <div
-              className="w-3 h-3 rounded-full flex-shrink-0 mt-1.5"
-              style={{ backgroundColor: task.color || "var(--primary)" }}
+              className="w-3 h-3 rounded-full flex-shrink-0 mt-2"
+              style={{ backgroundColor: task.color || "#6366f1" }}
             />
             {isEditing ? (
               <input
@@ -274,232 +399,253 @@ export default function TaskDetailPage({
                 onChange={(e) =>
                   setEditedTask({ ...editedTask, name: e.target.value })
                 }
-                className="text-2xl font-bold w-full bg-transparent border-b border-[color:var(--border)] focus:border-[color:var(--primary)] outline-none"
+                className="text-xl sm:text-2xl font-bold w-full bg-transparent border-b border-gray-300 focus:border-blue-500 focus:ring-0 outline-none px-0"
               />
             ) : (
-              <h1 className="text-2xl font-bold">{task.name}</h1>
+              <h1 className="text-xl sm:text-2xl font-bold">{task.name}</h1>
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <div
-              className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1 ${getStatusColor(task.status)}`}
-            >
-              {getStatusIcon(task.status)}
-              <span>{getStatusName(task.status)}</span>
-            </div>
+          <div className="flex flex-wrap items-center gap-2 ml-6">
             {task.taskType && (
-              <div className="px-3 py-1 rounded-full text-sm bg-[color:var(--muted)]">
+              <span className="px-2 py-0.5 text-xs sm:text-sm rounded-full bg-gray-100 text-gray-700">
                 {task.taskType}
-              </div>
+              </span>
+            )}
+            {task.recurring && (
+              <span className="px-2 py-0.5 text-xs sm:text-sm rounded-full bg-blue-50 text-blue-700 flex items-center gap-1">
+                <RefreshCcw size={12} />
+                <span>{getPeriodLabel(task.period)}</span>
+              </span>
             )}
           </div>
         </div>
 
-        {/* Informations principales */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-[color:var(--muted-foreground)] mb-1">
-                Description
-              </label>
-              {isEditing ? (
-                <textarea
-                  value={editedTask.description || ""}
-                  onChange={(e) =>
-                    setEditedTask({
-                      ...editedTask,
-                      description: e.target.value,
-                    })
-                  }
-                  className="w-full p-3 rounded-lg border border-[color:var(--border)] bg-[color:var(--card)] min-h-[100px]"
-                  placeholder="Ajouter une description..."
-                />
-              ) : (
-                <div className="p-3 rounded-lg bg-[color:var(--muted)] min-h-[100px]">
-                  {task.description || (
-                    <span className="text-[color:var(--muted-foreground)]">
-                      Aucune description
-                    </span>
+        {/* Tab navigation for mobile */}
+        <div className="mb-6 border-b sm:hidden">
+          <div className="flex">
+            <button
+              onClick={() => setActiveTab("details")}
+              className={`flex-1 py-2 px-1 text-sm font-medium ${
+                activeTab === "details"
+                  ? "text-blue-600 border-b-2 border-blue-600"
+                  : "text-gray-500"
+              }`}
+            >
+              Détails
+            </button>
+            <button
+              onClick={() => setActiveTab("documents")}
+              className={`flex-1 py-2 px-1 text-sm font-medium ${
+                activeTab === "documents"
+                  ? "text-blue-600 border-b-2 border-blue-600"
+                  : "text-gray-500"
+              }`}
+            >
+              Documents
+            </button>
+            <button
+              onClick={() => setActiveTab("comments")}
+              className={`flex-1 py-2 px-1 text-sm font-medium ${
+                activeTab === "comments"
+                  ? "text-blue-600 border-b-2 border-blue-600"
+                  : "text-gray-500"
+              }`}
+            >
+              Commentaires
+            </button>
+          </div>
+        </div>
+
+        {/* Content area - responsive layout */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Task details panel - always visible on desktop, conditionally on mobile */}
+          {(activeTab === "details" || !isMobile) && (
+            <div className="md:col-span-2 space-y-6">
+              {/* Description */}
+              <div className="bg-white rounded-lg border shadow-sm p-4">
+                <h2 className="text-lg font-medium mb-3 flex items-center gap-1.5">
+                  Description
+                </h2>
+                {isEditing ? (
+                  <textarea
+                    value={editedTask.description || ""}
+                    onChange={(e) =>
+                      setEditedTask({
+                        ...editedTask,
+                        description: e.target.value,
+                      })
+                    }
+                    className="w-full p-2 border rounded-md min-h-[100px] text-sm"
+                    placeholder="Ajouter une description..."
+                  />
+                ) : (
+                  <div className="text-sm text-gray-700 whitespace-pre-wrap">
+                    {task.description || (
+                      <span className="text-gray-400 italic">
+                        Aucune description
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Execution comment (if exists) */}
+              {(task.executantComment || isEditing) && (
+                <div className="bg-white rounded-lg border shadow-sm p-4">
+                  <h2 className="text-lg font-medium mb-3">
+                    Commentaire d&apos;exécution
+                  </h2>
+                  {isEditing ? (
+                    <textarea
+                      value={editedTask.executantComment || ""}
+                      onChange={(e) =>
+                        setEditedTask({
+                          ...editedTask,
+                          executantComment: e.target.value,
+                        })
+                      }
+                      className="w-full p-2 border rounded-md min-h-[80px] text-sm"
+                      placeholder="Commentaire sur l'exécution..."
+                    />
+                  ) : (
+                    <div className="text-sm text-gray-700 border-l-4 border-blue-500 pl-3 py-2 bg-blue-50 rounded-r-md whitespace-pre-wrap">
+                      {task.executantComment}
+                    </div>
                   )}
                 </div>
               )}
             </div>
+          )}
 
-            {task.executantComment && (
-              <div>
-                <label className="block text-sm font-medium text-[color:var(--muted-foreground)] mb-1">
-                  Commentaire d&apos;exécution
-                </label>
-                {isEditing ? (
-                  <textarea
-                    value={editedTask.executantComment || ""}
-                    onChange={(e) =>
-                      setEditedTask({
-                        ...editedTask,
-                        executantComment: e.target.value,
-                      })
-                    }
-                    className="w-full p-3 rounded-lg border border-[color:var(--border)] bg-[color:var(--card)] min-h-[80px]"
-                  />
-                ) : (
-                  <div className="p-3 rounded-lg bg-[color:var(--muted)] border-l-4 border-[color:var(--primary)]">
-                    {task.executantComment}
+          {/* Metadata sidebar on desktop / conditional tab content on mobile */}
+          {(activeTab === "details" || !isMobile) && (
+            <div className="md:col-span-1">
+              <div className="bg-white rounded-lg border shadow-sm p-4">
+                <h3 className="font-medium text-gray-500 text-sm mb-4">
+                  DÉTAILS
+                </h3>
+
+                <div className="space-y-4">
+                  {/* Due date */}
+                  <div className="flex items-start gap-2">
+                    <Calendar className="w-5 h-5 text-gray-500 mt-0.5" />
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">
+                        Date d&apos;échéance
+                      </div>
+                      {isEditing ? (
+                        <input
+                          type="date"
+                          value={
+                            editedTask.realizationDate
+                              ? new Date(
+                                  typeof editedTask.realizationDate ===
+                                    "string" ||
+                                  editedTask.realizationDate instanceof Date
+                                    ? editedTask.realizationDate
+                                    : ""
+                                )
+                                  .toISOString()
+                                  .split("T")[0]
+                              : ""
+                          }
+                          onChange={(e) =>
+                            setEditedTask({
+                              ...editedTask,
+                              realizationDate: e.target.value
+                                ? new Date(e.target.value)
+                                : null,
+                            })
+                          }
+                          className="w-full p-1 border rounded text-sm"
+                        />
+                      ) : (
+                        <div className="text-sm font-medium">
+                          {formatDate(task.realizationDate)}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-[color:var(--muted-foreground)] mb-1">
-                Date de réalisation
-              </label>
-              {isEditing ? (
-                <div className="relative">
-                  <input
-                    type="date"
-                    value={
-                      editedTask.realizationDate
-                        ? new Date(editedTask.realizationDate)
-                            .toISOString()
-                            .split("T")[0]
-                        : ""
-                    }
-                    onChange={(e) =>
-                      setEditedTask({
-                        ...editedTask,
-                        realizationDate: e.target.value
-                          ? new Date(e.target.value)
-                          : null,
-                      })
-                    }
-                    className="w-full px-3 py-2 rounded-lg border border-[color:var(--border)] bg-[color:var(--card)]"
-                  />
-                  <Calendar
-                    size={16}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[color:var(--muted-foreground)] pointer-events-none"
-                  />
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-[color:var(--foreground)]">
-                  <Calendar size={16} />
-                  <span>{formatDate(task.realizationDate)}</span>
-                </div>
-              )}
-            </div>
+                  {/* Assignee */}
+                  <div className="flex items-start gap-2">
+                    <User className="w-5 h-5 text-gray-500 mt-0.5" />
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">
+                        Assigné à
+                      </div>
+                      {isEditing ? (
+                        <select
+                          value={editedTask.assignedToId || ""}
+                          onChange={(e) =>
+                            setEditedTask({
+                              ...editedTask,
+                              assignedToId: e.target.value || null,
+                            })
+                          }
+                          className="w-full p-1 border rounded text-sm"
+                        >
+                          <option value="">Non assigné</option>
+                          {users.map((user) => (
+                            <option key={user.id} value={user.id}>
+                              {user.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div className="text-sm font-medium">
+                          {task.assignedTo?.name || "Non assigné"}
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-            <div>
-              <label className="block text-sm font-medium text-[color:var(--muted-foreground)] mb-1">
-                Assigné à
-              </label>
-              {isEditing ? (
-                <select
-                  value={editedTask.assignedToId || ""}
-                  onChange={(e) =>
-                    setEditedTask({
-                      ...editedTask,
-                      assignedToId: e.target.value || null,
-                    })
-                  }
-                  className="w-full px-3 py-2 rounded-lg border border-[color:var(--border)] bg-[color:var(--card)]"
-                >
-                  <option value="">Non assigné</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <div className="flex items-center gap-2 text-[color:var(--foreground)]">
-                  <User size={16} />
-                  <span>{task.assignedTo?.name || "Non assigné"}</span>
-                </div>
-              )}
-            </div>
-
-            {task.recurring && (
-              <div>
-                <label className="block text-sm font-medium text-[color:var(--muted-foreground)] mb-1">
-                  Récurrence
-                </label>
-                <div className="flex items-center gap-2 text-[color:var(--foreground)]">
-                  <Calendar size={16} />
-                  <span>
-                    {task.period === "daily" && "Quotidienne"}
-                    {task.period === "weekly" && "Hebdomadaire"}
-                    {task.period === "monthly" && "Mensuelle"}
-                    {task.period === "quarterly" && "Trimestrielle"}
-                    {task.period === "yearly" && "Annuelle"}
-                  </span>
+                  {/* Created/Updated dates */}
+                  <div className="pt-3 border-t border-gray-100">
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Créée le: {formatDate(task.createdAt)}</span>
+                      <span>Modifiée le: {formatDate(task.updatedAt)}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Actions rapides */}
-        {!isEditing && (
-          <div className="flex flex-wrap gap-2 mb-8">
-            {task.status !== "completed" && (
-              <Button
-                onClick={() => handleStatusChange("completed")}
-                disabled={isLoading}
-                className="flex-1 sm:flex-none"
-              >
-                <CheckCircle2 size={16} className="mr-2" />
-                Marquer comme terminée
-              </Button>
-            )}
-            {task.status === "completed" && (
-              <Button
-                onClick={() => handleStatusChange("pending")}
-                disabled={isLoading}
-                variant="outline"
-                className="flex-1 sm:flex-none"
-              >
-                <Clock size={16} className="mr-2" />
-                Rouvrir la tâche
-              </Button>
-            )}
-            <Button
-              onClick={handleDelete}
-              disabled={isLoading}
-              variant="destructive"
-              className="flex-1 sm:flex-none"
-            >
-              <Trash2 size={16} className="mr-2" />
-              Supprimer
-            </Button>
-          </div>
-        )}
-
-        {/* Sections supplémentaires */}
-        <div className="space-y-8">
-          {/* Documents */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Paperclip size={18} />
-              Documents
-            </h3>
-            <DocumentsList taskId={task.id} onDocumentsChange={() => {}} />
-            <div className="mt-4">
-              <DocumentUpload taskId={task.id} onUploadSuccess={() => {}} />
             </div>
-          </div>
+          )}
 
-          {/* Commentaires */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <MessageCircle size={18} />
-              Discussion
-            </h3>
-            <TaskComments taskId={task.id} />
-          </div>
+          {/* Documents tab content - conditionally visible based on active tab */}
+          {(activeTab === "documents" || !isMobile) && (
+            <div className={`${isMobile ? "" : "md:col-span-3"} space-y-6`}>
+              <div className="bg-white rounded-lg border shadow-sm p-4">
+                <h2 className="text-lg font-medium mb-4 flex items-center gap-1.5">
+                  <Paperclip className="h-5 w-5 text-gray-500" />
+                  Documents
+                </h2>
+                <DocumentsList taskId={task.id} onDocumentsChange={() => {}} />
+                <div className="mt-4 border-t pt-4">
+                  <h3 className="text-sm font-medium mb-2">
+                    Ajouter un document
+                  </h3>
+                  <DocumentUpload taskId={task.id} onUploadSuccess={() => {}} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Comments tab content - conditionally visible based on active tab */}
+          {(activeTab === "comments" || !isMobile) && (
+            <div className={`${isMobile ? "" : "md:col-span-3"} space-y-6`}>
+              <div className="bg-white rounded-lg border shadow-sm p-4">
+                <h2 className="text-lg font-medium mb-4 flex items-center gap-1.5">
+                  <MessageCircle className="h-5 w-5 text-gray-500" />
+                  Discussion
+                </h2>
+                <TaskComments taskId={task.id} />
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      </main>
     </div>
   );
 }

@@ -484,41 +484,41 @@ export default function ModernTasksPage({
             <DragDropContext onDragEnd={handleDragEnd}>
               <div className="flex-1 flex flex-col">
                 {/* Compact header with title, search and actions */}
-                <div className="bg-white border-b p-1.5 flex justify-between items-center gap-1">
-                  <div className="font-medium truncate text-xs md:text-sm">
+                <div className="bg-white border-b p-2 flex justify-between items-center gap-2">
+                  <div className="font-medium truncate text-sm md:text-base">
                     {articleTitle}
                   </div>
-                  <div className="flex items-center gap-1">
-                    <div className="relative w-36 md:w-48">
-                      <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
+                  <div className="flex items-center gap-2">
+                    <div className="relative w-40 md:w-52">
+                      <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
                       <input
                         ref={searchInputRef}
                         type="text"
                         placeholder="Search tasks..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-7 pr-2 py-0.5 text-[10px] border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full pl-8 pr-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                       />
                       {searchQuery && (
                         <button
                           onClick={() => setSearchQuery("")}
                           className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400"
                         >
-                          <X className="w-2.5 h-2.5" />
+                          <X className="w-3 h-3" />
                         </button>
                       )}
                     </div>
                     <button
                       onClick={() => setShowFilters(!showFilters)}
-                      className={`p-0.5 rounded-md ${showFilters ? "bg-blue-50 text-blue-600" : "text-gray-600 hover:bg-gray-100"}`}
+                      className={`p-1 rounded-md ${showFilters ? "bg-blue-50 text-blue-600" : "text-gray-600 hover:bg-gray-100"}`}
                     >
-                      <Filter className="w-3.5 h-3.5" />
+                      <Filter className="w-4 h-4" />
                     </button>
                     <button
                       onClick={handleNewTask}
-                      className="bg-blue-600 text-white p-0.5 rounded-md shadow-sm hover:bg-blue-700"
+                      className="bg-blue-600 text-white p-1 rounded-md shadow-sm hover:bg-blue-700"
                     >
-                      <Plus className="w-3.5 h-3.5" />
+                      <Plus className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -637,7 +637,7 @@ export default function ModernTasksPage({
                         className="flex-1 min-w-[250px] md:min-w-0"
                       >
                         <div
-                          className={`rounded-t-md px-2 py-1 ${getStatusColor(status)}`}
+                          className={`rounded-t-md px-2 py-1.5 ${getStatusColor(status)}`}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-1">
@@ -660,7 +660,7 @@ export default function ModernTasksPage({
                             <div
                               ref={provided.innerRef}
                               {...provided.droppableProps}
-                              className={`bg-white rounded-b-md p-0.5 shadow-sm border border-t-0 border-gray-200 h-[calc(100vh-105px)] overflow-y-auto ${
+                              className={`bg-white rounded-b-md p-1 shadow-sm border border-t-0 border-gray-200 h-[calc(100vh-110px)] overflow-y-auto ${
                                 snapshot.isDraggingOver ? "bg-blue-50" : ""
                               }`}
                             >
@@ -685,7 +685,7 @@ export default function ModernTasksPage({
                                         ref={provided.innerRef}
                                         {...provided.draggableProps}
                                         {...provided.dragHandleProps}
-                                        className={`relative p-1 mb-1 bg-white border rounded-md shadow-sm ${
+                                        className={`relative p-2 mb-1 bg-white border rounded-md shadow-sm ${
                                           snapshot.isDragging ? "shadow-md" : ""
                                         }`}
                                         style={{
@@ -696,36 +696,33 @@ export default function ModernTasksPage({
                                         }}
                                         onClick={() => handleTaskClick(task.id)}
                                       >
-                                        <div className="flex justify-between items-center">
-                                          <h4
-                                            className="font-medium text-xs truncate mr-1"
-                                            style={{ maxWidth: "85%" }}
-                                          >
+                                        <div className="flex justify-between items-start mb-1">
+                                          <h4 className="font-medium text-xs">
                                             {task.name}
                                           </h4>
-                                          <div className="relative flex-shrink-0">
+                                          <div className="relative">
                                             <button
                                               onClick={(e) =>
                                                 handleTaskMenuToggle(task.id, e)
                                               }
-                                              className="text-gray-400 hover:text-gray-700 p-0.5"
+                                              className="text-gray-500 hover:text-gray-700 p-0.5"
                                             >
-                                              <MoreHorizontal className="w-2.5 h-2.5" />
+                                              <MoreHorizontal className="w-3 h-3" />
                                             </button>
 
                                             {/* Dropdown menu */}
                                             {taskMenuOpen === task.id && (
-                                              <div className="absolute right-0 z-10 mt-1 bg-white border rounded-md shadow-lg w-32">
-                                                <ul className="py-0.5 text-[9px]">
+                                              <div className="absolute right-0 z-10 mt-1 bg-white border rounded-md shadow-lg w-36">
+                                                <ul className="py-1 text-xs">
                                                   <li>
                                                     <button
                                                       onClick={(e) => {
                                                         e.stopPropagation();
                                                         handleEditTask(task.id);
                                                       }}
-                                                      className="w-full text-left px-2 py-0.5 hover:bg-gray-100 flex items-center gap-1"
+                                                      className="w-full text-left px-3 py-1 hover:bg-gray-100 flex items-center gap-2"
                                                     >
-                                                      <Edit className="w-2.5 h-2.5" />
+                                                      <Edit className="w-3 h-3" />
                                                       Edit
                                                     </button>
                                                   </li>
@@ -739,9 +736,9 @@ export default function ModernTasksPage({
                                                             "completed"
                                                           );
                                                         }}
-                                                        className="w-full text-left px-2 py-0.5 hover:bg-gray-100 flex items-center gap-1 text-emerald-600"
+                                                        className="w-full text-left px-3 py-1 hover:bg-gray-100 flex items-center gap-2 text-emerald-600"
                                                       >
-                                                        <CheckCircle2 className="w-2.5 h-2.5" />
+                                                        <CheckCircle2 className="w-3 h-3" />
                                                         Complete
                                                       </button>
                                                     </li>
@@ -756,9 +753,9 @@ export default function ModernTasksPage({
                                                             "pending"
                                                           );
                                                         }}
-                                                        className="w-full text-left px-2 py-0.5 hover:bg-gray-100 flex items-center gap-1"
+                                                        className="w-full text-left px-3 py-1 hover:bg-gray-100 flex items-center gap-2"
                                                       >
-                                                        <Clock className="w-2.5 h-2.5" />
+                                                        <Clock className="w-3 h-3" />
                                                         Reopen
                                                       </button>
                                                     </li>
@@ -771,9 +768,9 @@ export default function ModernTasksPage({
                                                           task.id
                                                         );
                                                       }}
-                                                      className="w-full text-left px-2 py-0.5 hover:bg-gray-100 text-red-600 flex items-center gap-1"
+                                                      className="w-full text-left px-3 py-1 hover:bg-gray-100 text-red-600 flex items-center gap-2"
                                                     >
-                                                      <Trash2 className="w-2.5 h-2.5" />
+                                                      <Trash2 className="w-3 h-3" />
                                                       Delete
                                                     </button>
                                                   </li>
@@ -783,42 +780,49 @@ export default function ModernTasksPage({
                                           </div>
                                         </div>
 
-                                        {/* Task details as inline badges */}
-                                        <div className="mt-0.5 flex flex-wrap gap-1 items-center">
-                                          {task.realizationDate && (
-                                            <span className="inline-flex items-center gap-0.5 text-[8px] bg-gray-50 px-0.5 rounded text-gray-500">
-                                              <Calendar className="w-1.5 h-1.5" />
-                                              {formatDate(task.realizationDate)
-                                                .split("/")
-                                                .slice(0, 2)
-                                                .join("/")}
-                                            </span>
+                                        {/* Task details */}
+                                        <div>
+                                          {task.description && (
+                                            <p className="text-[10px] text-gray-600 line-clamp-1 mb-1">
+                                              {task.description}
+                                            </p>
                                           )}
 
-                                          {task.assignedTo && (
-                                            <span className="inline-flex items-center gap-0.5 text-[8px] bg-gray-50 px-0.5 rounded text-gray-500">
-                                              <User className="w-1.5 h-1.5" />
-                                              <span className="truncate max-w-[40px]">
-                                                {task.assignedTo.name}
+                                          <div className="flex flex-wrap gap-1">
+                                            {task.realizationDate && (
+                                              <span className="flex items-center gap-0.5 text-[10px] bg-gray-100 px-1 py-0.5 rounded">
+                                                <Calendar className="w-2 h-2 text-gray-500" />
+                                                <span>
+                                                  {formatDate(
+                                                    task.realizationDate
+                                                  )}
+                                                </span>
                                               </span>
-                                            </span>
-                                          )}
+                                            )}
 
-                                          {task.taskType && (
-                                            <span className="inline-flex items-center gap-0.5 text-[8px] bg-gray-50 px-0.5 rounded text-gray-500">
-                                              <Tag className="w-1.5 h-1.5" />
-                                              <span className="truncate max-w-[40px]">
-                                                {task.taskType}
+                                            {task.assignedTo && (
+                                              <span className="flex items-center gap-0.5 text-[10px] bg-gray-100 px-1 py-0.5 rounded">
+                                                <User className="w-2 h-2 text-gray-500" />
+                                                <span className="truncate max-w-[80px]">
+                                                  {task.assignedTo.name}
+                                                </span>
                                               </span>
-                                            </span>
-                                          )}
+                                            )}
 
-                                          {task.recurring && (
-                                            <span className="inline-flex items-center gap-0.5 text-[8px] bg-blue-50 text-blue-600 px-0.5 rounded">
-                                              <Clock className="w-1.5 h-1.5" />
-                                              <span>Rec</span>
-                                            </span>
-                                          )}
+                                            {task.taskType && (
+                                              <span className="flex items-center gap-0.5 text-[10px] bg-gray-100 px-1 py-0.5 rounded">
+                                                <Tag className="w-2 h-2 text-gray-500" />
+                                                <span>{task.taskType}</span>
+                                              </span>
+                                            )}
+
+                                            {task.recurring && (
+                                              <span className="flex items-center gap-0.5 text-[10px] bg-blue-50 text-blue-700 px-1 py-0.5 rounded">
+                                                <Clock className="w-2 h-2" />
+                                                <span>Recurring</span>
+                                              </span>
+                                            )}
+                                          </div>
                                         </div>
                                       </div>
                                     )}
@@ -831,9 +835,9 @@ export default function ModernTasksPage({
                               {status === "pending" && (
                                 <button
                                   onClick={handleNewTask}
-                                  className="w-full p-0.5 mt-0.5 flex items-center justify-center gap-0.5 text-[9px] text-gray-600 hover:bg-gray-50 rounded-md border border-dashed border-gray-300"
+                                  className="w-full p-1 mt-1 flex items-center justify-center gap-1 text-xs text-gray-600 hover:bg-gray-50 rounded-md border border-dashed border-gray-300"
                                 >
-                                  <Plus className="w-2.5 h-2.5" />
+                                  <Plus className="w-3 h-3" />
                                   <span>Add task</span>
                                 </button>
                               )}
