@@ -50,8 +50,7 @@ export default async function DashboardPage() {
 
   if (pendingPlan && userWithMetadata && userWithMetadata.organizationId) {
     // Rediriger vers la page de paiement
-    redirect(`/pricing?plan=${pendingPlan}`);
-
+    redirect(`/pricing?plan=${pendingPlan}&newSignup=true`);
     // Après redirection, vous nettoierez les métadonnées lors du processus de paiement
   }
 
