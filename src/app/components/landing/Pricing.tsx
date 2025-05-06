@@ -213,7 +213,6 @@ export default function PricingSection() {
                     {plan.highlight}
                   </div>
                 )}
-
                 <Button
                   className={`w-full py-6 font-bold rounded-xl ${plan.buttonColor} transition-all`}
                   variant={plan.buttonVariant as "default" | "outline"}
