@@ -1,7 +1,9 @@
+// src/app/api/invitations/generate/route.ts (mise à jour)
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 import { generateInviteCode } from "@/lib/utils";
+import { checkOrganizationLimits } from "@/lib/subscription-limits";
 
 export async function POST(req: NextRequest) {
   const user = await getUser();
@@ -16,6 +18,22 @@ export async function POST(req: NextRequest) {
 
   if (!userOrg) {
     return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+  }
+
+  // Vérifier les limites d'utilisateurs
+  const limitsCheck = await checkOrganizationLimits(
+    userOrg.organizationId,
+    "users"
+  );
+
+  if (!limitsCheck.allowed && !limitsCheck.unlimited) {
+    return NextResponse.json(
+      {
+        error: `Limite d'utilisateurs atteinte (${limitsCheck.current}/${limitsCheck.limit}). Veuillez passer à un forfait supérieur pour inviter plus d'utilisateurs.`,
+        limits: limitsCheck,
+      },
+      { status: 403 }
+    );
   }
 
   const { role } = await req.json();
@@ -46,5 +64,6 @@ export async function POST(req: NextRequest) {
       role: invitation.role,
       expiresAt: invitation.expiresAt,
     },
+    limits: limitsCheck,
   });
 }

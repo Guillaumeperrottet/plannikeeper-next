@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { CloudinaryService } from "@/lib/cloudinary";
+import { checkOrganizationLimits } from "@/lib/subscription-limits";
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,6 +22,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Aucune organisation trouvée" },
         { status: 400 }
+      );
+    }
+
+    // Vérifier les limites d'objets
+    const limitsCheck = await checkOrganizationLimits(
+      userDb.Organization.id,
+      "objects"
+    );
+
+    if (!limitsCheck.allowed && !limitsCheck.unlimited) {
+      return NextResponse.json(
+        {
+          error: `Limite d'objets atteinte (${limitsCheck.current}/${limitsCheck.limit}). Veuillez passer à un forfait supérieur pour créer plus d'objets.`,
+          limits: limitsCheck,
+        },
+        { status: 403 }
       );
     }
 
