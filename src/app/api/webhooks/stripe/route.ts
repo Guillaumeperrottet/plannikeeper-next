@@ -32,6 +32,11 @@ interface StripeSubscription extends Stripe.Subscription {
 }
 
 export async function POST(req: NextRequest) {
+  console.log("Webhook Stripe reçu - URL:", req.url);
+  console.log(
+    "Headers de la requête:",
+    Object.fromEntries(req.headers.entries())
+  );
   console.log("Webhook Stripe reçu - Début du traitement");
   try {
     // Log détaillé des en-têtes pour déboguer

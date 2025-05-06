@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
       payment_method_types: ["card"],
       line_items: [
         {
-          price: plan.stripePriceId!, // Assurez-vous que ce champ existe dans votre modèle Plan
+          price: plan.stripePriceId!,
           quantity: 1,
         },
       ],

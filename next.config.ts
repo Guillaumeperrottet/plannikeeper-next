@@ -16,6 +16,8 @@ const nextConfig: NextConfig = {
       {
         // Appliquer ces en-têtes à toutes les routes de l'API
         source: "/api/:path*",
+        // Exclure le chemin webhooks/stripe
+        has: [{ type: "header", key: "referer", value: "(?!.*stripe.com).*" }],
         headers: [
           { key: "Access-Control-Allow-Credentials", value: "true" },
           { key: "Access-Control-Allow-Origin", value: "*" }, // En production, utilisez une URL spécifique
