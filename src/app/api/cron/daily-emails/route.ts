@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 export async function GET() {
   console.log("Starting daily email cron job");
   try {
-    const apiUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/emails/daily-tasks`;
+    const apiUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/emails/daily-emails`;
     console.log(`Making request to: ${apiUrl}`);
 
     const apiSecret = process.env.EMAIL_API_SECRET || "";
