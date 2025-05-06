@@ -77,7 +77,7 @@ export default function Header() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 py-4 md:py-6 px-4 md:px-8 transition-all duration-300 ${
         scrolled
-          ? "bg-white/80 backdrop-blur-sm py-2 md:py-3 shadow-sm"
+          ? "bg-transparent backdrop-blur-sm py-2 md:py-3"
           : "bg-transparent"
       }`}
     >
@@ -92,7 +92,7 @@ export default function Header() {
 
         {/* Mobile menu button - visible only on mobile */}
         <button
-          className="md:hidden z-50 p-2 rounded-full bg-background/90 shadow-md"
+          className="md:hidden z-50 p-2 rounded-full bg-white/90 shadow-md"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
           {mobileMenuOpen ? (
@@ -111,7 +111,7 @@ export default function Header() {
           transition={{ delay: 0.3, duration: 0.5 }}
         >
           <div
-            className={`flex items-center gap-6 bg-background/90 backdrop-blur-sm rounded-full px-6 py-2 shadow-lg transition-all duration-300 ${
+            className={`flex items-center gap-6 bg-white/90 backdrop-blur-sm rounded-full px-6 py-2 shadow-lg transition-all duration-300 ${
               scrolled ? "px-8 py-3" : ""
             }`}
           >
