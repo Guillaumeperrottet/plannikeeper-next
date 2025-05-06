@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
-import { stripe, PLAN_PRICES } from "@/lib/stripe";
+import { stripe, PLAN_DETAILS } from "@/lib/stripe";
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     const { planType } = await req.json();
 
     // Vérifiez que le plan est valide
-    if (!planType || !Object.keys(PLAN_PRICES).includes(planType)) {
+    if (!planType || !Object.keys(PLAN_DETAILS).includes(planType)) {
       return NextResponse.json({ error: "Plan non valide" }, { status: 400 });
     }
 
