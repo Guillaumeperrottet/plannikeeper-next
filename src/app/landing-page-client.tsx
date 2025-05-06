@@ -4,11 +4,11 @@ import { useState, useRef } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import Header from "@/app/components/landing/Header";
 import PricingSection from "@/app/components/landing/Pricing";
-import TiltedCarousel from "@/app/components/landing/DualDirectionCarousel";
 import { Button } from "@/app/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronRight, Check } from "lucide-react";
+import FeatureVideoShowcase from "@/app/components/landing/FeatureVideoShowcase";
 
 const ModernLandingPage = () => {
   // Removed unused activeSection state
@@ -52,22 +52,6 @@ const ModernLandingPage = () => {
       icon: "/images/file.svg",
       color: "bg-[#b8a589]",
     },
-  ];
-
-  const firstCarouselImages = [
-    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
-    { src: "/images/plannikeeper1copy5.png", alt: "Feature 2" },
-    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
-    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
-    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
-  ];
-
-  const secondCarouselImages = [
-    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
-    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
-    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
-    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
-    { src: "/images/plannikeeper1copy4.png", alt: "Feature 1" },
   ];
 
   const faqs = [
@@ -527,7 +511,8 @@ const ModernLandingPage = () => {
           </motion.div>
         </div>
       </section>
-      {/* Showcase Section */}
+
+      {/* Showcase Section - Nouvelle version avec vidéos */}
       <section
         id="showcase"
         ref={showcaseRef}
@@ -543,56 +528,84 @@ const ModernLandingPage = () => {
           >
             <div className="inline-block bg-[#e8ebe0] px-4 py-1 rounded-full mb-4 border border-[#beac93]">
               <span className="text-[#62605d] font-medium text-sm">
-                Interface intuitive
+                Fonctionnalités en action
               </span>
             </div>
             <h2 className="text-3xl md:text-5xl font-bold mb-6 text-[#141313]">
-              Un aperçu de PlanniKeeper
+              Voyez PlanniKeeper en mouvement
             </h2>
             <p className="text-lg text-[#62605d] max-w-3xl mx-auto">
-              Découvrez notre interface élégante et intuitive à travers ces
-              aperçus.
+              Explorez notre interface intuitive à travers ces démonstrations
+              vidéo de nos fonctionnalités principales.
             </p>
           </motion.div>
-        </div>
 
-        {/* Conteneur des carousels avec hauteur adaptive */}
-        <div
-          className="relative"
-          style={{ height: "500px", maxHeight: "70vh" }}
-        >
-          {/* Premier carousel - positionné en haut */}
-          <div className="absolute top-0 left-0 w-full">
-            <TiltedCarousel
-              className="h-auto"
-              images={firstCarouselImages}
-              speed={40}
-              tiltAngle={-10}
-              scale={1} // Réduit pour mobile
-              imageWidth={380} // Taille réduite pour mobile
-              imageHeight={310} // Taille réduite pour mobile
-              borderWidth={3} // Plus petit pour mobile
-              pauseOnHover={false}
-              gap={20} // Gap réduit pour mobile
-              direction="left"
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            viewport={{ once: true, amount: 0.3 }}
+          >
+            <FeatureVideoShowcase
+              features={[
+                {
+                  id: "feature-1",
+                  title: "Visualisation interactive des biens",
+                  description:
+                    "Naviguez intuitivement à travers vos propriétés avec notre interface interactive et découvrez comment accéder rapidement à toutes les informations.",
+                  videoSrc: "/videos/feature-visualisation.mp4",
+                  poster: "/images/plannikeeper1copy4.png",
+                },
+                {
+                  id: "feature-2",
+                  title: "Gestion des tâches intelligente",
+                  description:
+                    "Créez, assignez et suivez toutes vos tâches de maintenance et de gestion en quelques clics avec notre calendrier interactif.",
+                  videoSrc: "/videos/feature-tasks.mp4",
+                  poster: "/images/plannikeeper1copy5.png",
+                },
+                {
+                  id: "feature-3",
+                  title: "Collaboration en temps réel",
+                  description:
+                    "Travaillez efficacement avec votre équipe grâce à notre système de notifications et de partage instantané des informations.",
+                  videoSrc: "/videos/feature-collaboration.mp4",
+                  poster: "/images/plannikeeper1copy4.png",
+                },
+                {
+                  id: "feature-4",
+                  title: "Centralisation documentaire",
+                  description:
+                    "Stockez et retrouvez facilement tous vos documents importants associés à chaque bien dans notre interface organisée.",
+                  videoSrc: "/videos/feature-documents.mp4",
+                  poster: "/images/plannikeeper1copy4.png",
+                },
+                {
+                  id: "feature-5",
+                  title: "Tableau de bord personnalisable",
+                  description:
+                    "Accédez à toutes les informations essentielles en un coup d'œil grâce à notre tableau de bord entièrement personnalisable.",
+                  videoSrc: "/videos/feature-dashboard.mp4",
+                  poster: "/images/plannikeeper1copy4.png",
+                },
+              ]}
             />
-          </div>
-          {/* Second carousel - positionné plus bas */}
-          <div className="absolute top-[250px] md:top-[400px] left-0 w-full">
-            <TiltedCarousel
-              className="h-auto"
-              images={secondCarouselImages}
-              speed={30}
-              tiltAngle={-10}
-              scale={1} // Réduit pour mobile
-              imageWidth={380} // Taille réduite pour mobile
-              imageHeight={310} // Taille réduite pour mobile
-              borderWidth={3} // Plus petit pour mobile
-              pauseOnHover={false}
-              gap={20} // Gap réduit pour mobile
-              direction="left"
-            />
-          </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            viewport={{ once: true, amount: 0.3 }}
+            className="mt-16 text-center"
+          >
+            <Button
+              className="px-8 py-4 bg-[#d9840d] hover:bg-[#c6780c] text-white text-base"
+              onClick={() => scrollToSection("pricing")}
+            >
+              Découvrir nos offres
+            </Button>
+          </motion.div>
         </div>
       </section>
 
