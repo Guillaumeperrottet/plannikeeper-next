@@ -11,7 +11,11 @@ import {
   Shield,
   ArrowRight,
   X,
+  AlertTriangle,
+  Info,
+  CalendarClock,
 } from "lucide-react";
+import { Progress } from "@/app/components/ui/progress";
 import { Button } from "@/app/components/ui/button";
 import UsageLimits from "@/app/components/UsageLimits";
 import {
@@ -377,6 +381,168 @@ export default function SubscriptionDashboard({
     );
   };
 
+  // Fonction pour calculer le pourcentage de la période écoulée
+  const getSubscriptionProgress = (start: Date, end: Date): number => {
+    const now = new Date();
+    const total = end.getTime() - start.getTime();
+    const elapsed = now.getTime() - start.getTime();
+
+    if (elapsed <= 0) return 0;
+    if (elapsed >= total) return 100;
+
+    return Math.floor((elapsed / total) * 100);
+  };
+
+  // Fonction pour obtenir le nombre de jours restants
+  const getDaysRemaining = (end: Date): number => {
+    const now = new Date();
+    const diffTime = end.getTime() - now.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  // Fonction pour vérifier si la date de fin est proche (moins de 7 jours)
+  const isEndingPeriodSoon = (end: Date): boolean => {
+    return getDaysRemaining(end) <= 7;
+  };
+
+  // Composant pour afficher un bandeau d'état
+  const SubscriptionStatusBanner = ({
+    subscription,
+  }: {
+    subscription: Subscription | null;
+  }) => {
+    if (!subscription) return null;
+
+    const isPastDue = subscription.status === "PAST_DUE";
+    const isCancelled = subscription.cancelAtPeriodEnd;
+
+    let bgClass = "bg-green-50 border-green-200 text-green-700";
+    let icon = <CheckCircle className="h-5 w-5" />;
+    let message = "Votre abonnement est actif.";
+
+    if (isPastDue) {
+      bgClass = "bg-red-50 border-red-200 text-red-700";
+      icon = <AlertCircle className="h-5 w-5" />;
+      message =
+        "Problème de paiement détecté. Veuillez mettre à jour vos informations de paiement.";
+    } else if (isCancelled) {
+      bgClass = "bg-amber-50 border-amber-200 text-amber-700";
+      icon = <Info className="h-5 w-5" />;
+      message = `Votre abonnement sera annulé le ${formatDate(subscription.currentPeriodEnd)}. Vous passerez ensuite au forfait gratuit.`;
+    } else if (isEndingPeriodSoon(subscription.currentPeriodEnd)) {
+      bgClass = "bg-blue-50 border-blue-200 text-blue-700";
+      icon = <CalendarClock className="h-5 w-5" />;
+      message = `Renouvellement prévu dans ${getDaysRemaining(subscription.currentPeriodEnd)} jours.`;
+    }
+
+    return (
+      <div
+        className={`p-4 mb-6 rounded-lg border ${bgClass} flex items-start gap-3`}
+      >
+        {icon}
+        <div>
+          <p className="font-medium">{message}</p>
+          {isPastDue && (
+            <Button
+              variant="default"
+              size="sm"
+              className="mt-2"
+              onClick={handleManageSubscription}
+            >
+              Mettre à jour le paiement
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Composant pour afficher une timeline de la période d'abonnement
+  const SubscriptionTimeline = ({
+    subscription,
+  }: {
+    subscription: Subscription | null;
+  }) => {
+    if (!subscription) return null;
+
+    const progress = getSubscriptionProgress(
+      new Date(subscription.currentPeriodStart),
+      new Date(subscription.currentPeriodEnd)
+    );
+
+    const daysRemaining = getDaysRemaining(subscription.currentPeriodEnd);
+
+    return (
+      <div className="mb-6 p-4 bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg">
+        <h3 className="text-md font-medium mb-3">Période d&apos;abonnement</h3>
+
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm text-[color:var(--muted-foreground)]">
+            <span>{formatDate(subscription.currentPeriodStart)}</span>
+            <span>{formatDate(subscription.currentPeriodEnd)}</span>
+          </div>
+
+          <Progress value={progress} className="h-2" />
+
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-[color:var(--muted-foreground)]">
+              Progression: {progress}%
+            </span>
+            <span
+              className={`text-sm font-medium ${daysRemaining <= 7 ? "text-amber-600" : ""}`}
+            >
+              {daysRemaining} jours restants
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Composant pour les détails de facturation
+  const BillingDetails = ({
+    subscription,
+  }: {
+    subscription: Subscription | null;
+  }) => {
+    if (!subscription || !subscription.stripeSubscriptionId) return null;
+
+    return (
+      <div className="mb-6 p-4 bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg">
+        <h3 className="text-md font-medium mb-3">Détails de facturation</h3>
+
+        <div className="space-y-3">
+          <div className="flex justify-between">
+            <span className="text-sm text-[color:var(--muted-foreground)]">
+              Prochain paiement
+            </span>
+            <span className="text-sm font-medium">
+              {formatDate(subscription.currentPeriodEnd)}
+            </span>
+          </div>
+
+          <div className="flex justify-between">
+            <span className="text-sm text-[color:var(--muted-foreground)]">
+              Montant
+            </span>
+            <span className="text-sm font-medium">
+              {subscription.plan.monthlyPrice}€ / mois
+            </span>
+          </div>
+
+          {subscription.cancelAtPeriodEnd && (
+            <div className="mt-2 p-2 bg-amber-50 border border-amber-100 rounded text-amber-700 text-sm">
+              <div className="flex items-center gap-2">
+                <AlertTriangle size={16} />
+                <span>Pas de renouvellement prévu</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-8">Gestion de l&apos;abonnement</h1>
@@ -384,6 +550,11 @@ export default function SubscriptionDashboard({
       {/* Section abonnement actuel */}
       <div className="mb-10">
         <h2 className="text-xl font-semibold mb-4">Abonnement actuel</h2>
+
+        {subscription && (
+          <SubscriptionStatusBanner subscription={subscription} />
+        )}
+
         <Card>
           <CardContent className="p-6">
             {subscription ? (
@@ -424,26 +595,14 @@ export default function SubscriptionDashboard({
                 </div>
 
                 <div className="space-y-4">
-                  <div className="bg-[color:var(--muted)] p-4 rounded-lg">
-                    <h4 className="font-medium mb-2">
-                      Détails de l&apos;abonnement
-                    </h4>
-                    <div className="space-y-2 text-sm">
-                      <p>
-                        <span className="font-medium">Début de période:</span>{" "}
-                        {formatDate(subscription.currentPeriodStart)}
-                      </p>
-                      <p>
-                        <span className="font-medium">Fin de période:</span>{" "}
-                        {formatDate(subscription.currentPeriodEnd)}
-                      </p>
-                      {subscription.cancelAtPeriodEnd && (
-                        <p className="text-amber-500">
-                          Cet abonnement ne sera pas renouvelé automatiquement.
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                  {!isFreePlan && subscription.stripeSubscriptionId && (
+                    <>
+                      <SubscriptionTimeline subscription={subscription} />
+                      <BillingDetails subscription={subscription} />
+                      {/* Décommentez quand vous aurez l'API d'historique des factures */}
+                      {/* <InvoiceHistory /> */}
+                    </>
+                  )}
 
                   {isAdmin && (
                     <div className="flex flex-col gap-3">
