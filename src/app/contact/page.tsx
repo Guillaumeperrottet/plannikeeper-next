@@ -23,7 +23,7 @@ const offices = [
     city: "Bulle",
     address: "Rue de Battentin 1, 1630 bulle",
     phone: "+41 79 341 40 74",
-    email: "perrottet.guillaume,97@gmail.com",
+    email: "perrottet.guillaume.97@gmail.com",
   },
 ];
 
@@ -428,10 +428,10 @@ export default function ContactPage() {
                   <div>
                     <p className="font-medium text-gray-900">Téléphone</p>
                     <a
-                      href="tel:+41211234567"
+                      href="tel:+41793414074"
                       className="text-gray-600 hover:text-[color:var(--primary)]"
                     >
-                      +41 21 123 45 67
+                      +41 79 341 40 74
                     </a>
                   </div>
                 </div>
@@ -440,10 +440,10 @@ export default function ContactPage() {
                   <div>
                     <p className="font-medium text-gray-900">Site web</p>
                     <a
-                      href="https://plannikeeper.ch"
+                      href="https://www.campus-gerance.ch/"
                       className="text-gray-600 hover:text-[color:var(--primary)]"
                     >
-                      www.plannikeeper.ch
+                      www.campus-gerance.ch
                     </a>
                   </div>
                 </div>
@@ -508,36 +508,6 @@ export default function ContactPage() {
                   </div>
                 ))}
               </div>
-            </motion.div>
-
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={{
-                hidden: { opacity: 0, y: 20 },
-                visible: {
-                  opacity: 1,
-                  y: 0,
-                  transition: {
-                    duration: 0.6,
-                    delay: 0.5,
-                    ease: "easeOut",
-                  },
-                },
-              }}
-              className="bg-[color:var(--primary)]/10 p-6 rounded-xl border border-[color:var(--primary)]/30"
-            >
-              <h3 className="text-xl font-semibold mb-3 text-[color:var(--primary)]">
-                Besoin d&apos;une démo personnalisée ?
-              </h3>
-              <p className="text-gray-700 mb-4">
-                Découvrez comment PlanniKeeper peut s&apos;adapter à vos besoins
-                spécifiques avec une démonstration personnalisée.
-              </p>
-              <Button className="w-full bg-[color:var(--primary)] hover:bg-[color:var(--primary)]/90">
-                Réserver une démo
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
             </motion.div>
           </div>
         </div>
