@@ -1,14 +1,15 @@
-// src/app/api/admin/organizations/[id]/route.ts
+// src/app/api/admin/subscriptions/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { superAdminGuard } from "@/lib/super-admin";
 
+type RouteParams = {
+  params: { id: string };
+};
+
 // Récupérer une organisation spécifique
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const user = await getUser();
 
@@ -62,10 +63,7 @@ export async function GET(
 }
 
 // Mettre à jour une organisation
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const user = await getUser();
 
@@ -168,10 +166,7 @@ export async function PUT(
 }
 
 // Supprimer une organisation
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const user = await getUser();
 
