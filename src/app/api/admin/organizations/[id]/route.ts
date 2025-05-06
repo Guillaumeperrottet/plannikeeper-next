@@ -4,11 +4,15 @@ import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { superAdminGuard } from "@/lib/super-admin";
 
+// Define the route parameters type
+type RouteParams = {
+  params: Promise<{ id: string }>;
+};
+
 // Récupérer une organisation spécifique
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
+  const { id: orgId } = await params;
+
   try {
     const user = await getUser();
 
@@ -19,8 +23,6 @@ export async function GET(
         { status: 403 }
       );
     }
-
-    const orgId = params.id;
 
     // Récupérer l'organisation avec des informations détaillées
     const organization = await prisma.organization.findUnique({
@@ -62,10 +64,9 @@ export async function GET(
 }
 
 // Mettre à jour une organisation
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, { params }: RouteParams) {
+  const { id: orgId } = await params;
+
   try {
     const user = await getUser();
 
@@ -77,7 +78,6 @@ export async function PUT(
       );
     }
 
-    const orgId = params.id;
     const updateData = await request.json();
 
     // Vérifier que l'organisation existe
@@ -168,10 +168,9 @@ export async function PUT(
 }
 
 // Supprimer une organisation
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  const { id: orgId } = await params;
+
   try {
     const user = await getUser();
 
@@ -182,8 +181,6 @@ export async function DELETE(
         { status: 403 }
       );
     }
-
-    const orgId = params.id;
 
     // Vérifier que l'organisation existe
     const existingOrg = await prisma.organization.findUnique({
