@@ -1,4 +1,4 @@
-// src/app/dashboard/subscription/subscription-dashboard.tsx
+// src/app/profile/subscription/subscription-dashboard.tsx
 "use client";
 
 import { useState } from "react";
@@ -10,6 +10,7 @@ import {
   Loader2,
   Shield,
   ArrowRight,
+  X,
 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import UsageLimits from "@/app/components/UsageLimits";
@@ -21,6 +22,13 @@ import {
   CardTitle,
 } from "@/app/components/ui/card";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/app/components/ui/dialog";
 
 type Plan = {
   id: string;
@@ -64,6 +72,11 @@ export default function SubscriptionDashboard({
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">(
     "monthly"
   );
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelOption, setCancelOption] = useState<"end_period" | "immediate">(
+    "end_period"
+  );
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   const currentPlan = subscription?.plan;
   const isFreePlan = currentPlan?.name === "FREE";
@@ -238,6 +251,132 @@ export default function SubscriptionDashboard({
     }
   };
 
+  // Gérer l'annulation de l'abonnement
+  const handleCancelSubscription = async () => {
+    if (!isAdmin) {
+      toast.error("Seuls les administrateurs peuvent annuler l'abonnement");
+      return;
+    }
+
+    setCancelLoading(true);
+    try {
+      const response = await fetch("/api/subscriptions/cancel", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          cancelImmediately: cancelOption === "immediate",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Une erreur est survenue");
+      }
+
+      const data = await response.json();
+      toast.success(data.message);
+      setShowCancelModal(false);
+
+      // Rafraîchir la page après un court délai
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (error) {
+      console.error("Erreur:", error);
+      toast.error(
+        `Erreur lors de l'annulation: ${
+          error instanceof Error ? error.message : "Une erreur est survenue"
+        }`
+      );
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
+  // Modal de confirmation d'annulation
+  const CancelModal = () => {
+    return (
+      <Dialog open={showCancelModal} onOpenChange={setShowCancelModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogTitle>
+            Confirmer l&apos;annulation de l&apos;abonnement
+          </DialogTitle>
+          <DialogDescription>
+            Êtes-vous sûr de vouloir annuler votre abonnement ? Cette action
+            pourrait limiter l&apos;accès à certaines fonctionnalités.
+          </DialogDescription>
+
+          <div className="py-4">
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  id="end_period"
+                  name="cancelOption"
+                  value="end_period"
+                  checked={cancelOption === "end_period"}
+                  onChange={() => setCancelOption("end_period")}
+                  className="h-4 w-4 text-[color:var(--primary)]"
+                />
+                <label htmlFor="end_period" className="text-sm font-medium">
+                  Annuler à la fin de la période de facturation
+                  <p className="text-xs text-[color:var(--muted-foreground)]">
+                    Votre abonnement restera actif jusqu&apos;au{" "}
+                    {formatDate(subscription?.currentPeriodEnd || new Date())}
+                  </p>
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  id="immediate"
+                  name="cancelOption"
+                  value="immediate"
+                  checked={cancelOption === "immediate"}
+                  onChange={() => setCancelOption("immediate")}
+                  className="h-4 w-4 text-[color:var(--primary)]"
+                />
+                <label htmlFor="immediate" className="text-sm font-medium">
+                  Annuler immédiatement
+                  <p className="text-xs text-[color:var(--muted-foreground)]">
+                    Votre abonnement sera annulé immédiatement et vous passerez
+                    au plan gratuit
+                  </p>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="flex space-x-2 justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setShowCancelModal(false)}
+              disabled={cancelLoading}
+            >
+              Annuler
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleCancelSubscription}
+              disabled={cancelLoading}
+            >
+              {cancelLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Traitement...
+                </>
+              ) : (
+                "Confirmer l'annulation"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-8">Gestion de l&apos;abonnement</h1>
@@ -261,6 +400,13 @@ export default function SubscriptionDashboard({
                         : `${subscription.plan.monthlyPrice}€/mois`}
                   </p>
                   {getStatusBadge(subscription.status)}
+
+                  {subscription.cancelAtPeriodEnd && (
+                    <div className="mt-2 p-2 bg-amber-50 text-amber-700 rounded-md text-sm">
+                      Cet abonnement sera annulé le{" "}
+                      {formatDate(subscription.currentPeriodEnd)}
+                    </div>
+                  )}
 
                   <div className="mt-6">
                     <h4 className="text-sm font-medium mb-2">
@@ -302,18 +448,35 @@ export default function SubscriptionDashboard({
                   {isAdmin && (
                     <div className="flex flex-col gap-3">
                       {!isFreePlan && subscription.stripeSubscriptionId ? (
-                        <Button
-                          onClick={handleManageSubscription}
-                          disabled={loading === "manage"}
-                          className="w-full"
-                        >
-                          {loading === "manage" ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          ) : (
-                            <CreditCard className="mr-2 h-4 w-4" />
-                          )}
-                          Gérer le paiement
-                        </Button>
+                        <>
+                          <Button
+                            onClick={handleManageSubscription}
+                            disabled={loading === "manage"}
+                            className="w-full"
+                          >
+                            {loading === "manage" ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <CreditCard className="mr-2 h-4 w-4" />
+                            )}
+                            Gérer le paiement
+                          </Button>
+
+                          {/* Bouton pour annuler l'abonnement */}
+                          <Button
+                            onClick={() => setShowCancelModal(true)}
+                            variant="outline"
+                            className="w-full text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+                            disabled={
+                              loading !== null || subscription.cancelAtPeriodEnd
+                            }
+                          >
+                            <X className="mr-2 h-4 w-4" />
+                            {subscription.cancelAtPeriodEnd
+                              ? "Annulation programmée"
+                              : "Annuler l'abonnement"}
+                          </Button>
+                        </>
                       ) : (
                         <Button
                           onClick={handleRenewFreePlan}
@@ -531,6 +694,9 @@ export default function SubscriptionDashboard({
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal de confirmation d'annulation */}
+      <CancelModal />
     </div>
   );
 }
