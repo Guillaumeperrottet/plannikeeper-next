@@ -52,7 +52,7 @@ export default function UserMenu({ user, isAdmin = false }: UserMenuProps) {
     {
       icon: <CreditCard size={16} />,
       label: "Abonnement",
-      href: "/dashboard/subscription",
+      href: "/profile/subscription",
     },
     {
       icon: <User size={16} />,
