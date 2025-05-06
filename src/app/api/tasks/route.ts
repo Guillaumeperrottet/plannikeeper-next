@@ -118,21 +118,6 @@ export async function POST(req: NextRequest) {
           data: notificationData.data,
         },
       });
-
-      // Envoyer la notification via Firebase
-      try {
-        const response = await fetch("/api/notifications/send", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(notificationData),
-        });
-
-        if (!response.ok) {
-          console.error("Failed to send notification:", await response.json());
-        }
-      } catch (error) {
-        console.error("Error sending notification:", error);
-      }
     }
   }
 
