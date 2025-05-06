@@ -32,41 +32,25 @@ interface StripeSubscription extends Stripe.Subscription {
 }
 
 export async function POST(req: NextRequest) {
-  console.log("Webhook Stripe reçu - URL:", req.url);
-  console.log(
-    "Headers de la requête:",
-    Object.fromEntries(req.headers.entries())
-  );
   console.log("Webhook Stripe reçu - Début du traitement");
-  try {
-    // Log détaillé des en-têtes pour déboguer
-    const headers: Record<string, string> = {};
-    req.headers.forEach((value, key) => {
-      headers[key] = value;
-    });
-    console.log(
-      "Headers de la requête webhook:",
-      JSON.stringify(headers, null, 2)
-    );
+  console.log("URL de la requête webhook:", req.url);
 
+  // Log détaillé des en-têtes pour déboguer
+  const headers: Record<string, string> = {};
+  req.headers.forEach((value, key) => {
+    headers[key] = value;
+  });
+  console.log("Headers de la requête webhook:", headers);
+
+  try {
     const body = await req.text();
     console.log(
       "Corps de la requête (tronqué):",
       body.substring(0, 200) + "..."
     );
+
     // Récupérer l'en-tête de signature Stripe
     const signature = req.headers.get("stripe-signature");
-    if (!signature) {
-      console.error("Signature Stripe manquante");
-      return new NextResponse(
-        JSON.stringify({ error: "Signature manquante" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
     if (!signature) {
       console.error("Signature Stripe manquante");
       return NextResponse.json(
@@ -105,26 +89,72 @@ export async function POST(req: NextRequest) {
           console.error(`Plan non trouvé: ${planType}`);
           break;
         }
+
+        // CORRECTION - Conversion correcte des timestamps Unix en objets Date
+        let currentPeriodStart: Date;
+        let currentPeriodEnd: Date;
+
+        // Vérifier si session contient ces propriétés
+        if (typeof session.subscription === "string") {
+          try {
+            // Obtenir les détails de l'abonnement pour avoir les dates correctes
+            const subscriptionDetails = await stripe.subscriptions.retrieve(
+              session.subscription
+            );
+
+            // Conversion sûre en utilisant l'assertion de type avec un type plus spécifique
+            const subscription = subscriptionDetails as unknown as {
+              current_period_start: number;
+              current_period_end: number;
+            };
+
+            currentPeriodStart = new Date(
+              subscription.current_period_start * 1000
+            );
+            currentPeriodEnd = new Date(subscription.current_period_end * 1000);
+
+            console.log("Période de l'abonnement récupérée depuis Stripe:", {
+              start: currentPeriodStart,
+              end: currentPeriodEnd,
+            });
+          } catch (error) {
+            console.error(
+              "Erreur lors de la récupération des détails de l'abonnement:",
+              error
+            );
+            // Fallback en cas d'erreur
+            currentPeriodStart = new Date();
+            currentPeriodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // +30 jours
+          }
+        } else {
+          // Fallback si session.subscription n'est pas une chaîne
+          console.warn("session.subscription n'est pas une chaîne valide");
+          currentPeriodStart = new Date();
+          currentPeriodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // +30 jours
+        }
+
         // Mise à jour ou création de l'abonnement
         await prisma.subscription.upsert({
           where: { organizationId },
           update: {
             planId: plan.id,
             stripeSubscriptionId: session.subscription,
-            stripeCustomerId: session.customer,
+            stripeCustomerId:
+              typeof session.customer === "string" ? session.customer : null,
             status: "ACTIVE",
-            currentPeriodStart: new Date(session.current_period_start * 1000),
-            currentPeriodEnd: new Date(session.current_period_end * 1000),
+            currentPeriodStart,
+            currentPeriodEnd,
             cancelAtPeriodEnd: false,
           },
           create: {
             organizationId,
             planId: plan.id,
             stripeSubscriptionId: session.subscription,
-            stripeCustomerId: session.customer,
+            stripeCustomerId:
+              typeof session.customer === "string" ? session.customer : null,
             status: "ACTIVE",
-            currentPeriodStart: new Date(session.current_period_start * 1000),
-            currentPeriodEnd: new Date(session.current_period_end * 1000),
+            currentPeriodStart,
+            currentPeriodEnd,
             cancelAtPeriodEnd: false,
           },
         });
@@ -150,7 +180,7 @@ export async function POST(req: NextRequest) {
               admin.user,
               organization,
               plan,
-              new Date(session.current_period_end * 1000)
+              currentPeriodEnd
             );
             console.log(`Email de confirmation envoyé à ${admin.user.email}`);
           } catch (emailError) {
@@ -206,6 +236,14 @@ export async function POST(req: NextRequest) {
         });
 
         if (existingSubscription) {
+          // Conversion correcte des timestamps
+          const currentPeriodStart = new Date(
+            stripeSubscription.current_period_start * 1000
+          );
+          const currentPeriodEnd = new Date(
+            stripeSubscription.current_period_end * 1000
+          );
+
           // Mettre à jour l'abonnement avec le nouvel ID d'abonnement Stripe
           await prisma.subscription.update({
             where: { id: existingSubscription.id },
@@ -213,12 +251,8 @@ export async function POST(req: NextRequest) {
               stripeSubscriptionId: stripeSubscription.id,
               status:
                 stripeSubscription.status.toUpperCase() as SubscriptionStatus,
-              currentPeriodStart: new Date(
-                stripeSubscription.current_period_start * 1000
-              ),
-              currentPeriodEnd: new Date(
-                stripeSubscription.current_period_end * 1000
-              ),
+              currentPeriodStart,
+              currentPeriodEnd,
               cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
             },
           });
@@ -271,6 +305,14 @@ export async function POST(req: NextRequest) {
         });
 
         if (subscription) {
+          // Conversion correcte des timestamps
+          const currentPeriodStart = new Date(
+            stripeSubscription.current_period_start * 1000
+          );
+          const currentPeriodEnd = new Date(
+            stripeSubscription.current_period_end * 1000
+          );
+
           // Si le statut a changé, envoyez un email de notification
           const newStatus =
             stripeSubscription.status.toUpperCase() as SubscriptionStatus;
@@ -282,12 +324,8 @@ export async function POST(req: NextRequest) {
             data: {
               status: newStatus,
               cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
-              currentPeriodStart: new Date(
-                stripeSubscription.current_period_start * 1000
-              ),
-              currentPeriodEnd: new Date(
-                stripeSubscription.current_period_end * 1000
-              ),
+              currentPeriodStart,
+              currentPeriodEnd,
             },
           });
 
@@ -329,7 +367,7 @@ export async function POST(req: NextRequest) {
                     admin.user,
                     subscription.organization,
                     subscription.plan,
-                    new Date(stripeSubscription.current_period_end * 1000)
+                    currentPeriodEnd
                   );
                 }
               } catch (emailError) {
@@ -426,6 +464,10 @@ export async function POST(req: NextRequest) {
             if (subscription) {
               console.log(`Abonnement trouvé, mise à jour: ${subscription.id}`);
 
+              // Conversion correcte des timestamps
+              const currentPeriodStart = new Date(invoice.period_start * 1000);
+              const currentPeriodEnd = new Date(invoice.period_end * 1000);
+
               // Récupérer les détails du plan depuis Stripe
               const stripePrice = await stripe.prices.retrieve(
                 stripeSubscription.items.data[0].price.id
@@ -455,8 +497,8 @@ export async function POST(req: NextRequest) {
                 where: { id: subscription.id },
                 data: {
                   planId,
-                  currentPeriodStart: new Date(invoice.period_start * 1000),
-                  currentPeriodEnd: new Date(invoice.period_end * 1000),
+                  currentPeriodStart,
+                  currentPeriodEnd,
                   status: "ACTIVE",
                   stripeSubscriptionId: invoice.subscription, // S'assurer que l'ID d'abonnement est mis à jour
                   stripeCustomerId: customerId, // S'assurer que l'ID client est mis à jour
@@ -525,11 +567,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Erreur du webhook Stripe:", error);
+    // Important: retourner 200 même en cas d'erreur pour éviter que Stripe réessaie continuellement
     return NextResponse.json(
       {
         error: `Erreur de webhook: ${error instanceof Error ? error.message : "Erreur inconnue"}`,
+        received: true,
       },
-      { status: 400 }
+      { status: 200 }
     );
   }
 }
