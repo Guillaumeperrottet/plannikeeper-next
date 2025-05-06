@@ -1,18 +1,20 @@
 // src/lib/stripe.ts
 import Stripe from "stripe";
 
+if (!process.env.STRIPE_SECRET_KEY) {
+  console.warn(
+    "STRIPE_SECRET_KEY is not defined. Stripe functionality will be limited."
+  );
+}
+
 // Initialiser le client Stripe avec la clé API secrète
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2025-04-30.basil",
+  apiVersion: "2025-04-30.basil", // Utilisez la version la plus récente disponible
+  appInfo: {
+    name: "PlanniKeeper",
+    version: "0.1.0",
+  },
 });
-
-// Prix des plans (en centimes, car Stripe utilise la plus petite unité monétaire)
-export const PLAN_PRICES = {
-  FREE: 0,
-  PERSONAL: 900, // 9€
-  PROFESSIONAL: 2900, // 29€
-  ENTERPRISE: null, // Sur mesure
-};
 
 // Détails des plans
 export const PLAN_DETAILS = {

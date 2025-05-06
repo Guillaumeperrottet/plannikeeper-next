@@ -54,14 +54,18 @@ export default function PricingPlans({
         }),
       });
 
-      const data = await response.json();
-
+      // Si la réponse n'est pas OK, analyser l'erreur
       if (!response.ok) {
-        throw new Error(data.error || "Une erreur est survenue");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Une erreur est survenue");
       }
+
+      const data = await response.json();
 
       // Rediriger vers l'URL de paiement ou le dashboard pour le plan gratuit
       if (data.url) {
+        // Afficher un message pendant la redirection
+        toast.success("Redirection vers la page de paiement...");
         window.location.href = data.url;
       } else if (data.success) {
         toast.success("Plan mis à jour avec succès!");
