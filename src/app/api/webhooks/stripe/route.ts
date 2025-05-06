@@ -136,6 +136,43 @@ export async function POST(req: NextRequest) {
         console.log(
           `Abonnement créé/mis à jour pour l'organisation: ${organizationId}, plan: ${plan.name}`
         );
+        try {
+          // Récupérer l'organisation et le plan
+          const subscription = await prisma.subscription.findUnique({
+            where: { organizationId },
+            include: {
+              organization: true,
+              plan: true,
+            },
+          });
+
+          if (subscription) {
+            // Trouver l'admin de l'organisation
+            const admin = await prisma.organizationUser.findFirst({
+              where: {
+                organizationId,
+                role: "admin",
+              },
+              include: { user: true },
+            });
+
+            if (admin?.user) {
+              await EmailService.sendSubscriptionConfirmationEmail(
+                admin.user,
+                subscription.organization,
+                subscription.plan,
+                subscription.currentPeriodEnd
+              );
+              console.log(`Email d'abonnement envoyé à ${admin.user.email}`);
+            }
+          }
+        } catch (emailError) {
+          console.error(
+            "Erreur lors de l'envoi de l'email d'abonnement:",
+            emailError
+          );
+        }
+
         break;
       }
 

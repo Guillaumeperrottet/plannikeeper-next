@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { PlanType, PrismaClient } from "@prisma/client";
 import { createAuthMiddleware } from "better-auth/api";
+import { EmailService } from "@/lib/email";
 
 const prisma = new PrismaClient();
 const isProd = process.env.NODE_ENV === "production";
@@ -118,6 +119,28 @@ export const auth = betterAuth({
                     metadata: { pendingPlanUpgrade: planType },
                   },
                 });
+              }
+
+              // Envoyer l'email de bienvenue après la création de l'organisation
+              try {
+                const user = await prisma.user.findUnique({
+                  where: { id: userId },
+                });
+
+                if (user) {
+                  await EmailService.sendWelcomeEmail(user, organization.name);
+                  console.log(`Email de bienvenue envoyé à ${user.email}`);
+                } else {
+                  console.error(
+                    "Utilisateur non trouvé pour l'envoi de l'email de bienvenue"
+                  );
+                }
+              } catch (emailError) {
+                console.error(
+                  "Erreur lors de l'envoi de l'email de bienvenue:",
+                  emailError
+                );
+                // Ne pas interrompre le flux d'inscription en cas d'erreur
               }
             }
           }

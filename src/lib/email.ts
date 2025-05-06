@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import { Task } from "@prisma/client";
 import { Plan, Organization, User } from "@prisma/client";
 import { getSubscriptionConfirmationTemplate } from "./email-templates/subscription-confirmation";
+import { getWelcomeEmailTemplate } from "./email-templates/welcome-email";
 
 export type TaskWithDetails = Task & {
   article: {
@@ -32,6 +33,37 @@ function getResend(): Resend {
 }
 
 export const EmailService = {
+  async sendWelcomeEmail(user: User, organizationName: string) {
+    try {
+      const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`;
+
+      const htmlContent = getWelcomeEmailTemplate(
+        user.name || "utilisateur",
+        organizationName,
+        dashboardUrl
+      );
+
+      const { data, error } = await getResend().emails.send({
+        from:
+          process.env.RESEND_FROM_EMAIL ||
+          "PlanniKeeper <notifications@resend.dev>",
+        to: [user.email],
+        subject: `Bienvenue sur PlanniKeeper !`,
+        html: htmlContent,
+        replyTo: process.env.RESEND_REPLY_TO_EMAIL,
+      });
+
+      if (error) {
+        console.error("Erreur lors de l'envoi de l'email de bienvenue:", error);
+        return { success: false, error };
+      }
+
+      return { success: true, data };
+    } catch (error) {
+      console.error("Erreur dans le service d'email:", error);
+      return { success: false, error };
+    }
+  },
   // Ajouter cette méthode à votre service EmailService existant
   async sendSubscriptionConfirmationEmail(
     user: User,
