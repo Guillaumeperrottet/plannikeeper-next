@@ -1,7 +1,13 @@
 // src/app/components/notification-provider.tsx
 "use client";
 
-import { useState, createContext, useContext, ReactNode } from "react";
+import {
+  useState,
+  useEffect,
+  createContext,
+  useContext,
+  ReactNode,
+} from "react";
 
 interface NotificationContextType {
   unreadCount: number;
@@ -35,6 +41,16 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       console.error("Erreur lors de la récupération des notifications:", error);
     }
   };
+
+  // Charger les notifications au démarrage
+  useEffect(() => {
+    fetchUnreadCount();
+
+    // Optionnel: rafraîchir périodiquement les notifications
+    const interval = setInterval(fetchUnreadCount, 60000); // Vérifier toutes les minutes
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <NotificationContext.Provider
