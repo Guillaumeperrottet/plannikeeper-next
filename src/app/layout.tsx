@@ -68,7 +68,7 @@ export default async function RootLayout({
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
 
         {/* Favicon et icônes */}
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/logo.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         {/* Google tag (gtag.js) */}
         <Script
