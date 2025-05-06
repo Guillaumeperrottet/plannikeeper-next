@@ -32,17 +32,35 @@ interface StripeSubscription extends Stripe.Subscription {
 }
 
 export async function POST(req: NextRequest) {
+  console.log("Webhook Stripe reçu - Début du traitement");
   try {
-    // Obtenir le corps brut de la requête en tant que texte
+    // Log détaillé des en-têtes pour déboguer
+    const headers: Record<string, string> = {};
+    req.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
+    console.log(
+      "Headers de la requête webhook:",
+      JSON.stringify(headers, null, 2)
+    );
+
     const body = await req.text();
     console.log(
-      "Webhook Stripe reçu - Corps brut:",
-      body.substring(0, 500) + "..."
-    ); // Log les 500 premiers caractères
-
+      "Corps de la requête (tronqué):",
+      body.substring(0, 200) + "..."
+    );
     // Récupérer l'en-tête de signature Stripe
-    const signature = req.headers.get("stripe-signature") as string;
-    console.log("Signature du webhook:", signature ? "Présente" : "Manquante");
+    const signature = req.headers.get("stripe-signature");
+    if (!signature) {
+      console.error("Signature Stripe manquante");
+      return new NextResponse(
+        JSON.stringify({ error: "Signature manquante" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
 
     if (!signature) {
       console.error("Signature Stripe manquante");

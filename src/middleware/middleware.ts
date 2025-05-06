@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
+  // IMPORTANT: Ignorer les routes de webhook Stripe
+  if (request.nextUrl.pathname.startsWith("/api/webhooks/stripe")) {
+    return NextResponse.next();
+  }
   // Améliorer le middleware pour mieux gérer les requêtes auth
   const origin = request.headers.get("Origin") || "*";
   const isDevelopment = process.env.NODE_ENV === "development";
