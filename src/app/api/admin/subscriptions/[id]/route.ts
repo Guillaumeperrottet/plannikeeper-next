@@ -1,15 +1,14 @@
-// src/app/api/admin/subscriptions/[id]/route.ts
+// src/app/api/admin/organizations/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { superAdminGuard } from "@/lib/super-admin";
-import { SubscriptionStatus } from "@prisma/client";
 
 type RouteParams = {
   params: { id: string };
 };
 
-// Récupérer un abonnement spécifique
+// Récupérer une organisation spécifique
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const user = await getUser();
@@ -22,27 +21,40 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const subscriptionId = params.id;
+    const orgId = params.id;
 
-    // Récupérer l'abonnement avec ses informations détaillées
-    const subscription = await prisma.subscription.findUnique({
-      where: { id: subscriptionId },
+    // Récupérer l'organisation avec des informations détaillées
+    const organization = await prisma.organization.findUnique({
+      where: { id: orgId },
       include: {
-        organization: true,
-        plan: true,
+        users: {
+          include: {
+            OrganizationUser: {
+              select: {
+                role: true,
+              },
+            },
+          },
+        },
+        Objet: true,
+        subscription: {
+          include: {
+            plan: true,
+          },
+        },
       },
     });
 
-    if (!subscription) {
+    if (!organization) {
       return NextResponse.json(
-        { error: "Abonnement non trouvé" },
+        { error: "Organisation non trouvée" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ subscription });
+    return NextResponse.json({ organization });
   } catch (error) {
-    console.error("Erreur lors de la récupération de l'abonnement:", error);
+    console.error("Erreur lors de la récupération de l'organisation:", error);
     return NextResponse.json(
       { error: "Erreur interne du serveur" },
       { status: 500 }
@@ -50,7 +62,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-// Mettre à jour un abonnement
+// Mettre à jour une organisation
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const user = await getUser();
@@ -63,77 +75,89 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const subscriptionId = params.id;
+    const orgId = params.id;
     const updateData = await request.json();
 
-    // Vérifier que l'abonnement existe
-    const existingSubscription = await prisma.subscription.findUnique({
-      where: { id: subscriptionId },
-      include: {
-        plan: true,
-      },
+    // Vérifier que l'organisation existe
+    const existingOrg = await prisma.organization.findUnique({
+      where: { id: orgId },
     });
 
-    if (!existingSubscription) {
+    if (!existingOrg) {
       return NextResponse.json(
-        { error: "Abonnement non trouvé" },
+        { error: "Organisation non trouvée" },
         { status: 404 }
       );
     }
 
-    // Si un nouveau plan est spécifié, le récupérer
-    let planId = existingSubscription.planId;
-
-    if (updateData.plan && updateData.plan.name) {
-      const newPlan = await prisma.plan.findUnique({
-        where: { name: updateData.plan.name },
-      });
-
-      if (!newPlan) {
-        return NextResponse.json({ error: "Plan non trouvé" }, { status: 400 });
-      }
-
-      planId = newPlan.id;
-    }
-    // Préparer les données à mettre à jour
-    const subscriptionData: {
-      status: SubscriptionStatus;
-      planId: string;
-      cancelAtPeriodEnd: boolean;
-      currentPeriodEnd?: Date;
-    } = {
-      status:
-        (updateData.status as SubscriptionStatus) ||
-        existingSubscription.status,
-      planId: planId,
-      cancelAtPeriodEnd:
-        updateData.cancelAtPeriodEnd !== undefined
-          ? updateData.cancelAtPeriodEnd
-          : existingSubscription.cancelAtPeriodEnd,
-    };
-
-    // Si une nouvelle date de fin de période est fournie
-    if (updateData.currentPeriodEnd) {
-      subscriptionData.currentPeriodEnd = new Date(updateData.currentPeriodEnd);
-    }
-
-    // Mettre à jour l'abonnement
-    const updatedSubscription = await prisma.subscription.update({
-      where: { id: subscriptionId },
-      data: subscriptionData,
-      include: {
-        plan: true,
-        organization: true,
+    // Mettre à jour l'organisation
+    const updatedOrg = await prisma.organization.update({
+      where: { id: orgId },
+      data: {
+        name: updateData.name,
       },
     });
 
+    // Si un plan est spécifié, mettre à jour ou créer l'abonnement
+    if (updateData.subscription) {
+      const planName = updateData.subscription.planName;
+      const status = updateData.subscription.status || "ACTIVE";
+
+      // Récupérer le plan
+      const plan = await prisma.plan.findUnique({
+        where: { name: planName },
+      });
+
+      if (!plan) {
+        return NextResponse.json(
+          {
+            error: "Plan non trouvé",
+            organization: updatedOrg,
+          },
+          { status: 400 }
+        );
+      }
+
+      // Vérifier si un abonnement existe déjà
+      const existingSub = await prisma.subscription.findUnique({
+        where: { organizationId: orgId },
+      });
+
+      if (existingSub) {
+        // Mettre à jour l'abonnement
+        await prisma.subscription.update({
+          where: { id: existingSub.id },
+          data: {
+            planId: plan.id,
+            status: status,
+            // Autres champs pertinents...
+            cancelAtPeriodEnd:
+              updateData.subscription.cancelAtPeriodEnd || false,
+          },
+        });
+      } else {
+        // Créer un nouvel abonnement
+        await prisma.subscription.create({
+          data: {
+            organizationId: orgId,
+            planId: plan.id,
+            status: status,
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // +30 jours
+            cancelAtPeriodEnd:
+              updateData.subscription.cancelAtPeriodEnd || false,
+          },
+        });
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      message: "Abonnement mis à jour avec succès",
-      subscription: updatedSubscription,
+      message: "Organisation mise à jour avec succès",
+      organization: updatedOrg,
     });
   } catch (error) {
-    console.error("Erreur lors de la mise à jour de l'abonnement:", error);
+    console.error("Erreur lors de la mise à jour de l'organisation:", error);
     return NextResponse.json(
       { error: "Erreur interne du serveur" },
       { status: 500 }
@@ -141,7 +165,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-// Supprimer un abonnement
+// Supprimer une organisation
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const user = await getUser();
@@ -154,59 +178,52 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const subscriptionId = params.id;
+    const orgId = params.id;
 
-    // Vérifier que l'abonnement existe
-    const existingSubscription = await prisma.subscription.findUnique({
-      where: { id: subscriptionId },
-      include: {
-        organization: true,
-      },
+    // Vérifier que l'organisation existe
+    const existingOrg = await prisma.organization.findUnique({
+      where: { id: orgId },
     });
 
-    if (!existingSubscription) {
+    if (!existingOrg) {
       return NextResponse.json(
-        { error: "Abonnement non trouvé" },
+        { error: "Organisation non trouvée" },
         { status: 404 }
       );
     }
 
-    // Supprimer l'abonnement
-    await prisma.subscription.delete({
-      where: { id: subscriptionId },
-    });
+    // ⚠️ Suppression en cascade de tous les objets liés
+    // ATTENTION: Cette opération est destructive et irréversible
 
-    // Mettre à jour l'organisation avec un abonnement gratuit
+    // Effectuer la suppression dans une transaction
+    await prisma.$transaction([
+      // Supprimer l'abonnement
+      prisma.subscription.deleteMany({
+        where: { organizationId: orgId },
+      }),
 
-    // Trouver le plan gratuit
-    const freePlan = await prisma.plan.findUnique({
-      where: { name: "FREE" },
-    });
+      // Supprimer les associations utilisateur-organisation
+      prisma.organizationUser.deleteMany({
+        where: { organizationId: orgId },
+      }),
 
-    if (!freePlan) {
-      return NextResponse.json({
-        success: true,
-        message:
-          "Abonnement supprimé, mais impossible de créer un plan gratuit car le plan FREE n'existe pas",
-      });
-    }
-    // Créer un nouvel abonnement gratuit
-    await prisma.subscription.create({
-      data: {
-        organizationId: existingSubscription.organizationId,
-        planId: freePlan.id,
-        status: SubscriptionStatus.ACTIVE,
-        currentPeriodStart: new Date(),
-        currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // +1 an
-        cancelAtPeriodEnd: false,
-      },
-    });
+      // Supprimer les invitations
+      prisma.invitationCode.deleteMany({
+        where: { organizationId: orgId },
+      }),
+
+      // Supprimer l'organisation elle-même
+      prisma.organization.delete({
+        where: { id: orgId },
+      }),
+    ]);
 
     return NextResponse.json({
-      message: `Abonnement supprimé et remplacé par un plan gratuit pour ${existingSubscription.organization.name}`,
+      success: true,
+      message: "Organisation supprimée avec succès",
     });
   } catch (error) {
-    console.error("Erreur lors de la suppression de l'abonnement:", error);
+    console.error("Erreur lors de la suppression de l'organisation:", error);
     return NextResponse.json(
       { error: "Erreur interne du serveur" },
       { status: 500 }
