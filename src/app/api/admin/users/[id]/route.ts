@@ -165,7 +165,38 @@ export async function DELETE(
       );
     }
 
-    await prisma.user.delete({ where: { id: userId } });
+    // Suppression en cascade dans une transaction
+    await prisma.$transaction(async (tx) => {
+      // 1. Supprimer les commentaires
+      await tx.comment.deleteMany({ where: { userId } });
+
+      // 2. Supprimer les notifications
+      await tx.notification.deleteMany({ where: { userId } });
+
+      // 3. Supprimer les tokens d'appareil
+      await tx.deviceToken.deleteMany({ where: { userId } });
+
+      // 4. Supprimer les accès aux objets
+      await tx.objectAccess.deleteMany({ where: { userId } });
+
+      // 5. Mettre à null les références dans les tâches assignées
+      await tx.task.updateMany({
+        where: { assignedToId: userId },
+        data: { assignedToId: null },
+      });
+
+      // 6. Supprimer les associations avec les organisations
+      await tx.organizationUser.deleteMany({ where: { userId } });
+
+      // 7. Supprimer les comptes liés (authentification)
+      await tx.account.deleteMany({ where: { userId } });
+
+      // 8. Supprimer les sessions
+      await tx.session.deleteMany({ where: { userId } });
+
+      // 9. Finalement supprimer l'utilisateur
+      await tx.user.delete({ where: { id: userId } });
+    });
 
     return NextResponse.json({
       success: true,
@@ -174,7 +205,7 @@ export async function DELETE(
   } catch (error) {
     console.error("Erreur lors de la suppression de l'utilisateur:", error);
     return NextResponse.json(
-      { error: "Erreur interne du serveur" },
+      { error: "Erreur lors de la suppression de l'utilisateur" },
       { status: 500 }
     );
   }
