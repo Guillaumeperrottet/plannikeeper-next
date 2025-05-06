@@ -216,7 +216,11 @@ export default function PricingSection() {
                   asChild
                 >
                   <Link
-                    href={plan.name === "Entreprise" ? "/contact" : "/signup"}
+                    href={
+                      plan.name === "Entreprise"
+                        ? "/contact"
+                        : `/signup?plan=${encodeURIComponent(plan.name)}`
+                    }
                   >
                     {plan.name === "Entreprise"
                       ? "Nous contacter"

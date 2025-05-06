@@ -20,6 +20,7 @@ model User {
   organizationId   String?
   emailVerified    Boolean
   image            String?
+   metadata         Json?              // Nouveau champ pour stocker des données flexibles
   notificationsEnabled Boolean @default(true)
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt

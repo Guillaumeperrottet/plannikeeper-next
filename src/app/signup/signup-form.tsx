@@ -14,6 +14,7 @@ export default function SignUpForm() {
   const [isInvite, setIsInvite] = useState(false);
   const [organizationName, setOrganizationName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const planType = searchParams.get("plan") || "FREE";
 
   useEffect(() => {
     if (inviteCode) {
@@ -51,7 +52,9 @@ export default function SignUpForm() {
         password,
         name,
         image,
-        callbackURL: inviteCode ? `/join/${inviteCode}` : "/dashboard",
+        callbackURL: inviteCode
+          ? `/join/${inviteCode}?plan=${planType}`
+          : `/dashboard?plan=${planType}`,
       },
       {
         onRequest: () => {

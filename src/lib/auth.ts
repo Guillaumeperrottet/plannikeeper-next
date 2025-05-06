@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { PrismaClient } from "@prisma/client";
+import { PlanType, PrismaClient } from "@prisma/client";
 import { createAuthMiddleware } from "better-auth/api";
 
 const prisma = new PrismaClient();
@@ -54,6 +54,7 @@ export const auth = betterAuth({
         if (ctx.path === "/sign-up/email" && ctx.context.newSession) {
           const userId = ctx.context.newSession.user.id;
           const inviteCode = ctx.context.meta?.inviteCode as string | undefined;
+          const planType = (ctx.context.meta?.planType as string) || "FREE";
 
           if (!inviteCode) {
             // Vérifier si l'organisation existe déjà pour l'utilisateur
@@ -83,23 +84,38 @@ export const auth = betterAuth({
                 data: { organizationId: organization.id },
               });
 
-              // Récupérer le plan gratuit
-              const freePlan = await prisma.plan.findUnique({
-                where: { name: "FREE" },
+              // Récupérer le plan choisi
+              const plan = await prisma.plan.findUnique({
+                where: { name: planType as PlanType },
               });
 
-              // Créer un abonnement gratuit
-              if (freePlan) {
-                await prisma.subscription.create({
+              // Si plan gratuit ou inexistant, créer abonnement gratuit
+              if (planType === "FREE" || !plan) {
+                const freePlan = await prisma.plan.findUnique({
+                  where: { name: "FREE" },
+                });
+
+                if (freePlan) {
+                  await prisma.subscription.create({
+                    data: {
+                      organizationId: organization.id,
+                      planId: freePlan.id,
+                      status: "ACTIVE",
+                      currentPeriodStart: new Date(),
+                      currentPeriodEnd: new Date(
+                        Date.now() + 365 * 24 * 60 * 60 * 1000
+                      ), // 1 an
+                      cancelAtPeriodEnd: false,
+                    },
+                  });
+                }
+              } else {
+                // Si plan payant, rediriger vers la page de paiement après connexion
+                // Cette information sera utilisée à la prochaine étape
+                await prisma.user.update({
+                  where: { id: userId },
                   data: {
-                    organizationId: organization.id,
-                    planId: freePlan.id,
-                    status: "ACTIVE",
-                    currentPeriodStart: new Date(),
-                    currentPeriodEnd: new Date(
-                      Date.now() + 365 * 24 * 60 * 60 * 1000
-                    ), // 1 an
-                    cancelAtPeriodEnd: false,
+                    metadata: { pendingPlanUpgrade: planType },
                   },
                 });
               }

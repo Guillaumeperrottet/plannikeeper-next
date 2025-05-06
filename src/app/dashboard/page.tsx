@@ -33,6 +33,28 @@ export default async function DashboardPage() {
     );
   }
 
+  // Vérifier si l'utilisateur a un plan en attente
+  const userWithMetadata = await prisma.user.findUnique({
+    where: { id: session.id },
+    select: {
+      metadata: true,
+      organizationId: true,
+    },
+  });
+
+  // Vérifier si metadata existe et contient pendingPlanUpgrade
+  const pendingPlan = userWithMetadata?.metadata
+    ? (userWithMetadata.metadata as { pendingPlanUpgrade?: string })
+        ?.pendingPlanUpgrade
+    : undefined;
+
+  if (pendingPlan && userWithMetadata && userWithMetadata.organizationId) {
+    // Rediriger vers la page de paiement
+    redirect(`/pricing?plan=${pendingPlan}`);
+
+    // Après redirection, vous nettoierez les métadonnées lors du processus de paiement
+  }
+
   // Récupérer tous les objets de l'organisation
   const objets = await getAccessibleObjects(
     session.id,
