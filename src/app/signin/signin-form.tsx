@@ -34,7 +34,7 @@ export default function SignInForm({
       });
 
       if (authError) {
-        setError("Invalid email or password");
+        setError("Identifiants invalides");
         return;
       }
 
@@ -58,9 +58,15 @@ export default function SignInForm({
           <div className="flex flex-col items-center gap-2">
             <h1 className="text-xl font-bold">Bienvenue sur Plannikeeper</h1>
             <div className="text-center text-sm">
-              Tu n&apos;as pas encore de compte ?{" "}
+              Vous n&apos;avez pas encore de compte ?{" "}
               <Link href="/signup" className="underline underline-offset-4">
-                Inscris toi
+                Inscrivez-vous
+              </Link>
+            </div>
+            <div className="text-center text-sm mt-1">
+              Ou{" "}
+              <Link href="/pricing" className="text-primary font-medium">
+                découvrez nos formules
               </Link>
             </div>
           </div>
@@ -83,7 +89,7 @@ export default function SignInForm({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Mot de passe</Label>
               <Input
                 id="password"
                 type="password"
@@ -94,14 +100,15 @@ export default function SignInForm({
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Login"}
+              {isLoading ? "Connexion en cours..." : "Se connecter"}
             </Button>
           </div>
         </div>
       </form>
       <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary">
-        By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
-        and <a href="#">Privacy Policy</a>.
+        En continuant, vous acceptez nos{" "}
+        <a href="#">Conditions d&apos;utilisation</a> et notre{" "}
+        <a href="#">Politique de confidentialité</a>.
       </div>
     </div>
   );

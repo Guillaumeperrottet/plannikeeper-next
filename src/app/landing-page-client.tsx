@@ -173,18 +173,18 @@ const ModernLandingPage = () => {
                 transition={{ duration: 0.5, delay: 1.1 }}
                 className="flex flex-col sm:flex-row gap-4"
               >
-                <Link href="/dashboard">
+                <Link href="/signup?plan=FREE">
                   <Button className="w-full sm:w-auto px-6 py-6 text-base bg-[#d9840d] hover:bg-[#c6780c] text-white">
-                    Commencer maintenant
+                    Commencer gratuitement
                     <ChevronRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
                 <Button
                   variant="outline"
                   className="w-full sm:w-auto px-6 py-6 text-base border-[#beac93] text-[#141313] hover:bg-[#e8ebe0]"
-                  onClick={() => scrollToSection("features")}
+                  onClick={() => scrollToSection("pricing")}
                 >
-                  Découvrir les fonctionnalités
+                  Voir les formules
                 </Button>
               </motion.div>
             </motion.div>
@@ -322,9 +322,10 @@ const ModernLandingPage = () => {
             viewport={{ once: true, amount: 0.3 }}
             className="mt-16 text-center"
           >
-            <Link href="/dashboard">
-              <Button className="px-8 py-6 bg-[#d9840d] hover:bg-[#c6780c] text-white text-lg">
-                Essayer gratuitement pendant 14 jours
+            <Link href="/signup?plan=FREE">
+              <Button className="w-full sm:w-auto px-6 py-6 text-base bg-[#d9840d] hover:bg-[#c6780c] text-white">
+                Commencer maintenant
+                <ChevronRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
           </motion.div>
@@ -677,9 +678,10 @@ const ModernLandingPage = () => {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/dashboard">
-                <Button className="px-8 py-4 bg-white text-[#d9840d] hover:bg-white/90 text-base font-bold">
-                  Commencer gratuitement
+              <Link href="/signup?plan=FREE">
+                <Button className="w-full sm:w-auto px-6 py-6 text-base bg-[#d9840d] hover:bg-[#c6780c] text-white">
+                  Commencer maintenant
+                  <ChevronRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
               <Button

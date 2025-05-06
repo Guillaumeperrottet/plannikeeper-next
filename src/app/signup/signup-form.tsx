@@ -7,6 +7,7 @@ import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { Button } from "@/app/components/ui/button";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 export default function SignUpForm() {
   const searchParams = useSearchParams();
@@ -18,6 +19,22 @@ export default function SignUpForm() {
 
   // Déterminer si le plan est payant
   const isPaidPlan = planType !== "FREE";
+
+  // Fonction pour obtenir le nom d'affichage du plan
+  const getPlanDisplayName = (planType: string) => {
+    switch (planType) {
+      case "PERSONAL":
+        return "Particulier";
+      case "PROFESSIONAL":
+        return "Indépendant";
+      case "ENTERPRISE":
+        return "Entreprise";
+      case "FREE":
+        return "Gratuit";
+      default:
+        return planType;
+    }
+  };
 
   useEffect(() => {
     if (inviteCode) {
@@ -63,7 +80,7 @@ export default function SignUpForm() {
       {
         onRequest: () => {
           submitButton.disabled = true;
-          submitButton.textContent = "Signing up...";
+          submitButton.textContent = "Inscription en cours...";
         },
         onSuccess: () => {
           // Redirection modifiée pour utiliser la même URL que callbackURL
@@ -79,7 +96,7 @@ export default function SignUpForm() {
           }
           setError(errorMessage);
           submitButton.disabled = false;
-          submitButton.textContent = "Sign Up";
+          submitButton.textContent = "S'inscrire";
         },
       }
     );
@@ -91,7 +108,8 @@ export default function SignUpForm() {
         "max-w-md mx-auto my-10 p-6 bg-background rounded-lg shadow-md"
       )}
     >
-      <h2 className="text-2xl font-bold text-center mb-6">Sign Up</h2>
+      <h2 className="text-2xl font-bold text-center mb-6">Inscription</h2>
+
       {isInvite && (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
           <p className="text-blue-700">
@@ -101,24 +119,22 @@ export default function SignUpForm() {
       )}
 
       {/* Message indiquant le plan sélectionné */}
-      {isPaidPlan && (
-        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-md">
-          <p className="text-amber-700">
-            Vous avez sélectionné le plan{" "}
-            <strong>
-              {planType === "PERSONAL"
-                ? "Particulier"
-                : planType === "PROFESSIONAL"
-                  ? "Indépendant"
-                  : planType === "ENTERPRISE"
-                    ? "Entreprise"
-                    : planType}
-            </strong>
-            . Après votre inscription, vous serez redirigé vers la page de
-            paiement.
-          </p>
-        </div>
-      )}
+      <div
+        className={`mb-6 p-4 ${isPaidPlan ? "bg-amber-50 border border-amber-200" : "bg-green-50 border border-green-200"} rounded-md`}
+      >
+        <p className={isPaidPlan ? "text-amber-700" : "text-green-700"}>
+          Vous avez sélectionné le plan{" "}
+          <strong>{getPlanDisplayName(planType)}</strong>.
+          {isPaidPlan
+            ? " Après votre inscription, vous serez redirigé vers la page de paiement."
+            : " Votre compte sera activé immédiatement."}
+        </p>
+        <p className="mt-2 text-sm">
+          <Link href="/pricing" className="underline underline-offset-2">
+            Voir tous les plans disponibles
+          </Link>
+        </p>
+      </div>
 
       {error && (
         <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-md text-red-700">
@@ -128,49 +144,58 @@ export default function SignUpForm() {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div>
-          <Label htmlFor="name">Full Name</Label>
+          <Label htmlFor="name">Nom complet</Label>
           <Input
             id="name"
             name="name"
             type="text"
             required
-            placeholder="Enter your full name"
+            placeholder="Entrez votre nom complet"
           />
         </div>
         <div>
-          <Label htmlFor="email">Email Address</Label>
+          <Label htmlFor="email">Adresse email</Label>
           <Input
             id="email"
             name="email"
             type="email"
             required
-            placeholder="Enter your email"
+            placeholder="Entrez votre email"
           />
         </div>
         <div>
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">Mot de passe</Label>
           <Input
             id="password"
             name="password"
             type="password"
             required
-            placeholder="Create a password (min. 8 characters)"
+            placeholder="Créez un mot de passe (min. 8 caractères)"
             minLength={8}
           />
         </div>
         <div>
-          <Label htmlFor="image">Profile Image URL (optional)</Label>
+          <Label htmlFor="image">URL d&apos;image de profil (optionnel)</Label>
           <Input
             id="image"
             name="image"
             type="url"
-            placeholder="https://example.com/your-image.jpg"
+            placeholder="https://example.com/votre-image.jpg"
           />
         </div>
         <Button type="submit" className="w-full">
-          {isPaidPlan ? "Sign Up & Continue to Payment" : "Sign Up"}
+          {isPaidPlan
+            ? "S'inscrire et continuer vers le paiement"
+            : "S'inscrire"}
         </Button>
       </form>
+
+      <div className="mt-4 text-center text-sm">
+        Vous avez déjà un compte?{" "}
+        <Link href="/signin" className="underline underline-offset-2">
+          Connectez-vous
+        </Link>
+      </div>
     </div>
   );
 }
