@@ -35,9 +35,14 @@ export async function POST(req: NextRequest) {
   try {
     // Obtenir le corps brut de la requête en tant que texte
     const body = await req.text();
+    console.log(
+      "Webhook Stripe reçu - Corps brut:",
+      body.substring(0, 500) + "..."
+    ); // Log les 500 premiers caractères
 
     // Récupérer l'en-tête de signature Stripe
     const signature = req.headers.get("stripe-signature") as string;
+    console.log("Signature du webhook:", signature ? "Présente" : "Manquante");
 
     if (!signature) {
       console.error("Signature Stripe manquante");
@@ -54,7 +59,7 @@ export async function POST(req: NextRequest) {
       process.env.STRIPE_WEBHOOK_SECRET || ""
     ) as Stripe.Event;
 
-    console.log(`Événement Stripe reçu : ${event.type}`);
+    console.log(`Événement Stripe reçu : ${event.type}, ID: ${event.id}`);
 
     // Traiter les différents types d'événements
     switch (event.type) {
@@ -317,28 +322,134 @@ export async function POST(req: NextRequest) {
       // Invoice
       case "invoice.payment_succeeded": {
         const invoice = event.data.object as StripeInvoice;
+        console.log(
+          `Traitement de la facture payée: ${invoice.id}, abonnement: ${invoice.subscription}`
+        );
 
         if (invoice.subscription) {
-          // Récupérer l'abonnement
-          const subscription = await prisma.subscription.findFirst({
-            where: { stripeSubscriptionId: invoice.subscription },
-          });
-
-          if (subscription) {
-            // Mettez à jour les dates de période
-            await prisma.subscription.update({
-              where: { id: subscription.id },
-              data: {
-                currentPeriodStart: new Date(invoice.period_start * 1000),
-                currentPeriodEnd: new Date(invoice.period_end * 1000),
-                status: "ACTIVE",
-              },
-            });
-            console.log(
-              `Dates d'abonnement mises à jour pour: ${subscription.id}`
+          try {
+            // 1. Récupérer l'abonnement Stripe pour obtenir le client
+            const stripeSubscription = await stripe.subscriptions.retrieve(
+              invoice.subscription
             );
-          } else {
-            console.warn(`Abonnement non trouvé pour: ${invoice.subscription}`);
+            const customerId = stripeSubscription.customer as string;
+
+            console.log(`Abonnement Stripe trouvé - Client: ${customerId}`);
+
+            // 2. Vérifier si un abonnement existe déjà avec cet ID Stripe
+            let subscription = await prisma.subscription.findFirst({
+              where: { stripeSubscriptionId: invoice.subscription },
+            });
+
+            // 3. Si non, chercher par customerId
+            if (!subscription) {
+              console.log(
+                `Abonnement non trouvé par stripeSubscriptionId, recherche par customerId: ${customerId}`
+              );
+              subscription = await prisma.subscription.findFirst({
+                where: { stripeCustomerId: customerId },
+              });
+            }
+
+            // 4. Si toujours pas trouvé, chercher l'organisation par les métadonnées
+            if (!subscription) {
+              console.log("Abonnement non trouvé, recherche par métadonnées");
+
+              // Extraire l'organizationId des métadonnées
+              let organizationId: string | undefined;
+
+              if (invoice.metadata && invoice.metadata.organizationId) {
+                organizationId = invoice.metadata.organizationId;
+              } else if (
+                stripeSubscription.metadata &&
+                stripeSubscription.metadata.organizationId
+              ) {
+                organizationId = stripeSubscription.metadata.organizationId;
+              }
+
+              if (organizationId) {
+                console.log(
+                  `OrganizationId trouvé dans les métadonnées: ${organizationId}`
+                );
+
+                // Trouver l'abonnement par organizationId
+                subscription = await prisma.subscription.findFirst({
+                  where: { organizationId },
+                });
+              } else {
+                // Chercher l'organisation par le client Stripe
+                const customerResponse =
+                  await stripe.customers.retrieve(customerId);
+                const customerData = customerResponse as Stripe.Customer;
+
+                if (
+                  "metadata" in customerData &&
+                  customerData.metadata &&
+                  customerData.metadata.organizationId
+                ) {
+                  organizationId = customerData.metadata.organizationId;
+                  console.log(
+                    `OrganizationId trouvé dans les métadonnées du client: ${organizationId}`
+                  );
+
+                  subscription = await prisma.subscription.findFirst({
+                    where: { organizationId },
+                  });
+                }
+              }
+            }
+
+            // 5. Si l'abonnement est trouvé, le mettre à jour
+            if (subscription) {
+              console.log(`Abonnement trouvé, mise à jour: ${subscription.id}`);
+
+              // Récupérer les détails du plan depuis Stripe
+              const stripePrice = await stripe.prices.retrieve(
+                stripeSubscription.items.data[0].price.id
+              );
+
+              let planId = subscription.planId; // Par défaut, garder le même plan
+
+              // Si un produit existe, trouver le plan correspondant
+              if (stripePrice.product) {
+                const productId =
+                  typeof stripePrice.product === "string"
+                    ? stripePrice.product
+                    : stripePrice.product.id;
+
+                const plan = await prisma.plan.findFirst({
+                  where: { stripeProductId: productId },
+                });
+
+                if (plan) {
+                  console.log(`Plan correspondant trouvé: ${plan.name}`);
+                  planId = plan.id;
+                }
+              }
+
+              // Mettre à jour l'abonnement
+              await prisma.subscription.update({
+                where: { id: subscription.id },
+                data: {
+                  planId,
+                  currentPeriodStart: new Date(invoice.period_start * 1000),
+                  currentPeriodEnd: new Date(invoice.period_end * 1000),
+                  status: "ACTIVE",
+                  stripeSubscriptionId: invoice.subscription, // S'assurer que l'ID d'abonnement est mis à jour
+                  stripeCustomerId: customerId, // S'assurer que l'ID client est mis à jour
+                },
+              });
+
+              console.log(`Abonnement mis à jour avec succès`);
+            } else {
+              console.log(
+                `Aucun abonnement trouvé pour cet ID d'abonnement ou client`
+              );
+            }
+          } catch (error) {
+            console.error(
+              `Erreur lors de la mise à jour de l'abonnement: ${error}`
+            );
           }
         }
         break;
