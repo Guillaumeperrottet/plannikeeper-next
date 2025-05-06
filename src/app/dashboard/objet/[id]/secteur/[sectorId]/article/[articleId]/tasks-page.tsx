@@ -540,6 +540,8 @@ export default function ModernTasksPage({
     return tasks.find((task) => task.id === selectedTaskId) || undefined;
   };
 
+  const [hoveredColumn, setHoveredColumn] = useState<string | null>(null);
+
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Main content area with integrated filter area */}
@@ -766,6 +768,8 @@ export default function ModernTasksPage({
                               className={`bg-white rounded-b-md p-1 shadow-sm border border-t-0 border-gray-200 h-[calc(100vh-110px)] overflow-y-auto ${
                                 snapshot.isDraggingOver ? "bg-blue-50" : ""
                               }`}
+                              onMouseEnter={() => setHoveredColumn(status)}
+                              onMouseLeave={() => setHoveredColumn(null)}
                             >
                               {taskColumns[status as keyof typeof taskColumns]
                                 .length === 0 ? (
@@ -935,7 +939,8 @@ export default function ModernTasksPage({
                               {provided.placeholder}
 
                               {/* Add task button at bottom of pending column */}
-                              {status === "pending" && (
+                              {(hoveredColumn === status ||
+                                status === "pending") && (
                                 <button
                                   onClick={handleNewTask}
                                   className="w-full p-1 mt-1 flex items-center justify-center gap-1 text-xs text-gray-600 hover:bg-gray-50 rounded-md border border-dashed border-gray-300"
