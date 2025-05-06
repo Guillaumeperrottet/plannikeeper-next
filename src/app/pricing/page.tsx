@@ -21,8 +21,13 @@ export default async function PricingPage() {
     redirect("/onboarding");
   }
 
-  // Récupérer tous les plans disponibles
+  // Récupérer tous les plans disponibles MAIS filtrer ceux qui sont réservés aux admins
   const prismaPlans = await prisma.plan.findMany({
+    where: {
+      name: {
+        notIn: ["SUPER_ADMIN", "ILLIMITE"], // Exclure ces plans
+      },
+    },
     orderBy: {
       price: "asc",
     },
