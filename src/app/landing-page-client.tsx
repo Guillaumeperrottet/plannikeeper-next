@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import Header from "@/app/components/landing/Header";
+import PricingSection from "@/app/components/landing/Pricing";
 import TiltedCarousel from "@/app/components/landing/DualDirectionCarousel";
 import { Button } from "@/app/components/ui/button";
 import Link from "next/link";
@@ -50,44 +51,6 @@ const ModernLandingPage = () => {
         "Gardez tous vos documents organisés et accessibles en un seul endroit",
       icon: "/images/file.svg",
       color: "bg-[#b8a589]",
-    },
-  ];
-
-  const plans = [
-    {
-      name: "Essentiel",
-      price: "29€",
-      period: "/mois",
-      description: "L'essentiel pour les petites structures immobilières",
-      features: [
-        "Jusqu'à 10 propriétés",
-        "Gestion des tâches basique",
-        "Stockage de documents 5GB",
-        "Support par email",
-      ],
-      color: "from-[#f2e8d9] to-[#e8ebe0]",
-      textColor: "text-[#141313]",
-      borderColor: "border-[#beac93]",
-      buttonColor: "bg-[#d9840d] hover:bg-[#c6780c]",
-    },
-    {
-      name: "Professionnel",
-      price: "79€",
-      period: "/mois",
-      description: "Pour les professionnels de l'immobilier exigeants",
-      features: [
-        "Propriétés illimitées",
-        "Planification avancée",
-        "Stockage de documents 50GB",
-        "Support prioritaire 24/7",
-        "Collaboration multi-utilisateurs",
-        "Rapports personnalisés",
-      ],
-      color: "from-[#d9840d] to-[#e36002]",
-      textColor: "text-white",
-      borderColor: "border-[#e36002]",
-      buttonColor: "bg-[#19140d] hover:bg-[#000000]",
-      popular: true,
     },
   ];
 
@@ -631,97 +594,12 @@ const ModernLandingPage = () => {
           </div>
         </div>
       </section>
+
       {/* Pricing Section */}
-      <section
-        id="pricing"
-        ref={pricingRef}
-        className="py-20 md:py-32 bg-[#f9f3ec]"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true, amount: 0.3 }}
-            className="text-center mb-16"
-          >
-            <div className="inline-block bg-[#e8ebe0] px-4 py-1 rounded-full mb-4 border border-[#beac93]">
-              <span className="text-[#62605d] font-medium text-sm">
-                Tarifs flexibles
-              </span>
-            </div>
-            <h2 className="text-3xl md:text-5xl font-bold mb-6 text-[#141313]">
-              Choisissez votre formule
-            </h2>
-            <p className="text-lg text-[#62605d] max-w-3xl mx-auto">
-              Des tarifs adaptés à tous les besoins, avec la possibilité
-              d&apos;évoluer à mesure que votre activité se développe.
-            </p>
-          </motion.div>
+      <div id="pricing" ref={pricingRef}>
+        <PricingSection />
+      </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            {plans.map((plan, index) => (
-              <motion.div
-                key={plan.name}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.2 }}
-                viewport={{ once: true, amount: 0.3 }}
-                whileHover={{ y: -10, scale: 1.02 }}
-                className={`rounded-2xl overflow-hidden transition-all duration-300 relative ${
-                  plan.popular
-                    ? `border-2 border-[${plan.borderColor}]`
-                    : "border border-[#beac93]"
-                }`}
-              >
-                <div
-                  className={`p-8 md:p-10 bg-gradient-to-br ${plan.color} ${plan.textColor}`}
-                >
-                  {plan.popular && (
-                    <span className="absolute top-4 right-4 bg-[#e36002] text-white text-xs font-bold px-3 py-1 rounded-full">
-                      RECOMMANDÉ
-                    </span>
-                  )}
-
-                  <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                  <p className="text-[#62605d] mb-6">{plan.description}</p>
-
-                  <div className="flex items-end mb-8">
-                    <span className="text-4xl md:text-5xl font-bold">
-                      {plan.price}
-                    </span>
-                    <span className="text-lg text-[#62605d] ml-1">
-                      {plan.period}
-                    </span>
-                  </div>
-
-                  <ul className="space-y-4 mb-8">
-                    {plan.features.map((feature, i) => (
-                      <motion.li
-                        key={i}
-                        initial={{ opacity: 0, x: -10 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: 0.5 + i * 0.1 }}
-                        viewport={{ once: true }}
-                        className="flex items-start gap-3"
-                      >
-                        <Check className="w-5 h-5 text-[#d9840d] flex-shrink-0 mt-0.5" />
-                        <span>{feature}</span>
-                      </motion.li>
-                    ))}
-                  </ul>
-
-                  <button
-                    className={`w-full py-4 rounded-xl font-bold text-base ${plan.buttonColor} transition-all duration-300 hover:shadow-lg`}
-                  >
-                    Choisir {plan.name}
-                  </button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
       {/* FAQ Section */}
       <section
         id="faq"
@@ -814,6 +692,7 @@ const ModernLandingPage = () => {
           </div>
         </div>
       </section>
+
       {/* Footer */}
       <footer className="py-16 bg-[#19140d] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
