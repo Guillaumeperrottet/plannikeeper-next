@@ -90,6 +90,7 @@ export default async function PricingPage() {
         currentPlan={currentPlan}
         isAdmin={isAdmin}
         organizationId={organizationId || ""}
+        isLoggedIn={!!user}
       />
     </div>
   );
