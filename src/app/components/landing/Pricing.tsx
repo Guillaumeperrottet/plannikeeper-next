@@ -16,7 +16,8 @@ export default function PricingSection() {
 
   const plans = [
     {
-      name: "Gratuit",
+      name: "FREE",
+      displayName: "Gratuit",
       icon: Home,
       price: { monthly: "0€", yearly: "0€" },
       description: "Pour les particuliers qui débutent",
@@ -34,7 +35,8 @@ export default function PricingSection() {
       buttonVariant: "outline",
     },
     {
-      name: "Particulier",
+      name: "PERSONAL",
+      displayName: "Particulier",
       icon: Home,
       price: { monthly: "9€", yearly: "90€" },
       description: "Parfait pour les propriétaires individuels",
@@ -53,7 +55,8 @@ export default function PricingSection() {
       buttonVariant: "default",
     },
     {
-      name: "Indépendant",
+      name: "PROFESSIONAL",
+      displayName: "Indépendant",
       icon: Users,
       popular: true,
       price: { monthly: "29€", yearly: "290€" },
@@ -74,7 +77,8 @@ export default function PricingSection() {
       buttonVariant: "default",
     },
     {
-      name: "Entreprise",
+      name: "ENTERPRISE",
+      displayName: "Entreprise",
       icon: Building2,
       price: { monthly: "Sur mesure", yearly: "Sur mesure" },
       description: "Pour les grandes structures immobilières",
@@ -187,7 +191,7 @@ export default function PricingSection() {
                   >
                     <plan.icon size={20} />
                   </div>
-                  <h3 className="text-xl font-bold">{plan.name}</h3>
+                  <h3 className="text-xl font-bold">{plan.displayName}</h3>
                 </div>
 
                 <p className="text-sm opacity-80 mb-6">{plan.description}</p>
@@ -217,12 +221,12 @@ export default function PricingSection() {
                 >
                   <Link
                     href={
-                      plan.name === "Entreprise"
+                      plan.name === "ENTERPRISE"
                         ? "/contact"
                         : `/signup?plan=${encodeURIComponent(plan.name)}`
                     }
                   >
-                    {plan.name === "Entreprise"
+                    {plan.name === "ENTERPRISE"
                       ? "Nous contacter"
                       : "Commencer maintenant"}
                   </Link>

@@ -16,6 +16,9 @@ export default function SignUpForm() {
   const [error, setError] = useState<string | null>(null);
   const planType = searchParams.get("plan") || "FREE";
 
+  // Déterminer si le plan est payant
+  const isPaidPlan = planType !== "FREE";
+
   useEffect(() => {
     if (inviteCode) {
       fetch(`/api/invitations/validate?code=${inviteCode}`)
@@ -52,9 +55,10 @@ export default function SignUpForm() {
         password,
         name,
         image,
+        // Modifions la callbackURL pour inclure une référence au plan
         callbackURL: inviteCode
           ? `/join/${inviteCode}?plan=${planType}`
-          : `/dashboard?plan=${planType}`,
+          : `/subscribe-redirect?plan=${planType}`,
       },
       {
         onRequest: () => {
@@ -62,9 +66,10 @@ export default function SignUpForm() {
           submitButton.textContent = "Signing up...";
         },
         onSuccess: () => {
+          // Redirection modifiée pour utiliser la même URL que callbackURL
           window.location.href = inviteCode
-            ? `/join/${inviteCode}`
-            : "/dashboard";
+            ? `/join/${inviteCode}?plan=${planType}`
+            : `/subscribe-redirect?plan=${planType}`;
         },
         onError: (ctx) => {
           console.error("Erreur complète:", ctx.error);
@@ -72,7 +77,7 @@ export default function SignUpForm() {
           if (ctx.error && ctx.error.message) {
             errorMessage = ctx.error.message;
           }
-          setError(errorMessage); // Ajoutez un état error à votre composant
+          setError(errorMessage);
           submitButton.disabled = false;
           submitButton.textContent = "Sign Up";
         },
@@ -91,6 +96,26 @@ export default function SignUpForm() {
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
           <p className="text-blue-700">
             Vous avez été invité à rejoindre <strong>{organizationName}</strong>
+          </p>
+        </div>
+      )}
+
+      {/* Message indiquant le plan sélectionné */}
+      {isPaidPlan && (
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-md">
+          <p className="text-amber-700">
+            Vous avez sélectionné le plan{" "}
+            <strong>
+              {planType === "PERSONAL"
+                ? "Particulier"
+                : planType === "PROFESSIONAL"
+                  ? "Indépendant"
+                  : planType === "ENTERPRISE"
+                    ? "Entreprise"
+                    : planType}
+            </strong>
+            . Après votre inscription, vous serez redirigé vers la page de
+            paiement.
           </p>
         </div>
       )}
@@ -143,7 +168,7 @@ export default function SignUpForm() {
           />
         </div>
         <Button type="submit" className="w-full">
-          Sign Up
+          {isPaidPlan ? "Sign Up & Continue to Payment" : "Sign Up"}
         </Button>
       </form>
     </div>
