@@ -6,6 +6,7 @@ import {
   User,
   ChevronDown,
   LayoutDashboard,
+  CreditCard,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -47,6 +48,11 @@ export default function UserMenu({ user, isAdmin = false }: UserMenuProps) {
       icon: <LayoutDashboard size={16} />,
       label: "Dashboard",
       href: "/dashboard",
+    },
+    {
+      icon: <CreditCard size={16} />,
+      label: "Abonnement",
+      href: "/dashboard/subscription",
     },
     {
       icon: <User size={16} />,

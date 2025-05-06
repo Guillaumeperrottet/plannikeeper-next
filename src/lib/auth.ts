@@ -82,6 +82,27 @@ export const auth = betterAuth({
                 where: { id: userId },
                 data: { organizationId: organization.id },
               });
+
+              // Récupérer le plan gratuit
+              const freePlan = await prisma.plan.findUnique({
+                where: { name: "FREE" },
+              });
+
+              // Créer un abonnement gratuit
+              if (freePlan) {
+                await prisma.subscription.create({
+                  data: {
+                    organizationId: organization.id,
+                    planId: freePlan.id,
+                    status: "ACTIVE",
+                    currentPeriodStart: new Date(),
+                    currentPeriodEnd: new Date(
+                      Date.now() + 365 * 24 * 60 * 60 * 1000
+                    ), // 1 an
+                    cancelAtPeriodEnd: false,
+                  },
+                });
+              }
             }
           }
         }
