@@ -4,12 +4,11 @@ import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { superAdminGuard } from "@/lib/super-admin";
 
-type RouteParams = {
-  params: { id: string };
-};
-
 // Récupérer une organisation spécifique
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const user = await getUser();
 
@@ -63,7 +62,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 // Mettre à jour une organisation
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const user = await getUser();
 
@@ -166,7 +168,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 }
 
 // Supprimer une organisation
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const user = await getUser();
 
