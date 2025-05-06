@@ -1,5 +1,7 @@
 import { Resend } from "resend";
 import { Task } from "@prisma/client";
+import { Plan, Organization, User } from "@prisma/client";
+import { getSubscriptionConfirmationTemplate } from "./email-templates/subscription-confirmation";
 
 export type TaskWithDetails = Task & {
   article: {
@@ -30,6 +32,68 @@ function getResend(): Resend {
 }
 
 export const EmailService = {
+  // Ajouter cette méthode à votre service EmailService existant
+  async sendSubscriptionConfirmationEmail(
+    user: User,
+    organization: Organization,
+    plan: Plan,
+    currentPeriodEnd: Date
+  ) {
+    try {
+      const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`;
+
+      const htmlContent = getSubscriptionConfirmationTemplate(
+        user.name || "utilisateur",
+        organization.name,
+        this.getPlanDisplayName(plan.name),
+        typeof plan.monthlyPrice === "object" && "toNumber" in plan.monthlyPrice
+          ? plan.monthlyPrice.toNumber()
+          : Number(plan.monthlyPrice),
+        plan.features,
+        currentPeriodEnd,
+        dashboardUrl
+      );
+
+      const { data, error } = await getResend().emails.send({
+        from:
+          process.env.RESEND_FROM_EMAIL ||
+          "PlanniKeeper <notifications@resend.dev>",
+        to: [user.email],
+        subject: `Confirmation d'abonnement - ${this.getPlanDisplayName(plan.name)} - PlanniKeeper`,
+        html: htmlContent,
+        replyTo: process.env.RESEND_REPLY_TO_EMAIL,
+      });
+
+      if (error) {
+        console.error(
+          "Erreur lors de l'envoi de l'email de confirmation d'abonnement:",
+          error
+        );
+        return { success: false, error };
+      }
+
+      return { success: true, data };
+    } catch (error) {
+      console.error("Erreur dans le service d'email:", error);
+      return { success: false, error };
+    }
+  },
+
+  // Fonction utilitaire pour obtenir le nom d'affichage du plan
+  getPlanDisplayName(planType: string): string {
+    switch (planType) {
+      case "FREE":
+        return "Gratuit";
+      case "PERSONAL":
+        return "Particulier";
+      case "PROFESSIONAL":
+        return "Indépendant";
+      case "ENTERPRISE":
+        return "Entreprise";
+      default:
+        return planType;
+    }
+  },
   async sendTaskAssignmentEmail(
     to: string,
     userName: string,

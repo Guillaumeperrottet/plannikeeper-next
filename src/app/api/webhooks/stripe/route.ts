@@ -4,6 +4,7 @@ import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { PlanType, SubscriptionStatus } from "@prisma/client";
 import Stripe from "stripe";
+import { EmailService } from "@/lib/email";
 
 // Types pour les objets Stripe
 interface StripeCheckoutSession extends Stripe.Checkout.Session {
@@ -76,7 +77,6 @@ export async function POST(req: NextRequest) {
           console.error(`Plan non trouvé: ${planType}`);
           break;
         }
-
         // Mise à jour ou création de l'abonnement
         await prisma.subscription.upsert({
           where: { organizationId },
@@ -100,6 +100,35 @@ export async function POST(req: NextRequest) {
             cancelAtPeriodEnd: false,
           },
         });
+
+        // Récupérer les informations pour l'email
+        const organization = await prisma.organization.findUnique({
+          where: { id: organizationId },
+        });
+
+        // Trouver l'admin de l'organisation
+        const admin = await prisma.organizationUser.findFirst({
+          where: {
+            organizationId: organizationId,
+            role: "admin",
+          },
+          include: { user: true },
+        });
+
+        // Si on a trouvé l'organisation et l'admin, envoyer l'email
+        if (organization && admin?.user) {
+          try {
+            await EmailService.sendSubscriptionConfirmationEmail(
+              admin.user,
+              organization,
+              plan,
+              new Date(session.current_period_end * 1000)
+            );
+            console.log(`Email de confirmation envoyé à ${admin.user.email}`);
+          } catch (emailError) {
+            console.error("Erreur lors de l'envoi de l'email:", emailError);
+          }
+        }
 
         console.log(
           `Abonnement créé/mis à jour pour l'organisation: ${organizationId}, plan: ${planType}`
@@ -210,15 +239,20 @@ export async function POST(req: NextRequest) {
         // Récupérer l'abonnement dans votre base de données
         const subscription = await prisma.subscription.findFirst({
           where: { stripeSubscriptionId: stripeSubscription.id },
+          include: { organization: true, plan: true },
         });
 
         if (subscription) {
-          // Mettez à jour l'état de l'abonnement
+          // Si le statut a changé, envoyez un email de notification
+          const newStatus =
+            stripeSubscription.status.toUpperCase() as SubscriptionStatus;
+          const oldStatus = subscription.status;
+
+          // Mettre à jour l'abonnement
           await prisma.subscription.update({
             where: { id: subscription.id },
             data: {
-              status:
-                stripeSubscription.status.toUpperCase() as SubscriptionStatus,
+              status: newStatus,
               cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
               currentPeriodStart: new Date(
                 stripeSubscription.current_period_start * 1000
@@ -228,13 +262,58 @@ export async function POST(req: NextRequest) {
               ),
             },
           });
+
           console.log(`État d'abonnement mis à jour pour: ${subscription.id}`);
+
+          // Si le statut change de façon significative, envoyez un email
+          if (
+            newStatus !== oldStatus ||
+            subscription.cancelAtPeriodEnd !==
+              stripeSubscription.cancel_at_period_end
+          ) {
+            // Trouver l'admin de l'organisation
+            const admin = await prisma.organizationUser.findFirst({
+              where: {
+                organizationId: subscription.organizationId,
+                role: "admin",
+              },
+              include: { user: true },
+            });
+
+            if (admin?.user) {
+              try {
+                // Choisir le template selon le changement de statut
+                if (
+                  stripeSubscription.cancel_at_period_end &&
+                  !subscription.cancelAtPeriodEnd
+                ) {
+                  // Email de confirmation d'annulation programmée
+                  // Vous devriez créer un template spécifique pour ce cas
+                } else if (
+                  newStatus === "PAST_DUE" &&
+                  oldStatus !== "PAST_DUE"
+                ) {
+                  // Email d'alerte pour problème de paiement
+                  // Vous devriez créer un template spécifique pour ce cas
+                } else {
+                  // Email de mise à jour générique d'abonnement
+                  await EmailService.sendSubscriptionConfirmationEmail(
+                    admin.user,
+                    subscription.organization,
+                    subscription.plan,
+                    new Date(stripeSubscription.current_period_end * 1000)
+                  );
+                }
+              } catch (emailError) {
+                console.error("Erreur lors de l'envoi de l'email:", emailError);
+              }
+            }
+          }
         } else {
           console.warn(`Abonnement non trouvé pour: ${stripeSubscription.id}`);
         }
         break;
       }
-
       // Invoice
       case "invoice.payment_succeeded": {
         const invoice = event.data.object as StripeInvoice;
