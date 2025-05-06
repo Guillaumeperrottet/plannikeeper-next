@@ -85,6 +85,49 @@ async function main() {
     },
   });
 
+  await prisma.plan.create({
+    data: {
+      name: PlanType.SUPER_ADMIN,
+      stripeProductId: null,
+      stripePriceId: null,
+      price: 0,
+      monthlyPrice: 0,
+      yearlyPrice: null,
+      maxUsers: null, // Illimité
+      maxObjects: null, // Illimité
+      hasCustomPricing: false,
+      trialDays: 0,
+      features: [
+        "Accès super administrateur",
+        "Utilisateurs illimités",
+        "Objets illimités",
+        "Toutes les fonctionnalités",
+      ],
+    },
+  });
+
+  // Créer le plan ILLIMITE
+  await prisma.plan.create({
+    data: {
+      name: PlanType.ILLIMITE,
+      stripeProductId: null,
+      stripePriceId: null,
+      price: 0,
+      monthlyPrice: 0,
+      yearlyPrice: null,
+      maxUsers: null, // Illimité
+      maxObjects: null, // Illimité
+      hasCustomPricing: false,
+      trialDays: 0,
+      features: [
+        "Accès privilégié",
+        "Utilisateurs illimités",
+        "Objets illimités",
+        "Toutes les fonctionnalités",
+      ],
+    },
+  });
+
   console.log("Plans seeded successfully!");
 }
 

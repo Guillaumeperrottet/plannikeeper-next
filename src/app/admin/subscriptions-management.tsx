@@ -352,7 +352,7 @@ export function SubscriptionsManagement() {
               <div>
                 <label className="block text-sm font-medium mb-1">Plan</label>
                 <select
-                  value={selectedSubscription.plan.name}
+                  value={selectedSubscription?.plan.name || "FREE"}
                   className="w-full px-3 py-2 border rounded-md"
                   onChange={(e) => {
                     setSelectedSubscription({
@@ -368,6 +368,8 @@ export function SubscriptionsManagement() {
                   <option value="PERSONAL">Particulier</option>
                   <option value="PROFESSIONAL">Indépendant</option>
                   <option value="ENTERPRISE">Entreprise</option>
+                  <option value="ILLIMITE">Accès Illimité</option>
+                  <option value="SUPER_ADMIN">Super Admin</option>
                 </select>
               </div>
 
