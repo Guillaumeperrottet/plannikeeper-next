@@ -6,10 +6,6 @@ import { superAdminGuard } from "@/lib/super-admin";
 import fs from "fs";
 import path from "path";
 
-type RouteParams = {
-  params: { id: string };
-};
-
 // Fonction pour mettre à jour la liste des super-admins
 async function updateSuperAdminList(email: string): Promise<boolean> {
   try {
@@ -33,29 +29,25 @@ async function updateSuperAdminList(email: string): Promise<boolean> {
     const currentEmailsString = match[1];
     const currentEmails = currentEmailsString
       .split(",")
-      .map((email) => email.trim().replace(/"/g, "").replace(/'/g, ""))
+      .map((e) => e.trim().replace(/['"]/g, ""))
       .filter(Boolean);
 
-    // Vérifier si l'email est déjà dans la liste
+    // Si déjà présent, rien à faire
     if (currentEmails.includes(email)) {
-      return false; // Pas de modification nécessaire
+      return false;
     }
 
-    // Ajouter le nouvel email à la liste
+    // Ajouter le nouvel email
     currentEmails.push(email);
 
-    // Formater la nouvelle liste
-    const newEmailsString = currentEmails
-      .map((email) => `"${email}"`)
-      .join(", ");
-
-    // Mettre à jour le contenu du fichier
+    // Recomposer la ligne
+    const newEmailsString = currentEmails.map((e) => `"${e}"`).join(", ");
     const newContent = content.replace(
       regex,
       `const SUPER_ADMIN_EMAILS = [${newEmailsString}];`
     );
 
-    // Écrire le nouveau contenu dans le fichier
+    // Écrire le fichier mis à jour
     fs.writeFileSync(filePath, newContent, "utf8");
 
     return true;
@@ -68,11 +60,12 @@ async function updateSuperAdminList(email: string): Promise<boolean> {
   }
 }
 
-export async function POST(request: NextRequest, { params }: RouteParams) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const currentUser = await getUser();
-
-    // Vérifier si l'utilisateur est un super-admin
     if (!currentUser || !(await superAdminGuard(currentUser.id))) {
       return NextResponse.json(
         { error: "Accès non autorisé" },
@@ -80,16 +73,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const userId = params.id;
+    const { id: userId } = await params;
 
     // Récupérer l'utilisateur cible
     const targetUser = await prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-      },
+      select: { id: true, email: true, name: true },
     });
 
     if (!targetUser) {
@@ -98,7 +87,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         { status: 404 }
       );
     }
-
     if (!targetUser.email) {
       return NextResponse.json(
         { error: "L'utilisateur n'a pas d'email valide" },
@@ -106,30 +94,26 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Tenter d'ajouter l'email à la liste des super-admins
+    // Mettre à jour la liste des super-admins
     try {
-      const updated = await updateSuperAdminList(targetUser.email);
-
-      if (!updated) {
+      const added = await updateSuperAdminList(targetUser.email);
+      if (!added) {
         return NextResponse.json({
           success: false,
           message: "Cet utilisateur est déjà super-administrateur",
         });
       }
-
       return NextResponse.json({
         success: true,
         message: `${targetUser.name || targetUser.email} est maintenant super-administrateur`,
         user: targetUser,
       });
-    } catch (error) {
+    } catch (e) {
       console.error(
         "Erreur lors de la mise à jour de la liste des super-admins:",
-        error
+        e
       );
-
-      // En environnement de production, cette approche ne fonctionnera pas car les fichiers sont en lecture seule
-      // Dans ce cas, nous pourrions utiliser une table en base de données pour stocker les super-admins
+      // En prod, le système de fichiers est lecture seule
       if (process.env.NODE_ENV === "production") {
         return NextResponse.json({
           success: false,
@@ -138,8 +122,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           user: targetUser,
         });
       }
-
-      throw error;
+      throw e;
     }
   } catch (error) {
     console.error("Erreur lors de la promotion en super-admin:", error);

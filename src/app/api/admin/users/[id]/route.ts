@@ -3,17 +3,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { superAdminGuard } from "@/lib/super-admin";
+import { Prisma } from "@prisma/client";
 
-type RouteParams = {
-  params: { id: string };
-};
-
-// Récupérer un utilisateur spécifique
-export async function GET(request: NextRequest, { params }: RouteParams) {
+// GET : récupérer un utilisateur spécifique
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const user = await getUser();
-
-    // Vérifier si l'utilisateur est un super-admin
     if (!user || !(await superAdminGuard(user.id))) {
       return NextResponse.json(
         { error: "Accès non autorisé" },
@@ -21,9 +19,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const userId = params.id;
-
-    // Récupérer l'utilisateur avec ses informations associées
+    const { id: userId } = await params;
     const targetUser = await prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -53,12 +49,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-// Mettre à jour un utilisateur
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+// PUT : mettre à jour un utilisateur
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const user = await getUser();
-
-    // Vérifier si l'utilisateur est un super-admin
     if (!user || !(await superAdminGuard(user.id))) {
       return NextResponse.json(
         { error: "Accès non autorisé" },
@@ -66,14 +63,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const userId = params.id;
+    const { id: userId } = await params;
     const updateData = await request.json();
 
-    // Vérifier que l'utilisateur existe
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
     });
-
     if (!existingUser) {
       return NextResponse.json(
         { error: "Utilisateur non trouvé" },
@@ -81,42 +76,46 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Préparer les données à mettre à jour
-    const userData = {
+    const userData: {
+      name?: string;
+      email?: string;
+      image?: string | null;
+      emailVerified?: boolean;
+      // organizationId is intentionally omitted here
+    } = {
       name: updateData.name,
       email: updateData.email,
-      emailVerified: updateData.emailVerified,
       image: updateData.image,
-      // Attention à ne pas écraser les champs non fournis
-      ...(updateData.organizationId && {
-        organizationId: updateData.organizationId,
-      }),
     };
 
-    // Mettre à jour l'utilisateur
-    const updatedUser = await prisma.user.update({
+    // Handle emailVerified separately since it's a boolean in the schema
+    if (updateData.emailVerified !== undefined) {
+      userData.emailVerified = updateData.emailVerified !== null;
+    }
+    const updateArgs: Prisma.UserUpdateArgs = {
       where: { id: userId },
       data: userData,
-    });
+    };
 
-    // Si le rôle a été modifié et qu'il y a une organization
+    if (typeof updateData.organizationId === "string") {
+      updateArgs.data.Organization = {
+        connect: { id: updateData.organizationId },
+      };
+    }
+
+    const updatedUser = await prisma.user.update(updateArgs);
+
     if (updateData.role && updateData.organizationId) {
-      // Vérifier si l'association OrganizationUser existe
       const orgUser = await prisma.organizationUser.findFirst({
-        where: {
-          userId,
-          organizationId: updateData.organizationId,
-        },
+        where: { userId, organizationId: updateData.organizationId },
       });
 
       if (orgUser) {
-        // Mettre à jour le rôle
         await prisma.organizationUser.update({
           where: { id: orgUser.id },
           data: { role: updateData.role },
         });
       } else {
-        // Créer l'association
         await prisma.organizationUser.create({
           data: {
             userId,
@@ -141,12 +140,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-// Supprimer un utilisateur
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+// DELETE : supprimer un utilisateur
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const user = await getUser();
-
-    // Vérifier si l'utilisateur est un super-admin
     if (!user || !(await superAdminGuard(user.id))) {
       return NextResponse.json(
         { error: "Accès non autorisé" },
@@ -154,13 +154,10 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const userId = params.id;
-
-    // Vérifier que l'utilisateur existe
+    const { id: userId } = await params;
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
     });
-
     if (!existingUser) {
       return NextResponse.json(
         { error: "Utilisateur non trouvé" },
@@ -168,10 +165,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Supprimer l'utilisateur
-    await prisma.user.delete({
-      where: { id: userId },
-    });
+    await prisma.user.delete({ where: { id: userId } });
 
     return NextResponse.json({
       success: true,
