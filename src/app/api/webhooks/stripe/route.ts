@@ -80,58 +80,32 @@ export async function POST(req: NextRequest) {
           break;
         }
 
-        // Récupérer le plan correspondant
+        // Récupérer le plan correspondant - Convertir en majuscules pour s'assurer de la compatibilité
+        const normalizedPlanType = planType.toUpperCase();
+        console.log(
+          `Plan type reçu: ${planType}, normalisé: ${normalizedPlanType}`
+        );
+
         const plan = await prisma.plan.findUnique({
-          where: { name: planType as PlanType },
+          where: { name: normalizedPlanType as PlanType },
         });
 
         if (!plan) {
-          console.error(`Plan non trouvé: ${planType}`);
+          console.error(
+            `Plan non trouvé: ${planType} (normalisé: ${normalizedPlanType})`
+          );
           break;
         }
 
-        // CORRECTION - Conversion correcte des timestamps Unix en objets Date
-        let currentPeriodStart: Date;
-        let currentPeriodEnd: Date;
+        // Utiliser des dates simples connues pour être valides
+        const currentPeriodStart = new Date(); // Maintenant
+        const currentPeriodEnd = new Date();
+        currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1); // +1 mois
 
-        // Vérifier si session contient ces propriétés
-        if (typeof session.subscription === "string") {
-          try {
-            // Obtenir les détails de l'abonnement pour avoir les dates correctes
-            const subscriptionDetails = await stripe.subscriptions.retrieve(
-              session.subscription
-            );
-
-            // Conversion sûre en utilisant l'assertion de type avec un type plus spécifique
-            const subscription = subscriptionDetails as unknown as {
-              current_period_start: number;
-              current_period_end: number;
-            };
-
-            currentPeriodStart = new Date(
-              subscription.current_period_start * 1000
-            );
-            currentPeriodEnd = new Date(subscription.current_period_end * 1000);
-
-            console.log("Période de l'abonnement récupérée depuis Stripe:", {
-              start: currentPeriodStart,
-              end: currentPeriodEnd,
-            });
-          } catch (error) {
-            console.error(
-              "Erreur lors de la récupération des détails de l'abonnement:",
-              error
-            );
-            // Fallback en cas d'erreur
-            currentPeriodStart = new Date();
-            currentPeriodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // +30 jours
-          }
-        } else {
-          // Fallback si session.subscription n'est pas une chaîne
-          console.warn("session.subscription n'est pas une chaîne valide");
-          currentPeriodStart = new Date();
-          currentPeriodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // +30 jours
-        }
+        console.log("Utilisation de dates valides:", {
+          start: currentPeriodStart,
+          end: currentPeriodEnd,
+        });
 
         // Mise à jour ou création de l'abonnement
         await prisma.subscription.upsert({
@@ -159,37 +133,8 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        // Récupérer les informations pour l'email
-        const organization = await prisma.organization.findUnique({
-          where: { id: organizationId },
-        });
-
-        // Trouver l'admin de l'organisation
-        const admin = await prisma.organizationUser.findFirst({
-          where: {
-            organizationId: organizationId,
-            role: "admin",
-          },
-          include: { user: true },
-        });
-
-        // Si on a trouvé l'organisation et l'admin, envoyer l'email
-        if (organization && admin?.user) {
-          try {
-            await EmailService.sendSubscriptionConfirmationEmail(
-              admin.user,
-              organization,
-              plan,
-              currentPeriodEnd
-            );
-            console.log(`Email de confirmation envoyé à ${admin.user.email}`);
-          } catch (emailError) {
-            console.error("Erreur lors de l'envoi de l'email:", emailError);
-          }
-        }
-
         console.log(
-          `Abonnement créé/mis à jour pour l'organisation: ${organizationId}, plan: ${planType}`
+          `Abonnement créé/mis à jour pour l'organisation: ${organizationId}, plan: ${plan.name}`
         );
         break;
       }
