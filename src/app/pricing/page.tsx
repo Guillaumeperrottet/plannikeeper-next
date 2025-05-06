@@ -1,25 +1,14 @@
 // src/app/pricing/page.tsx
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
 import PricingPlans from "@/app/pricing/pricing-plans";
 
 export default async function PricingPage() {
+  // Récupérer l'utilisateur (mais ne pas rediriger s'il n'est pas connecté)
   const user = await getUser();
-  if (!user) {
-    redirect("/signin?redirect=/pricing");
-  }
-
-  // Récupérer l'organisation de l'utilisateur
-  const userWithOrg = await prisma.user.findUnique({
-    where: { id: user.id },
-    include: { Organization: true },
-  });
-
-  if (!userWithOrg?.Organization) {
-    // L'utilisateur n'a pas d'organisation, rediriger vers la page de création
-    redirect("/onboarding");
-  }
+  let currentPlan = null;
+  let organizationId = null;
+  let isAdmin = false;
 
   // Récupérer tous les plans disponibles MAIS filtrer ceux qui sont réservés aux admins
   const prismaPlans = await prisma.plan.findMany({
@@ -47,35 +36,48 @@ export default async function PricingPage() {
         : plan.yearlyPrice,
   }));
 
-  // Récupérer l'abonnement actuel
-  const subscription = await prisma.subscription.findUnique({
-    where: { organizationId: userWithOrg.Organization.id },
-    include: { plan: true },
-  });
+  // Si l'utilisateur est connecté, récupérer son plan actuel et ses droits
+  if (user) {
+    // Récupérer l'organisation de l'utilisateur
+    const userWithOrg = await prisma.user.findUnique({
+      where: { id: user.id },
+      include: { Organization: true },
+    });
 
-  // Convert subscription plan Decimal to number if it exists
-  const currentPlan = subscription?.plan
-    ? {
-        ...subscription.plan,
-        price:
-          typeof subscription.plan.price === "object"
-            ? Number(subscription.plan.price)
-            : subscription.plan.price,
-        monthlyPrice:
-          typeof subscription.plan.monthlyPrice === "object"
-            ? Number(subscription.plan.monthlyPrice)
-            : subscription.plan.monthlyPrice,
-        yearlyPrice:
-          typeof subscription.plan.yearlyPrice === "object"
-            ? Number(subscription.plan.yearlyPrice)
-            : subscription.plan.yearlyPrice,
+    if (userWithOrg?.Organization) {
+      organizationId = userWithOrg.Organization.id;
+
+      // Récupérer l'abonnement actuel
+      const subscription = await prisma.subscription.findUnique({
+        where: { organizationId },
+        include: { plan: true },
+      });
+
+      // Convert subscription plan Decimal to number if it exists
+      if (subscription?.plan) {
+        currentPlan = {
+          ...subscription.plan,
+          price:
+            typeof subscription.plan.price === "object"
+              ? Number(subscription.plan.price)
+              : subscription.plan.price,
+          monthlyPrice:
+            typeof subscription.plan.monthlyPrice === "object"
+              ? Number(subscription.plan.monthlyPrice)
+              : subscription.plan.monthlyPrice,
+          yearlyPrice:
+            typeof subscription.plan.yearlyPrice === "object"
+              ? Number(subscription.plan.yearlyPrice)
+              : subscription.plan.yearlyPrice,
+        };
       }
-    : null;
 
-  const organizationId = userWithOrg.Organization.id;
-  const isAdmin = await prisma.organizationUser.findFirst({
-    where: { userId: user.id, organizationId, role: "admin" },
-  });
+      // Vérifier si l'utilisateur est admin
+      isAdmin = !!(await prisma.organizationUser.findFirst({
+        where: { userId: user.id, organizationId, role: "admin" },
+      }));
+    }
+  }
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -86,8 +88,8 @@ export default async function PricingPage() {
       <PricingPlans
         plans={plans}
         currentPlan={currentPlan}
-        isAdmin={!!isAdmin}
-        organizationId={organizationId}
+        isAdmin={isAdmin}
+        organizationId={organizationId || ""}
       />
     </div>
   );

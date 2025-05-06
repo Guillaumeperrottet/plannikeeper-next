@@ -26,7 +26,8 @@ interface PricingPlansProps {
   plans: Plan[];
   currentPlan: Plan | null;
   isAdmin: boolean;
-  organizationId: string;
+  organizationId: string | null;
+  isLoggedIn: boolean;
 }
 
 // Composant de Confetti
@@ -285,6 +286,7 @@ export default function PricingPlans({
   currentPlan,
   isAdmin,
   organizationId,
+  isLoggedIn,
 }: PricingPlansProps) {
   const [loading, setLoading] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(
@@ -296,6 +298,12 @@ export default function PricingPlans({
   const [planToConfirm, setPlanToConfirm] = useState<Plan | null>(null);
 
   const handleSelectPlan = (plan: Plan) => {
+    if (!isLoggedIn) {
+      // Rediriger vers la page d'inscription avec le plan présélectionné
+      window.location.href = `/signup?plan=${plan.name}`;
+      return;
+    }
+
     if (!isAdmin) {
       toast.error("Seuls les administrateurs peuvent modifier l'abonnement");
       return;
@@ -308,7 +316,7 @@ export default function PricingPlans({
 
   // Fonction pour confirmer la sélection après le modal
   const confirmPlanSelection = async () => {
-    if (!planToConfirm) return;
+    if (!planToConfirm || !organizationId) return;
 
     setLoading(planToConfirm.id);
     setSelectedPlan(planToConfirm.id);
@@ -364,7 +372,7 @@ export default function PricingPlans({
   };
 
   const handleManageSubscription = async () => {
-    if (!isAdmin) {
+    if (!isLoggedIn || !isAdmin) {
       toast.error("Seuls les administrateurs peuvent gérer l'abonnement");
       return;
     }
@@ -422,7 +430,7 @@ export default function PricingPlans({
         isLoading={loading === planToConfirm?.id}
       />
 
-      {currentPlan && (
+      {isLoggedIn && currentPlan && (
         <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -457,6 +465,16 @@ export default function PricingPlans({
         </div>
       )}
 
+      {!isLoggedIn && (
+        <div className="mb-8 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <p className="text-amber-800">
+            Consultez nos différentes formules et choisissez celle qui
+            correspond le mieux à vos besoins. Pour sélectionner un plan, vous
+            devrez vous inscrire ou vous connecter.
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {sortedPlans.map((plan) => (
           <motion.div
@@ -487,12 +505,14 @@ export default function PricingPlans({
             onMouseLeave={() => setHoveredPlan(null)}
           >
             {/* Badge Sélectionné */}
-            <SelectionBadge
-              isSelected={
-                selectedPlan === plan.id && currentPlan?.id !== plan.id
-              }
-              isCurrentPlan={currentPlan?.id === plan.id}
-            />
+            {isLoggedIn && (
+              <SelectionBadge
+                isSelected={
+                  selectedPlan === plan.id && currentPlan?.id !== plan.id
+                }
+                isCurrentPlan={currentPlan?.id === plan.id}
+              />
+            )}
 
             {/* Badge populaire ou recommandé pour certains plans */}
             {plan.name === "PROFESSIONAL" && (
@@ -551,27 +571,37 @@ export default function PricingPlans({
               <Button
                 onClick={() => handleSelectPlan(plan)}
                 className={`w-full transition-all duration-300 ${
-                  hoveredPlan === plan.id && currentPlan?.id !== plan.id
+                  hoveredPlan === plan.id &&
+                  (!isLoggedIn || currentPlan?.id !== plan.id)
                     ? "bg-[color:var(--primary)] hover:bg-[color:var(--primary)]/90"
                     : ""
                 }`}
-                variant={currentPlan?.id === plan.id ? "outline" : "default"}
+                variant={
+                  isLoggedIn && currentPlan?.id === plan.id
+                    ? "outline"
+                    : "default"
+                }
                 disabled={
-                  loading !== null || !isAdmin || currentPlan?.id === plan.id
+                  isLoggedIn &&
+                  (loading !== null || !isAdmin || currentPlan?.id === plan.id)
                 }
               >
-                {loading === plan.id ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Chargement...
-                  </>
-                ) : currentPlan?.id === plan.id ? (
-                  <span className="flex items-center justify-center">
-                    <Check className="mr-2 h-4 w-4" />
-                    Plan actuel
-                  </span>
+                {isLoggedIn ? (
+                  loading === plan.id ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Chargement...
+                    </>
+                  ) : currentPlan?.id === plan.id ? (
+                    <span className="flex items-center justify-center">
+                      <Check className="mr-2 h-4 w-4" />
+                      Plan actuel
+                    </span>
+                  ) : (
+                    "Sélectionner"
+                  )
                 ) : (
-                  "Sélectionner"
+                  "S'inscrire avec ce plan"
                 )}
               </Button>
             </div>
