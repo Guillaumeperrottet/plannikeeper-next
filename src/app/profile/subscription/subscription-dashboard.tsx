@@ -12,6 +12,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
+import UsageLimits from "@/app/components/UsageLimits";
 import {
   Card,
   CardHeader,
@@ -361,6 +362,12 @@ export default function SubscriptionDashboard({
             )}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Nouvelle section avec UsageLimits */}
+      <div className="mb-10">
+        <h2 className="text-xl font-semibold mb-4">Utilisation actuelle</h2>
+        <UsageLimits />
       </div>
 
       {/* Section plans disponibles */}
