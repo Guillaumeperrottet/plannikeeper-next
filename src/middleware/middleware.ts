@@ -2,6 +2,17 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
+  // Get the pathname from the URL
+  const { pathname } = request.nextUrl;
+
+  // Get the authentication status from cookies
+  const isAuthenticated = request.cookies.has("plannikeeper_session_token");
+
+  // If user is on the landing page (root) but is authenticated, redirect to dashboard
+  if (pathname === "/" && isAuthenticated) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
   // IMPORTANT: Ignorer les routes de webhook Stripe
   if (request.nextUrl.pathname.startsWith("/api/webhooks/stripe")) {
     return NextResponse.next();
