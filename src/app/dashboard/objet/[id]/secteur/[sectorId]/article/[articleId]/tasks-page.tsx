@@ -11,6 +11,7 @@ import {
 
 import { toast } from "sonner";
 import TaskFormMobileOptimized from "./TaskFormMobileOptimized";
+import AccessControl from "@/app/components/AccessControl";
 import TaskForm from "./task-form";
 import {
   Calendar,
@@ -941,13 +942,29 @@ export default function ModernTasksPage({
                               {/* Add task button at bottom of pending column */}
                               {(hoveredColumn === status ||
                                 status === "pending") && (
-                                <button
-                                  onClick={handleNewTask}
-                                  className="w-full p-1 mt-1 flex items-center justify-center gap-1 text-xs text-gray-600 hover:bg-gray-50 rounded-md border border-dashed border-gray-300"
+                                <AccessControl
+                                  entityType="article"
+                                  entityId={articleId}
+                                  requiredLevel="write"
+                                  fallback={
+                                    <button
+                                      className="opacity-50 cursor-not-allowed"
+                                      onClick={() =>
+                                        toast.info(
+                                          "Vous n'avez pas les droits pour créer des tâches"
+                                        )
+                                      }
+                                    >
+                                      <Plus size={16} />
+                                      <span>Ajouter une tâche</span>
+                                    </button>
+                                  }
                                 >
-                                  <Plus className="w-3 h-3" />
-                                  <span>Add task</span>
-                                </button>
+                                  <button onClick={handleNewTask}>
+                                    <Plus size={16} />
+                                    <span>Ajouter une tâche</span>
+                                  </button>
+                                </AccessControl>
                               )}
                             </div>
                           )}

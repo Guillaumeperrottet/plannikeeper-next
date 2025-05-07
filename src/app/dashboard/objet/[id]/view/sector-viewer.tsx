@@ -3,6 +3,8 @@
 import DropdownMenu from "@/app/components/ui/dropdownmenu";
 import { Button } from "@/app/components/ui/button";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { toast } from "sonner";
+
 import Link from "next/link";
 import {
   PlusCircle,
@@ -13,6 +15,7 @@ import {
   Minimize2,
 } from "lucide-react";
 import ImageWithArticles from "@/app/components/ImageWithArticles";
+import AccessControl from "@/app/components/AccessControl";
 
 type Sector = {
   id: string;
@@ -204,14 +207,38 @@ export default function SectorViewer({
           {/* Bouton pour ajouter/déplacer un article */}
           {selectedSector && (
             <div className="w-full sm:w-auto">
-              <Button asChild variant="outline" className="w-full sm:w-auto">
-                <Link
-                  href={`/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?addArticle=1`}
-                >
-                  <PlusCircle size={isMobile ? 16 : 20} className="mr-2" />
-                  {isMobile ? "Ajouter article" : "Ajouter/Déplacer un article"}
-                </Link>
-              </Button>
+              <AccessControl
+                entityType="sector"
+                entityId={selectedSector.id}
+                requiredLevel="write"
+                fallback={
+                  <Button
+                    variant="outline"
+                    className="w-full sm:w-auto opacity-60"
+                    onClick={() =>
+                      toast.info(
+                        "Vous n'avez pas les droits pour modifier ce secteur"
+                      )
+                    }
+                  >
+                    <PlusCircle size={isMobile ? 16 : 20} className="mr-2" />
+                    {isMobile
+                      ? "Ajouter article"
+                      : "Ajouter/Déplacer un article"}
+                  </Button>
+                }
+              >
+                <Button asChild variant="outline" className="w-full sm:w-auto">
+                  <Link
+                    href={`/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?addArticle=1`}
+                  >
+                    <PlusCircle size={isMobile ? 16 : 20} className="mr-2" />
+                    {isMobile
+                      ? "Ajouter article"
+                      : "Ajouter/Déplacer un article"}
+                  </Link>
+                </Button>
+              </AccessControl>
             </div>
           )}
         </div>
