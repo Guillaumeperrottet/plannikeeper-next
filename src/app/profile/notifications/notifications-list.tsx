@@ -97,8 +97,17 @@ export function NotificationsList({
       markAsRead(notification.id);
     }
 
-    // Rediriger si un lien est fourni
-    if (notification.link) {
+    // Rediriger vers la tâche si disponible, sinon utiliser le lien standard
+    if (notification.task) {
+      // Construire le lien vers la tâche en utilisant les informations disponibles
+      const taskLink =
+        `/dashboard/objet/${notification.task.article.sector.object.id}` +
+        `/secteur/${notification.task.article.sector.id}` +
+        `/article/${notification.task.article.id}` +
+        `/task/${notification.task.id}`;
+
+      router.push(taskLink);
+    } else if (notification.link) {
       router.push(notification.link);
     }
   };

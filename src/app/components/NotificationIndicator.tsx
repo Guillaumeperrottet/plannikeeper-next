@@ -8,7 +8,7 @@ import NotificationsPanel from "@/app/components/NotificationsPanel";
 import { useNotifications } from "./notification-provider";
 
 export default function NotificationIndicator() {
-  const { unreadCount } = useNotifications();
+  const { unreadCount, refreshUnreadCount } = useNotifications();
   const [showPanel, setShowPanel] = useState(false);
 
   const togglePanel = () => {
@@ -17,10 +17,13 @@ export default function NotificationIndicator() {
 
   const closePanel = () => {
     setShowPanel(false);
+    // Facultatif: rafraîchir le compteur après fermeture
+    refreshUnreadCount();
   };
 
   const handleNotificationsRead = () => {
-    // Le compteur est mis à jour automatiquement par le NotificationProvider
+    // Le compteur est mis à jour automatiquement par refreshUnreadCount
+    refreshUnreadCount();
   };
 
   return (

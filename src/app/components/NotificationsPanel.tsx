@@ -1,51 +1,43 @@
-// src/app/components/NotificationsPanel.tsx
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { formatDistanceToNow } from "date-fns/formatDistanceToNow";
 import { fr } from "date-fns/locale";
-import { Bell, X, Check } from "lucide-react";
+import { Bell, Check, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useNotifications } from "./notification-provider";
 
-type NotificationData = {
-  taskId?: string;
-  taskName?: string;
-  objectName?: string;
-  sectorName?: string;
-  articleTitle?: string;
-  assignerName?: string;
-};
-
+// Types comme avant...
 type Notification = {
   id: number;
-  type: string;
   content: string;
-  link?: string | null;
+  type: string;
   read: boolean;
   createdAt: string;
+  data?: {
+    objectName?: string;
+    taskName?: string;
+    assignerName?: string;
+  };
   task?: {
-    id: string;
-    name: string;
+    id: number;
     article: {
-      id: string;
-      title: string;
+      id: number;
       sector: {
-        id: string;
-        name: string;
+        id: number;
         object: {
-          id: string;
-          nom: string;
+          id: number;
         };
       };
     };
-  } | null;
-  data?: NotificationData;
+  };
+  link?: string;
 };
 
-interface NotificationsPanelProps {
+type NotificationsPanelProps = {
   onClose: () => void;
   onNotificationsRead: () => void;
-}
+};
 
 export default function NotificationsPanel({
   onClose,
@@ -55,27 +47,13 @@ export default function NotificationsPanel({
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const panelRef = useRef<HTMLDivElement>(null);
+  const { refreshUnreadCount } = useNotifications();
+  const [visibleNotifications, setVisibleNotifications] = useState<number[]>(
+    []
+  );
 
-  useEffect(() => {
-    fetchNotifications();
-
-    // Ajouter un event listener pour fermer le panneau quand on clique à l'extérieur
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        panelRef.current &&
-        !panelRef.current.contains(event.target as Node)
-      ) {
-        onClose();
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [onClose]);
-
-  const fetchNotifications = async () => {
+  // Fetch notifications de manière indépendante
+  const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch("/api/notifications?limit=10");
@@ -89,67 +67,155 @@ export default function NotificationsPanel({
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const markAsRead = async (notificationId: number) => {
-    try {
-      const response = await fetch(
-        `/api/notifications/${notificationId}/mark-read`,
-        {
-          method: "POST",
+  // Appeler fetch au montage
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  // Mettre à jour la liste des notifications visibles quand notifications change
+  useEffect(() => {
+    const unreadNotifications = notifications
+      .filter((n) => !n.read)
+      .map((n) => n.id);
+    setVisibleNotifications(unreadNotifications);
+  }, [notifications]);
+
+  // La fonction markAsRead définie une seule fois avec useCallback
+  const markAsRead = useCallback(
+    async (notificationId: number, updateUI: boolean = true) => {
+      try {
+        const response = await fetch(
+          `/api/notifications/${notificationId}/mark-read`,
+          { method: "POST" }
+        );
+
+        if (response.ok) {
+          if (updateUI) {
+            setNotifications((prevNotifications) =>
+              prevNotifications.map((notification) =>
+                notification.id === notificationId
+                  ? { ...notification, read: true }
+                  : notification
+              )
+            );
+
+            setVisibleNotifications((prev) =>
+              prev.filter((id) => id !== notificationId)
+            );
+
+            refreshUnreadCount();
+            onNotificationsRead();
+          }
+          return true;
         }
+        return false;
+      } catch (error) {
+        console.error("Erreur lors du marquage de la notification:", error);
+        return false;
+      }
+    },
+    [refreshUnreadCount, onNotificationsRead]
+  );
+
+  // Fonction markVisibleNotificationsAsRead définie avec useCallback
+  const markVisibleNotificationsAsRead = useCallback(async () => {
+    if (visibleNotifications.length === 0) return;
+
+    try {
+      await Promise.all(
+        visibleNotifications.map((id) => markAsRead(id, false))
       );
 
-      if (response.ok) {
-        // Mettre à jour l'état local
-        setNotifications(
-          notifications.map((notification) =>
-            notification.id === notificationId
-              ? { ...notification, read: true }
-              : notification
-          )
-        );
-        onNotificationsRead();
-      }
+      refreshUnreadCount();
+      onNotificationsRead();
     } catch (error) {
-      console.error("Erreur lors du marquage de la notification:", error);
+      console.error(
+        "Erreur lors du marquage des notifications comme lues:",
+        error
+      );
     }
-  };
+  }, [
+    visibleNotifications,
+    markAsRead,
+    refreshUnreadCount,
+    onNotificationsRead,
+  ]);
 
-  const markAllAsRead = async () => {
+  // Gestionnaire de clic extérieur
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        panelRef.current &&
+        !panelRef.current.contains(event.target as Node)
+      ) {
+        markVisibleNotificationsAsRead();
+        onClose();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [onClose, markVisibleNotificationsAsRead]);
+
+  // Fonction markAllAsRead également avec useCallback
+  const markAllAsRead = useCallback(async () => {
     try {
       const response = await fetch("/api/notifications/mark-all-read", {
         method: "POST",
       });
 
       if (response.ok) {
-        // Mettre à jour l'état local
-        setNotifications(
-          notifications.map((notification) => ({
+        setNotifications((prevNotifications) =>
+          prevNotifications.map((notification) => ({
             ...notification,
             read: true,
           }))
         );
+
+        setVisibleNotifications([]);
+        refreshUnreadCount();
         onNotificationsRead();
       }
     } catch (error) {
       console.error("Erreur lors du marquage des notifications:", error);
     }
-  };
+  }, [refreshUnreadCount, onNotificationsRead]);
 
-  const handleNotificationClick = (notification: Notification) => {
-    // Marquer comme lue
-    if (!notification.read) {
-      markAsRead(notification.id);
-    }
+  // handleNotificationClick avec useCallback
+  const handleNotificationClick = useCallback(
+    (notification: Notification) => {
+      if (!notification.read) {
+        markAsRead(notification.id);
+      }
 
-    // Rediriger si un lien est fourni
-    if (notification.link) {
-      router.push(notification.link);
-      onClose();
-    }
-  };
+      if (notification.task) {
+        const taskLink =
+          `/dashboard/objet/${notification.task.article.sector.object.id}` +
+          `/secteur/${notification.task.article.sector.id}` +
+          `/article/${notification.task.article.id}` +
+          `/task/${notification.task.id}`;
 
+        router.push(taskLink);
+        onClose();
+      } else if (notification.link) {
+        router.push(notification.link);
+        onClose();
+      }
+    },
+    [markAsRead, router, onClose]
+  );
+
+  // Fonction handleClosePanel
+  const handleClosePanel = useCallback(() => {
+    markVisibleNotificationsAsRead();
+    onClose();
+  }, [markVisibleNotificationsAsRead, onClose]);
+
+  // getNotificationIcon en tant que fonction simple
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case "TASK_ASSIGNED":
@@ -167,6 +233,7 @@ export default function NotificationsPanel({
     }
   };
 
+  // Le reste du code de rendu comme avant...
   return (
     <div
       ref={panelRef}
@@ -184,7 +251,7 @@ export default function NotificationsPanel({
             Tout marquer comme lu
           </button>
           <button
-            onClick={onClose}
+            onClick={handleClosePanel}
             className="text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)] transition-colors"
           >
             <X size={16} />
@@ -277,7 +344,7 @@ export default function NotificationsPanel({
         <a
           href="/profile/notifications"
           className="text-xs text-[color:var(--primary)] hover:underline"
-          onClick={() => onClose()}
+          onClick={() => handleClosePanel()}
         >
           Voir toutes les notifications
         </a>
