@@ -1,7 +1,8 @@
 import { Metadata } from "next";
 import LandingPageClient from "@/app/landing-page-client";
+import { getUser } from "@/lib/auth-session";
+import { redirect } from "next/navigation";
 
-// Ajout des métadonnées pour le SEO
 export const metadata: Metadata = {
   title:
     "PlanniKeeper - Gestion Immobilière Simplifiée | Organisez, Planifiez, Maîtrisez",
@@ -56,10 +57,18 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Page() {
+// This needs to be a Server Component - make the check async
+export default async function Page() {
+  // Check if user is authenticated - this must be within the component function
+  const user = await getUser();
+
+  // If authenticated, redirect to dashboard
+  if (user) {
+    redirect("/dashboard");
+  }
+
   return (
     <>
-      {/* Ajoutez les scripts JSON-LD ici */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -97,7 +106,6 @@ export default function Page() {
           }),
         }}
       />
-      {/* Le composant client qui contient tout votre contenu interactif */}
       <LandingPageClient />
     </>
   );
