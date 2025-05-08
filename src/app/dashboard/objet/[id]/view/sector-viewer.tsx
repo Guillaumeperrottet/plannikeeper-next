@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import ImageWithArticles from "@/app/components/ImageWithArticles";
 import AccessControl from "@/app/components/AccessControl";
+import MobileArticleList from "@/app/components/MobileArticleList"; // Importer le nouveau composant
 
 type Sector = {
   id: string;
@@ -313,6 +314,19 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 )}
               </button>
             </div>
+
+            {/* Nouveau composant : Liste des articles pour mobile */}
+            {selectedSector && !isFullscreen && (
+              <MobileArticleList
+                articles={articles}
+                selectedSectorName={selectedSector.name}
+                objetId={objetId}
+                sectorId={selectedSector.id}
+                onArticleClick={handleArticleClick}
+                onArticleHover={setHoveredArticleId}
+                hoveredArticleId={hoveredArticleId}
+              />
+            )}
           </div>
         ) : (
           <div className="text-center text-gray-500 p-4">
