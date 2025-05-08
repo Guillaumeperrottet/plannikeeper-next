@@ -30,10 +30,10 @@ type Article = {
   id: string;
   title: string;
   description: string | null;
-  positionX: number | null; // Stocké en pourcentage
-  positionY: number | null; // Stocké en pourcentage
-  width: number | null; // Stocké en pourcentage
-  height: number | null; // Stocké en pourcentage
+  positionX: number | null;
+  positionY: number | null;
+  width: number | null;
+  height: number | null;
 };
 
 export default function SectorViewer({
