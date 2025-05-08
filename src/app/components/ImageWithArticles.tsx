@@ -284,6 +284,19 @@ export default function ImageWithArticles({
       }
       // Si c'est un nouvel article, afficher son tooltip (et fermer tout autre tooltip ouvert)
       else {
+        // Calcul optimisé pour la position du tooltip qui tient compte du zoom et du scroll
+        // On utilise viewportWidth pour s'assurer que le tooltip reste dans l'écran visible
+        const viewportWidth = window.innerWidth;
+
+        // Calculer la position optimale qui tient compte des bords de l'écran
+        let tooltipX = rect.left + rect.width / 2;
+        let tooltipY = rect.top;
+
+        // S'assurer que le tooltip reste dans les limites de l'écran visible
+        // Tenant compte d'une largeur estimée du tooltip de 250px et une hauteur de 150px
+        tooltipX = Math.max(125, Math.min(tooltipX, viewportWidth - 125));
+        tooltipY = Math.max(150, tooltipY); // Au moins 150px du haut pour avoir de la place
+
         setTooltipInfo({
           visible: true,
           content: {
@@ -291,8 +304,8 @@ export default function ImageWithArticles({
             description: article.description,
           },
           position: {
-            x: rect.left + rect.width / 2,
-            y: rect.top,
+            x: tooltipX,
+            y: tooltipY,
           },
           articleId: article.id,
         });
@@ -340,9 +353,64 @@ export default function ImageWithArticles({
   const handleViewTasksClick = () => {
     // Si on a un ID d'article et la fonction de navigation, utiliser la navigation
     if (tooltipInfo.articleId && onArticleClick) {
-      onArticleClick(tooltipInfo.articleId);
+      // Feedback haptique avant la navigation
+      if ("vibrate" in navigator) {
+        navigator.vibrate([15, 30, 15]); // Motif de vibration pour indiquer la navigation
+      }
+
+      // Petit délai avant la navigation pour que l'utilisateur perçoive le feedback
+      setTimeout(() => {
+        if (tooltipInfo.articleId && onArticleClick) {
+          onArticleClick(tooltipInfo.articleId);
+        }
+      }, 50);
     }
   };
+
+  // Ajouter un écouteur pour les changements de zoom/scale
+  useEffect(() => {
+    const handleZoomChange = () => {
+      // Si un tooltip est visible et que l'utilisateur zoome, mieux vaut le fermer
+      // pour éviter les problèmes de positionnement
+      if (tooltipInfo.visible) {
+        closeTooltip();
+      }
+    };
+
+    // Écouter les événements de zoom (même si l'API n'est pas standard)
+    window.addEventListener("resize", handleZoomChange);
+
+    // Sur iOS Safari, on peut détecter les gestes de pinch qui indiquent un zoom
+    let lastTouchDistance = 0;
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length >= 2) {
+        // Calculer la distance entre les deux points de toucher
+        const touchDistance = Math.hypot(
+          e.touches[0].pageX - e.touches[1].pageX,
+          e.touches[0].pageY - e.touches[1].pageY
+        );
+
+        // Si la distance change significativement, c'est probablement un pinch zoom
+        if (
+          lastTouchDistance &&
+          Math.abs(touchDistance - lastTouchDistance) > 10
+        ) {
+          if (tooltipInfo.visible) {
+            closeTooltip();
+          }
+        }
+
+        lastTouchDistance = touchDistance;
+      }
+    };
+
+    window.addEventListener("touchmove", handleTouchMove);
+
+    return () => {
+      window.removeEventListener("resize", handleZoomChange);
+      window.removeEventListener("touchmove", handleTouchMove);
+    };
+  }, [tooltipInfo.visible]);
 
   // Fermer le tooltip si on clique ailleurs sur l'image
   const handleBackgroundClick = () => {
@@ -420,7 +488,29 @@ export default function ImageWithArticles({
           }}
           onClick={(e) => e.stopPropagation()} // Empêcher la propagation du clic
         >
-          <div className="font-bold text-sm truncate">
+          {/* Bouton de fermeture du tooltip (X) - Ajouté pour faciliter la fermeture sur mobile */}
+          <button
+            className="absolute top-1 right-1 text-gray-300 hover:text-white"
+            onClick={closeTooltip}
+            aria-label="Fermer"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+
+          <div className="font-bold text-sm truncate pr-5">
             {tooltipInfo.content.title}
           </div>
 
@@ -447,20 +537,22 @@ export default function ImageWithArticles({
             )}
           </div>
 
-          {/* Flèche pointant vers l'élément */}
-          <div
-            style={{
-              position: "absolute",
-              left: "50%",
-              bottom: "-8px",
-              transform: "translateX(-50%)",
-              width: 0,
-              height: 0,
-              borderLeft: "8px solid transparent",
-              borderRight: "8px solid transparent",
-              borderTop: "8px solid rgba(0, 0, 0, 0.9)",
-            }}
-          ></div>
+          {/* Flèche pointant vers l'élément - masquée sur mobile avec zoom */}
+          {!isMobile && (
+            <div
+              style={{
+                position: "absolute",
+                left: "50%",
+                bottom: "-8px",
+                transform: "translateX(-50%)",
+                width: 0,
+                height: 0,
+                borderLeft: "8px solid transparent",
+                borderRight: "8px solid transparent",
+                borderTop: "8px solid rgba(0, 0, 0, 0.9)",
+              }}
+            ></div>
+          )}
         </div>
       )}
     </div>
