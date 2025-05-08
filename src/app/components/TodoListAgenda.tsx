@@ -101,7 +101,7 @@ export default function TodoListAgenda() {
 
   // Constantes pour les limites de hauteur
   const MIN_HEIGHT = 48; // Hauteur minimale (fermé)
-  const MOBILE_BOTTOM_OFFSET = 20; // Décalage vers le haut pour le mode mobile en PWA
+  const MOBILE_BOTTOM_OFFSET = 0; // Décalage modifié à 0 pour éviter l'espace blanc
 
   // Détection du mode mobile et PWA
   useEffect(() => {
@@ -151,8 +151,8 @@ export default function TodoListAgenda() {
   useEffect(() => {
     if (isMobile && isPWA) {
       // Ajuster le padding-bottom pour éviter la barre de navigation mobile
-      // et remonter l'agenda un peu plus haut
-      document.body.style.paddingBottom = `${MIN_HEIGHT + MOBILE_BOTTOM_OFFSET}px`;
+      // et ajuster l'agenda à la hauteur désirée
+      document.body.style.paddingBottom = `${MIN_HEIGHT}px`;
       if (agendaRef.current) {
         agendaRef.current.style.bottom = `${MOBILE_BOTTOM_OFFSET}px`;
       }
@@ -463,23 +463,42 @@ export default function TodoListAgenda() {
               ))}
             </select>
             {/* Bouton d'impression - uniquement visible sur desktop */}
-            <button
-              onClick={handlePrint}
-              className="p-1 rounded hover:bg-[color:var(--accent)] active:scale-95 transition-all print:hidden text-[color:var(--foreground)] hidden md:flex"
-              title="Imprimer"
-              aria-label="Imprimer"
-            >
-              <Printer size={20} />
-            </button>
-            {/* Bouton toggle expand/collapse */}
-            <button
-              onClick={toggleExpanded}
-              className="print:hidden text-[color:var(--foreground)] active:scale-95 transition-all"
-              title={isExpanded ? "Réduire" : "Agrandir"}
-              aria-label={isExpanded ? "Réduire" : "Agrandir"}
-            >
-              {isExpanded ? <ChevronDown size={24} /> : <ChevronUp size={24} />}
-            </button>
+            {!isMobile && (
+              <button
+                onClick={handlePrint}
+                className="p-1 rounded hover:bg-[color:var(--accent)] active:scale-95 transition-all print:hidden text-[color:var(--foreground)] hidden md:flex"
+                title="Imprimer"
+                aria-label="Imprimer"
+              >
+                <Printer size={20} />
+              </button>
+            )}
+            {/* Bouton toggle expand/collapse - uniquement visible sur desktop */}
+            {!isMobile && (
+              <button
+                onClick={toggleExpanded}
+                className="print:hidden text-[color:var(--foreground)] active:scale-95 transition-all"
+                title={isExpanded ? "Réduire" : "Agrandir"}
+                aria-label={isExpanded ? "Réduire" : "Agrandir"}
+              >
+                {isExpanded ? (
+                  <ChevronDown size={24} />
+                ) : (
+                  <ChevronUp size={24} />
+                )}
+              </button>
+            )}
+            {/* Bouton pour fermer l'agenda - visible uniquement en mobile quand l'agenda est ouvert */}
+            {isMobile && isExpanded && (
+              <button
+                onClick={closeAgenda}
+                className="print:hidden text-[color:var(--foreground)] active:scale-95 transition-all"
+                title="Fermer"
+                aria-label="Fermer l'agenda"
+              >
+                <X size={24} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -580,7 +599,7 @@ export default function TodoListAgenda() {
         </div>
       </motion.div>
 
-      {/* Bouton flottant d'expansion moderne sur mobile */}
+      {/* Bouton flottant d'expansion moderne sur mobile - affiché uniquement quand l'agenda est fermé */}
       <AnimatePresence>
         {!isExpanded && isMobile && (
           <motion.button
@@ -595,55 +614,7 @@ export default function TodoListAgenda() {
             <ChevronUp size={28} />
           </motion.button>
         )}
-
-        {isExpanded && isMobile && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            whileTap={{ scale: 0.95 }}
-            className="fixed bottom-20 right-4 w-14 h-14 rounded-full bg-[color:var(--primary)] text-[color:var(--primary-foreground)] flex items-center justify-center shadow-lg z-50"
-            onClick={closeAgenda}
-            aria-label="Fermer l'agenda"
-          >
-            <X size={24} />
-          </motion.button>
-        )}
       </AnimatePresence>
-
-      {/* Styles spécifiques */}
-      <style jsx global>{`
-        .agenda-content {
-          overscroll-behavior: contain;
-          -webkit-overflow-scrolling: touch;
-        }
-
-        @media (max-width: 640px) {
-          select {
-            font-size: 0.8rem;
-          }
-        }
-
-        /* Style spécifique pour PWA sur mobile */
-        @media (display-mode: standalone) {
-          body {
-            overscroll-behavior: none;
-          }
-
-          /* Améliorer la zone d'interaction tactile */
-          [data-todo-list-agenda] button,
-          [data-todo-list-agenda] select {
-            min-height: 36px;
-            margin: 2px;
-          }
-
-          /* Ajouter de la marge aux éléments de liste pour une meilleure sensation tactile */
-          [data-todo-list-agenda] li {
-            margin-bottom: 8px;
-            padding: 12px;
-          }
-        }
-      `}</style>
     </>
   );
 }
