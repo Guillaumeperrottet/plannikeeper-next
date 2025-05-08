@@ -91,12 +91,10 @@ export default function TodoListAgenda() {
   const [isPWA, setIsPWA] = useState(false);
   const [lastScrollTop, setLastScrollTop] = useState(0);
 
-  // Animation spring pour une sensation plus naturelle mais avec une réactivité accrue
+  // Animation spring pour une sensation plus naturelle
   const springHeight = useSpring(agendaHeight, {
-    stiffness: 500, // Augmenté pour une réponse plus immédiate
-    damping: 25, // Légèrement réduit pour plus de réactivité
-    restDelta: 0.5, // Valeur plus faible pour une animation plus précise
-    restSpeed: 0.5, // La vitesse à laquelle l'animation est considérée comme terminée
+    stiffness: 300,
+    damping: 30,
   });
 
   const agendaRef = useRef<HTMLDivElement>(null);
@@ -141,7 +139,6 @@ export default function TodoListAgenda() {
       const isScrollDown = scrollTop > lastScrollTop;
 
       setLastScrollTop(scrollTop);
-
       // Si on scroll vers le bas et que l'agenda est affiché, on le réduit
       if (isScrollDown && isExpanded && !isDragging) {
         setAgendaHeight(MIN_HEIGHT);
@@ -174,21 +171,10 @@ export default function TodoListAgenda() {
     };
   }, [isMobile, isPWA]);
 
-  // Mettre à jour la hauteur animée avec le spring de manière plus efficace
+  // Mettre à jour la hauteur animée avec le spring
   useEffect(() => {
-    // Mettre à jour la référence pour être cohérent
-    currentHeightRef.current = agendaHeight;
-
-    // Mise à jour directe sans attendre le rendu
     springHeight.set(agendaHeight);
-
-    // Désactiver temporairement les animations pour les mouvements très rapides
-    if (isDragging) {
-      springHeight.set(agendaHeight, false); // false désactive la transition pour une réponse immédiate
-    } else {
-      springHeight.set(agendaHeight); // réactive la transition pour l'effet de rebond à la fin
-    }
-  }, [agendaHeight, springHeight, isDragging]);
+  }, [agendaHeight, springHeight]);
 
   // Empêcher le scroll de la page quand on interagit avec l'agenda
   useEffect(() => {
@@ -357,65 +343,42 @@ export default function TodoListAgenda() {
     fetchTasks();
   }, [selectedObjectId]);
 
-  // Gestion optimisée du drag avec délai réduit pour mobile
+  // Optimisé pour mobile - gestion du drag avec retour tactile
   const handleDragStart = (e: React.MouseEvent | React.TouchEvent): void => {
     e.preventDefault();
-
-    // Retour haptique immédiat pour confirmer l'action
-    if ("vibrate" in navigator && isMobile) {
-      navigator.vibrate(5); // Vibration réduite pour être plus subtile et plus rapide
-    }
-
-    // Stocker la position initiale
     const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
     setStartY(clientY);
-
-    // Mise à jour immédiate de l'état de dragging
     setIsDragging(true);
 
-    // Initialiser la référence de hauteur actuelle
-    currentHeightRef.current = agendaHeight;
-
-    // Ajouter une classe au body immédiatement sans attendre le rendu
-    document.body.classList.add("dragging-active");
+    // Ajout de retour haptique sur mobile
+    if ("vibrate" in navigator && isMobile) {
+      navigator.vibrate(10); // Légère vibration de 10ms
+    }
   };
 
-  // Utiliser une référence pour le state de hauteur actuelle pour éviter les délais de render
-  const currentHeightRef = useRef(agendaHeight);
-
-  // Optimiser le handler pour une réponse immédiate
   const handleDragMove = useCallback(
     (e: MouseEvent | TouchEvent): void => {
       if (!isDragging) return;
 
-      // Demander une frame d'animation pour optimiser les performances
-      requestAnimationFrame(() => {
-        if (!isDragging) return;
+      const clientY =
+        "touches" in e
+          ? (e as TouchEvent).touches[0].clientY
+          : (e as MouseEvent).clientY;
+      const deltaY = startY - clientY;
 
-        const clientY =
-          "touches" in e
-            ? (e as TouchEvent).touches[0].clientY
-            : (e as MouseEvent).clientY;
-        const deltaY = startY - clientY;
+      // Calculer la nouvelle hauteur en fonction du mouvement
+      let newHeight = agendaHeight + deltaY;
 
-        // Utiliser directement la référence pour le calcul
-        let newHeight = currentHeightRef.current + deltaY;
+      // Ajout d'un effet de "résistance" aux limites pour une sensation plus naturelle
+      if (newHeight < MIN_HEIGHT) {
+        newHeight = MIN_HEIGHT - (MIN_HEIGHT - newHeight) * 0.2;
+      } else if (newHeight > maxHeight) {
+        newHeight = maxHeight + (newHeight - maxHeight) * 0.2;
+      }
 
-        // Effet de résistance aux limites plus léger pour une meilleure réactivité
-        if (newHeight < MIN_HEIGHT) {
-          newHeight = MIN_HEIGHT - (MIN_HEIGHT - newHeight) * 0.1; // Résistance réduite
-        } else if (newHeight > maxHeight) {
-          newHeight = maxHeight + (newHeight - maxHeight) * 0.1; // Résistance réduite
-        }
-
-        // Mettre à jour la référence immédiatement
-        currentHeightRef.current = newHeight;
-
-        // Puis mettre à jour le state pour le rendu
-        setAgendaHeight(newHeight);
-        setIsExpanded(newHeight > EXPANDED_THRESHOLD);
-        setStartY(clientY);
-      });
+      setAgendaHeight(newHeight);
+      setIsExpanded(newHeight > EXPANDED_THRESHOLD);
+      setStartY(clientY);
     },
     [
       isDragging,
@@ -428,37 +391,22 @@ export default function TodoListAgenda() {
   );
 
   const handleDragEnd = useCallback((): void => {
-    // Retirer la classe immédiatement
-    document.body.classList.remove("dragging-active");
-
-    // Mettre à jour l'état de drag
     setIsDragging(false);
 
-    // Utiliser la référence pour une décision immédiate
-    const currentHeight = currentHeightRef.current;
-
     // Snap aux positions appropriées
-    if (currentHeight < 70) {
-      // Pour la fermeture, appliquer directement pour une réaction immédiate
-      springHeight.set(MIN_HEIGHT, false); // Désactiver la transition pour être immédiat
+    if (agendaHeight < 70) {
       setAgendaHeight(MIN_HEIGHT);
       setIsExpanded(false);
-    } else if (currentHeight > maxHeight * 0.7) {
+    } else if (agendaHeight > maxHeight * 0.7) {
       // Snap au maximum si on est proche
       setAgendaHeight(maxHeight);
-    } else if (
-      currentHeight > EXPANDED_THRESHOLD &&
-      currentHeight < maxHeight * 0.3
-    ) {
-      // Snap à la position intermédiaire pour une meilleure expérience
-      setAgendaHeight(maxHeight * 0.3);
     }
 
     // Feedback haptique
     if ("vibrate" in navigator && isMobile) {
       navigator.vibrate(5);
     }
-  }, [MIN_HEIGHT, EXPANDED_THRESHOLD, maxHeight, isMobile, springHeight]);
+  }, [agendaHeight, MIN_HEIGHT, maxHeight, isMobile]);
 
   useEffect(() => {
     // Ajouter les écouteurs d'événements pour le drag
@@ -582,12 +530,11 @@ export default function TodoListAgenda() {
     <>
       <motion.div
         ref={agendaRef}
-        className={`fixed bottom-0 left-0 right-0 bg-[color:var(--background)] shadow-lg print:shadow-none print:relative print:h-auto border-t border-[color:var(--border)] rounded-t-xl overflow-hidden z-40 ${isExpanded ? "expanded" : ""}`}
+        className="fixed bottom-0 left-0 right-0 bg-[color:var(--background)] shadow-lg print:shadow-none print:relative print:h-auto border-t border-[color:var(--border)] rounded-t-xl overflow-hidden z-40"
         style={{
           height: springHeight,
           position: isNavigating ? "relative" : "fixed",
           zIndex: 999, // Valeur plus élevée pour s'assurer que l'agenda est au-dessus de tous les éléments
-          willChange: "transform, height", // Indique au navigateur d'optimiser ces propriétés
         }}
         initial={false}
         animate={{
@@ -596,13 +543,7 @@ export default function TodoListAgenda() {
             ? "0 -4px 20px rgba(0,0,0,0.15)"
             : "0 -2px 10px rgba(0,0,0,0.1)",
         }}
-        transition={{
-          type: "spring",
-          stiffness: isDragging ? 1000 : 500, // Stiffness très élevée pendant le drag pour une réponse immédiate
-          damping: isDragging ? 100 : 25, // Overdamping pendant le drag pour éviter les oscillations
-          restDelta: 0.1, // Plus précis
-          restSpeed: 0.1, // S'arrête plus vite
-        }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
         data-todo-list-agenda
       >
         {/* Overlay de chargement */}
