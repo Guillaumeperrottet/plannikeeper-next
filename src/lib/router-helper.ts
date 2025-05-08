@@ -130,6 +130,7 @@ export function useRouter() {
         setIsNavigating(false);
         activeNavigations.delete(url);
         document.body.classList.remove("navigation-pending");
+        document.body.style.pointerEvents = "";
 
         if (onComplete) {
           onComplete();

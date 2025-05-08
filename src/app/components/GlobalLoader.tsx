@@ -148,6 +148,8 @@ export function GlobalLoaderProvider({ children }: GlobalLoaderProviderProps) {
 
     // Toujours réinitialiser le mode instantané après utilisation
     setSkipDelay(false);
+
+    document.body.style.pointerEvents = "";
   };
 
   const setInstantLoading = (state: boolean) => {
@@ -178,7 +180,11 @@ export function GlobalLoaderProvider({ children }: GlobalLoaderProviderProps) {
     >
       {children}
 
-      <AnimatePresence>
+      <AnimatePresence
+        onExitComplete={() => {
+          document.body.style.pointerEvents = "";
+        }}
+      >
         {isLoading && (
           <motion.div
             initial={{ opacity: 0 }}

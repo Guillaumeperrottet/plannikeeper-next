@@ -1,5 +1,3 @@
-// Modification du composant Navbar.tsx
-
 "use client";
 
 import { VT323 } from "next/font/google";
@@ -9,6 +7,7 @@ import UserMenu from "@/app/components/ui/UserMenu";
 import NotificationIndicator from "./NotificationIndicator";
 import { useRouter } from "@/lib/router-helper";
 import { useGlobalLoader } from "@/app/components/GlobalLoader";
+import { useCallback } from "react";
 
 interface User {
   id: string;
@@ -28,31 +27,46 @@ const vt323 = VT323({
 export default function Navbar({ user }: { user: User }) {
   const isAdmin = user?.role === "admin" || user?.isAdmin;
   const customRouter = useRouter();
-  const { showLoaderImmediately } = useGlobalLoader();
+  const { hideLoader } = useGlobalLoader();
 
   // Fonction optimisée pour la navigation vers le dashboard
-  const handleLogoClick = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleLogoClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
 
-    // 1. Feedback visuel immédiat
-    e.currentTarget.classList.add("active-navigation");
+      // 1. Feedback visuel immédiat
+      const element = e.currentTarget;
+      element.classList.add("active-navigation");
 
-    // 2. Afficher immédiatement le loader
-    showLoaderImmediately("Chargement du dashboard...");
+      // 2. Feedback tactile si disponible
+      if ("vibrate" in navigator) {
+        navigator.vibrate(10);
+      }
 
-    // 3. Feedback tactile si disponible
-    if ("vibrate" in navigator) {
-      navigator.vibrate(10);
-    }
-
-    // 4. Navigation avec priorité
-    setTimeout(() => {
+      // 3. Navigation avec loader global au lieu de showLoaderImmediately
+      // Cela garantit que le loader sera correctement géré pendant la navigation
       customRouter.navigateWithLoading("/dashboard", {
+        loadingMessage: "Chargement du dashboard...",
         instantLoader: true,
-        delay: 0,
+        onComplete: () => {
+          // 4. IMPORTANT: Nettoyer la classe active et s'assurer que le loader est masqué
+          setTimeout(() => {
+            element.classList.remove("active-navigation");
+            hideLoader();
+            // 5. S'assurer que le body ne bloque pas les interactions
+            document.body.style.pointerEvents = "";
+          }, 100);
+        },
+        onError: () => {
+          // En cas d'erreur, également nettoyer
+          element.classList.remove("active-navigation");
+          hideLoader();
+          document.body.style.pointerEvents = "";
+        },
       });
-    }, 10); // Délai minime pour permettre le rendu du loader
-  };
+    },
+    [customRouter, hideLoader]
+  );
 
   return (
     <nav
