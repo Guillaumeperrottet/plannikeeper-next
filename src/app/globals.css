@@ -286,3 +286,82 @@ select:active {
     --safe-area-right: env(safe-area-inset-right, 0px);
   }
 }
+
+/* Styles de base pour l'interaction tactile */
+.touch-optimized {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* Styles pour les listes défilantes sur mobile */
+.mobile-scroll-container {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scroll-padding: 16px;
+}
+
+/* Amélioration de l'effet de poignée de défilement */
+.drag-handle {
+  width: 48px;
+  height: 4px;
+  background-color: var(--muted-foreground);
+  opacity: 0.2;
+  border-radius: 4px;
+  margin: 8px auto;
+}
+
+/* Support pour les safe areas iOS */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+.h-safe {
+  height: env(safe-area-inset-bottom, 16px);
+}
+
+/* Effet d'appui sur les éléments interactifs mobiles */
+.mobile-list-item {
+  transition:
+    transform 0.15s ease,
+    background-color 0.2s ease;
+}
+
+.mobile-list-item:active {
+  transform: scale(0.98);
+}
+
+/* Styles pour les feuilles modales mobiles */
+.mobile-sheet {
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Animation pour le défilement de la liste d'articles */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.slide-up-animation {
+  animation: slideUp 0.3s ease forwards;
+}
+
+/* Support amélioré pour les interactions tactiles */
+@media (hover: none) and (pointer: coarse) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Espace supplémentaire pour les éléments à toucher */
+  .touch-area {
+    padding: 12px;
+    margin: 4px 0;
+  }
+}
