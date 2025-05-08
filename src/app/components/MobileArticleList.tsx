@@ -81,7 +81,13 @@ const MobileArticleList: React.FC<MobileArticleListProps> = ({
     };
   }, [isDragging, startY, currentY]);
 
+  // Debugger: ajouter un log pour voir si le composant est rendu
+  useEffect(() => {
+    console.log("MobileArticleList rendu", { articles, isOpen });
+  }, [articles, isOpen]);
+
   const togglePanel = () => {
+    console.log("Toggling panel, current state:", isOpen);
     triggerHapticFeedback();
     setIsOpen(!isOpen);
   };
@@ -152,10 +158,15 @@ const MobileArticleList: React.FC<MobileArticleListProps> = ({
 
   return (
     <div className="md:hidden">
-      {/* Bouton flottant pour ouvrir la liste */}
+      {/* Ajout d'un debug pour voir si le composant est visible */}
+      {/* <div className="fixed bottom-36 right-4 bg-red-500 text-white p-2 rounded z-50">
+        Articles: {articles.length} | Open: {isOpen ? "yes" : "no"}
+      </div> */}
+
+      {/* Bouton flottant pour ouvrir la liste - Augmenté z-index */}
       <button
         onClick={togglePanel}
-        className="fixed bottom-20 left-4 z-40 flex items-center gap-1 bg-primary text-primary-foreground rounded-full shadow-lg px-3 py-3 active:scale-95 transition-transform"
+        className="fixed bottom-20 left-4 z-50 flex items-center gap-1 bg-[color:var(--primary)] text-[color:var(--primary-foreground)] rounded-full shadow-lg px-3 py-3 active:scale-95 transition-transform"
         aria-label={
           isOpen ? "Fermer la liste des articles" : "Voir tous les articles"
         }
@@ -168,7 +179,7 @@ const MobileArticleList: React.FC<MobileArticleListProps> = ({
         )}
       </button>
 
-      {/* Panel coulissant avec la liste des articles */}
+      {/* Panel coulissant avec la liste des articles - Augmenté z-index */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -177,17 +188,17 @@ const MobileArticleList: React.FC<MobileArticleListProps> = ({
             animate={controls}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-30 bg-background border-t border-border rounded-t-2xl shadow-lg max-h-[80vh] overflow-hidden"
+            className="fixed bottom-0 left-0 right-0 z-40 bg-[color:var(--background)] border-t border-[color:var(--border)] rounded-t-2xl shadow-lg max-h-[80vh] overflow-hidden"
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
           >
             {/* Poignée de défilement (indicator visuel) */}
-            <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-12 h-1.5 bg-muted-foreground/20 rounded-full" />
+            <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-12 h-1.5 bg-[color:var(--muted-foreground)]/20 rounded-full" />
 
             {/* En-tête du panel */}
             <div
-              className="flex justify-between items-center p-4 border-b border-border bg-muted"
+              className="flex justify-between items-center p-4 border-b border-[color:var(--border)] bg-[color:var(--muted)]"
               style={{ touchAction: "none" }}
             >
               <h3 className="font-medium text-base">
@@ -195,7 +206,7 @@ const MobileArticleList: React.FC<MobileArticleListProps> = ({
               </h3>
               <button
                 onClick={togglePanel}
-                className="p-1 rounded-full hover:bg-background active:scale-95 transition-transform"
+                className="p-1 rounded-full hover:bg-[color:var(--background)] active:scale-95 transition-transform"
                 aria-label="Fermer"
               >
                 <ChevronDown size={20} />
@@ -213,7 +224,7 @@ const MobileArticleList: React.FC<MobileArticleListProps> = ({
               }}
             >
               {articles.length === 0 ? (
-                <div className="p-4 text-center text-muted-foreground">
+                <div className="p-4 text-center text-[color:var(--muted-foreground)]">
                   Aucun article disponible pour ce secteur
                 </div>
               ) : (
@@ -223,8 +234,8 @@ const MobileArticleList: React.FC<MobileArticleListProps> = ({
                       key={article.id}
                       className={`rounded-lg border p-3 active:scale-[0.98] transition-all ${
                         hoveredArticleId === article.id
-                          ? "bg-primary/10 border-primary"
-                          : "border-border bg-card"
+                          ? "bg-[color:var(--primary)]/10 border-[color:var(--primary)]"
+                          : "border-[color:var(--border)] bg-[color:var(--card)]"
                       }`}
                       onMouseEnter={() => onArticleHover(article.id)}
                       onMouseLeave={() => onArticleHover(null)}
@@ -236,12 +247,12 @@ const MobileArticleList: React.FC<MobileArticleListProps> = ({
                         </h4>
                         <ExternalLink
                           size={14}
-                          className="text-muted-foreground mt-1"
+                          className="text-[color:var(--muted-foreground)] mt-1"
                         />
                       </div>
 
                       {article.description && (
-                        <p className="text-xs text-muted-foreground line-clamp-2">
+                        <p className="text-xs text-[color:var(--muted-foreground)] line-clamp-2">
                           {article.description}
                         </p>
                       )}
@@ -257,9 +268,12 @@ const MobileArticleList: React.FC<MobileArticleListProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Overlay pour fermer le panneau en touchant ailleurs */}
+      {/* Overlay pour fermer le panneau en touchant ailleurs - Augmenté z-index */}
       {isOpen && (
-        <div className="fixed inset-0 z-20 bg-black/10" onClick={togglePanel} />
+        <div
+          className="fixed inset-0 z-30 bg-black/10 backdrop-blur-[1px]"
+          onClick={togglePanel}
+        />
       )}
     </div>
   );

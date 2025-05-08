@@ -316,7 +316,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
             </div>
 
             {/* Nouveau composant : Liste des articles pour mobile */}
-            {selectedSector && !isFullscreen && (
+            {selectedSector && !isFullscreen && isMobile && (
               <MobileArticleList
                 articles={articles}
                 selectedSectorName={selectedSector.name}
