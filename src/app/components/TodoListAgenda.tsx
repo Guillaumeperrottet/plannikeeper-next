@@ -89,35 +89,41 @@ export default function TodoListAgenda() {
   const [isNavigating, setIsNavigating] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isPWA, setIsPWA] = useState(false);
+  const [lastScrollTop, setLastScrollTop] = useState(0);
 
-  // Animation spring pour une sensation plus naturelle
+  // Animation spring pour une sensation plus naturelle mais avec une réactivité accrue
   const springHeight = useSpring(agendaHeight, {
-    stiffness: 300,
-    damping: 30,
+    stiffness: 500, // Augmenté pour une réponse plus immédiate
+    damping: 25, // Légèrement réduit pour plus de réactivité
+    restDelta: 0.5, // Valeur plus faible pour une animation plus précise
+    restSpeed: 0.5, // La vitesse à laquelle l'animation est considérée comme terminée
   });
 
   const agendaRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   // Constantes pour les limites de hauteur
   const MIN_HEIGHT = 48; // Hauteur minimale (fermé)
   const EXPANDED_THRESHOLD = 100; // Seuil à partir duquel on considère l'agenda comme développé
+  const MOBILE_BOTTOM_OFFSET = 20; // Décalage vers le haut pour le mode mobile en PWA
 
   // Détection du mode mobile et PWA
   useEffect(() => {
     // Vérifier si nous sommes sur mobile
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      const isMobileView = window.innerWidth < 768;
+      setIsMobile(isMobileView);
       setMaxHeight(window.innerHeight * 0.8);
     };
 
     // Vérifier si nous sommes en PWA
     const checkPWA = () => {
-      setIsPWA(
+      const isPWAMode =
         window.matchMedia("(display-mode: standalone)").matches ||
-          ("standalone" in window.navigator &&
-            (window.navigator as { standalone?: boolean }).standalone === true)
-      );
+        ("standalone" in window.navigator &&
+          (window.navigator as { standalone?: boolean }).standalone === true);
+      setIsPWA(isPWAMode);
     };
 
     checkMobile();
@@ -127,13 +133,40 @@ export default function TodoListAgenda() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  // Gérer le scroll de la page
   useEffect(() => {
-    // Appliquer des ajustements spécifiques pour PWA sur mobile
+    // Fonction pour gérer le scroll et ajuster l'agenda
+    const handleScroll = () => {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const isScrollDown = scrollTop > lastScrollTop;
+
+      setLastScrollTop(scrollTop);
+
+      // Si on scroll vers le bas et que l'agenda est affiché, on le réduit
+      if (isScrollDown && isExpanded && !isDragging) {
+        setAgendaHeight(MIN_HEIGHT);
+        setIsExpanded(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollTop, isExpanded, isDragging]);
+
+  // Appliquer des ajustements pour PWA sur mobile
+  useEffect(() => {
     if (isMobile && isPWA) {
       // Ajuster le padding-bottom pour éviter la barre de navigation mobile
-      document.body.style.paddingBottom = `${MIN_HEIGHT + 16}px`;
+      // et remonter l'agenda un peu plus haut
+      document.body.style.paddingBottom = `${MIN_HEIGHT + MOBILE_BOTTOM_OFFSET}px`;
+      if (agendaRef.current) {
+        agendaRef.current.style.bottom = `${MOBILE_BOTTOM_OFFSET}px`;
+      }
     } else {
       document.body.style.paddingBottom = "";
+      if (agendaRef.current) {
+        agendaRef.current.style.bottom = "0";
+      }
     }
 
     return () => {
@@ -141,10 +174,85 @@ export default function TodoListAgenda() {
     };
   }, [isMobile, isPWA]);
 
+  // Mettre à jour la hauteur animée avec le spring de manière plus efficace
   useEffect(() => {
-    // Mettre à jour la hauteur animée avec le spring
+    // Mettre à jour la référence pour être cohérent
+    currentHeightRef.current = agendaHeight;
+
+    // Mise à jour directe sans attendre le rendu
     springHeight.set(agendaHeight);
-  }, [agendaHeight, springHeight]);
+
+    // Désactiver temporairement les animations pour les mouvements très rapides
+    if (isDragging) {
+      springHeight.set(agendaHeight, false); // false désactive la transition pour une réponse immédiate
+    } else {
+      springHeight.set(agendaHeight); // réactive la transition pour l'effet de rebond à la fin
+    }
+  }, [agendaHeight, springHeight, isDragging]);
+
+  // Empêcher le scroll de la page quand on interagit avec l'agenda
+  useEffect(() => {
+    const preventBackgroundScroll = (e: TouchEvent | WheelEvent) => {
+      // Si l'agenda est développé et que l'événement vient du contenu
+      if (isExpanded && contentRef.current?.contains(e.target as Node)) {
+        // Ne pas bloquer le scroll si on est déjà en haut ou en bas du contenu
+        const content = contentRef.current;
+        const scrollTop = content.scrollTop;
+        const scrollHeight = content.scrollHeight;
+        const clientHeight = content.clientHeight;
+
+        // Pour les événements tactiles
+        if (e.type === "touchmove") {
+          const touch = (e as TouchEvent).touches[0];
+          const currentY = touch.clientY;
+
+          // Déterminer la direction du swipe
+          const isSwipingUp = currentY < startY;
+
+          // Si on swipe vers le haut et on est déjà en bas du contenu
+          // Ou si on swipe vers le bas et on est déjà en haut du contenu
+          if (
+            (isSwipingUp && scrollTop + clientHeight >= scrollHeight - 5) ||
+            (!isSwipingUp && scrollTop <= 5)
+          ) {
+            return; // Laisser le scroll de la page se faire
+          }
+
+          e.stopPropagation();
+          // Ne pas preventDefault car cela bloquerait le scroll de l'agenda lui-même
+        }
+        // Pour la molette de la souris
+        else if (e.type === "wheel") {
+          const wheelEvent = e as WheelEvent;
+          const isScrollingDown = wheelEvent.deltaY > 0;
+
+          // Si on scroll vers le bas et on est déjà en bas du contenu
+          // Ou si on scroll vers le haut et on est déjà en haut du contenu
+          if (
+            (isScrollingDown && scrollTop + clientHeight >= scrollHeight - 5) ||
+            (!isScrollingDown && scrollTop <= 5)
+          ) {
+            return; // Laisser le scroll de la page se faire
+          }
+
+          e.stopPropagation();
+        }
+      }
+    };
+
+    // Ajouter les écouteurs sur le document
+    document.addEventListener("touchmove", preventBackgroundScroll, {
+      passive: false,
+    });
+    document.addEventListener("wheel", preventBackgroundScroll, {
+      passive: false,
+    });
+
+    return () => {
+      document.removeEventListener("touchmove", preventBackgroundScroll);
+      document.removeEventListener("wheel", preventBackgroundScroll);
+    };
+  }, [isExpanded, startY]);
 
   // Gérer l'interaction du drag
   useEffect(() => {
@@ -249,42 +357,65 @@ export default function TodoListAgenda() {
     fetchTasks();
   }, [selectedObjectId]);
 
-  // Optimisé pour mobile - gestion du drag avec retour tactile
+  // Gestion optimisée du drag avec délai réduit pour mobile
   const handleDragStart = (e: React.MouseEvent | React.TouchEvent): void => {
     e.preventDefault();
+
+    // Retour haptique immédiat pour confirmer l'action
+    if ("vibrate" in navigator && isMobile) {
+      navigator.vibrate(5); // Vibration réduite pour être plus subtile et plus rapide
+    }
+
+    // Stocker la position initiale
     const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
     setStartY(clientY);
+
+    // Mise à jour immédiate de l'état de dragging
     setIsDragging(true);
 
-    // Ajout de retour haptique sur mobile
-    if ("vibrate" in navigator && isMobile) {
-      navigator.vibrate(10); // Légère vibration de 10ms
-    }
+    // Initialiser la référence de hauteur actuelle
+    currentHeightRef.current = agendaHeight;
+
+    // Ajouter une classe au body immédiatement sans attendre le rendu
+    document.body.classList.add("dragging-active");
   };
 
+  // Utiliser une référence pour le state de hauteur actuelle pour éviter les délais de render
+  const currentHeightRef = useRef(agendaHeight);
+
+  // Optimiser le handler pour une réponse immédiate
   const handleDragMove = useCallback(
     (e: MouseEvent | TouchEvent): void => {
       if (!isDragging) return;
 
-      const clientY =
-        "touches" in e
-          ? (e as TouchEvent).touches[0].clientY
-          : (e as MouseEvent).clientY;
-      const deltaY = startY - clientY;
+      // Demander une frame d'animation pour optimiser les performances
+      requestAnimationFrame(() => {
+        if (!isDragging) return;
 
-      // Calculer la nouvelle hauteur en fonction du mouvement
-      let newHeight = agendaHeight + deltaY;
+        const clientY =
+          "touches" in e
+            ? (e as TouchEvent).touches[0].clientY
+            : (e as MouseEvent).clientY;
+        const deltaY = startY - clientY;
 
-      // Ajout d'un effet de "résistance" aux limites pour une sensation plus naturelle
-      if (newHeight < MIN_HEIGHT) {
-        newHeight = MIN_HEIGHT - (MIN_HEIGHT - newHeight) * 0.2;
-      } else if (newHeight > maxHeight) {
-        newHeight = maxHeight + (newHeight - maxHeight) * 0.2;
-      }
+        // Utiliser directement la référence pour le calcul
+        let newHeight = currentHeightRef.current + deltaY;
 
-      setAgendaHeight(newHeight);
-      setIsExpanded(newHeight > EXPANDED_THRESHOLD);
-      setStartY(clientY);
+        // Effet de résistance aux limites plus léger pour une meilleure réactivité
+        if (newHeight < MIN_HEIGHT) {
+          newHeight = MIN_HEIGHT - (MIN_HEIGHT - newHeight) * 0.1; // Résistance réduite
+        } else if (newHeight > maxHeight) {
+          newHeight = maxHeight + (newHeight - maxHeight) * 0.1; // Résistance réduite
+        }
+
+        // Mettre à jour la référence immédiatement
+        currentHeightRef.current = newHeight;
+
+        // Puis mettre à jour le state pour le rendu
+        setAgendaHeight(newHeight);
+        setIsExpanded(newHeight > EXPANDED_THRESHOLD);
+        setStartY(clientY);
+      });
     },
     [
       isDragging,
@@ -297,27 +428,42 @@ export default function TodoListAgenda() {
   );
 
   const handleDragEnd = useCallback((): void => {
+    // Retirer la classe immédiatement
+    document.body.classList.remove("dragging-active");
+
+    // Mettre à jour l'état de drag
     setIsDragging(false);
 
+    // Utiliser la référence pour une décision immédiate
+    const currentHeight = currentHeightRef.current;
+
     // Snap aux positions appropriées
-    if (agendaHeight < 70) {
+    if (currentHeight < 70) {
+      // Pour la fermeture, appliquer directement pour une réaction immédiate
+      springHeight.set(MIN_HEIGHT, false); // Désactiver la transition pour être immédiat
       setAgendaHeight(MIN_HEIGHT);
       setIsExpanded(false);
-    } else if (agendaHeight > maxHeight * 0.7) {
+    } else if (currentHeight > maxHeight * 0.7) {
       // Snap au maximum si on est proche
       setAgendaHeight(maxHeight);
+    } else if (
+      currentHeight > EXPANDED_THRESHOLD &&
+      currentHeight < maxHeight * 0.3
+    ) {
+      // Snap à la position intermédiaire pour une meilleure expérience
+      setAgendaHeight(maxHeight * 0.3);
     }
 
     // Feedback haptique
     if ("vibrate" in navigator && isMobile) {
       navigator.vibrate(5);
     }
-  }, [agendaHeight, MIN_HEIGHT, maxHeight, isMobile]);
+  }, [MIN_HEIGHT, EXPANDED_THRESHOLD, maxHeight, isMobile, springHeight]);
 
   useEffect(() => {
     // Ajouter les écouteurs d'événements pour le drag
     if (isDragging) {
-      window.addEventListener("mousemove", handleDragMove, { passive: true });
+      window.addEventListener("mousemove", handleDragMove);
       window.addEventListener("touchmove", handleDragMove, { passive: true });
       window.addEventListener("mouseup", handleDragEnd);
       window.addEventListener("touchend", handleDragEnd);
@@ -436,10 +582,12 @@ export default function TodoListAgenda() {
     <>
       <motion.div
         ref={agendaRef}
-        className="fixed bottom-0 left-0 right-0 bg-[color:var(--background)] shadow-lg print:shadow-none print:relative print:h-auto border-t border-[color:var(--border)] rounded-t-xl overflow-hidden z-40"
+        className={`fixed bottom-0 left-0 right-0 bg-[color:var(--background)] shadow-lg print:shadow-none print:relative print:h-auto border-t border-[color:var(--border)] rounded-t-xl overflow-hidden z-40 ${isExpanded ? "expanded" : ""}`}
         style={{
           height: springHeight,
           position: isNavigating ? "relative" : "fixed",
+          zIndex: 999, // Valeur plus élevée pour s'assurer que l'agenda est au-dessus de tous les éléments
+          willChange: "transform, height", // Indique au navigateur d'optimiser ces propriétés
         }}
         initial={false}
         animate={{
@@ -448,7 +596,13 @@ export default function TodoListAgenda() {
             ? "0 -4px 20px rgba(0,0,0,0.15)"
             : "0 -2px 10px rgba(0,0,0,0.1)",
         }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        transition={{
+          type: "spring",
+          stiffness: isDragging ? 1000 : 500, // Stiffness très élevée pendant le drag pour une réponse immédiate
+          damping: isDragging ? 100 : 25, // Overdamping pendant le drag pour éviter les oscillations
+          restDelta: 0.1, // Plus précis
+          restSpeed: 0.1, // S'arrête plus vite
+        }}
         data-todo-list-agenda
       >
         {/* Overlay de chargement */}
@@ -464,7 +618,7 @@ export default function TodoListAgenda() {
             onMouseDown={handleDragStart}
             onTouchStart={handleDragStart}
           >
-            <div className="w-12 h-1.5 bg-[color:var(--border)] rounded-full mt-2 opacity-70 transform transition-all duration-200" />
+            <div className="w-16 h-2 bg-[color:var(--border)] rounded-full mt-2 opacity-70 transform transition-all duration-200 drag-handle" />
           </div>
 
           {/* Colonne gauche avec toggle de vue */}
@@ -545,7 +699,8 @@ export default function TodoListAgenda() {
 
         {/* Contenu: Liste ou Calendrier selon le mode */}
         <div
-          className="overflow-y-auto"
+          ref={contentRef}
+          className="overflow-y-auto agenda-content"
           style={{ height: `calc(100% - 48px)` }}
         >
           {isLoading ? (
@@ -580,12 +735,12 @@ export default function TodoListAgenda() {
                       <motion.li
                         key={task.id}
                         whileTap={{ scale: 0.98 }}
-                        className="cursor-pointer hover:bg-[color:var(--muted)] rounded-lg p-2 text-[color:var(--foreground)] active:bg-[color:var(--muted)]/80 transition-colors"
+                        className="cursor-pointer hover:bg-[color:var(--muted)] rounded-lg p-3 text-[color:var(--foreground)] active:bg-[color:var(--muted)]/80 transition-colors shadow-sm border border-[color:var(--border)]"
                         onClick={() => navigateToTask(task)}
                       >
                         <div className="flex flex-col">
                           <span className="font-medium">{task.name}</span>
-                          <div className="flex text-xs text-[color:var(--muted-foreground)]">
+                          <div className="flex text-xs text-[color:var(--muted-foreground)] mt-1">
                             {task.realizationDate && (
                               <span className="mr-2">
                                 {formatDate(task.realizationDate)}
@@ -615,12 +770,12 @@ export default function TodoListAgenda() {
                       <motion.li
                         key={task.id}
                         whileTap={{ scale: 0.98 }}
-                        className="cursor-pointer hover:bg-[color:var(--muted)] rounded-lg p-2 text-[color:var(--foreground)] active:bg-[color:var(--muted)]/80 transition-colors"
+                        className="cursor-pointer hover:bg-[color:var(--muted)] rounded-lg p-3 text-[color:var(--foreground)] active:bg-[color:var(--muted)]/80 transition-colors shadow-sm border border-[color:var(--border)]"
                         onClick={() => navigateToTask(task)}
                       >
                         <div className="flex flex-col">
                           <span className="font-medium">{task.name}</span>
-                          <div className="flex text-xs text-[color:var(--muted-foreground)]">
+                          <div className="flex text-xs text-[color:var(--muted-foreground)] mt-1">
                             {task.realizationDate && (
                               <span className="mr-2">
                                 {formatDate(task.realizationDate)}
@@ -663,6 +818,11 @@ export default function TodoListAgenda() {
           touch-action: none;
         }
 
+        .agenda-content {
+          overscroll-behavior: contain;
+          -webkit-overflow-scrolling: touch;
+        }
+
         @media (max-width: 640px) {
           select {
             font-size: 0.8rem;
@@ -673,6 +833,25 @@ export default function TodoListAgenda() {
         @media (display-mode: standalone) {
           body {
             overscroll-behavior: none;
+          }
+
+          .drag-handle {
+            height: 6px;
+            width: 40px;
+            margin-top: 5px;
+          }
+
+          /* Améliorer la zone d'interaction tactile */
+          [data-todo-list-agenda] button,
+          [data-todo-list-agenda] select {
+            min-height: 36px;
+            margin: 2px;
+          }
+
+          /* Ajouter de la marge aux éléments de liste pour une meilleure sensation tactile */
+          [data-todo-list-agenda] li {
+            margin-bottom: 8px;
+            padding: 12px;
           }
         }
       `}</style>

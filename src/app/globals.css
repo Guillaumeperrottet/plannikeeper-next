@@ -17,6 +17,47 @@
   -webkit-touch-callout: none;
 }
 
+/* Styles de base améliorés pour l'agenda */
+[data-todo-list-agenda] {
+  /* Empêcher le scroll de la page sous l'agenda quand il est ouvert */
+  overscroll-behavior: contain;
+  /* Ajouter une ombre portable avec une légère transition */
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.3s ease;
+  /* Assurer que l'agenda est bien au-dessus des autres éléments */
+  z-index: 100;
+}
+
+/* L'agenda ouvert a une ombre plus prononcée */
+[data-todo-list-agenda].expanded {
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* Améliorer le handle de drag */
+.drag-handle {
+  width: 36px;
+  height: 4px;
+  background-color: var(--border);
+  border-radius: 4px;
+  margin: 3px auto;
+  opacity: 0.6;
+  transition: all 0.2s ease;
+}
+
+/* Pendant le drag, rendre le handle plus visible */
+.dragging-active .drag-handle {
+  width: 48px;
+  opacity: 1;
+  background-color: var(--primary);
+}
+
+/* Content de l'agenda - éviter le scroll de la page principale */
+.agenda-content {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding: 16px;
+}
+
 /* Styles spécifiques mobile */
 @media (max-width: 767px) {
   [data-todo-list-agenda] {
@@ -24,34 +65,32 @@
     border-top-right-radius: 16px;
   }
 
-  /* Améliorer la zone de drag en haut */
-  [data-todo-list-agenda]::before {
-    content: "";
-    position: absolute;
-    top: 4px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 36px;
-    height: 4px;
-    background-color: var(--border);
-    border-radius: 2px;
-    opacity: 0.6;
-    z-index: 10;
-  }
-
-  /* Style amélioré pour les éléments de liste sur mobile */
+  /* Augmenter la zone d'interaction pour les tâches */
   [data-todo-list-agenda] li {
-    padding: 10px;
-    margin-bottom: 8px;
-    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 12px;
     background-color: var(--card);
     border: 1px solid var(--border);
-    transition: all 0.2s;
+    transition:
+      transform 0.2s,
+      background-color 0.2s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   }
 
   [data-todo-list-agenda] li:active {
     transform: scale(0.98);
     background-color: var(--muted);
+  }
+
+  /* Améliorer l'accessibilité des contrôles sur mobile */
+  [data-todo-list-agenda] button,
+  [data-todo-list-agenda] select {
+    min-height: 44px;
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 
@@ -84,6 +123,13 @@
   select:active {
     transform: scale(0.97);
   }
+
+  /* Taille plus grande pour la poignée de drag */
+  .drag-handle {
+    width: 40px;
+    height: 5px;
+    margin-top: 4px;
+  }
 }
 
 /* Animation fluide pour le switch entre les modes */
@@ -99,40 +145,6 @@
   100% {
     opacity: 1;
     transform: scale(1);
-  }
-}
-
-/* Styles pour améliorer le drag */
-.drag-handle {
-  height: 4px;
-  width: 36px;
-  background-color: var(--border);
-  border-radius: 2px;
-  margin: 0 auto;
-  opacity: 0.6;
-  transition:
-    opacity 0.2s,
-    width 0.2s;
-}
-
-.dragging-active .drag-handle {
-  opacity: 1;
-  width: 48px;
-  background-color: var(--primary);
-}
-
-/* Meilleur rendu des boutons tactiles */
-@media (hover: none) {
-  button,
-  select,
-  [role="button"] {
-    min-height: 44px;
-    min-width: 44px;
-  }
-
-  /* Safe area for iOS */
-  .bottom-safe-area {
-    padding-bottom: env(safe-area-inset-bottom, 0);
   }
 }
 
