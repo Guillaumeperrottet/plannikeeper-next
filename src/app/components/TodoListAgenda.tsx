@@ -5,13 +5,14 @@ import {
   ChevronUp,
   ChevronDown,
   Printer,
-  GripHorizontal,
   CalendarIcon,
   ListIcon,
+  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import CalendarView from "./CalendarView";
 import { LoadingIndicator } from "@/app/components/LoadingIndicator";
+import { motion, AnimatePresence, useSpring } from "framer-motion";
 
 type Task = {
   id: string;
@@ -86,6 +87,15 @@ export default function TodoListAgenda() {
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.LIST);
   const [maxHeight, setMaxHeight] = useState<number>(600); // valeur par défaut
   const [isNavigating, setIsNavigating] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isPWA, setIsPWA] = useState(false);
+
+  // Animation spring pour une sensation plus naturelle
+  const springHeight = useSpring(agendaHeight, {
+    stiffness: 300,
+    damping: 30,
+  });
+
   const agendaRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -93,6 +103,50 @@ export default function TodoListAgenda() {
   const MIN_HEIGHT = 48; // Hauteur minimale (fermé)
   const EXPANDED_THRESHOLD = 100; // Seuil à partir duquel on considère l'agenda comme développé
 
+  // Détection du mode mobile et PWA
+  useEffect(() => {
+    // Vérifier si nous sommes sur mobile
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      setMaxHeight(window.innerHeight * 0.8);
+    };
+
+    // Vérifier si nous sommes en PWA
+    const checkPWA = () => {
+      setIsPWA(
+        window.matchMedia("(display-mode: standalone)").matches ||
+          ("standalone" in window.navigator &&
+            (window.navigator as { standalone?: boolean }).standalone === true)
+      );
+    };
+
+    checkMobile();
+    checkPWA();
+
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  useEffect(() => {
+    // Appliquer des ajustements spécifiques pour PWA sur mobile
+    if (isMobile && isPWA) {
+      // Ajuster le padding-bottom pour éviter la barre de navigation mobile
+      document.body.style.paddingBottom = `${MIN_HEIGHT + 16}px`;
+    } else {
+      document.body.style.paddingBottom = "";
+    }
+
+    return () => {
+      document.body.style.paddingBottom = "";
+    };
+  }, [isMobile, isPWA]);
+
+  useEffect(() => {
+    // Mettre à jour la hauteur animée avec le spring
+    springHeight.set(agendaHeight);
+  }, [agendaHeight, springHeight]);
+
+  // Gérer l'interaction du drag
   useEffect(() => {
     // Ajouter une classe au body quand dragging est actif
     if (isDragging) {
@@ -105,6 +159,7 @@ export default function TodoListAgenda() {
     };
   }, [isDragging]);
 
+  // Effet de snap pour une meilleure UX
   useEffect(() => {
     if (
       !isDragging &&
@@ -124,13 +179,6 @@ export default function TodoListAgenda() {
       return () => clearInterval(timer);
     }
   }, [isDragging, agendaHeight, maxHeight, EXPANDED_THRESHOLD]);
-
-  // Calculer MAX_HEIGHT côté client
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setMaxHeight(window.innerHeight * 0.8);
-    }
-  }, []);
 
   // Charger la préférence de vue depuis localStorage au chargement
   useEffect(() => {
@@ -201,12 +249,17 @@ export default function TodoListAgenda() {
     fetchTasks();
   }, [selectedObjectId]);
 
-  // Gestion du drag pour régler la hauteur
+  // Optimisé pour mobile - gestion du drag avec retour tactile
   const handleDragStart = (e: React.MouseEvent | React.TouchEvent): void => {
     e.preventDefault();
     const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
     setStartY(clientY);
     setIsDragging(true);
+
+    // Ajout de retour haptique sur mobile
+    if ("vibrate" in navigator && isMobile) {
+      navigator.vibrate(10); // Légère vibration de 10ms
+    }
   };
 
   const handleDragMove = useCallback(
@@ -222,8 +275,12 @@ export default function TodoListAgenda() {
       // Calculer la nouvelle hauteur en fonction du mouvement
       let newHeight = agendaHeight + deltaY;
 
-      // Appliquer les limites de hauteur
-      newHeight = Math.max(MIN_HEIGHT, Math.min(newHeight, maxHeight));
+      // Ajout d'un effet de "résistance" aux limites pour une sensation plus naturelle
+      if (newHeight < MIN_HEIGHT) {
+        newHeight = MIN_HEIGHT - (MIN_HEIGHT - newHeight) * 0.2;
+      } else if (newHeight > maxHeight) {
+        newHeight = maxHeight + (newHeight - maxHeight) * 0.2;
+      }
 
       setAgendaHeight(newHeight);
       setIsExpanded(newHeight > EXPANDED_THRESHOLD);
@@ -242,18 +299,26 @@ export default function TodoListAgenda() {
   const handleDragEnd = useCallback((): void => {
     setIsDragging(false);
 
-    // Snap à la hauteur minimale si on est proche
+    // Snap aux positions appropriées
     if (agendaHeight < 70) {
       setAgendaHeight(MIN_HEIGHT);
       setIsExpanded(false);
+    } else if (agendaHeight > maxHeight * 0.7) {
+      // Snap au maximum si on est proche
+      setAgendaHeight(maxHeight);
     }
-  }, [agendaHeight, MIN_HEIGHT]);
+
+    // Feedback haptique
+    if ("vibrate" in navigator && isMobile) {
+      navigator.vibrate(5);
+    }
+  }, [agendaHeight, MIN_HEIGHT, maxHeight, isMobile]);
 
   useEffect(() => {
     // Ajouter les écouteurs d'événements pour le drag
     if (isDragging) {
-      window.addEventListener("mousemove", handleDragMove);
-      window.addEventListener("touchmove", handleDragMove);
+      window.addEventListener("mousemove", handleDragMove, { passive: true });
+      window.addEventListener("touchmove", handleDragMove, { passive: true });
       window.addEventListener("mouseup", handleDragEnd);
       window.addEventListener("touchend", handleDragEnd);
     }
@@ -267,7 +332,6 @@ export default function TodoListAgenda() {
     };
   }, [isDragging, handleDragMove, handleDragEnd]);
 
-  // Le contrôle d'ouverture/fermeture est géré par toggleExpanded
   // Formatage de date
   const formatDate = (date: Date | null): string => {
     if (!date) return "";
@@ -300,6 +364,11 @@ export default function TodoListAgenda() {
     try {
       setIsNavigating(true);
 
+      // Retour haptique pour confirmer l'action
+      if ("vibrate" in navigator && isMobile) {
+        navigator.vibrate([15, 30, 15]);
+      }
+
       // Naviguez sans attendre
       router.push(
         `/dashboard/objet/${task.article.sector.object.id}` +
@@ -311,7 +380,7 @@ export default function TodoListAgenda() {
       setAgendaHeight(MIN_HEIGHT);
       setIsExpanded(false);
 
-      // Réinitialiser le chargement après un court délai (puisque router.push est synchrone dans app dir)
+      // Réinitialiser le chargement après un court délai
       setTimeout(() => {
         setIsNavigating(false);
       }, 1000);
@@ -323,11 +392,19 @@ export default function TodoListAgenda() {
 
   // Impression
   const handlePrint = () => {
+    if ("vibrate" in navigator && isMobile) {
+      navigator.vibrate(10);
+    }
     window.print();
   };
 
-  // Toggle expand/collapse
+  // Toggle expand/collapse avec animation et feedback tactile
   const toggleExpanded = () => {
+    // Feedback haptique
+    if ("vibrate" in navigator && isMobile) {
+      navigator.vibrate(10);
+    }
+
     if (isExpanded) {
       setAgendaHeight(MIN_HEIGHT);
       setIsExpanded(false);
@@ -336,189 +413,269 @@ export default function TodoListAgenda() {
       setIsExpanded(true);
     }
   };
+
   const toggleViewMode = () => {
+    // Feedback haptique
+    if ("vibrate" in navigator && isMobile) {
+      navigator.vibrate(10);
+    }
+
     setViewMode(viewMode === ViewMode.LIST ? ViewMode.CALENDAR : ViewMode.LIST);
   };
 
+  // Fermer complètement l'agenda (pour le bouton flottant mobile)
+  const closeAgenda = () => {
+    if ("vibrate" in navigator && isMobile) {
+      navigator.vibrate(10);
+    }
+    setAgendaHeight(MIN_HEIGHT);
+    setIsExpanded(false);
+  };
+
   return (
-    <div
-      ref={agendaRef}
-      className="fixed bottom-0 left-0 right-0 bg-[color:var(--background)] transition-height duration-200 shadow-lg print:shadow-none print:relative print:h-auto border-t border-[color:var(--border)]"
-      style={{
-        height: `${agendaHeight}px`,
-        zIndex: 40,
-        position: isNavigating ? "relative" : "fixed",
-      }}
-      data-todo-list-agenda
-    >
-      {/* Overlay de chargement */}
-      {isNavigating && <LoadingIndicator message="Chargement de la tâche..." />}
+    <>
+      <motion.div
+        ref={agendaRef}
+        className="fixed bottom-0 left-0 right-0 bg-[color:var(--background)] shadow-lg print:shadow-none print:relative print:h-auto border-t border-[color:var(--border)] rounded-t-xl overflow-hidden z-40"
+        style={{
+          height: springHeight,
+          position: isNavigating ? "relative" : "fixed",
+        }}
+        initial={false}
+        animate={{
+          height: agendaHeight,
+          boxShadow: isExpanded
+            ? "0 -4px 20px rgba(0,0,0,0.15)"
+            : "0 -2px 10px rgba(0,0,0,0.1)",
+        }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        data-todo-list-agenda
+      >
+        {/* Overlay de chargement */}
+        {isNavigating && (
+          <LoadingIndicator message="Chargement de la tâche..." />
+        )}
 
-      {/* Barre de titre avec poignée de drag */}
-      <div className="flex justify-between items-center bg-[color:var(--secondary)] text-[color:var(--secondary-foreground)] p-3 relative border-b border-[color:var(--border)]">
-        {/* Colonne gauche avec toggle de vue */}
-        <div className="w-1/4 flex items-center">
-          <button
-            onClick={toggleViewMode}
-            className="flex items-center gap-1.5 rounded-full border border-[color:var(--border)] px-3 py-1 hover:bg-[color:var(--muted)] transition-colors bg-[color:var(--background)]"
-          >
-            {viewMode === ViewMode.LIST ? (
-              <>
-                <ListIcon
-                  size={14}
-                  className="text-[color:var(--foreground)]"
-                />
-                <span className="text-sm text-[color:var(--foreground)]">
-                  Liste
-                </span>
-              </>
-            ) : (
-              <>
-                <CalendarIcon
-                  size={14}
-                  className="text-[color:var(--foreground)]"
-                />
-                <span className="text-sm text-[color:var(--foreground)]">
-                  Calendrier
-                </span>
-              </>
-            )}
-          </button>
-        </div>
-
-        {/* Titre centré avec poignée de drag au-dessus */}
-        <div className="flex-1 flex justify-center items-center relative">
+        {/* Barre de titre avec poignée de drag */}
+        <div className="flex justify-between items-center bg-[color:var(--secondary)] text-[color:var(--secondary-foreground)] p-3 relative border-b border-[color:var(--border)]">
+          {/* Handle de drag visible et plus large sur mobile */}
           <div
-            className="absolute -top-4 w-16 h-6 flex justify-center items-center cursor-grab z-10"
+            className="absolute -top-1 left-0 right-0 h-8 flex justify-center items-start cursor-grab touch-manipulation"
             onMouseDown={handleDragStart}
             onTouchStart={handleDragStart}
           >
-            <GripHorizontal
-              size={20}
-              className="hidden sm:block text-[color:var(--muted-foreground)]"
+            <div className="w-12 h-1.5 bg-[color:var(--border)] rounded-full mt-2 opacity-70 transform transition-all duration-200" />
+          </div>
+
+          {/* Colonne gauche avec toggle de vue */}
+          <div className="w-1/4 flex items-center">
+            <button
+              onClick={toggleViewMode}
+              className="flex items-center gap-1.5 rounded-full border border-[color:var(--border)] px-3 py-1 hover:bg-[color:var(--muted)] active:scale-95 transition-all bg-[color:var(--background)]"
+            >
+              {viewMode === ViewMode.LIST ? (
+                <>
+                  <ListIcon
+                    size={14}
+                    className="text-[color:var(--foreground)]"
+                  />
+                  <span className="text-sm text-[color:var(--foreground)] hidden sm:block">
+                    Liste
+                  </span>
+                </>
+              ) : (
+                <>
+                  <CalendarIcon
+                    size={14}
+                    className="text-[color:var(--foreground)]"
+                  />
+                  <span className="text-sm text-[color:var(--foreground)] hidden sm:block">
+                    Calendrier
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Titre centré */}
+          <div className="flex-1 flex justify-center items-center">
+            <h2 className="text-xl font-semibold hidden sm:block">
+              Agenda todo list
+            </h2>
+            <h2 className="text-base font-semibold sm:hidden">Agenda</h2>
+          </div>
+
+          {/* Colonne droite avec les contrôles */}
+          <div className="flex items-center gap-2 w-1/4 justify-end">
+            <select
+              className="bg-[color:var(--background)] text-[color:var(--foreground)] px-2 md:px-3 py-1 rounded border border-[color:var(--border)] text-sm transition-all active:scale-95"
+              value={selectedObjectId}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                setSelectedObjectId(e.target.value)
+              }
+              style={{
+                WebkitAppearance: isMobile ? "none" : undefined,
+                maxWidth: isMobile ? "100px" : undefined,
+              }}
+            >
+              {objects.map((obj) => (
+                <option key={obj.id} value={obj.id}>
+                  {obj.nom}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handlePrint}
+              className="p-1 rounded hover:bg-[color:var(--accent)] active:scale-95 transition-all print:hidden text-[color:var(--foreground)]"
+              title="Imprimer"
+              aria-label="Imprimer"
+            >
+              <Printer size={20} />
+            </button>
+            <button
+              onClick={toggleExpanded}
+              className="print:hidden text-[color:var(--foreground)] active:scale-95 transition-all"
+              title={isExpanded ? "Réduire" : "Agrandir"}
+              aria-label={isExpanded ? "Réduire" : "Agrandir"}
+            >
+              {isExpanded ? <ChevronDown size={24} /> : <ChevronUp size={24} />}
+            </button>
+          </div>
+        </div>
+
+        {/* Contenu: Liste ou Calendrier selon le mode */}
+        <div
+          className="overflow-y-auto"
+          style={{ height: `calc(100% - 48px)` }}
+        >
+          {isLoading ? (
+            <div className="p-4 text-center text-[color:var(--muted-foreground)]">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[color:var(--primary)] mx-auto mb-2"></div>
+              <p>Chargement des tâches...</p>
+            </div>
+          ) : viewMode === ViewMode.CALENDAR ? (
+            <CalendarView
+              tasks={tasks}
+              navigateToTask={async (task) => {
+                await navigateToTask(task);
+                // Fermer l'agenda après la navigation
+                setAgendaHeight(MIN_HEIGHT);
+                setIsExpanded(false);
+              }}
             />
-          </div>
-          <h2 className="text-xl font-semibold hidden sm:block">
-            Agenda todo list
-          </h2>
-        </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+              {/* Cette semaine */}
+              <div>
+                <h3 className="text-lg font-semibold mb-2 text-[color:var(--foreground)]">
+                  Cette semaine
+                </h3>
+                {thisWeekTasks.length === 0 ? (
+                  <p className="text-[color:var(--muted-foreground)]">
+                    Aucune tâche pour cette semaine.
+                  </p>
+                ) : (
+                  <ul className="space-y-2">
+                    {thisWeekTasks.map((task) => (
+                      <motion.li
+                        key={task.id}
+                        whileTap={{ scale: 0.98 }}
+                        className="cursor-pointer hover:bg-[color:var(--muted)] rounded-lg p-2 text-[color:var(--foreground)] active:bg-[color:var(--muted)]/80 transition-colors"
+                        onClick={() => navigateToTask(task)}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium">{task.name}</span>
+                          <div className="flex text-xs text-[color:var(--muted-foreground)]">
+                            {task.realizationDate && (
+                              <span className="mr-2">
+                                {formatDate(task.realizationDate)}
+                              </span>
+                            )}
+                            <span>• {task.article.sector.name}</span>
+                          </div>
+                        </div>
+                      </motion.li>
+                    ))}
+                  </ul>
+                )}
+              </div>
 
-        {/* Colonne droite avec les contrôles */}
-        <div className="flex items-center gap-2 w-1/4 justify-end">
-          <select
-            className="bg-[color:var(--background)] text-[color:var(--foreground)] px-3 py-1 rounded border border-[color:var(--border)] text-sm mr-2"
-            value={selectedObjectId}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-              setSelectedObjectId(e.target.value)
-            }
-          >
-            {objects.map((obj) => (
-              <option key={obj.id} value={obj.id}>
-                {obj.nom}
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={handlePrint}
-            className="p-1 rounded hover:bg-[color:var(--accent)] print:hidden text-[color:var(--foreground)]"
-            title="Imprimer"
-          >
-            <Printer size={20} />
-          </button>
-          <button
-            onClick={toggleExpanded}
-            className="print:hidden text-[color:var(--foreground)]"
-            title={isExpanded ? "Réduire" : "Agrandir"}
-          >
-            {isExpanded ? <ChevronDown size={24} /> : <ChevronUp size={24} />}
-          </button>
-        </div>
-      </div>
-
-      {/* Contenu: Liste ou Calendrier selon le mode */}
-      <div className="overflow-y-auto" style={{ height: `calc(100% - 48px)` }}>
-        {isLoading ? (
-          <div className="p-4 text-center text-[color:var(--muted-foreground)]">
-            Chargement des tâches...
-          </div>
-        ) : viewMode === ViewMode.CALENDAR ? (
-          <CalendarView
-            tasks={tasks}
-            navigateToTask={async (task) => {
-              await navigateToTask(task);
-              // Fermer l'agenda après la navigation
-              setAgendaHeight(MIN_HEIGHT);
-              setIsExpanded(false);
-            }}
-          />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-            {/* Cette semaine */}
-            <div>
-              <h3 className="text-lg font-semibold mb-2 text-[color:var(--foreground)]">
-                Cette semaine
-              </h3>
-              {thisWeekTasks.length === 0 ? (
-                <p className="text-[color:var(--muted-foreground)]">
-                  Aucune tâche pour cette semaine.
-                </p>
-              ) : (
-                <ul className="list-disc list-inside space-y-2">
-                  {thisWeekTasks.map((task) => (
-                    <li
-                      key={task.id}
-                      className="cursor-pointer hover:text-[color:var(--primary)] text-[color:var(--foreground)]"
-                      onClick={() => navigateToTask(task)}
-                    >
-                      {task.realizationDate && (
-                        <span className="text-sm text-[color:var(--muted-foreground)] mr-2">
-                          {formatDate(task.realizationDate)} -
-                        </span>
-                      )}
-                      <span>{task.name}</span>
-                      <span className="text-sm text-[color:var(--muted-foreground)] ml-1">
-                        - {task.article.sector.name}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {/* À venir */}
+              <div>
+                <h3 className="text-lg font-semibold mb-2 text-[color:var(--foreground)]">
+                  À venir
+                </h3>
+                {upcomingTasks.length === 0 ? (
+                  <p className="text-[color:var(--muted-foreground)]">
+                    Aucune tâche à venir.
+                  </p>
+                ) : (
+                  <ul className="space-y-2">
+                    {upcomingTasks.map((task) => (
+                      <motion.li
+                        key={task.id}
+                        whileTap={{ scale: 0.98 }}
+                        className="cursor-pointer hover:bg-[color:var(--muted)] rounded-lg p-2 text-[color:var(--foreground)] active:bg-[color:var(--muted)]/80 transition-colors"
+                        onClick={() => navigateToTask(task)}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium">{task.name}</span>
+                          <div className="flex text-xs text-[color:var(--muted-foreground)]">
+                            {task.realizationDate && (
+                              <span className="mr-2">
+                                {formatDate(task.realizationDate)}
+                              </span>
+                            )}
+                            <span>• {task.article.sector.name}</span>
+                          </div>
+                        </div>
+                      </motion.li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
+          )}
+        </div>
+      </motion.div>
 
-            {/* À venir */}
-            <div>
-              <h3 className="text-lg font-semibold mb-2 text-[color:var(--foreground)]">
-                À venir
-              </h3>
-              {upcomingTasks.length === 0 ? (
-                <p className="text-[color:var(--muted-foreground)]">
-                  Aucune tâche à venir.
-                </p>
-              ) : (
-                <ul className="list-disc list-inside space-y-2">
-                  {upcomingTasks.map((task) => (
-                    <li
-                      key={task.id}
-                      className="cursor-pointer hover:text-[color:var(--primary)] text-[color:var(--foreground)]"
-                      onClick={() => navigateToTask(task)}
-                    >
-                      {task.realizationDate && (
-                        <span className="text-sm text-[color:var(--muted-foreground)] mr-2">
-                          {formatDate(task.realizationDate)} -
-                        </span>
-                      )}
-                      <span>{task.name}</span>
-                      <span className="text-sm text-[color:var(--muted-foreground)] ml-1">
-                        - {task.article.sector.name}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
+      {/* Bouton flottant pour fermer rapidement sur mobile quand développé */}
+      <AnimatePresence>
+        {isExpanded && isMobile && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            whileTap={{ scale: 0.95 }}
+            className="fixed bottom-20 right-4 w-12 h-12 rounded-full bg-[color:var(--primary)] text-[color:var(--primary-foreground)] flex items-center justify-center shadow-lg z-50"
+            onClick={closeAgenda}
+            aria-label="Fermer l'agenda"
+          >
+            <X size={24} />
+          </motion.button>
         )}
-      </div>
-    </div>
+      </AnimatePresence>
+
+      {/* Styles spécifiques */}
+      <style jsx global>{`
+        body.dragging-active {
+          overflow: hidden;
+          touch-action: none;
+        }
+
+        @media (max-width: 640px) {
+          select {
+            font-size: 0.8rem;
+          }
+        }
+
+        /* Style spécifique pour PWA sur mobile */
+        @media (display-mode: standalone) {
+          body {
+            overscroll-behavior: none;
+          }
+        }
+      `}</style>
+    </>
   );
 }

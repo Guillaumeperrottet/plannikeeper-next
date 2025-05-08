@@ -8,53 +8,148 @@
 @media print {
 }
 
-/* Styles pour améliorer l'expérience tactile */
+/* Base styles pour l'agenda */
+.calendar-container,
+[data-todo-list-agenda] {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Styles spécifiques mobile */
+@media (max-width: 767px) {
+  [data-todo-list-agenda] {
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+  }
+
+  /* Améliorer la zone de drag en haut */
+  [data-todo-list-agenda]::before {
+    content: "";
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 4px;
+    background-color: var(--border);
+    border-radius: 2px;
+    opacity: 0.6;
+    z-index: 10;
+  }
+
+  /* Style amélioré pour les éléments de liste sur mobile */
+  [data-todo-list-agenda] li {
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+  }
+
+  [data-todo-list-agenda] li:active {
+    transform: scale(0.98);
+    background-color: var(--muted);
+  }
+}
+
+/* Optimisation pour PWA */
+@media (display-mode: standalone) {
+  body {
+    /* Empêcher le pull-to-refresh et les rebonds */
+    overscroll-behavior: contain;
+
+    /* Pad pour éviter que l'agenda ne soit caché par la barre de navigation */
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+
+  /* Ajustements pour iPhone avec le notch */
+  @supports (padding: max(0px)) {
+    [data-todo-list-agenda] {
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+    }
+  }
+
+  /* Amélioration des interactions tactiles */
+  button,
+  select,
+  [data-todo-list-agenda] li {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:active,
+  select:active {
+    transform: scale(0.97);
+  }
+}
+
+/* Animation fluide pour le switch entre les modes */
+.month-transition {
+  animation: fadeTransition 0.3s ease-in-out;
+}
+
+@keyframes fadeTransition {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Styles pour améliorer le drag */
 .drag-handle {
-  height: 6px;
-  width: 40px;
-  background-color: #ddd;
-  border-radius: 3px;
+  height: 4px;
+  width: 36px;
+  background-color: var(--border);
+  border-radius: 2px;
   margin: 0 auto;
-  position: absolute;
-  top: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  cursor: grab;
-  touch-action: none;
+  opacity: 0.6;
+  transition:
+    opacity 0.2s,
+    width 0.2s;
 }
 
-/* Effet visuel lorsqu'on tire l'agenda */
 .dragging-active .drag-handle {
-  background-color: #d9840d;
-}
-
-/* Adaptation pour différentes tailles d'écran */
-@media (max-width: 640px) {
-  /* Styles pour petits écrans */
-  .agenda-header {
-    padding: 12px 8px;
-  }
-
-  .agenda-content {
-    padding: 12px;
-  }
-}
-
-/* Style pour le bouton de fermeture flottant sur mobile */
-.close-button-mobile {
-  position: fixed;
-  bottom: 16px;
-  right: 16px;
+  opacity: 1;
   width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background-color: #d9840d;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  z-index: 50;
+  background-color: var(--primary);
+}
+
+/* Meilleur rendu des boutons tactiles */
+@media (hover: none) {
+  button,
+  select,
+  [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Safe area for iOS */
+  .bottom-safe-area {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+}
+
+/* Styles pour le bouton flottant de fermeture */
+.close-button-mobile {
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
 }
 
 @layer base {
