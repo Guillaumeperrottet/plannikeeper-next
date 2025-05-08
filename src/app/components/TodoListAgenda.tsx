@@ -18,15 +18,15 @@ type Task = {
   name: string;
   description: string | null;
   done: boolean;
-  realizationDate: Date | null; // Changed from string to Date
+  realizationDate: Date | null;
   status: string;
   taskType: string | null;
   color: string | null;
   recurring: boolean;
   period: string | null;
   endDate: Date | null;
-  recurrenceReminderDate: Date | null; // Added missing property
-  assignedToId: string | null; // Added missing property
+  recurrenceReminderDate: Date | null;
+  assignedToId: string | null;
   article: {
     id: string;
     title: string;
@@ -92,6 +92,38 @@ export default function TodoListAgenda() {
   // Constantes pour les limites de hauteur
   const MIN_HEIGHT = 48; // Hauteur minimale (fermé)
   const EXPANDED_THRESHOLD = 100; // Seuil à partir duquel on considère l'agenda comme développé
+
+  useEffect(() => {
+    // Ajouter une classe au body quand dragging est actif
+    if (isDragging) {
+      document.body.classList.add("dragging-active");
+    } else {
+      document.body.classList.remove("dragging-active");
+    }
+    return () => {
+      document.body.classList.remove("dragging-active");
+    };
+  }, [isDragging]);
+
+  useEffect(() => {
+    if (
+      !isDragging &&
+      agendaHeight > EXPANDED_THRESHOLD &&
+      agendaHeight < maxHeight * 0.3
+    ) {
+      // Si le drag est lâché à une hauteur moyenne-basse, snap à une hauteur de 30%
+      const targetHeight = maxHeight * 0.3;
+      const animate = () => {
+        setAgendaHeight((prev) => {
+          const diff = targetHeight - prev;
+          if (Math.abs(diff) < 1) return targetHeight;
+          return prev + diff * 0.2; // Spring effect
+        });
+      };
+      const timer = setInterval(animate, 16);
+      return () => clearInterval(timer);
+    }
+  }, [isDragging, agendaHeight, maxHeight, EXPANDED_THRESHOLD]);
 
   // Calculer MAX_HEIGHT côté client
   useEffect(() => {
@@ -171,6 +203,7 @@ export default function TodoListAgenda() {
 
   // Gestion du drag pour régler la hauteur
   const handleDragStart = (e: React.MouseEvent | React.TouchEvent): void => {
+    e.preventDefault();
     const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
     setStartY(clientY);
     setIsDragging(true);

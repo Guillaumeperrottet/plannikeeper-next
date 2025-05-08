@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronLeft, ChevronRight, CalendarIcon, X } from "lucide-react";
 
 type Task = {
@@ -53,6 +53,10 @@ export default function CalendarView({
   const [selectedDayTasks, setSelectedDayTasks] = useState<Task[]>([]);
   const dialogRef = useRef<HTMLDivElement>(null);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [swipeStart, setSwipeStart] = useState<{ x: number; y: number } | null>(
+    null
+  );
+  const [isSwiping, setIsSwiping] = useState(false);
 
   // Helper to format date as YYYY-MM-DD for use as keys
   const formatDateKey = (date: Date): string => {
@@ -61,6 +65,7 @@ export default function CalendarView({
 
   // Gestion du clic sur une tâche avec état de chargement
   const handleTaskClick = async (task: Task) => {
+    triggerHapticFeedback(); // Ajouter le retour haptique
     setIsNavigating(true);
     try {
       await navigateToTask(task);
@@ -71,10 +76,18 @@ export default function CalendarView({
     }
   };
 
+  // Fonction utilitaire pour le retour haptique
+  const triggerHapticFeedback = () => {
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(10); // Une légère vibration de 10ms
+    }
+  };
+
   // Gestion du clic sur une date
   const handleDateClick = (date: Date) => {
     if (!isCurrentMonth(date)) return; // N'ouvre pas le dialogue pour les jours hors du mois courant
 
+    triggerHapticFeedback();
     const dateKey = formatDateKey(date);
     const dayTasks = tasksByDay[dateKey] || [];
 
@@ -97,6 +110,69 @@ export default function CalendarView({
       year: "numeric",
     });
   };
+
+  // Gestion des interactions tactiles (swipe)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches && e.touches[0]) {
+        setSwipeStart({
+          x: e.touches[0].clientX,
+          y: e.touches[0].clientY,
+        });
+        setIsSwiping(false);
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!swipeStart || !e.touches[0]) return;
+
+      const touchX = e.touches[0].clientX;
+      const touchY = e.touches[0].clientY;
+
+      // Calculer la distance du swipe
+      const deltaX = swipeStart.x - touchX;
+      const deltaY = swipeStart.y - touchY;
+
+      // Détecter si le swipe est plus horizontal que vertical et assez long
+      const isHorizontalSwipe =
+        Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50;
+
+      if (isHorizontalSwipe && !isSwiping) {
+        setIsSwiping(true);
+
+        if (deltaX > 0) {
+          // Swipe vers la gauche - mois suivant
+          goToNextMonth();
+          triggerHapticFeedback();
+        } else {
+          // Swipe vers la droite - mois précédent
+          goToPreviousMonth();
+          triggerHapticFeedback();
+        }
+      }
+    };
+
+    const handleTouchEnd = () => {
+      setSwipeStart(null);
+      setIsSwiping(false);
+    };
+
+    // Ajout des écouteurs d'événements tactiles
+    document.addEventListener("touchstart", handleTouchStart, {
+      passive: true,
+    });
+    document.addEventListener("touchmove", handleTouchMove, { passive: true });
+    document.addEventListener("touchend", handleTouchEnd, { passive: true });
+
+    // Nettoyage des écouteurs
+    return () => {
+      document.removeEventListener("touchstart", handleTouchStart);
+      document.removeEventListener("touchmove", handleTouchMove);
+      document.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [swipeStart, isSwiping]);
 
   // Generate calendar days for current month view
   useEffect(() => {
@@ -158,28 +234,68 @@ export default function CalendarView({
     setTasksByDay(taskMap);
   }, [tasks]);
 
+  // Persistance de l'état du calendrier
+  useEffect(() => {
+    // Sauvegarder le mois affiché
+    localStorage.setItem(
+      "plannikeeper-calendar-month",
+      currentDate.toISOString()
+    );
+
+    // Revenir à la page précédente lors du clic sur Escape
+    const handleEscapeKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && selectedDay) {
+        closeDialog();
+      }
+    };
+
+    window.addEventListener("keydown", handleEscapeKey);
+
+    return () => {
+      window.removeEventListener("keydown", handleEscapeKey);
+    };
+  }, [currentDate, selectedDay]);
+
+  // Charger le mois sauvegardé au démarrage
+  useEffect(() => {
+    const savedMonth = localStorage.getItem("plannikeeper-calendar-month");
+    if (savedMonth) {
+      try {
+        const date = new Date(savedMonth);
+        // Vérifier que la date est valide
+        if (!isNaN(date.getTime())) {
+          setCurrentDate(date);
+        }
+      } catch (e) {
+        console.error("Erreur lors du chargement du mois sauvegardé", e);
+      }
+    }
+  }, []);
+
   // Navigate to previous month
-  const goToPreviousMonth = () => {
+  const goToPreviousMonth = useCallback(() => {
     setCurrentDate((prev) => {
       const newDate = new Date(prev);
       newDate.setMonth(prev.getMonth() - 1);
       return newDate;
     });
-  };
+  }, []);
 
   // Navigate to next month
-  const goToNextMonth = () => {
+  const goToNextMonth = useCallback(() => {
     setCurrentDate((prev) => {
       const newDate = new Date(prev);
       newDate.setMonth(prev.getMonth() + 1);
       return newDate;
     });
-  };
+  }, []);
 
   // Navigate to current month
-  const goToCurrentMonth = () => {
-    setCurrentDate(new Date());
-  };
+  const goToCurrentMonth = useCallback(() => {
+    const now = new Date();
+    triggerHapticFeedback();
+    setCurrentDate(now);
+  }, []);
 
   // Get task color based on status
   const getStatusColor = (status: string) => {
@@ -221,8 +337,93 @@ export default function CalendarView({
   // Days of week header
   const daysOfWeek = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
+  // Effet pour détection tactile et animation de transition du mois
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Ajouter une classe d'animation au changement de mois
+      const calendarGrid = document.querySelector(".calendar-grid");
+      if (calendarGrid) {
+        calendarGrid.classList.add("month-transition");
+        const timer = setTimeout(() => {
+          calendarGrid.classList.remove("month-transition");
+        }, 300);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [currentDate]);
+
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden calendar-container">
+      {/* Style spécifique pour les interactions mobiles */}
+      <style jsx global>{`
+        .calendar-container {
+          touch-action: manipulation;
+          user-select: none;
+        }
+
+        .month-transition {
+          animation: fadeTransition 0.3s ease-in-out;
+        }
+
+        @keyframes fadeTransition {
+          0% {
+            opacity: 0.5;
+            transform: scale(0.98);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        .calendar-day {
+          position: relative;
+          transition:
+            transform 0.15s ease-out,
+            background-color 0.2s;
+        }
+
+        .calendar-day:active {
+          transform: scale(0.95);
+        }
+
+        .calendar-controls button {
+          transition: transform 0.15s ease-out;
+        }
+
+        .calendar-controls button:active {
+          transform: scale(0.9);
+        }
+
+        .dialog-overlay {
+          backdrop-filter: blur(3px);
+          transition:
+            backdrop-filter 0.3s,
+            background-color 0.3s;
+        }
+
+        .dialog-content {
+          transition:
+            transform 0.3s,
+            opacity 0.3s;
+          transform-origin: bottom center;
+        }
+
+        @media (max-width: 640px) {
+          .calendar-header {
+            padding: 8px 4px;
+          }
+
+          .day-label {
+            font-size: 0.7rem;
+          }
+
+          .calendar-day {
+            min-height: 60px;
+          }
+        }
+      `}</style>
+
       {/* Overlay de chargement pour CalendarView */}
       {isNavigating && (
         <div className="absolute inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
@@ -236,8 +437,8 @@ export default function CalendarView({
       )}
 
       {/* Header with navigation */}
-      <div className="flex justify-between items-center px-4 py-2 border-b border-[color:var(--border)]">
-        <div className="flex space-x-2">
+      <div className="flex justify-between items-center px-4 py-2 border-b border-[color:var(--border)] calendar-header">
+        <div className="flex space-x-2 calendar-controls">
           <button
             onClick={goToPreviousMonth}
             className="p-2 rounded-full hover:bg-[color:var(--muted)]"
@@ -270,7 +471,7 @@ export default function CalendarView({
       {/* Days of week header */}
       <div className="grid grid-cols-7 text-center py-2 border-b border-[color:var(--border)] bg-[color:var(--muted)]">
         {daysOfWeek.map((day, index) => (
-          <div key={index} className="text-xs font-medium">
+          <div key={index} className="text-xs font-medium day-label">
             <span className="hidden sm:inline">{day}</span>
             <span className="sm:hidden">{day.charAt(0)}</span>
           </div>
@@ -279,7 +480,7 @@ export default function CalendarView({
 
       {/* Calendar grid */}
       <div className="flex-1 overflow-y-auto">
-        <div className="grid grid-cols-7 grid-rows-6 h-full">
+        <div className="grid grid-cols-7 grid-rows-6 h-full calendar-grid">
           {calendarDays.map((date, index) => {
             if (!date)
               return (
@@ -298,7 +499,7 @@ export default function CalendarView({
             return (
               <div
                 key={index}
-                className={`border border-[color:var(--border)] p-1 transition-all duration-200 relative ${
+                className={`border border-[color:var(--border)] p-1 transition-all duration-200 relative calendar-day ${
                   !inCurrentMonth ? "bg-[color:var(--muted)] opacity-50" : ""
                 } ${
                   isCurrentDay ? "bg-[color:var(--primary)] bg-opacity-10" : ""
@@ -347,7 +548,7 @@ export default function CalendarView({
                             key={task.id}
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigateToTask(task);
+                              handleTaskClick(task);
                             }}
                             className={`px-1 py-0.5 text-xs rounded truncate cursor-pointer ${getStatusColor(
                               task.status
@@ -374,12 +575,12 @@ export default function CalendarView({
       {/* Modal Dialog for day details */}
       {selectedDay && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 dialog-overlay"
           onClick={closeDialog}
         >
           <div
             ref={dialogRef}
-            className="bg-[color:var(--background)] rounded-lg shadow-lg max-w-md w-full max-h-[80vh] mx-4 overflow-hidden"
+            className="bg-[color:var(--background)] rounded-lg shadow-lg max-w-md w-full max-h-[80vh] mx-4 overflow-hidden dialog-content"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center p-4 border-b border-[color:var(--border)]">
@@ -411,7 +612,7 @@ export default function CalendarView({
                       }}
                       className={`p-3 rounded-lg cursor-pointer transition-colors ${getStatusColor(
                         task.status
-                      )} hover:opacity-90`}
+                      )} hover:opacity-90 active:scale-95 transition-transform`}
                     >
                       <div className="font-medium">{task.name}</div>
                       {task.description && (
