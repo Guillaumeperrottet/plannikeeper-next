@@ -101,7 +101,7 @@ export default function TodoListAgenda() {
 
   // Constantes pour les limites de hauteur
   const MIN_HEIGHT = 48; // Hauteur minimale (fermé)
-  const MOBILE_BOTTOM_OFFSET = 3; // Décalage modifié à 0 pour éviter l'espace blanc
+  const MOBILE_BOTTOM_OFFSET = 20; // Décalage modifié à 0 pour éviter l'espace blanc
 
   // Détection du mode mobile et PWA
   useEffect(() => {
