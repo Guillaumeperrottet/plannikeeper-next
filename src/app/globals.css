@@ -9,6 +9,10 @@
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+
+  /* Nécessaire pour bloquer la propagation des événements */
+  touch-action: none;
 }
 
 /* Styles de base améliorés pour l'agenda */
@@ -22,9 +26,22 @@
   z-index: 100;
 }
 
+body[data-agenda-expanded="true"] {
+  overflow: hidden !important;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
 /* L'agenda ouvert a une ombre plus prononcée */
 [data-todo-list-agenda].expanded {
   box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* Permettre le scroll à l'intérieur du contenu de l'agenda */
+[data-todo-list-agenda] .agenda-content {
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Content de l'agenda - éviter le scroll de la page principale */

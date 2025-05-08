@@ -1,3 +1,4 @@
+// src/app/components/TodoListAgenda.tsx modifié
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -87,6 +88,7 @@ export default function TodoListAgenda() {
   const [isMobile, setIsMobile] = useState(false);
   const [isPWA, setIsPWA] = useState(false);
   const [lastScrollTop, setLastScrollTop] = useState(0);
+  const [interactionLocked, setInteractionLocked] = useState(false); // Nouvel état pour verrouiller les interactions
 
   // Animation spring pour une sensation plus naturelle
   const springHeight = useSpring(agendaHeight, {
@@ -126,6 +128,19 @@ export default function TodoListAgenda() {
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  // Après un changement d'état d'expansion, verrouiller brièvement les interactions
+  // pour éviter les clics indésirables pendant l'animation
+  useEffect(() => {
+    if (isExpanded) {
+      setInteractionLocked(true);
+      // Déverrouiller après un court délai pour permettre à l'animation de se stabiliser
+      const timer = setTimeout(() => {
+        setInteractionLocked(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isExpanded]);
 
   // Gérer le scroll de la page
   useEffect(() => {
@@ -211,6 +226,47 @@ export default function TodoListAgenda() {
       document.removeEventListener("wheel", preventBackgroundScroll);
     };
   }, [isExpanded, isMobile]);
+
+  // Bloquer les événements tactiles indésirables quand agenda ouvert sur mobile
+  useEffect(() => {
+    if (!isMobile || !isExpanded) return;
+
+    // Fonction qui empêche tous les événements de toucher de se propager
+    // au-delà de l'agenda quand il est ouvert
+    const blockTouchEvents = (e: TouchEvent) => {
+      if (agendaRef.current?.contains(e.target as Node)) {
+        // Ne pas bloquer les événements dans l'agenda
+        return;
+      }
+
+      // Bloquer les événements venant du reste de la page quand l'agenda est ouvert
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    // Désactiver le scroll de la page quand l'agenda est ouvert
+    const originalStyle = document.body.style.overflow;
+    if (isExpanded) {
+      document.body.style.overflow = "hidden";
+    }
+
+    // Ajouter les événements tactiles
+    document.addEventListener("touchstart", blockTouchEvents, {
+      passive: false,
+    });
+    document.addEventListener("touchmove", blockTouchEvents, {
+      passive: false,
+    });
+    document.addEventListener("touchend", blockTouchEvents, { passive: false });
+
+    return () => {
+      // Restaurer le scroll et supprimer les écouteurs
+      document.body.style.overflow = originalStyle;
+      document.removeEventListener("touchstart", blockTouchEvents);
+      document.removeEventListener("touchmove", blockTouchEvents);
+      document.removeEventListener("touchend", blockTouchEvents);
+    };
+  }, [isMobile, isExpanded]);
 
   // Charger la préférence de vue depuis localStorage au chargement
   useEffect(() => {
@@ -320,6 +376,9 @@ export default function TodoListAgenda() {
 
   // Toggle expand/collapse avec animation et feedback tactile
   const toggleExpanded = () => {
+    // Ne rien faire si les interactions sont verrouillées
+    if (interactionLocked) return;
+
     // Feedback haptique
     if ("vibrate" in navigator && isMobile) {
       navigator.vibrate(10);
@@ -344,7 +403,12 @@ export default function TodoListAgenda() {
   };
 
   // Fermer complètement l'agenda (pour le bouton flottant mobile)
-  const closeAgenda = () => {
+  const closeAgenda = (e?: React.MouseEvent) => {
+    // Empêcher la propagation de l'événement
+    if (e) {
+      e.stopPropagation();
+    }
+
     if ("vibrate" in navigator && isMobile) {
       navigator.vibrate(10);
     }
@@ -356,6 +420,14 @@ export default function TodoListAgenda() {
   const formatDate = (date: Date | null): string => {
     if (!date) return "";
     return date.toLocaleDateString();
+  };
+
+  // Handler pour les clics à l'intérieur du contenu de l'agenda
+  // qui ne devraient PAS fermer l'agenda
+  const handleContentClick = (e: React.MouseEvent) => {
+    // Empêcher la propagation de l'événement pour que le clic
+    // ne soit pas capturé par handleBackgroundClick
+    e.stopPropagation();
   };
 
   // Regroupement des tâches
@@ -383,11 +455,11 @@ export default function TodoListAgenda() {
     <>
       <motion.div
         ref={agendaRef}
-        className="fixed bottom-0 left-0 right-0 bg-[color:var(--background)] shadow-lg print:shadow-none print:relative print:h-auto border-t border-[color:var(--border)] rounded-t-xl overflow-hidden z-40"
+        className={`fixed bottom-0 left-0 right-0 bg-[color:var(--background)] shadow-lg print:shadow-none print:relative print:h-auto border-t border-[color:var(--border)] rounded-t-xl overflow-hidden z-40 ${isExpanded ? "expanded touch-none" : ""}`}
         style={{
           height: springHeight,
           position: "fixed",
-          zIndex: 999, // Valeur plus élevée pour s'assurer que l'agenda est au-dessus de tous les éléments
+          zIndex: 999,
         }}
         initial={false}
         animate={{
@@ -399,8 +471,11 @@ export default function TodoListAgenda() {
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         data-todo-list-agenda
       >
-        {/* Barre de titre avec bouton d'expansion */}
-        <div className="flex justify-between items-center bg-[color:var(--secondary)] text-[color:var(--secondary-foreground)] p-3 relative border-b border-[color:var(--border)]">
+        {/* Barre de titre avec bouton d'expansion - ne se ferme PAS au clic */}
+        <div
+          className="flex justify-between items-center bg-[color:var(--secondary)] text-[color:var(--secondary-foreground)] p-3 relative border-b border-[color:var(--border)]"
+          onClick={handleContentClick} // Empêcher la propagation
+        >
           {/* Colonne gauche avec toggle de vue */}
           <div className="w-1/4 flex items-center">
             <button
@@ -487,7 +562,7 @@ export default function TodoListAgenda() {
             {/* Bouton pour fermer l'agenda - visible uniquement en mobile quand l'agenda est ouvert */}
             {isMobile && isExpanded && (
               <button
-                onClick={closeAgenda}
+                onClick={(e) => closeAgenda(e)}
                 className="print:hidden text-[color:var(--foreground)] active:scale-95 transition-all"
                 title="Fermer"
                 aria-label="Fermer l'agenda"
@@ -498,11 +573,12 @@ export default function TodoListAgenda() {
           </div>
         </div>
 
-        {/* Contenu: Liste ou Calendrier selon le mode */}
+        {/* Contenu: Liste ou Calendrier selon le mode - protégé contre les clics de fermeture */}
         <div
           ref={contentRef}
           className="overflow-y-auto agenda-content"
           style={{ height: `calc(100% - 48px)` }}
+          onClick={handleContentClick} // Empêcher la propagation
         >
           {isLoading ? (
             <div className="p-4 text-center text-[color:var(--muted-foreground)]">
@@ -529,7 +605,10 @@ export default function TodoListAgenda() {
                         key={task.id}
                         whileTap={{ scale: 0.98 }}
                         className="cursor-pointer hover:bg-[color:var(--muted)] rounded-lg p-3 text-[color:var(--foreground)] active:bg-[color:var(--muted)]/80 transition-colors shadow-sm border border-[color:var(--border)]"
-                        onClick={() => navigateToTask(task)}
+                        onClick={(e) => {
+                          e.stopPropagation(); // Empêcher la propagation ici aussi
+                          navigateToTask(task);
+                        }}
                       >
                         <div className="flex flex-col">
                           <span className="font-medium">{task.name}</span>
@@ -564,7 +643,10 @@ export default function TodoListAgenda() {
                         key={task.id}
                         whileTap={{ scale: 0.98 }}
                         className="cursor-pointer hover:bg-[color:var(--muted)] rounded-lg p-3 text-[color:var(--foreground)] active:bg-[color:var(--muted)]/80 transition-colors shadow-sm border border-[color:var(--border)]"
-                        onClick={() => navigateToTask(task)}
+                        onClick={(e) => {
+                          e.stopPropagation(); // Empêcher la propagation ici aussi
+                          navigateToTask(task);
+                        }}
                       >
                         <div className="flex flex-col">
                           <span className="font-medium">{task.name}</span>
@@ -603,6 +685,15 @@ export default function TodoListAgenda() {
           </motion.button>
         )}
       </AnimatePresence>
+
+      {/* Overlay transparent qui capture les clics en dehors de l'agenda en mode mobile PWA */}
+      {isExpanded && isMobile && isPWA && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={closeAgenda}
+          style={{ touchAction: "none" }}
+        />
+      )}
     </>
   );
 }
