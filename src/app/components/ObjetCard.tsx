@@ -4,7 +4,7 @@ import { MapPin, Briefcase } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import Editbutton from "./ui/edit-button";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/router-helper";
 
 interface ObjetCardProps {
   objet: {
@@ -29,6 +29,13 @@ export default function ObjetCard({ objet }: ObjetCardProps) {
     }
   };
 
+  const handleCardClick = () => {
+    router.navigateWithLoading(`/dashboard/objet/${objet.id}/view`, {
+      loadingMessage: `Chargement de ${objet.nom}...`,
+      hapticFeedback: true,
+    });
+  };
+
   return (
     <div
       className="
@@ -38,9 +45,7 @@ export default function ObjetCard({ objet }: ObjetCardProps) {
         transition-all duration-200 relative
         cursor-pointer
       "
-      onClick={() => {
-        router.push(`/dashboard/objet/${objet.id}/view`);
-      }}
+      onClick={handleCardClick}
     >
       <div className="block p-5">
         <div className="flex justify-between items-start mb-3">
