@@ -52,7 +52,6 @@ export default function CalendarView({
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [selectedDayTasks, setSelectedDayTasks] = useState<Task[]>([]);
   const dialogRef = useRef<HTMLDivElement>(null);
-  const [isNavigating, setIsNavigating] = useState(false);
   const [swipeStart, setSwipeStart] = useState<{ x: number; y: number } | null>(
     null
   );
@@ -65,14 +64,12 @@ export default function CalendarView({
 
   // Gestion du clic sur une tâche avec état de chargement
   const handleTaskClick = async (task: Task) => {
-    triggerHapticFeedback(); // Ajouter le retour haptique
-    setIsNavigating(true);
+    triggerHapticFeedback(); // Conserver le retour haptique
     try {
       await navigateToTask(task);
       closeDialog();
     } catch (error) {
       console.error("Erreur de navigation:", error);
-      setIsNavigating(false);
     }
   };
 
@@ -423,18 +420,6 @@ export default function CalendarView({
           }
         }
       `}</style>
-
-      {/* Overlay de chargement pour CalendarView */}
-      {isNavigating && (
-        <div className="absolute inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[color:var(--primary)] mx-auto mb-4"></div>
-            <p className="text-lg font-medium text-[color:var(--foreground)]">
-              Chargement de la tâche...
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Header with navigation */}
       <div className="flex justify-between items-center px-4 py-2 border-b border-[color:var(--border)] calendar-header">

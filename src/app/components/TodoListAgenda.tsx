@@ -9,10 +9,10 @@ import {
   ChevronUp,
   ChevronDown,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import CalendarView from "./CalendarView";
-import { LoadingIndicator } from "@/app/components/LoadingIndicator";
+import { useGlobalLoader } from "@/app/components/GlobalLoader";
 import { motion, AnimatePresence, useSpring } from "framer-motion";
+import { useRouter as useCustomRouter } from "@/lib/router-helper";
 
 type Task = {
   id: string;
@@ -84,7 +84,6 @@ export default function TodoListAgenda() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.LIST);
   const [maxHeight, setMaxHeight] = useState<number>(600); // valeur par défaut
-  const [isNavigating, setIsNavigating] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isPWA, setIsPWA] = useState(false);
   const [lastScrollTop, setLastScrollTop] = useState(0);
@@ -97,7 +96,8 @@ export default function TodoListAgenda() {
 
   const agendaRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
+  const customRouter = useCustomRouter();
+  const { hideLoader } = useGlobalLoader();
 
   // Constantes pour les limites de hauteur
   const MIN_HEIGHT = 48; // Hauteur minimale (fermé)
@@ -279,71 +279,31 @@ export default function TodoListAgenda() {
   }, [selectedObjectId]);
 
   // Met à jour l'état de navigation lors de la navigation vers une tâche
-  // Met à jour l'état de navigation lors de la navigation vers une tâche
-  const navigateToTask = async (task: Task) => {
+  const navigateToTask = async (task: Task): Promise<void> => {
     try {
-      setIsNavigating(true);
-
       // Retour haptique pour confirmer l'action
       if ("vibrate" in navigator && isMobile) {
         navigator.vibrate([15, 30, 15]);
       }
 
-      // Fermez l'agenda immédiatement pour une meilleure UX
+      // Fermer l'agenda immédiatement pour une meilleure UX
       setAgendaHeight(MIN_HEIGHT);
       setIsExpanded(false);
 
-      // Afficher l'indicateur de chargement global
-      const overlay = document.createElement("div");
-      overlay.className =
-        "fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center backdrop-blur-sm transition-opacity";
-
-      const loaderContainer = document.createElement("div");
-      loaderContainer.className =
-        "bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg text-center";
-
-      const spinner = document.createElement("div");
-      spinner.className =
-        "animate-spin rounded-full h-12 w-12 border-b-2 border-[color:var(--primary)] mx-auto mb-4";
-
-      const text = document.createElement("p");
-      text.className = "text-lg font-medium";
-      text.textContent = "Chargement de la tâche...";
-
-      loaderContainer.appendChild(spinner);
-      loaderContainer.appendChild(text);
-      overlay.appendChild(loaderContainer);
-      document.body.appendChild(overlay);
-
-      // Naviguez après un bref délai pour permettre l'affichage du loader
-      setTimeout(() => {
-        // Naviguez vers la tâche
-        router.push(
-          `/dashboard/objet/${task.article.sector.object.id}` +
-            `/secteur/${task.article.sector.id}` +
-            `/article/${task.article.id}`
-        );
-
-        // Supprimer l'overlay après la navigation (avec délai pour transition)
-        setTimeout(() => {
-          overlay.classList.add("opacity-0");
-          setTimeout(() => {
-            document.body.removeChild(overlay);
-            setIsNavigating(false);
-          }, 300);
-        }, 500);
-      }, 50);
+      // Utiliser la fonction de navigation personnalisée avec gestion du chargement
+      await customRouter.navigateWithLoading(
+        `/dashboard/objet/${task.article.sector.object.id}` +
+          `/secteur/${task.article.sector.id}` +
+          `/article/${task.article.id}`,
+        {
+          loadingMessage: "Chargement de la tâche...",
+          hapticFeedback: true,
+          delay: 50, // Petit délai pour permettre la fermeture de l'agenda
+        }
+      );
     } catch (error) {
       console.error("Erreur de navigation:", error);
-      setIsNavigating(false);
-
-      // Supprimer l'overlay en cas d'erreur
-      const overlay = document.querySelector(
-        ".fixed.inset-0.bg-black.bg-opacity-50.z-[9999]"
-      );
-      if (overlay && overlay.parentNode) {
-        overlay.parentNode.removeChild(overlay);
-      }
+      hideLoader(); // S'assurer que le loader est caché en cas d'erreur
     }
   };
 
@@ -423,7 +383,7 @@ export default function TodoListAgenda() {
         className="fixed bottom-0 left-0 right-0 bg-[color:var(--background)] shadow-lg print:shadow-none print:relative print:h-auto border-t border-[color:var(--border)] rounded-t-xl overflow-hidden z-40"
         style={{
           height: springHeight,
-          position: isNavigating ? "relative" : "fixed",
+          position: "fixed",
           zIndex: 999, // Valeur plus élevée pour s'assurer que l'agenda est au-dessus de tous les éléments
         }}
         initial={false}
@@ -436,11 +396,6 @@ export default function TodoListAgenda() {
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         data-todo-list-agenda
       >
-        {/* Overlay de chargement */}
-        {isNavigating && (
-          <LoadingIndicator message="Chargement de la tâche..." />
-        )}
-
         {/* Barre de titre avec bouton d'expansion */}
         <div className="flex justify-between items-center bg-[color:var(--secondary)] text-[color:var(--secondary-foreground)] p-3 relative border-b border-[color:var(--border)]">
           {/* Colonne gauche avec toggle de vue */}
@@ -552,15 +507,7 @@ export default function TodoListAgenda() {
               <p>Chargement des tâches...</p>
             </div>
           ) : viewMode === ViewMode.CALENDAR ? (
-            <CalendarView
-              tasks={tasks}
-              navigateToTask={async (task) => {
-                await navigateToTask(task);
-                // Fermer l'agenda après la navigation
-                setAgendaHeight(MIN_HEIGHT);
-                setIsExpanded(false);
-              }}
-            />
+            <CalendarView tasks={tasks} navigateToTask={navigateToTask} />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
               {/* Cette semaine */}

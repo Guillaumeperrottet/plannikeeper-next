@@ -84,6 +84,18 @@ export function GlobalLoaderProvider({ children }: GlobalLoaderProviderProps) {
     setIsLoading(false);
   };
 
+  useEffect(() => {
+    // Réinitialiser le loader lors des changements de chemin
+    hideLoader();
+
+    // Ajouter un délai de sécurité maximum pour tout loader
+    const maxLoaderTimeout = setTimeout(() => {
+      hideLoader();
+    }, 8000); // 8 secondes maximum pour tout chargement
+
+    return () => clearTimeout(maxLoaderTimeout);
+  }, [pathname]);
+
   return (
     <GlobalLoaderContext.Provider value={{ showLoader, hideLoader, isLoading }}>
       {children}
