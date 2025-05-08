@@ -26,9 +26,10 @@ export const metadata = {
     siteName: "PlanniKeeper",
     images: [
       {
-        url: "/logo.png",
+        url: "https://plannikeeper.ch/images/logo.png",
         width: 1200,
         height: 630,
+        alt: "PlanniKeeper Dashboard",
       },
     ],
   },
