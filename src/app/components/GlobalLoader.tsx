@@ -13,6 +13,7 @@ import { AnimatePresence, motion } from "framer-motion";
 
 interface GlobalLoaderContextType {
   showLoader: (message?: string) => void;
+  showLoaderImmediately: (message?: string) => void;
   hideLoader: () => void;
   isLoading: boolean;
   setInstantLoading: (state: boolean) => void; // Nouveau: pour un chargement sans délai
@@ -80,6 +81,26 @@ export function GlobalLoaderProvider({ children }: GlobalLoaderProviderProps) {
       document.removeEventListener("navigatecomplete", handleComplete);
     };
   }, [router]);
+
+  const showLoaderImmediately = (message?: string) => {
+    // Nettoyer tous les timers existants
+    if (loaderTimerRef.current) clearTimeout(loaderTimerRef.current);
+    if (fadeInTimerRef.current) clearTimeout(fadeInTimerRef.current);
+
+    // Définir le message immédiatement
+    setMessage(message || "Chargement...");
+
+    // Afficher immédiatement avec opacité complète
+    setIsLoading(true);
+    setOpacity(1);
+
+    // Forcer un rafraîchissement rapide du DOM
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        document.body.style.pointerEvents = "none"; // Désactiver les interactions
+      });
+    });
+  };
 
   const showLoader = (customMessage?: string) => {
     // Nettoyer tous les timers existants
@@ -149,6 +170,7 @@ export function GlobalLoaderProvider({ children }: GlobalLoaderProviderProps) {
     <GlobalLoaderContext.Provider
       value={{
         showLoader,
+        showLoaderImmediately,
         hideLoader,
         isLoading,
         setInstantLoading,

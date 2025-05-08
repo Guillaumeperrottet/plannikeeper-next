@@ -64,7 +64,7 @@ export function useRouter() {
       delay = 0,
       hapticFeedback = true,
       useGlobalLoader: showGlobalLoader = true,
-      instantLoader = false,
+      instantLoader = true, // Changé à true par défaut pour un affichage immédiat
     } = options;
 
     // Éviter les navigations dupliquées
@@ -72,24 +72,30 @@ export function useRouter() {
       return;
     }
 
+    // IMPORTANT: Ajouter immédiatement à la liste des navigations actives
+    // pour éviter les doubles clics rapides
     activeNavigations.add(url);
     setIsNavigating(true);
 
+    // Ajout d'une classe au body pour le feedback visuel immédiat
+    document.body.classList.add("navigation-pending");
+
     try {
-      // Feedback haptique immédiat si applicable
-      if (hapticFeedback && "vibrate" in navigator) {
-        navigator.vibrate([15, 30, 15]);
+      // Configuration du loader global AVANT toute opération asynchrone
+      if (showGlobalLoader) {
+        // Activer le mode sans délai
+        setInstantLoading(instantLoader);
+
+        // Nous demandons au navigateur de traiter cette opération en priorité
+        window.requestAnimationFrame(() => {
+          // Afficher le loader global
+          showLoader(loadingMessage);
+        });
       }
 
-      // Configuration du loader global si demandé
-      if (showGlobalLoader) {
-        // Activer le mode sans délai si demandé
-        if (instantLoader) {
-          setInstantLoading(true);
-        }
-
-        // Afficher le loader global
-        showLoader(loadingMessage);
+      // Feedback haptique en parallèle (ne pas attendre)
+      if (hapticFeedback && "vibrate" in navigator) {
+        navigator.vibrate([15, 30, 15]);
       }
 
       // Configurer un timeout de sécurité
@@ -97,39 +103,44 @@ export function useRouter() {
         if (showGlobalLoader) hideLoader();
         setIsNavigating(false);
         activeNavigations.delete(url);
+        document.body.classList.remove("navigation-pending");
       }, loadingTimeout);
 
-      // Naviguer après le délai spécifié
-      await new Promise<void>((resolve) => {
-        setTimeout(() => {
-          router.push(url);
-          resolve();
-        }, delay);
-      });
+      // Si on a spécifié un délai, on attend
+      if (delay > 0) {
+        await new Promise<void>((resolve) => setTimeout(resolve, delay));
+      }
 
-      // Nettoyer et finaliser
+      // Navigation immédiate
+      router.push(url);
+
+      // Nettoyer et finaliser, mais permettre une transition fluide
       clearTimeout(timeoutId);
 
       // Attente courte pour permettre à la navigation de commencer
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      // et éviter que le loader ne disparaisse trop vite
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Cacher le loader global si utilisé
-      if (showGlobalLoader) {
-        hideLoader();
-      }
+      // Laissons le loader visible un peu plus longtemps pour éviter un flash
+      // Le loader sera masqué automatiquement par le changement de page
+      // Next.js va remplacer le contenu, il n'est pas nécessaire de masquer le loader manuellement
 
-      // Marquer la navigation comme terminée
-      setIsNavigating(false);
-      activeNavigations.delete(url);
+      // Nettoyage des états après un bref délai
+      setTimeout(() => {
+        setIsNavigating(false);
+        activeNavigations.delete(url);
+        document.body.classList.remove("navigation-pending");
 
-      if (onComplete) {
-        onComplete();
-      }
+        if (onComplete) {
+          onComplete();
+        }
+      }, 200);
     } catch (error) {
       // Gestion des erreurs
       if (showGlobalLoader) hideLoader();
       setIsNavigating(false);
       activeNavigations.delete(url);
+      document.body.classList.remove("navigation-pending");
 
       if (onError) {
         onError(error);
@@ -151,15 +162,22 @@ export function useRouter() {
       instantLoader = true,
     } = options;
 
-    // Feedback haptique immédiat
+    // Feedback visuel immédiat
+    document.body.classList.add("navigation-pending");
+
+    // Feedback haptique immédiat (ne pas attendre)
     if (hapticFeedback && "vibrate" in navigator) {
       navigator.vibrate(10);
     }
 
     try {
-      // Afficher le loader instantané
+      // Afficher le loader instantané IMMÉDIATEMENT
       setInstantLoading(instantLoader);
-      showLoader(loadingMessage);
+
+      // Utiliser requestAnimationFrame pour prioriser l'affichage du loader
+      window.requestAnimationFrame(() => {
+        showLoader(loadingMessage);
+      });
 
       // Exécuter l'action (par exemple: soumission de formulaire)
       await actionFn();
@@ -167,23 +185,37 @@ export function useRouter() {
       // Navigation
       router.push(url);
 
-      // Délai court pour la transition
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      hideLoader();
+      // Nettoyage après un bref délai pour assurer une transition fluide
+      setTimeout(() => {
+        document.body.classList.remove("navigation-pending");
+      }, 200);
     } catch (error) {
       hideLoader();
+      document.body.classList.remove("navigation-pending");
       console.error("Erreur:", error);
       throw error; // Relancer pour la gestion dans le composant appelant
     }
   };
 
-  // Fonction simplifiée pour les retours en arrière
+  // Fonction simplifiée pour les retours en arrière - optimisée pour la fluidité
   const goBack = (fallbackUrl: string = "/dashboard") => {
+    // Feedback visuel immédiat
+    document.body.classList.add("navigation-pending");
+
+    // Afficher le loader instantanément
+    setInstantLoading(true);
+    showLoader("Retour...");
+
     if (window.history.length > 2) {
-      router.back();
+      // Retour en arrière avec une courte pause pour permettre l'affichage du loader
+      setTimeout(() => {
+        router.back();
+      }, 10);
     } else {
-      navigateWithLoading(fallbackUrl);
+      // Ou navigation vers le fallback
+      setTimeout(() => {
+        router.push(fallbackUrl);
+      }, 10);
     }
   };
 
