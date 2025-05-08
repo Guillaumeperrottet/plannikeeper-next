@@ -1,30 +1,9 @@
+// Modification du fichier src/app/components/ImageWithArticles.tsx
+
 "use client";
 
-import DropdownMenu from "@/app/components/ui/dropdownmenu";
-import { Button } from "@/app/components/ui/button";
-import { useState, useEffect, useCallback, useRef } from "react";
-import { toast } from "sonner";
-
-import Link from "next/link";
-import {
-  PlusCircle,
-  ChevronLeft,
-  ChevronRight,
-  Layers,
-  Maximize2,
-  Minimize2,
-} from "lucide-react";
-import ImageWithArticles from "@/app/components/ImageWithArticles";
-import AccessControl from "@/app/components/AccessControl";
-
-type Sector = {
-  id: string;
-  name: string;
-  image: string;
-  imageWidth?: number | null;
-  imageHeight?: number | null;
-  objectId: string;
-};
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import Image from "next/image";
 
 type Article = {
   id: string;
@@ -36,26 +15,82 @@ type Article = {
   height: number | null;
 };
 
-export default function SectorViewer({
-  sectors,
-  objetId,
-}: {
-  sectors: Sector[];
-  objetId: string;
-}) {
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [hoveredArticleId, setHoveredArticleId] = useState<string | null>(null);
-  const [selectedSector, setSelectedSector] = useState<Sector | null>(null);
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const viewerRef = useRef<HTMLDivElement>(null);
+type ImageWithArticlesProps = {
+  imageSrc: string;
+  imageAlt: string;
+  originalWidth: number;
+  originalHeight: number;
+  articles: Article[];
+  onArticleClick?: (articleId: string) => void;
+  onArticleHover?: (articleId: string | null) => void;
+  hoveredArticleId?: string | null;
+  selectedArticleId?: string | null;
+  isEditable?: boolean;
+  className?: string;
+};
 
-  // Détection du mode mobile
+export default function ImageWithArticles({
+  imageSrc,
+  imageAlt,
+  originalWidth,
+  originalHeight,
+  articles,
+  onArticleClick,
+  onArticleHover,
+  hoveredArticleId,
+  selectedArticleId,
+  isEditable = false,
+  className = "",
+}: ImageWithArticlesProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+  const [mounted, setMounted] = useState(false);
+  const [imageSize, setImageSize] = useState({
+    displayWidth: 0,
+    displayHeight: 0,
+    scaleX: 1,
+    scaleY: 1,
+    aspectRatio: originalWidth / originalHeight,
+  });
+
+  // État pour le tooltip
+  const [tooltipInfo, setTooltipInfo] = useState<{
+    visible: boolean;
+    content: {
+      title: string;
+      description: string | null;
+    };
+    position: {
+      x: number;
+      y: number;
+    };
+  }>({
+    visible: false,
+    content: {
+      title: "",
+      description: null,
+    },
+    position: {
+      x: 0,
+      y: 0,
+    },
+  });
+
+  // Nouvel état pour déterminer si on est sur mobile
+  const [isMobile, setIsMobile] = useState(false);
+  // Nouvel état pour l'article sélectionné sur mobile
+  const [mobileSelectedArticle, setMobileSelectedArticle] =
+    useState<Article | null>(null);
+
+  // Détecter si on est sur mobile
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      setIsMobile(
+        window.innerWidth < 768 ||
+          "ontouchstart" in window ||
+          navigator.maxTouchPoints > 0 ||
+          navigator.maxTouchPoints > 0
+      );
     };
 
     checkMobile();
@@ -66,261 +101,371 @@ export default function SectorViewer({
     };
   }, []);
 
-  // Sélectionner le premier secteur au chargement si aucun n'est sélectionné
+  // Fonction pour mettre à jour les dimensions - extraite pour pouvoir l'appeler à différents moments
+  const updateDimensions = useCallback(() => {
+    if (!containerRef.current || !imageRef.current) return;
+
+    const image = imageRef.current;
+
+    // Obtenir les dimensions réelles de l'élément img affiché
+    const rect = image.getBoundingClientRect();
+    const displayWidth = rect.width;
+    const displayHeight = rect.height;
+
+    // L'aspect ratio original de l'image
+    const originalAspectRatio = originalWidth / originalHeight;
+
+    // L'aspect ratio de l'affichage actuel
+    const displayAspectRatio = displayWidth / displayHeight;
+
+    // Déterminer comment l'image est contrainte (par largeur ou hauteur)
+    // C'est crucial pour le calcul correct des coordonnées
+    let effectiveWidth, effectiveHeight;
+
+    if (displayAspectRatio > originalAspectRatio) {
+      // L'image est contrainte par la hauteur
+      effectiveHeight = displayHeight;
+      effectiveWidth = effectiveHeight * originalAspectRatio;
+    } else {
+      // L'image est contrainte par la largeur
+      effectiveWidth = displayWidth;
+      effectiveHeight = effectiveWidth / originalAspectRatio;
+    }
+
+    // Calculer les facteurs d'échelle pour transformer les coordonnées
+    const scaleX = originalWidth / effectiveWidth;
+    const scaleY = originalHeight / effectiveHeight;
+
+    setImageSize({
+      displayWidth: effectiveWidth,
+      displayHeight: effectiveHeight,
+      scaleX,
+      scaleY,
+      aspectRatio: originalAspectRatio,
+    });
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log("Image dimensions updated:", {
+        display: { width: displayWidth, height: displayHeight },
+        effective: { width: effectiveWidth, height: effectiveHeight },
+        original: { width: originalWidth, height: originalHeight },
+        scales: { x: scaleX, y: scaleY },
+      });
+    }
+  }, [originalWidth, originalHeight]);
+
+  // Gérer le redimensionnement et le montage initial
   useEffect(() => {
-    if (sectors.length > 0 && !selectedSector) {
-      setSelectedSector(sectors[0]);
-      setSelectedIndex(0);
+    setMounted(true);
+
+    // Observer les changements de taille
+    const resizeObserver = new ResizeObserver(() => {
+      // Utiliser requestAnimationFrame pour limiter les appels
+      window.requestAnimationFrame(() => {
+        updateDimensions();
+      });
+    });
+
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
     }
-  }, [sectors, selectedSector]);
 
-  // Charger les articles lorsque le secteur sélectionné change
-  useEffect(() => {
-    if (selectedSector) {
-      fetchArticles(selectedSector.id);
-    }
-  }, [selectedSector]);
-
-  const fetchArticles = async (sectorId: string) => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(`/api/sectors/${sectorId}/articles`);
-      if (response.ok) {
-        const data = await response.json();
-        setArticles(data);
-      } else {
-        console.error("Erreur lors du chargement des articles");
-      }
-    } catch (error) {
-      console.error("Erreur:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSectorChange = (sector: Sector) => {
-    const newIndex = sectors.findIndex((s) => s.id === sector.id);
-    setSelectedSector(sector);
-    setSelectedIndex(newIndex);
-  };
-
-  const navigateToPreviousSector = useCallback(() => {
-    if (sectors.length <= 1) return;
-    const newIndex = (selectedIndex - 1 + sectors.length) % sectors.length;
-    setSelectedSector(sectors[newIndex]);
-    setSelectedIndex(newIndex);
-  }, [selectedIndex, sectors]);
-
-  const navigateToNextSector = useCallback(() => {
-    if (sectors.length <= 1) return;
-    const newIndex = (selectedIndex + 1) % sectors.length;
-    setSelectedSector(sectors[newIndex]);
-    setSelectedIndex(newIndex);
-  }, [selectedIndex, sectors]);
-
-  const handleArticleClick = (articleId: string) => {
-    if (selectedSector) {
-      window.location.href = `/dashboard/objet/${objetId}/secteur/${selectedSector.id}/article/${articleId}`;
-    }
-  };
-
-  const toggleFullscreen = useCallback(() => {
-    setIsFullscreen(!isFullscreen);
-
-    // En mode plein écran, nous voulons maximiser l'espace d'affichage
-    if (!isFullscreen && viewerRef.current) {
-      try {
-        if (viewerRef.current.requestFullscreen) {
-          viewerRef.current.requestFullscreen();
-        }
-      } catch {
-        console.log("Fullscreen API not supported or enabled");
-      }
-    } else if (document.fullscreenElement) {
-      document.exitFullscreen();
-    }
-  }, [isFullscreen]);
-
-  // Gestion des touches clavier pour la navigation
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "ArrowLeft") {
-        navigateToPreviousSector();
-      } else if (event.key === "ArrowRight") {
-        navigateToNextSector();
-      } else if (event.key === "Escape") {
-        setIsFullscreen(false);
-      } else if (event.key === "f" || event.key === "F") {
-        toggleFullscreen();
-      }
+    // S'assurer que les dimensions sont mises à jour lorsque l'image est chargée
+    const handleImageLoad = () => {
+      updateDimensions();
     };
 
-    window.addEventListener("keydown", handleKeyDown);
+    const timers = [
+      setTimeout(() => updateDimensions(), 100),
+      setTimeout(() => updateDimensions(), 500),
+      setTimeout(() => updateDimensions(), 1000),
+    ];
+
+    // Store a reference to the current image element
+    const currentImageRef = imageRef.current;
+
+    if (currentImageRef) {
+      currentImageRef.addEventListener("load", handleImageLoad);
+
+      // Si l'image est déjà chargée (depuis le cache), exécuter updateDimensions
+      if (currentImageRef.complete) {
+        updateDimensions();
+      }
+    }
+
+    // Mise à jour lors du redimensionnement de la fenêtre
+    window.addEventListener("resize", updateDimensions);
+
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [
-    navigateToNextSector,
-    navigateToPreviousSector,
-    isFullscreen,
-    toggleFullscreen,
-  ]);
-
-  // Gestion de la sortie du mode plein écran via l'API Fullscreen
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      if (!document.fullscreenElement && isFullscreen) {
-        setIsFullscreen(false);
+      if (currentImageRef) {
+        currentImageRef.removeEventListener("load", handleImageLoad);
       }
+      timers.forEach(clearTimeout);
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updateDimensions);
     };
+  }, [updateDimensions]);
 
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => {
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
-    };
-  }, [isFullscreen]);
+  // Effectuer une mise à jour supplémentaire si la source de l'image change
+  useEffect(() => {
+    if (imageRef.current && imageRef.current.complete) {
+      // Mise à jour immédiate
+      updateDimensions();
+
+      // Mise à jour différée pour s'assurer que le navigateur a bien terminé le rendu
+      const timer1 = setTimeout(() => {
+        updateDimensions();
+      }, 50);
+
+      // Deuxième mise à jour différée au cas où
+      const timer2 = setTimeout(() => {
+        updateDimensions();
+      }, 300);
+
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+      };
+    }
+  }, [imageSrc, updateDimensions]);
+
+  // Calculer la position et les dimensions d'un article en tenant compte des contraintes
+  const calculateArticleStyle = useCallback(
+    (article: Article) => {
+      if (!article.positionX || !article.positionY) {
+        return {};
+      }
+
+      // Espace potentiellement non utilisé à cause du maintien du ratio d'aspect
+      const unusedWidth = containerRef.current?.clientWidth
+        ? containerRef.current.clientWidth - imageSize.displayWidth
+        : 0;
+      const unusedHeight = containerRef.current?.clientHeight
+        ? containerRef.current.clientHeight - imageSize.displayHeight
+        : 0;
+
+      // Compensation pour centrer l'image dans son conteneur
+      const offsetX = unusedWidth / 2;
+      const offsetY = unusedHeight / 2;
+
+      // Convertir les pourcentages en pixels dans le système de coordonnées de l'image
+      const xPos = (article.positionX / 100) * imageSize.displayWidth + offsetX;
+      const yPos =
+        (article.positionY / 100) * imageSize.displayHeight + offsetY;
+      const width = ((article.width || 20) / 100) * imageSize.displayWidth;
+      const height = ((article.height || 20) / 100) * imageSize.displayHeight;
+
+      return {
+        left: `${xPos}px`,
+        top: `${yPos}px`,
+        width: `${width}px`,
+        height: `${height}px`,
+        transform: "translate(-50%, -50%)",
+      };
+    },
+    [imageSize]
+  );
+
+  // Gérer le survol d'un article
+  const handleArticleMouseEnter = (e: React.MouseEvent, article: Article) => {
+    if (!isMobile) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      setTooltipInfo({
+        visible: true,
+        content: {
+          title: article.title,
+          description: article.description,
+        },
+        position: {
+          x: rect.left + rect.width / 2,
+          y: rect.top,
+        },
+      });
+      if (onArticleHover) onArticleHover(article.id);
+    }
+  };
+
+  const handleArticleMouseLeave = () => {
+    if (!isMobile) {
+      setTooltipInfo((prev) => ({ ...prev, visible: false }));
+      if (onArticleHover) onArticleHover(null);
+    }
+  };
+
+  // Gérer le clic sur un article (différent entre mobile et desktop)
+  const handleArticleClick = (e: React.MouseEvent, article: Article) => {
+    e.stopPropagation();
+
+    if (isMobile) {
+      // Sur mobile, on affiche une modale au lieu d'aller directement à la gestion des tâches
+      setMobileSelectedArticle(article);
+      if (onArticleHover) onArticleHover(article.id);
+    } else {
+      // Sur desktop, comportement normal
+      if (onArticleClick) onArticleClick(article.id);
+    }
+  };
+
+  // Fermer la modale mobile
+  const closeMobileModal = () => {
+    setMobileSelectedArticle(null);
+    if (onArticleHover) onArticleHover(null);
+  };
+
+  // Naviguer vers les tâches depuis la modale mobile
+  const navigateToTasks = () => {
+    if (mobileSelectedArticle && onArticleClick) {
+      onArticleClick(mobileSelectedArticle.id);
+    }
+    closeMobileModal();
+  };
+
+  // Ne rien afficher pendant le premier rendu côté client
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <div
-      ref={viewerRef}
-      className={`flex-1 flex flex-col ${
-        isFullscreen ? "fixed inset-0 z-50 bg-transparent" : ""
-      }`}
+      ref={containerRef}
+      className={`relative overflow-hidden ${className}`}
+      style={{ width: "100%", position: "relative" }}
+      onClick={() => {
+        // Fermer la modale mobile si on clique ailleurs que sur un article
+        if (mobileSelectedArticle) {
+          closeMobileModal();
+        }
+      }}
     >
-      {!isFullscreen && (
-        <div className="p-2 md:p-4 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4 bg-transparent">
-          {/* Interface de sélection de secteur - adaptative pour mobile et desktop */}
-          <div className="w-full sm:w-auto flex-1">
-            <DropdownMenu
-              items={sectors.map((s) => ({ id: s.id, label: s.name }))}
-              selectedId={selectedSector?.id}
-              onSelect={(id) => {
-                const sector = sectors.find((s) => s.id === id);
-                if (sector) handleSectorChange(sector);
-              }}
-              label={
-                selectedSector ? selectedSector.name : "Sélectionner un secteur"
-              }
-            />
+      <Image
+        ref={imageRef as React.Ref<HTMLImageElement>}
+        src={imageSrc}
+        alt={imageAlt}
+        width={originalWidth}
+        height={originalHeight}
+        className="block w-full h-auto max-h-[calc(100vh-150px)]"
+        style={{ objectFit: "contain" }}
+        onLoadingComplete={updateDimensions}
+        priority
+      />
+
+      {articles.map((article: Article) => {
+        if (!article.positionX || !article.positionY) return null;
+
+        const articleStyle = calculateArticleStyle(article);
+
+        return (
+          <div
+            key={article.id}
+            className={`absolute border ${
+              selectedArticleId === article.id
+                ? "border-blue-500"
+                : "border-white"
+            } rounded-md shadow-md overflow-hidden cursor-pointer pointer-events-auto ${
+              isEditable ? "z-10" : ""
+            }`}
+            style={{
+              ...articleStyle,
+              zIndex:
+                hoveredArticleId === article.id ||
+                selectedArticleId === article.id ||
+                mobileSelectedArticle?.id === article.id
+                  ? 10
+                  : 5,
+              backgroundColor: "rgba(0, 0, 0, 0.2)",
+            }}
+            onClick={(e) => handleArticleClick(e, article)}
+            onMouseEnter={(e) => handleArticleMouseEnter(e, article)}
+            onMouseLeave={handleArticleMouseLeave}
+          >
+            {/* Pulsation visuelle pour l'article sélectionné sur mobile */}
+            {mobileSelectedArticle?.id === article.id && (
+              <div className="absolute inset-0 animate-pulse bg-[color:var(--primary)] bg-opacity-40 z-0"></div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Tooltip desktop détaché du flux DOM */}
+      {tooltipInfo.visible && !isMobile && (
+        <div
+          className="fixed w-64 bg-black bg-opacity-90 text-white p-3 rounded-md shadow-lg"
+          style={{
+            left: tooltipInfo.position.x,
+            top: tooltipInfo.position.y - 10,
+            transform: "translate(-50%, -100%)",
+            zIndex: 9999,
+            pointerEvents: "none",
+            maxWidth: "250px",
+          }}
+        >
+          <div className="font-bold text-sm truncate">
+            {tooltipInfo.content.title}
           </div>
 
-          {/* Bouton pour ajouter/déplacer un article */}
-          {selectedSector && (
-            <div className="w-full sm:w-auto">
-              <AccessControl
-                entityType="sector"
-                entityId={selectedSector.id}
-                requiredLevel="write"
-                fallback={
-                  <Button
-                    variant="outline"
-                    className="w-full sm:w-auto opacity-60"
-                    onClick={() =>
-                      toast.info(
-                        "Vous n'avez pas les droits pour modifier ce secteur"
-                      )
-                    }
-                  >
-                    <PlusCircle size={isMobile ? 16 : 20} className="mr-2" />
-                    {isMobile
-                      ? "Ajouter article"
-                      : "Ajouter/Déplacer un article"}
-                  </Button>
-                }
-              >
-                <Button asChild variant="outline" className="w-full sm:w-auto">
-                  <Link
-                    href={`/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?addArticle=1`}
-                  >
-                    <PlusCircle size={isMobile ? 16 : 20} className="mr-2" />
-                    {isMobile
-                      ? "Ajouter article"
-                      : "Ajouter/Déplacer un article"}
-                  </Link>
-                </Button>
-              </AccessControl>
+          {tooltipInfo.content.description && (
+            <div className="text-xs mt-1 text-gray-300 max-h-20 overflow-auto">
+              {tooltipInfo.content.description}
             </div>
           )}
+
+          <div className="mt-2 text-xs text-center">
+            <span className="text-blue-300">Cliquez pour gérer les tâches</span>
+          </div>
+
+          {/* Flèche pointant vers l'élément */}
+          <div
+            style={{
+              position: "absolute",
+              left: "50%",
+              bottom: "-8px",
+              transform: "translateX(-50%)",
+              width: 0,
+              height: 0,
+              borderLeft: "8px solid transparent",
+              borderRight: "8px solid transparent",
+              borderTop: "8px solid rgba(0, 0, 0, 0.9)",
+            }}
+          ></div>
         </div>
       )}
 
-      <div
-        className={`flex-1 flex items-center justify-center overflow-hidden ${
-          isFullscreen ? "bg-transparent" : "bg-transparent p-1"
-        }`}
-      >
-        {selectedSector ? (
-          <div className="relative w-full max-h-full">
-            {sectors.length > 1 && (
-              <>
-                <button
-                  onClick={navigateToPreviousSector}
-                  className="absolute left-1 md:left-2 top-1/2 transform -translate-y-1/2 p-1 md:p-2 bg-background bg-opacity-80 rounded-full shadow-md hover:bg-opacity-100 z-10"
-                  aria-label="Secteur précédent"
-                >
-                  <ChevronLeft size={isMobile ? 16 : 24} />
-                </button>
-                <button
-                  onClick={navigateToNextSector}
-                  className="absolute right-1 md:right-2 top-1/2 transform -translate-y-1/2 p-1 md:p-2 bg-background bg-opacity-80 rounded-full shadow-md hover:bg-opacity-100 z-10"
-                  aria-label="Secteur suivant"
-                >
-                  <ChevronRight size={isMobile ? 16 : 24} />
-                </button>
-              </>
+      {/* Modale mobile affichée lorsqu'un article est sélectionné */}
+      {isMobile && mobileSelectedArticle && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-[9999] animate-in fade-in"
+          onClick={closeMobileModal}
+        >
+          <div
+            className="bg-[color:var(--card)] rounded-t-xl w-full max-w-md p-4 pb-6 animate-in slide-in-from-bottom"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxHeight: "70vh",
+              overflow: "auto",
+              paddingBottom: "env(safe-area-inset-bottom, 1rem)",
+            }}
+          >
+            <div className="w-12 h-1 bg-[color:var(--muted-foreground)] mx-auto rounded-full mb-4 opacity-50"></div>
+
+            <h3 className="text-xl font-bold mb-2">
+              {mobileSelectedArticle.title}
+            </h3>
+
+            {mobileSelectedArticle.description && (
+              <p className="text-[color:var(--muted-foreground)] mb-6">
+                {mobileSelectedArticle.description}
+              </p>
             )}
 
-            {isLoading ? (
-              <div className="flex items-center justify-center h-64 w-full">
-                <div className="animate-spin rounded-full h-8 w-8 md:h-12 md:w-12 border-t-2 border-b-2 border-[#d9840d]"></div>
-              </div>
-            ) : (
-              <div>
-                <ImageWithArticles
-                  imageSrc={selectedSector.image}
-                  imageAlt={selectedSector.name}
-                  originalWidth={selectedSector.imageWidth || 1200}
-                  originalHeight={selectedSector.imageHeight || 900}
-                  articles={articles}
-                  onArticleClick={handleArticleClick}
-                  onArticleHover={setHoveredArticleId}
-                  hoveredArticleId={hoveredArticleId}
-                  className={`${
-                    isFullscreen ? "max-h-screen" : "max-h-[calc(100vh-150px)]"
-                  }`}
-                />
-              </div>
-            )}
-
-            {/* Information bar at bottom */}
-            <div className="absolute bottom-2 md:bottom-4 left-1/2 transform -translate-x-1/2 bg-background bg-opacity-80 px-2 md:px-4 py-1 md:py-2 rounded-full shadow-md z-10 flex items-center gap-2 md:gap-4 text-xs md:text-base">
-              <div className="flex items-center gap-1 md:gap-2">
-                <Layers size={isMobile ? 12 : 16} />
-                <span className="truncate max-w-[150px] md:max-w-none">
-                  {selectedIndex + 1} / {sectors.length}: {selectedSector.name}
-                </span>
-              </div>
-              <button
-                onClick={toggleFullscreen}
-                className="p-1 rounded hover:bg-gray-200"
-                title={
-                  isFullscreen ? "Quitter le plein écran" : "Mode plein écran"
-                }
-              >
-                {isFullscreen ? (
-                  <Minimize2 size={isMobile ? 12 : 16} />
-                ) : (
-                  <Maximize2 size={isMobile ? 12 : 16} />
-                )}
-              </button>
-            </div>
+            <button
+              onClick={navigateToTasks}
+              className="w-full bg-[color:var(--primary)] text-[color:var(--primary-foreground)] py-3 rounded-lg font-medium flex items-center justify-center"
+            >
+              Gérer les tâches
+            </button>
           </div>
-        ) : (
-          <div className="text-center text-gray-500 p-4">
-            Sélectionnez un secteur pour afficher son image
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
