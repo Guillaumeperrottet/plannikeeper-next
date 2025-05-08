@@ -1,4 +1,4 @@
-"use client";
+// Modifications à apporter à ImageWithArticles.tsx
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
@@ -51,6 +51,9 @@ export default function ImageWithArticles({
     aspectRatio: originalWidth / originalHeight,
   });
 
+  // État pour détecter si l'utilisateur est sur mobile
+  const [isMobile, setIsMobile] = useState(false);
+
   // État pour le tooltip
   const [tooltipInfo, setTooltipInfo] = useState<{
     visible: boolean;
@@ -62,6 +65,7 @@ export default function ImageWithArticles({
       x: number;
       y: number;
     };
+    articleId: string | null; // Ajout d'un ID d'article pour le suivi
   }>({
     visible: false,
     content: {
@@ -72,10 +76,26 @@ export default function ImageWithArticles({
       x: 0,
       y: 0,
     },
+    articleId: null,
   });
+
+  // Détecter si l'appareil est mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => {
+      window.removeEventListener("resize", checkMobile);
+    };
+  }, []);
 
   // Fonction pour mettre à jour les dimensions - extraite pour pouvoir l'appeler à différents moments
   const updateDimensions = useCallback(() => {
+    // Code inchangé pour updateDimensions
     if (!containerRef.current || !imageRef.current) return;
 
     const image = imageRef.current;
@@ -127,6 +147,7 @@ export default function ImageWithArticles({
     }
   }, [originalWidth, originalHeight]);
 
+  // Effets inchangés...
   // Gérer le redimensionnement et le montage initial
   useEffect(() => {
     setMounted(true);
@@ -239,8 +260,60 @@ export default function ImageWithArticles({
     [imageSize]
   );
 
-  // Gérer le survol d'un article
+  // ** MODIFICATION POUR L'UX MOBILE **
+  // Fonction pour fermer le tooltip si on en touche un autre
+  const closeTooltip = () => {
+    setTooltipInfo((prev) => ({ ...prev, visible: false, articleId: null }));
+    if (onArticleHover) onArticleHover(null);
+  };
+
+  // Gérer le clic/toucher sur un article
+  const handleArticleInteraction = (
+    e: React.MouseEvent | React.TouchEvent,
+    article: Article
+  ) => {
+    e.stopPropagation(); // Empêcher la propagation aux éléments parents
+
+    const rect = e.currentTarget.getBoundingClientRect();
+
+    // Si on est sur mobile, afficher/masquer le tooltip au lieu de naviguer immédiatement
+    if (isMobile) {
+      // Si le tooltip est déjà visible pour cet article, le fermer
+      if (tooltipInfo.visible && tooltipInfo.articleId === article.id) {
+        closeTooltip();
+      }
+      // Si c'est un nouvel article, afficher son tooltip (et fermer tout autre tooltip ouvert)
+      else {
+        setTooltipInfo({
+          visible: true,
+          content: {
+            title: article.title,
+            description: article.description,
+          },
+          position: {
+            x: rect.left + rect.width / 2,
+            y: rect.top,
+          },
+          articleId: article.id,
+        });
+        if (onArticleHover) onArticleHover(article.id);
+
+        // Feedback haptique (vibration légère)
+        if ("vibrate" in navigator) {
+          navigator.vibrate(10);
+        }
+      }
+    }
+    // Sur desktop, comportement inchangé
+    else if (onArticleClick) {
+      onArticleClick(article.id);
+    }
+  };
+
+  // Gérer le survol d'un article (uniquement sur desktop)
   const handleArticleMouseEnter = (e: React.MouseEvent, article: Article) => {
+    if (isMobile) return; // Ignorer sur mobile
+
     const rect = e.currentTarget.getBoundingClientRect();
     setTooltipInfo({
       visible: true,
@@ -252,13 +325,30 @@ export default function ImageWithArticles({
         x: rect.left + rect.width / 2,
         y: rect.top,
       },
+      articleId: article.id,
     });
     if (onArticleHover) onArticleHover(article.id);
   };
 
   const handleArticleMouseLeave = () => {
-    setTooltipInfo((prev) => ({ ...prev, visible: false }));
-    if (onArticleHover) onArticleHover(null);
+    if (isMobile) return; // Ignorer sur mobile
+
+    closeTooltip();
+  };
+
+  // Gérer le clic sur le bouton "Gérer les tâches" dans le tooltip mobile
+  const handleViewTasksClick = () => {
+    // Si on a un ID d'article et la fonction de navigation, utiliser la navigation
+    if (tooltipInfo.articleId && onArticleClick) {
+      onArticleClick(tooltipInfo.articleId);
+    }
+  };
+
+  // Fermer le tooltip si on clique ailleurs sur l'image
+  const handleBackgroundClick = () => {
+    if (tooltipInfo.visible) {
+      closeTooltip();
+    }
   };
 
   // Ne rien afficher pendant le premier rendu côté client
@@ -271,6 +361,7 @@ export default function ImageWithArticles({
       ref={containerRef}
       className={`relative overflow-hidden ${className}`}
       style={{ width: "100%", position: "relative" }}
+      onClick={handleBackgroundClick}
     >
       <Image
         ref={imageRef as React.Ref<HTMLImageElement>}
@@ -288,27 +379,25 @@ export default function ImageWithArticles({
         if (!article.positionX || !article.positionY) return null;
 
         const articleStyle = calculateArticleStyle(article);
+        const isActive =
+          hoveredArticleId === article.id ||
+          selectedArticleId === article.id ||
+          tooltipInfo.articleId === article.id;
 
         return (
           <div
             key={article.id}
             className={`absolute border ${
-              selectedArticleId === article.id
-                ? "border-blue-500"
-                : "border-white"
+              isActive ? "border-blue-500" : "border-white"
             } rounded-md shadow-md overflow-hidden cursor-pointer pointer-events-auto ${
               isEditable ? "z-10" : ""
             }`}
             style={{
               ...articleStyle,
-              zIndex:
-                hoveredArticleId === article.id ||
-                selectedArticleId === article.id
-                  ? 10
-                  : 5,
+              zIndex: isActive ? 10 : 5,
               backgroundColor: "rgba(0, 0, 0, 0.2)",
             }}
-            onClick={() => onArticleClick && onArticleClick(article.id)}
+            onClick={(e) => handleArticleInteraction(e, article)}
             onMouseEnter={(e) => handleArticleMouseEnter(e, article)}
             onMouseLeave={handleArticleMouseLeave}
           >
@@ -317,7 +406,7 @@ export default function ImageWithArticles({
         );
       })}
 
-      {/* Tooltip global détaché du flux DOM */}
+      {/* Tooltip global détaché du flux DOM - modifié pour mobile */}
       {tooltipInfo.visible && (
         <div
           className="fixed w-64 bg-black bg-opacity-90 text-white p-3 rounded-md shadow-lg"
@@ -326,9 +415,10 @@ export default function ImageWithArticles({
             top: tooltipInfo.position.y - 10,
             transform: "translate(-50%, -100%)",
             zIndex: 9999,
-            pointerEvents: "none",
+            pointerEvents: "auto", // Changé de "none" à "auto" pour permettre les interactions
             maxWidth: "250px",
           }}
+          onClick={(e) => e.stopPropagation()} // Empêcher la propagation du clic
         >
           <div className="font-bold text-sm truncate">
             {tooltipInfo.content.title}
@@ -340,8 +430,21 @@ export default function ImageWithArticles({
             </div>
           )}
 
-          <div className="mt-2 text-xs text-center">
-            <span className="text-blue-300">Cliquez pour gérer les tâches</span>
+          <div className="mt-3 flex justify-center">
+            {isMobile ? (
+              // Sur mobile: bouton cliquable
+              <button
+                onClick={handleViewTasksClick}
+                className="text-xs bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded transition-colors w-full"
+              >
+                Gérer les tâches
+              </button>
+            ) : (
+              // Sur desktop: texte informatif
+              <span className="text-xs text-center text-blue-300">
+                Cliquez pour gérer les tâches
+              </span>
+            )}
           </div>
 
           {/* Flèche pointant vers l'élément */}
