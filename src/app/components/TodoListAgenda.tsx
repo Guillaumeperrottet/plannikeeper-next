@@ -88,6 +88,7 @@ export default function TodoListAgenda() {
   const [isMobile, setIsMobile] = useState(false);
   const [isPWA, setIsPWA] = useState(false);
   const [lastScrollTop, setLastScrollTop] = useState(0);
+  const [bottomOffset, setBottomOffset] = useState<string | number>("0px");
 
   // Animation spring pour une sensation plus naturelle
   const springHeight = useSpring(agendaHeight, {
@@ -101,7 +102,6 @@ export default function TodoListAgenda() {
 
   // Constantes pour les limites de hauteur
   const MIN_HEIGHT = 48; // Hauteur minimale (fermé)
-  const MOBILE_BOTTOM_OFFSET = 0; // Décalage modifié à 0 pour éviter l'espace blanc
 
   // Détection du mode mobile et PWA
   useEffect(() => {
@@ -121,12 +121,76 @@ export default function TodoListAgenda() {
       setIsPWA(isPWAMode);
     };
 
+    // Déterminer le offset correct pour la barre iOS
+    const checkIOSSafeArea = () => {
+      // Vérifier si on peut utiliser l'API env() de CSS
+      const docStyle = window.getComputedStyle(document.documentElement);
+      let safeAreaBottom = "0px";
+
+      try {
+        // Tentative d'obtenir la valeur de safe-area-inset-bottom
+        safeAreaBottom =
+          docStyle.getPropertyValue("--safe-area-bottom").trim() || "0px";
+
+        // Si la valeur est disponible, on l'utilise, sinon on applique une valeur par défaut
+        if (safeAreaBottom === "0px" || !safeAreaBottom) {
+          const isIphoneWithNotch =
+            (window.innerWidth === 375 && window.innerHeight === 812) || // iPhone X/XS/11 Pro
+            (window.innerWidth === 414 && window.innerHeight === 896) || // iPhone XR/XS Max/11/11 Pro Max
+            (window.innerWidth === 390 && window.innerHeight === 844) || // iPhone 12/12 Pro/13/13 Pro/14
+            (window.innerWidth === 428 && window.innerHeight === 926); // iPhone 12 Pro Max/13 Pro Max/14 Plus/14 Pro Max
+
+          safeAreaBottom = isIphoneWithNotch ? "34px" : "0px";
+        }
+      } catch (error) {
+        console.warn("Error getting safe area value:", error);
+        safeAreaBottom = "34px"; // Valeur par défaut pour les iPhones avec encoche
+      }
+
+      setBottomOffset(safeAreaBottom);
+    };
+
     checkMobile();
     checkPWA();
+    checkIOSSafeArea();
 
-    window.addEventListener("resize", checkMobile);
+    window.addEventListener("resize", () => {
+      checkMobile();
+      checkIOSSafeArea();
+    });
+
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  // Appliquer des ajustements pour PWA sur mobile
+  useEffect(() => {
+    if (isMobile && isPWA) {
+      // Ajuster le padding-bottom pour éviter la barre de navigation mobile
+      document.body.style.paddingBottom = `${MIN_HEIGHT}px`;
+
+      if (agendaRef.current) {
+        // Remonter l'agenda au-dessus de la barre de navigation iOS
+        agendaRef.current.style.bottom =
+          typeof bottomOffset === "string" ? bottomOffset : `${bottomOffset}px`;
+      }
+    } else {
+      document.body.style.paddingBottom = "";
+      if (agendaRef.current) {
+        agendaRef.current.style.bottom = "0";
+      }
+    }
+
+    // Ajouter une classe CSS pour gérer la safe area iOS
+    document.documentElement.classList.toggle(
+      "has-safe-area",
+      isPWA && isMobile
+    );
+
+    return () => {
+      document.body.style.paddingBottom = "";
+      document.documentElement.classList.remove("has-safe-area");
+    };
+  }, [isMobile, isPWA, MIN_HEIGHT, bottomOffset]);
 
   // Gérer le scroll de la page
   useEffect(() => {
@@ -145,28 +209,7 @@ export default function TodoListAgenda() {
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollTop, isExpanded]);
-
-  // Appliquer des ajustements pour PWA sur mobile
-  useEffect(() => {
-    if (isMobile && isPWA) {
-      // Ajuster le padding-bottom pour éviter la barre de navigation mobile
-      // et ajuster l'agenda à la hauteur désirée
-      document.body.style.paddingBottom = `${MIN_HEIGHT}px`;
-      if (agendaRef.current) {
-        agendaRef.current.style.bottom = `${MOBILE_BOTTOM_OFFSET}px`;
-      }
-    } else {
-      document.body.style.paddingBottom = "";
-      if (agendaRef.current) {
-        agendaRef.current.style.bottom = "0";
-      }
-    }
-
-    return () => {
-      document.body.style.paddingBottom = "";
-    };
-  }, [isMobile, isPWA, MIN_HEIGHT, MOBILE_BOTTOM_OFFSET]);
+  }, [lastScrollTop, isExpanded, MIN_HEIGHT]);
 
   // Mettre à jour la hauteur animée avec le spring
   useEffect(() => {
@@ -309,6 +352,13 @@ export default function TodoListAgenda() {
     }
   };
 
+  // Fonction utilitaire pour le retour haptique
+  const triggerHapticFeedback = () => {
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(10); // Une légère vibration de 10ms
+    }
+  };
+
   // Impression - uniquement disponible en version desktop
   const handlePrint = () => {
     if ("vibrate" in navigator && isMobile) {
@@ -320,9 +370,7 @@ export default function TodoListAgenda() {
   // Toggle expand/collapse avec animation et feedback tactile
   const toggleExpanded = () => {
     // Feedback haptique
-    if ("vibrate" in navigator && isMobile) {
-      navigator.vibrate(10);
-    }
+    triggerHapticFeedback();
 
     if (isExpanded) {
       setAgendaHeight(MIN_HEIGHT);
@@ -335,18 +383,13 @@ export default function TodoListAgenda() {
 
   const toggleViewMode = () => {
     // Feedback haptique
-    if ("vibrate" in navigator && isMobile) {
-      navigator.vibrate(10);
-    }
-
+    triggerHapticFeedback();
     setViewMode(viewMode === ViewMode.LIST ? ViewMode.CALENDAR : ViewMode.LIST);
   };
 
   // Fermer complètement l'agenda (pour le bouton flottant mobile)
   const closeAgenda = () => {
-    if ("vibrate" in navigator && isMobile) {
-      navigator.vibrate(10);
-    }
+    triggerHapticFeedback();
     setAgendaHeight(MIN_HEIGHT);
     setIsExpanded(false);
   };
@@ -387,6 +430,7 @@ export default function TodoListAgenda() {
           height: springHeight,
           position: isNavigating ? "relative" : "fixed",
           zIndex: 999, // Valeur plus élevée pour s'assurer que l'agenda est au-dessus de tous les éléments
+          // La propriété bottom sera définie dynamiquement dans le useEffect
         }}
         initial={false}
         animate={{
@@ -599,7 +643,7 @@ export default function TodoListAgenda() {
         </div>
       </motion.div>
 
-      {/* Bouton flottant d'expansion moderne sur mobile - affiché uniquement quand l'agenda est fermé */}
+      {/* Bouton flottant d'expansion moderne sur mobile - ajusté pour s'afficher au-dessus de la barre iOS */}
       <AnimatePresence>
         {!isExpanded && isMobile && (
           <motion.button
@@ -607,7 +651,11 @@ export default function TodoListAgenda() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             whileTap={{ scale: 0.95 }}
-            className="fixed bottom-20 right-4 w-14 h-14 rounded-full bg-[color:var(--primary)] text-[color:var(--primary-foreground)] flex items-center justify-center shadow-lg z-50"
+            className="fixed right-4 w-14 h-14 rounded-full bg-[color:var(--primary)] text-[color:var(--primary-foreground)] flex items-center justify-center shadow-lg z-50"
+            style={{
+              // Positionner le bouton au-dessus de la barre iOS
+              bottom: `calc(20px + ${typeof bottomOffset === "string" ? bottomOffset : `${bottomOffset}px`})`,
+            }}
             onClick={toggleExpanded}
             aria-label="Ouvrir l'agenda"
           >

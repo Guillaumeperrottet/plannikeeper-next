@@ -94,6 +94,58 @@
     }
   }
 
+  /* Ajustements pour l'agenda avec support de la safe area iOS */
+  @supports (padding: env(safe-area-inset-bottom)) {
+    /* Cibler le conteneur de l'agenda */
+    [data-todo-list-agenda] {
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+
+    /* En mode autonome (PWA) */
+    @media (display-mode: standalone) {
+      /* Empêcher le pull-to-refresh et les rebonds */
+      body {
+        overscroll-behavior: contain;
+        /* Ajouter un padding supplémentaire en bas pour éviter que le contenu ne soit masqué par l'agenda */
+        padding-bottom: calc(48px + env(safe-area-inset-bottom, 0));
+      }
+
+      /* Ajustement pour le bouton flottant */
+      .has-safe-area [data-todo-list-agenda] + button {
+        bottom: calc(20px + env(safe-area-inset-bottom, 0));
+      }
+
+      /* Empêcher que l'agenda ne soit caché sous la navigation iOS */
+      .has-safe-area [data-todo-list-agenda] {
+        bottom: env(safe-area-inset-bottom, 0) !important;
+      }
+    }
+  }
+
+  /* Styles améliorés pour l'interaction tactile */
+  @media (max-width: 767px) {
+    /* Meilleures affordances pour les éléments interactifs */
+    [data-todo-list-agenda] button,
+    [data-todo-list-agenda] select,
+    [data-todo-list-agenda] li {
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    /* Retour visuel plus prononcé lors de l'interaction */
+    [data-todo-list-agenda] button:active,
+    [data-todo-list-agenda] select:active {
+      transform: scale(0.95);
+    }
+
+    /* Augmenter la taille minimale pour faciliter l'interaction */
+    [data-todo-list-agenda] button,
+    [data-todo-list-agenda] select {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+
   /* Amélioration des interactions tactiles */
   button,
   select,
@@ -179,6 +231,11 @@
     --warning-background: #ffedd5;
     --warning-foreground: #f59e0b;
     --warning-border: #fcd34d;
+
+    --safe-area-top: env(safe-area-inset-top, 0px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-left: env(safe-area-inset-left, 0px);
+    --safe-area-right: env(safe-area-inset-right, 0px);
   }
 
   .dark {
@@ -224,5 +281,10 @@
     --warning-background: #451a03;
     --warning-foreground: #fbbf24;
     --warning-border: #d97706;
+
+    --safe-area-top: env(safe-area-inset-top, 0px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-left: env(safe-area-inset-left, 0px);
+    --safe-area-right: env(safe-area-inset-right, 0px);
   }
 }
