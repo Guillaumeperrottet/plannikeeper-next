@@ -473,7 +473,7 @@ export default function TodoListAgenda() {
       >
         {/* Barre de titre avec bouton d'expansion - ne se ferme PAS au clic */}
         <div
-          className="flex justify-between items-center bg-[color:var(--secondary)] text-[color:var(--secondary-foreground)] p-3 relative border-b border-[color:var(--border)]"
+          className="flex justify-between items-center bg-[color:var(--secondary)] text-[color:var(--secondary-foreground)] relative border-b border-[color:var(--border)]"
           onClick={handleContentClick} // Empêcher la propagation
         >
           {/* Colonne gauche avec toggle de vue */}
