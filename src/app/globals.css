@@ -89,6 +89,10 @@
   .has-safe-area [data-todo-list-agenda] {
     bottom: env(safe-area-inset-bottom, 0) !important;
   }
+  [data-todo-list-agenda] {
+    bottom: 0 !important;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
 }
 
 /* Safe area padding pour l'agenda */

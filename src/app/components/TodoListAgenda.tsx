@@ -101,7 +101,6 @@ export default function TodoListAgenda() {
 
   // Constantes pour les limites de hauteur
   const MIN_HEIGHT = 48; // Hauteur minimale (fermé)
-  const MOBILE_BOTTOM_OFFSET = 20; // Décalage modifié à 0 pour éviter l'espace blanc
 
   // Détection du mode mobile et PWA
   useEffect(() => {
@@ -150,11 +149,15 @@ export default function TodoListAgenda() {
   // Appliquer des ajustements pour PWA sur mobile
   useEffect(() => {
     if (isMobile && isPWA) {
-      // Ajuster le padding-bottom pour éviter la barre de navigation mobile
-      // et ajuster l'agenda à la hauteur désirée
+      // Ne pas ajouter de padding-bottom supplémentaire au body
       document.body.style.paddingBottom = `${MIN_HEIGHT}px`;
+
       if (agendaRef.current) {
-        agendaRef.current.style.bottom = `${MOBILE_BOTTOM_OFFSET}px`;
+        // Positionner l'agenda directement contre le bas de l'écran
+        agendaRef.current.style.bottom = "0";
+        // Ajuster la hauteur pour tenir compte des safe areas
+        agendaRef.current.style.paddingBottom =
+          "env(safe-area-inset-bottom, 0px)";
       }
     } else {
       document.body.style.paddingBottom = "";
@@ -166,7 +169,7 @@ export default function TodoListAgenda() {
     return () => {
       document.body.style.paddingBottom = "";
     };
-  }, [isMobile, isPWA, MIN_HEIGHT, MOBILE_BOTTOM_OFFSET]);
+  }, [isMobile, isPWA, MIN_HEIGHT]);
 
   // Mettre à jour la hauteur animée avec le spring
   useEffect(() => {
