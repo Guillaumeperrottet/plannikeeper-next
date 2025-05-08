@@ -2,16 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Le reste de vos styles personnalisés */
-
-/* Styles d'impression pour l'agenda todo list */
-@media print {
-}
-
-/* Base styles pour l'agenda */
+/* Base styles for l'agenda */
 .calendar-container,
 [data-todo-list-agenda] {
-  touch-action: manipulation;
+  touch-action: pan-x; /* Permet uniquement le scroll horizontal, pas vertical */
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
@@ -31,24 +25,6 @@
 /* L'agenda ouvert a une ombre plus prononcée */
 [data-todo-list-agenda].expanded {
   box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.15);
-}
-
-/* Améliorer le handle de drag */
-.drag-handle {
-  width: 36px;
-  height: 4px;
-  background-color: var(--border);
-  border-radius: 4px;
-  margin: 3px auto;
-  opacity: 0.6;
-  transition: all 0.2s ease;
-}
-
-/* Pendant le drag, rendre le handle plus visible */
-.dragging-active .drag-handle {
-  width: 48px;
-  opacity: 1;
-  background-color: var(--primary);
 }
 
 /* Content de l'agenda - éviter le scroll de la page principale */
@@ -92,6 +68,13 @@
     align-items: center;
     justify-content: center;
   }
+
+  /* Cacher l'impression sur mobile */
+  @media print {
+    [data-todo-list-agenda] {
+      display: none !important;
+    }
+  }
 }
 
 /* Optimisation pour PWA */
@@ -123,13 +106,6 @@
   select:active {
     transform: scale(0.97);
   }
-
-  /* Taille plus grande pour la poignée de drag */
-  .drag-handle {
-    width: 40px;
-    height: 5px;
-    margin-top: 4px;
-  }
 }
 
 /* Animation fluide pour le switch entre les modes */
@@ -148,12 +124,7 @@
   }
 }
 
-/* Styles pour le bouton flottant de fermeture */
-.close-button-mobile {
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
-  animation: float 3s ease-in-out infinite;
-}
-
+/* Styles pour les boutons flottants */
 @keyframes float {
   0%,
   100% {
