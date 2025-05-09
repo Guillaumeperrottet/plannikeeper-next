@@ -46,7 +46,7 @@ export const EmailService = {
       const { data, error } = await getResend().emails.send({
         from:
           process.env.RESEND_FROM_EMAIL ||
-          "PlanniKeeper <notifications@resend.dev>",
+          "PlanniKeeper <notifications@plannikeeper.ch>",
         to: [user.email],
         subject: `Bienvenue sur PlanniKeeper !`,
         html: htmlContent,
