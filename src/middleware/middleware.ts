@@ -6,7 +6,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Get the authentication status from cookies
-  const isAuthenticated = request.cookies.has("plannikeeper_session_token");
+  const isAuthenticated = request.cookies.has("session");
 
   // If user is on the landing page (root) but is authenticated, redirect to dashboard
   if (pathname === "/" && isAuthenticated) {

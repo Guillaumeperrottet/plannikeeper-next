@@ -34,9 +34,9 @@ export const auth = betterAuth({
 
     cookies: {
       session_token: {
-        name: "plannikeeper_session_token",
+        name: "session",
         attributes: {
-          sameSite: isProd ? "lax" : "lax",
+          sameSite: "lax",
           secure: false, // Important: false pour le développement local
           path: "/",
           maxAge: 60 * 60 * 24 * 30,
