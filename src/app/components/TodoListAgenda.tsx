@@ -1,14 +1,15 @@
-// src/app/components/TodoListAgenda.tsx modifié
+// src/app/components/TodoListAgenda.tsx optimisé pour mobile
 "use client";
 
 import { useState, useRef, useEffect } from "react";
 import {
-  Printer,
+  ChevronDown,
   CalendarIcon,
   ListIcon,
   X,
   ChevronUp,
-  ChevronDown,
+  Briefcase,
+  ArrowUp,
 } from "lucide-react";
 import CalendarView from "./CalendarView";
 import { useGlobalLoader } from "@/app/components/GlobalLoader";
@@ -88,7 +89,8 @@ export default function TodoListAgenda() {
   const [isMobile, setIsMobile] = useState(false);
   const [isPWA, setIsPWA] = useState(false);
   const [lastScrollTop, setLastScrollTop] = useState(0);
-  const [interactionLocked, setInteractionLocked] = useState(false); // Nouvel état pour verrouiller les interactions
+  const [interactionLocked, setInteractionLocked] = useState(false);
+  const [showControls, setShowControls] = useState(false);
 
   // Animation spring pour une sensation plus naturelle
   const springHeight = useSpring(agendaHeight, {
@@ -134,11 +136,18 @@ export default function TodoListAgenda() {
   useEffect(() => {
     if (isExpanded) {
       setInteractionLocked(true);
+      // Afficher les contrôles après un court délai pour une transition fluide
+      setTimeout(() => {
+        setShowControls(true);
+      }, 150);
       // Déverrouiller après un court délai pour permettre à l'animation de se stabiliser
       const timer = setTimeout(() => {
         setInteractionLocked(false);
       }, 300);
       return () => clearTimeout(timer);
+    } else {
+      // Masquer les contrôles immédiatement pour l'animation de fermeture
+      setShowControls(false);
     }
   }, [isExpanded]);
 
@@ -366,14 +375,6 @@ export default function TodoListAgenda() {
     }
   };
 
-  // Impression - uniquement disponible en version desktop
-  const handlePrint = () => {
-    if ("vibrate" in navigator && isMobile) {
-      navigator.vibrate(10);
-    }
-    window.print();
-  };
-
   // Toggle expand/collapse avec animation et feedback tactile
   const toggleExpanded = () => {
     // Ne rien faire si les interactions sont verrouillées
@@ -451,6 +452,28 @@ export default function TodoListAgenda() {
     else upcomingTasks.push(task);
   });
 
+  // Récupérer le nom de l'objet sélectionné
+  const selectedObjectName =
+    objects.find((obj) => obj.id === selectedObjectId)?.nom || "Objet";
+
+  // Définir le contenu du titre en fonction de l'état d'expansion
+  const titleContent =
+    isMobile && !isExpanded ? (
+      <>
+        <span className="text-base font-semibold">Agenda</span>
+        <span className="text-xs ml-2 text-muted-foreground">
+          {`${thisWeekTasks.length + upcomingTasks.length} tâches`}
+        </span>
+      </>
+    ) : (
+      <>
+        <h2 className="text-xl font-semibold hidden sm:block">
+          Agenda todo list
+        </h2>
+        <h2 className="text-base font-semibold sm:hidden">Agenda</h2>
+      </>
+    );
+
   return (
     <>
       <motion.div
@@ -471,84 +494,83 @@ export default function TodoListAgenda() {
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         data-todo-list-agenda
       >
-        {/* Barre de titre avec bouton d'expansion - ne se ferme PAS au clic */}
+        {/* Barre de titre adaptative pour mobile/desktop */}
         <div
           className="flex justify-between items-center bg-[color:var(--secondary)] text-[color:var(--secondary-foreground)] relative border-b border-[color:var(--border)]"
           onClick={handleContentClick} // Empêcher la propagation
         >
-          {/* Colonne gauche avec toggle de vue */}
+          {/* Partie gauche : sur desktop = contrôles de vue, sur mobile = vide ou icône */}
           <div className="w-1/4 flex items-center">
-            <button
-              onClick={toggleViewMode}
-              className="flex items-center gap-1.5 rounded-full border border-[color:var(--border)] px-3 py-1 hover:bg-[color:var(--muted)] active:scale-95 transition-all bg-[color:var(--background)]"
-            >
-              {viewMode === ViewMode.LIST ? (
-                <>
-                  <ListIcon
-                    size={14}
-                    className="text-[color:var(--foreground)]"
-                  />
-                  <span className="text-sm text-[color:var(--foreground)] hidden sm:block">
-                    Liste
-                  </span>
-                </>
-              ) : (
-                <>
-                  <CalendarIcon
-                    size={14}
-                    className="text-[color:var(--foreground)]"
-                  />
-                  <span className="text-sm text-[color:var(--foreground)] hidden sm:block">
-                    Calendrier
-                  </span>
-                </>
-              )}
-            </button>
+            {!isMobile && (
+              <button
+                onClick={toggleViewMode}
+                className="flex items-center gap-1.5 rounded-full border border-[color:var(--border)] px-3 py-1 hover:bg-[color:var(--muted)] active:scale-95 transition-all bg-[color:var(--background)]"
+              >
+                {viewMode === ViewMode.LIST ? (
+                  <>
+                    <ListIcon
+                      size={14}
+                      className="text-[color:var(--foreground)]"
+                    />
+                    <span className="text-sm text-[color:var(--foreground)] hidden sm:block">
+                      Liste
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <CalendarIcon
+                      size={14}
+                      className="text-[color:var(--foreground)]"
+                    />
+                    <span className="text-sm text-[color:var(--foreground)] hidden sm:block">
+                      Calendrier
+                    </span>
+                  </>
+                )}
+              </button>
+            )}
+            {isMobile && isExpanded && (
+              <button
+                onClick={closeAgenda}
+                className="ml-2 p-2 rounded-full hover:bg-[color:var(--muted)]"
+                aria-label="Fermer l'agenda"
+              >
+                <X size={20} className="text-[color:var(--foreground)]" />
+              </button>
+            )}
           </div>
 
           {/* Titre centré */}
           <div className="flex-1 flex justify-center items-center">
-            <h2 className="text-xl font-semibold hidden sm:block">
-              Agenda todo list
-            </h2>
-            <h2 className="text-base font-semibold sm:hidden">Agenda</h2>
+            {titleContent}
           </div>
 
-          {/* Colonne droite avec les contrôles */}
+          {/* Partie droite : sur desktop = sélecteur d'objet, sur mobile = icône d'expansion */}
           <div className="flex items-center gap-2 md:gap-4">
-            <select
-              className="bg-[color:var(--background)] text-[color:var(--foreground)] px-2 md:px-3 py-1 rounded border border-[color:var(--border)] text-sm transition-all active:scale-95"
-              value={selectedObjectId}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                setSelectedObjectId(e.target.value)
-              }
-              style={{
-                WebkitAppearance: isMobile ? "none" : undefined,
-                maxWidth: isMobile ? "100px" : undefined,
-              }}
-            >
-              {objects.map((obj) => (
-                <option key={obj.id} value={obj.id}>
-                  {obj.nom}
-                </option>
-              ))}
-            </select>
-            {/* Bouton d'impression - uniquement visible sur desktop */}
-            {!isMobile && (
-              <button
-                onClick={handlePrint}
-                className="p-1 rounded hover:bg-[color:var(--accent)] active:scale-95 transition-all print:hidden text-[color:var(--foreground)] hidden md:flex"
-                title="Imprimer"
-                aria-label="Imprimer"
+            {(!isMobile || (isMobile && showControls)) && (
+              <select
+                className="bg-[color:var(--background)] text-[color:var(--foreground)] px-2 md:px-3 py-1 rounded border border-[color:var(--border)] text-sm transition-all active:scale-95"
+                value={selectedObjectId}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  setSelectedObjectId(e.target.value)
+                }
+                style={{
+                  WebkitAppearance: isMobile ? "none" : undefined,
+                  maxWidth: isMobile ? "140px" : undefined,
+                }}
               >
-                <Printer size={20} />
-              </button>
+                {objects.map((obj) => (
+                  <option key={obj.id} value={obj.id}>
+                    {obj.nom}
+                  </option>
+                ))}
+              </select>
             )}
-            {/* Bouton toggle expand/collapse - uniquement visible sur desktop */}
-            {!isMobile && (
+            {/* Bouton toggle expand/collapse - adaptative selon la plateforme */}
+            {(!isMobile || (isMobile && !isExpanded)) && (
               <button
                 onClick={toggleExpanded}
-                className="print:hidden text-[color:var(--foreground)] active:scale-95 transition-all"
+                className="print:hidden text-[color:var(--foreground)] active:scale-95 transition-all mr-2"
                 title={isExpanded ? "Réduire" : "Agrandir"}
                 aria-label={isExpanded ? "Réduire" : "Agrandir"}
               >
@@ -559,25 +581,62 @@ export default function TodoListAgenda() {
                 )}
               </button>
             )}
-            {/* Bouton pour fermer l'agenda - visible uniquement en mobile quand l'agenda est ouvert */}
-            {isMobile && isExpanded && (
-              <button
-                onClick={(e) => closeAgenda(e)}
-                className="print:hidden text-[color:var(--foreground)] active:scale-95 transition-all"
-                title="Fermer"
-                aria-label="Fermer l'agenda"
-              >
-                <X size={24} />
-              </button>
-            )}
           </div>
         </div>
+
+        {/* Barre des contrôles supplémentaires (uniquement affichée quand l'agenda est ouvert sur mobile) */}
+        <AnimatePresence>
+          {isMobile && showControls && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="flex justify-between items-center px-4 py-2 bg-[color:var(--muted)] border-b border-[color:var(--border)]"
+            >
+              {/* Contrôles de vue (liste/calendrier) */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={toggleViewMode}
+                  className={`flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full text-sm ${
+                    viewMode === ViewMode.LIST
+                      ? "bg-[color:var(--primary)] text-[color:var(--primary-foreground)]"
+                      : "bg-[color:var(--background)] text-[color:var(--foreground)]"
+                  }`}
+                >
+                  <ListIcon size={14} />
+                  <span>Liste</span>
+                </button>
+                <button
+                  onClick={toggleViewMode}
+                  className={`flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full text-sm ${
+                    viewMode === ViewMode.CALENDAR
+                      ? "bg-[color:var(--primary)] text-[color:var(--primary-foreground)]"
+                      : "bg-[color:var(--background)] text-[color:var(--foreground)]"
+                  }`}
+                >
+                  <CalendarIcon size={14} />
+                  <span>Calendrier</span>
+                </button>
+              </div>
+
+              {/* Information sur l'objet sélectionné */}
+              <div className="flex items-center text-sm text-[color:var(--muted-foreground)]">
+                <Briefcase size={14} className="mr-1" />
+                <span className="truncate max-w-[120px]">
+                  {selectedObjectName}
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Contenu: Liste ou Calendrier selon le mode - protégé contre les clics de fermeture */}
         <div
           ref={contentRef}
           className="overflow-y-auto agenda-content"
-          style={{ height: `calc(100% - 48px)` }}
+          style={{
+            height: `calc(100% - ${isMobile && showControls ? "96px" : "48px"})`,
+          }}
           onClick={handleContentClick} // Empêcher la propagation
         >
           {isLoading ? (
@@ -681,7 +740,7 @@ export default function TodoListAgenda() {
             onClick={toggleExpanded}
             aria-label="Ouvrir l'agenda"
           >
-            <ChevronUp size={28} />
+            <ArrowUp size={28} />
           </motion.button>
         )}
       </AnimatePresence>
