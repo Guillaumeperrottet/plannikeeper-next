@@ -17,14 +17,16 @@ export const auth = betterAuth({
         "https://plannikeeper-next.vercel.app",
         "http://localhost:3000",
         "127.0.0.1:3000",
+        "localhost:3000",
+        "http://127.0.0.1:3000",
       ],
 
   emailAndPassword: { enabled: true },
 
   advanced: {
     defaultCookieAttributes: {
-      sameSite: isProd ? "lax" : "none",
-      secure: isProd,
+      sameSite: "lax", // Utiliser 'lax' qui est plus permissif pour les cookies
+      secure: false, // Important: mettre à false en développement local!
       domain: undefined,
       maxAge: 60 * 60 * 24 * 30,
       httpOnly: true,
@@ -35,7 +37,7 @@ export const auth = betterAuth({
         name: "plannikeeper_session_token",
         attributes: {
           sameSite: isProd ? "lax" : "lax",
-          secure: isProd,
+          secure: false, // Important: false pour le développement local
           path: "/",
           maxAge: 60 * 60 * 24 * 30,
           httpOnly: true,
@@ -43,7 +45,7 @@ export const auth = betterAuth({
       },
     },
 
-    cookiePrefix: "better-auth",
+    cookiePrefix: "",
   },
 
   hooks: {
