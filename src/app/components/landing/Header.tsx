@@ -78,6 +78,34 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Effet pour le verrouillage du scroll quand le menu est ouvert
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      // Sauvegarde la position de défilement actuelle
+      const scrollPosition = window.pageYOffset;
+      // Désactive le défilement et fixe la position
+      document.body.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollPosition}px`;
+      document.body.style.width = "100%";
+    } else {
+      // Restaure le défilement et la position
+      const scrollPosition = document.body.style.top;
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      window.scrollTo(0, parseInt(scrollPosition || "0") * -1);
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+    };
+  }, [mobileMenuOpen]);
+
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     setActiveSection(id);
@@ -175,7 +203,11 @@ export default function Header() {
                   damping: 25,
                   stiffness: 300,
                 }}
-                className="fixed inset-y-0 right-0 w-4/5 max-w-sm bg-[#f9f3ec] z-40 shadow-xl rounded-l-3xl border-l border-[#beac93] flex flex-col"
+                className="fixed inset-y-0 right-0 w-4/5 max-w-sm bg-[#f9f3ec] z-50 shadow-xl rounded-l-3xl border-l border-[#beac93] flex flex-col overflow-y-auto"
+                style={{
+                  maxHeight: "100vh",
+                  overflowY: "auto",
+                }}
               >
                 {/* En-tête du menu mobile */}
                 <div className="p-6 border-b border-[#beac93] flex items-center justify-between">
