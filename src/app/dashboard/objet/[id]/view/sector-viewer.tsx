@@ -7,7 +7,6 @@ import { toast } from "sonner";
 
 import Link from "next/link";
 import {
-  PlusCircle,
   ChevronLeft,
   ChevronRight,
   Layers,
@@ -221,10 +220,10 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                       )
                     }
                   >
-                    <PlusCircle size={isMobile ? 16 : 20} className="mr-2" />
+                    {/* <PlusCircle size={isMobile ? 16 : 20} className="mr-2" /> */}
                     {isMobile
-                      ? "Ajouter article"
-                      : "Ajouter/Déplacer un article"}
+                      ? "Modifier ou créer un article"
+                      : "Modifier ou créer un article"}
                   </Button>
                 }
               >
@@ -232,10 +231,10 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                   <Link
                     href={`/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?addArticle=1`}
                   >
-                    <PlusCircle size={isMobile ? 16 : 20} className="mr-2" />
+                    {/* <PlusCircle size={isMobile ? 16 : 20} className="mr-2" /> */}
                     {isMobile
-                      ? "Ajouter article"
-                      : "Ajouter/Déplacer un article"}
+                      ? "Modifier ou créer un article"
+                      : "Modifier ou créer un article"}
                   </Link>
                 </Button>
               </AccessControl>
