@@ -51,6 +51,10 @@ export const EmailService = {
         subject: `Bienvenue sur PlanniKeeper !`,
         html: htmlContent,
         replyTo: process.env.RESEND_REPLY_TO_EMAIL,
+        headers: {
+          "List-Unsubscribe": `<${process.env.NEXT_PUBLIC_APP_URL}/unsubscribe?email=${encodeURIComponent(user.email)}>`,
+          "X-Entity-Ref-ID": `welcome-${user.id}-${Date.now()}`, // Identifiant unique pour éviter les duplications
+        },
       });
 
       if (error) {
