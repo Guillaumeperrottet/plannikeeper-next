@@ -54,7 +54,7 @@ export function middleware(request: NextRequest) {
 
   // En développement, permettre l'accès depuis n'importe quelle origine
   if (isDevelopment) {
-    response.headers.set("Access-Control-Allow-Origin", "*");
+    response.headers.set("Access-Control-Allow-Origin", origin);
   }
 
   return response;

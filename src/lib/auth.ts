@@ -11,7 +11,6 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   secret: process.env.BETTER_AUTH_SECRET!,
 
-  // Origines autorisées - Simplifier en prod
   trustedOrigins: isProd
     ? ["https://plannikeeper-next.vercel.app", "*"]
     : [
@@ -23,12 +22,10 @@ export const auth = betterAuth({
   emailAndPassword: { enabled: true },
 
   advanced: {
-    // Simplifier la configuration des cookies pour la production
     defaultCookieAttributes: {
-      sameSite: isProd ? "lax" : "lax", // Changé de "none" à "lax"
+      sameSite: isProd ? "lax" : "none",
       secure: isProd,
-      domain: undefined, // Retirer le domain pour éviter les problèmes
-      path: "/",
+      domain: undefined,
       maxAge: 60 * 60 * 24 * 30,
       httpOnly: true,
     },
