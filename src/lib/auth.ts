@@ -50,6 +50,13 @@ export const auth = betterAuth({
 
   hooks: {
     after: createAuthMiddleware(async (ctx) => {
+      console.log("Auth hook after triggered", {
+        path: ctx.path,
+        method: ctx.method,
+        newSession: !!ctx.context.newSession,
+        user: ctx.context.newSession?.user?.id,
+      });
+
       try {
         if (ctx.path === "/sign-up/email" && ctx.context.newSession) {
           const userId = ctx.context.newSession.user.id;
@@ -148,6 +155,13 @@ export const auth = betterAuth({
         console.error("Erreur dans le hook after signup:", error);
         // Ne pas interrompre le flux d'inscription en cas d'erreur
       }
+    }),
+    before: createAuthMiddleware(async (ctx) => {
+      console.log("Auth hook before triggered", {
+        path: ctx.path,
+        method: ctx.method,
+      });
+      return ctx;
     }),
   },
 });
