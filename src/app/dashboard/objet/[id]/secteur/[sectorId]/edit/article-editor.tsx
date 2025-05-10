@@ -2,10 +2,26 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { Plus, Move, X, Edit, Trash, ArrowLeft } from "lucide-react";
+import {
+  Plus,
+  Move,
+  X,
+  Edit,
+  Trash,
+  ArrowLeft,
+  Check,
+  Square,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  Info,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 
 type Article = {
   id: string;
@@ -48,6 +64,14 @@ type ImageInfo = {
   offsetY: number; // Décalage Y pour centrer l'image
 };
 
+// Modes d'édition disponibles
+enum EditorMode {
+  VIEW = "view",
+  ADD = "add",
+  MOVE = "move",
+  RESIZE = "resize",
+}
+
 export default function ArticleEditor({
   sectorId,
   initialArticles = [],
@@ -63,15 +87,18 @@ export default function ArticleEditor({
   imageSrc: string;
   imageAlt: string;
 }) {
+  // États principaux
   const [articles, setArticles] = useState<Article[]>(initialArticles);
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(
     null
   );
-  const [isAddingArticle, setIsAddingArticle] = useState(false);
+  const [editorMode, setEditorMode] = useState<EditorMode>(EditorMode.VIEW);
   const [isDraggingNew, setIsDraggingNew] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [resizeType, setResizeType] = useState<ResizeType>(null);
+
+  // États d'interaction
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [resizeStart, setResizeStart] = useState<AbsolutePosition>({
     x: 0,
@@ -81,26 +108,21 @@ export default function ArticleEditor({
   });
   const [newArticleStart, setNewArticleStart] = useState({ x: 0, y: 0 });
   const [newArticleSize, setNewArticleSize] = useState({ width: 0, height: 0 });
-  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+
+  // États d'UI
   const [hoveredArticleId, setHoveredArticleId] = useState<string | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [isMobile, setIsMobile] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [showTools, setShowTools] = useState(true);
+  const [lastSavedPosition, setLastSavedPosition] = useState<{
+    [key: string]: AbsolutePosition;
+  }>({});
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
-  const resizeObserverRef = useRef<ResizeObserver | null>(null);
-
-  const [imageInfo, setImageInfo] = useState<ImageInfo>({
-    displayWidth: 0,
-    displayHeight: 0,
-    originalWidth: imageWidth || 1200, // Valeur par défaut si null
-    originalHeight: imageHeight || 900, // Valeur par défaut si null
-    scaleX: 1,
-    scaleY: 1,
-    aspectRatio: (imageWidth || 1200) / (imageHeight || 900),
-    offsetX: 0,
-    offsetY: 0,
-  });
-
-  // Modal state
+  // États modaux
   const [showModal, setShowModal] = useState(false);
   const [modalArticle, setModalArticle] = useState<{
     id?: string;
@@ -119,7 +141,59 @@ export default function ArticleEditor({
     height: 10,
   });
 
+  // Refs
+  const containerRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  const zoomContainerRef = useRef<HTMLDivElement>(null);
+
   const router = useRouter();
+
+  // État de l'image
+  const [imageInfo, setImageInfo] = useState<ImageInfo>({
+    displayWidth: 0,
+    displayHeight: 0,
+    originalWidth: imageWidth || 1200, // Valeur par défaut si null
+    originalHeight: imageHeight || 900, // Valeur par défaut si null
+    scaleX: 1,
+    scaleY: 1,
+    aspectRatio: (imageWidth || 1200) / (imageHeight || 900),
+    offsetX: 0,
+    offsetY: 0,
+  });
+
+  // Détection mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => {
+      window.removeEventListener("resize", checkMobile);
+    };
+  }, []);
+
+  // Fonction pour fournir un retour haptique sur mobile
+  const triggerHapticFeedback = (
+    intensity: "light" | "medium" | "strong" = "light"
+  ) => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      switch (intensity) {
+        case "light":
+          navigator.vibrate(5);
+          break;
+        case "medium":
+          navigator.vibrate(10);
+          break;
+        case "strong":
+          navigator.vibrate([10, 30, 10]);
+          break;
+      }
+    }
+  };
 
   // Fonction pour mettre à jour les dimensions de l'image
   const updateImageDimensions = useCallback(() => {
@@ -178,17 +252,6 @@ export default function ArticleEditor({
       offsetX,
       offsetY,
     });
-
-    if (process.env.NODE_ENV !== "production") {
-      console.log("Editor image dimensions updated:", {
-        container: { width: containerWidth, height: containerHeight },
-        display: { width: displayWidth, height: displayHeight },
-        effective: { width: effectiveWidth, height: effectiveHeight },
-        original: { width: originalWidth, height: originalHeight },
-        scale: { x: scaleX, y: scaleY },
-        offset: { x: offsetX, y: offsetY },
-      });
-    }
   }, [imageWidth, imageHeight]);
 
   // Configuration du ResizeObserver
@@ -264,6 +327,7 @@ export default function ArticleEditor({
     }
   }, [imageSrc, updateImageDimensions]);
 
+  // Charger les articles du serveur quand initialArticles est vide
   const fetchArticles = useCallback(async () => {
     try {
       const response = await fetch(`/api/sectors/${sectorId}/articles`);
@@ -284,6 +348,65 @@ export default function ArticleEditor({
       fetchArticles();
     }
   }, [initialArticles, fetchArticles]);
+
+  // Réinitialiser le mode d'édition quand l'article sélectionné change
+  useEffect(() => {
+    if (!selectedArticleId) {
+      setEditorMode(EditorMode.VIEW);
+    }
+  }, [selectedArticleId]);
+
+  // Fonction pour gérer les raccourcis clavier
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (showModal) return; // Ne pas réagir aux raccourcis si un modal est ouvert
+
+      switch (e.key) {
+        case "Escape":
+          setSelectedArticleId(null);
+          setEditorMode(EditorMode.VIEW);
+          break;
+        case "Delete":
+        case "Backspace":
+          if (selectedArticleId) {
+            const article = articles.find((a) => a.id === selectedArticleId);
+            if (article) handleDeleteArticle(article);
+          }
+          break;
+        case "z":
+          if (e.ctrlKey || e.metaKey) {
+            // Annuler (Ctrl+Z ou Cmd+Z)
+            undoLastChange();
+          }
+          break;
+        case "0":
+          if (e.ctrlKey || e.metaKey) {
+            // Réinitialiser le zoom (Ctrl+0 ou Cmd+0)
+            setZoomLevel(1);
+            setPanOffset({ x: 0, y: 0 });
+          }
+          break;
+        case "+":
+        case "=":
+          if (e.ctrlKey || e.metaKey) {
+            // Zoom avant (Ctrl++ ou Cmd++)
+            setZoomLevel((prev) => Math.min(prev + 0.1, 3));
+          }
+          break;
+        case "-":
+          if (e.ctrlKey || e.metaKey) {
+            // Zoom arrière (Ctrl+- ou Cmd+-)
+            setZoomLevel((prev) => Math.max(prev - 0.1, 0.5));
+          }
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [articles, selectedArticleId, showModal]);
 
   // Convertir les coordonnées pourcentage en pixels absolus (avec décalages)
   const percentToPixels = useCallback(
@@ -341,20 +464,34 @@ export default function ArticleEditor({
 
   // Obtenir les coordonnées de la souris relatives à l'image
   const getMouseCoordinates = useCallback(
-    (e: React.MouseEvent): { x: number; y: number } => {
+    (e: React.MouseEvent | React.TouchEvent): { x: number; y: number } => {
       if (!containerRef.current) {
         return { x: 0, y: 0 };
       }
 
       const containerRect = containerRef.current.getBoundingClientRect();
 
-      // Position relative au conteneur
-      return {
-        x: e.clientX - containerRect.left,
-        y: e.clientY - containerRect.top,
-      };
+      // Obtenir les coordonnées client selon le type d'événement
+      let clientX, clientY;
+
+      if ("clientX" in e) {
+        // MouseEvent
+        clientX = e.clientX;
+        clientY = e.clientY;
+      } else {
+        // TouchEvent
+        const touch = e.touches[0] || e.changedTouches[0];
+        clientX = touch.clientX;
+        clientY = touch.clientY;
+      }
+
+      // Position relative au conteneur, ajustée pour le zoom et le pan
+      const x = (clientX - containerRect.left - panOffset.x) / zoomLevel;
+      const y = (clientY - containerRect.top - panOffset.y) / zoomLevel;
+
+      return { x, y };
     },
-    []
+    [panOffset, zoomLevel]
   );
 
   // Vérifier si les coordonnées sont dans les limites de l'image
@@ -375,15 +512,85 @@ export default function ArticleEditor({
     [imageInfo]
   );
 
+  // Sauvegarde des changements d'article sur le serveur
+  const saveArticle = async (article: Article) => {
+    try {
+      const response = await fetch("/api/articles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: article.id,
+          title: article.title,
+          description: article.description,
+          positionX: article.positionX,
+          positionY: article.positionY,
+          width: article.width,
+          height: article.height,
+          sectorId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Erreur lors de la sauvegarde de l'article");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error saving article:", error);
+      throw error;
+    }
+  };
+
+  // Fonction pour annuler le dernier changement
+  const undoLastChange = () => {
+    if (selectedArticleId && lastSavedPosition[selectedArticleId]) {
+      const article = articles.find((a) => a.id === selectedArticleId);
+      if (article) {
+        // Convertir la position sauvegardée en pourcentage
+        const positionInPercent = pixelsToPercent(
+          lastSavedPosition[selectedArticleId]
+        );
+
+        // Mettre à jour l'article
+        setArticles(
+          articles.map((a) =>
+            a.id === selectedArticleId
+              ? {
+                  ...a,
+                  positionX: positionInPercent.positionX,
+                  positionY: positionInPercent.positionY,
+                  width: positionInPercent.width,
+                  height: positionInPercent.height,
+                }
+              : a
+          )
+        );
+
+        // Supprimer la position sauvegardée
+        const newSavedPositions = { ...lastSavedPosition };
+        delete newSavedPositions[selectedArticleId];
+        setLastSavedPosition(newSavedPositions);
+
+        toast.info("Modification annulée");
+      }
+    }
+  };
+
+  // Gestionnaires d'événements pour la sélection d'article
   const handleContainerClick = () => {
-    if (isAddingArticle && !isDraggingNew) {
+    if (editorMode === EditorMode.ADD && !isDraggingNew) {
       return;
     }
     setSelectedArticleId(null);
   };
 
   const handleContainerMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isAddingArticle && !isDraggingNew && containerRef.current) {
+    // Si on est en mode ajout et qu'on n'est pas déjà en train de dessiner
+    if (
+      editorMode === EditorMode.ADD &&
+      !isDraggingNew &&
+      containerRef.current
+    ) {
       const { x, y } = getMouseCoordinates(e);
 
       // Vérifier si le clic est dans les limites de l'image
@@ -393,6 +600,28 @@ export default function ArticleEditor({
       setNewArticleSize({ width: 0, height: 0 });
       setIsDraggingNew(true);
       e.preventDefault(); // Empêcher la sélection de texte
+    }
+    // Mode panoramique (déplacement de la vue)
+    else if (editorMode === EditorMode.VIEW && e.button === 1) {
+      // Bouton du milieu
+      e.preventDefault();
+      setIsPanning(true);
+      setPanStart({
+        x: e.clientX - panOffset.x,
+        y: e.clientY - panOffset.y,
+      });
+    }
+  };
+
+  // Gérer le début du panoramique sur touch
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (editorMode === EditorMode.VIEW && e.touches.length === 2) {
+      e.preventDefault();
+      setIsPanning(true);
+      setPanStart({
+        x: e.touches[0].clientX - panOffset.x,
+        y: e.touches[0].clientY - panOffset.y,
+      });
     }
   };
 
@@ -404,49 +633,99 @@ export default function ArticleEditor({
       setNewArticleSize({ width, height });
     } else if (isDragging || isResizing) {
       handleMouseMove(e);
+    } else if (isPanning) {
+      setPanOffset({
+        x: e.clientX - panStart.x,
+        y: e.clientY - panStart.y,
+      });
+    }
+  };
+
+  // Gérer le déplacement pendant le panoramique sur touch
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (isPanning && e.touches.length === 2) {
+      e.preventDefault();
+      setPanOffset({
+        x: e.touches[0].clientX - panStart.x,
+        y: e.touches[0].clientY - panStart.y,
+      });
     }
   };
 
   const handleContainerMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isDraggingNew) {
-      const { x, y } = getMouseCoordinates(e);
-      const minX = Math.min(newArticleStart.x, x);
-      const minY = Math.min(newArticleStart.y, y);
-      const width = Math.abs(x - newArticleStart.x);
-      const height = Math.abs(y - newArticleStart.y);
-
-      // Créer l'article en pixels puis convertir en pourcentages
-      const articleInPixels: AbsolutePosition = {
-        x: minX + width / 2, // Centre X
-        y: minY + height / 2, // Centre Y
-        width: Math.max(width, 20), // Minimum 20px de large
-        height: Math.max(height, 20), // Minimum 20px de haut
-      };
-
-      // Convertir en pourcentages (en compensant pour le décalage)
-      const articleInPercent = pixelsToPercent(articleInPixels);
-
-      setModalArticle({
-        title: "",
-        description: "",
-        positionX: articleInPercent.positionX || 0,
-        positionY: articleInPercent.positionY || 0,
-        width: articleInPercent.width || 10,
-        height: articleInPercent.height || 10,
-      });
-
-      setIsDraggingNew(false);
-      setIsAddingArticle(false);
-      setShowModal(true);
+      finalizeNewArticle(e);
     } else if (isDragging || isResizing) {
       stopDraggingOrResizing();
+    } else if (isPanning) {
+      setIsPanning(false);
     }
   };
 
+  // Gérer la fin du panoramique sur touch
+  const handleTouchEnd = () => {
+    if (isPanning) {
+      setIsPanning(false);
+    }
+  };
+
+  // Finaliser la création d'un nouvel article
+  const finalizeNewArticle = (e: React.MouseEvent<HTMLDivElement>) => {
+    const { x, y } = getMouseCoordinates(e);
+    const minX = Math.min(newArticleStart.x, x);
+    const minY = Math.min(newArticleStart.y, y);
+    const width = Math.abs(x - newArticleStart.x);
+    const height = Math.abs(y - newArticleStart.y);
+
+    // Ne créer l'article que s'il a une taille minimale
+    if (width < 10 || height < 10) {
+      setIsDraggingNew(false);
+      setEditorMode(EditorMode.VIEW);
+      return;
+    }
+
+    // Créer l'article en pixels puis convertir en pourcentages
+    const articleInPixels: AbsolutePosition = {
+      x: minX + width / 2, // Centre X
+      y: minY + height / 2, // Centre Y
+      width: Math.max(width, 20), // Minimum 20px de large
+      height: Math.max(height, 20), // Minimum 20px de haut
+    };
+
+    // Convertir en pourcentages (en compensant pour le décalage)
+    const articleInPercent = pixelsToPercent(articleInPixels);
+
+    setModalArticle({
+      title: "",
+      description: "",
+      positionX: articleInPercent.positionX || 0,
+      positionY: articleInPercent.positionY || 0,
+      width: articleInPercent.width || 10,
+      height: articleInPercent.height || 10,
+    });
+
+    setIsDraggingNew(false);
+    setEditorMode(EditorMode.VIEW);
+    triggerHapticFeedback("medium");
+    setShowModal(true);
+  };
+
+  // Démarrer le déplacement d'un article
   const startDragging = (e: React.MouseEvent, article: Article) => {
     e.stopPropagation();
+
+    // Sauvegarder la position actuelle pour l'annulation
+    if (!lastSavedPosition[article.id]) {
+      setLastSavedPosition({
+        ...lastSavedPosition,
+        [article.id]: percentToPixels(article),
+      });
+    }
+
     setSelectedArticleId(article.id);
     setIsDragging(true);
+    setEditorMode(EditorMode.MOVE);
+    triggerHapticFeedback("light");
 
     if (containerRef.current) {
       // Convertir les coordonnées en pourcentage en pixels
@@ -461,6 +740,7 @@ export default function ArticleEditor({
     }
   };
 
+  // Démarrer le redimensionnement d'un article
   const startResizing = (
     e: React.MouseEvent,
     article: Article,
@@ -468,14 +748,26 @@ export default function ArticleEditor({
   ) => {
     e.stopPropagation();
     e.preventDefault();
+
+    // Sauvegarder la position actuelle pour l'annulation
+    if (!lastSavedPosition[article.id]) {
+      setLastSavedPosition({
+        ...lastSavedPosition,
+        [article.id]: percentToPixels(article),
+      });
+    }
+
     setSelectedArticleId(article.id);
     setIsResizing(true);
     setResizeType(type);
+    setEditorMode(EditorMode.RESIZE);
+    triggerHapticFeedback("light");
 
     // Convertir les coordonnées en pourcentage en pixels pour le début du resize
     setResizeStart(percentToPixels(article));
   };
 
+  // Gérer le déplacement de la souris pendant le drag ou le resize
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isDragging && selectedArticleId && containerRef.current) {
       const { x, y } = getMouseCoordinates(e);
@@ -615,6 +907,7 @@ export default function ArticleEditor({
     }
   };
 
+  // Arrêter le déplacement ou le redimensionnement
   const stopDraggingOrResizing = async () => {
     if ((isDragging || isResizing) && selectedArticleId) {
       const article = articles.find((a) => a.id === selectedArticleId);
@@ -624,6 +917,7 @@ export default function ArticleEditor({
           toast.success(
             isDragging ? "Position mise à jour" : "Dimensions mises à jour"
           );
+          triggerHapticFeedback("medium");
         } catch (error) {
           console.error("Error updating article:", error);
           toast.error("Erreur lors de la mise à jour de l'article");
@@ -633,29 +927,16 @@ export default function ArticleEditor({
     setIsDragging(false);
     setIsResizing(false);
     setResizeType(null);
+    setEditorMode(EditorMode.VIEW);
   };
 
-  const saveArticle = async (article: Article) => {
-    const response = await fetch("/api/articles", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: article.id,
-        title: article.title,
-        description: article.description,
-        positionX: article.positionX,
-        positionY: article.positionY,
-        width: article.width,
-        height: article.height,
-        sectorId,
-      }),
-    });
-    if (!response.ok)
-      throw new Error("Erreur lors de la sauvegarde de l'article");
-    return await response.json();
-  };
-
+  // Gérer la sauvegarde du modal d'édition
   const handleSaveModal = async () => {
+    if (!modalArticle.title.trim()) {
+      toast.error("Le titre est requis");
+      return;
+    }
+
     try {
       const articleData = { ...modalArticle, sectorId };
       const savedArticle = await saveArticle(articleData as Article);
@@ -668,12 +949,14 @@ export default function ArticleEditor({
       }
       setShowModal(false);
       toast.success("Article sauvegardé avec succès");
+      triggerHapticFeedback("strong");
     } catch (error) {
       console.error("Error saving article:", error);
       toast.error("Erreur lors de la sauvegarde de l'article");
     }
   };
 
+  // Gérer l'édition d'un article existant
   const handleEditArticle = (article: Article) => {
     setModalArticle({
       id: article.id,
@@ -685,73 +968,78 @@ export default function ArticleEditor({
       height: article.height || 20,
     });
     setShowModal(true);
+    triggerHapticFeedback("light");
   };
 
+  // Supprimer un article
   const handleDeleteArticle = async (article: Article) => {
     if (!confirm("Êtes-vous sûr de vouloir supprimer cet article ?")) return;
+
     try {
       const response = await fetch(`/api/articles/${article.id}`, {
         method: "DELETE",
       });
+
       if (!response.ok)
         throw new Error("Erreur lors de la suppression de l'article");
+
       setArticles(articles.filter((a) => a.id !== article.id));
       setSelectedArticleId(null);
       toast.success("Article supprimé avec succès");
+      triggerHapticFeedback("strong");
     } catch (error) {
       console.error("Error deleting article:", error);
       toast.error("Erreur lors de la suppression de l'article");
     }
   };
 
+  // Sélectionner un article
   const handleArticleClick = (e: React.MouseEvent, article: Article) => {
     e.stopPropagation();
-    if (containerRef.current) {
-      // Position du tooltip basée sur la position de l'article
-      const articlePos = percentToPixels(article);
 
-      // Positionner le tooltip au-dessus de l'article
-      const tooltipX = articlePos.x;
-      const tooltipY = articlePos.y - articlePos.height / 2 - 10;
-
-      setTooltipPosition({
-        x: tooltipX,
-        y: Math.max(20, tooltipY),
-      });
+    if (selectedArticleId === article.id) {
+      // Si l'article est déjà sélectionné, ouvrir le modal d'édition
+      handleEditArticle(article);
+    } else {
+      // Sinon, sélectionner l'article
+      setSelectedArticleId(article.id);
+      triggerHapticFeedback("light");
     }
-    setSelectedArticleId(article.id);
   };
 
+  // Afficher les poignées de redimensionnement pour un article sélectionné
   const renderResizeHandles = (article: Article) => {
     if (selectedArticleId !== article.id) return null;
+
     const handleStyle =
       "absolute w-3 h-3 bg-blue-500 border border-white rounded-full z-10";
     const edgeStyle = "absolute bg-transparent z-10";
+
     return (
       <>
         <div
-          className={`${edgeStyle} top-0 left-0 right-0 h-2 cursor-ns-resize`}
+          className={`${edgeStyle} top-0 left-0 right-0 h-3 cursor-ns-resize`}
           onMouseDown={(e) => {
             e.stopPropagation();
             startResizing(e, article, "top");
           }}
         />
         <div
-          className={`${edgeStyle} bottom-0 left-0 right-0 h-2 cursor-ns-resize`}
+          className={`${edgeStyle} bottom-0 left-0 right-0 h-3 cursor-ns-resize`}
           onMouseDown={(e) => {
             e.stopPropagation();
             startResizing(e, article, "bottom");
           }}
         />
         <div
-          className={`${edgeStyle} left-0 top-2 bottom-2 w-2 cursor-ew-resize`}
+          className={`${edgeStyle} left-0 top-3 bottom-3 w-3 cursor-ew-resize`}
           onMouseDown={(e) => {
             e.stopPropagation();
             startResizing(e, article, "left");
           }}
         />
         <div
-          className={`${edgeStyle} right-0 top-2 bottom-2 w-2 cursor-ew-resize`}
+          className={`${edgeStyle} right-0 top-3 bottom-3 w-3 cursor-ew-resize`}
           onMouseDown={(e) => {
             e.stopPropagation();
             startResizing(e, article, "right");
@@ -789,7 +1077,7 @@ export default function ArticleEditor({
     );
   };
 
-  // Calculer la position et les dimensions d'un article
+  // Calculer le style pour afficher un article
   const calculateArticleStyle = useCallback(
     (article: Article) => {
       if (
@@ -821,278 +1109,722 @@ export default function ArticleEditor({
   );
 
   return (
-    <div className="relative">
-      {/* Toolbar */}
-      <div className="sticky top-0 left-10 z-10 p-4 bg-backgroundround w-full flex justify-center">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="absolute left-12 top-1/2 -translate-y-1/2"
-          aria-label="Retour"
-        >
-          <ArrowLeft size={20} />
-        </button>
-        <Button
-          type="button"
-          variant="outline"
-          className={`flex items-center gap-2 px-3 py-2 rounded ${
-            isAddingArticle ? "bg-blue-100 text-blue-700" : ""
-          }`}
-          onClick={() => {
-            setIsAddingArticle(!isAddingArticle);
-            setIsDraggingNew(false);
-            setSelectedArticleId(null);
-          }}
-        >
-          <Plus size={16} />
-          <span>
-            {isAddingArticle
-              ? "Dessinez pour placer un article"
-              : "Ajouter un article"}
-          </span>
-        </Button>
+    <div className="relative flex flex-col h-full">
+      {/* Barre d'outils fixe */}
+      <div className="sticky top-0 z-20 px-4 py-2 md:py-3 bg-background/95 backdrop-blur-sm border-b flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.back()}
+            aria-label="Retour"
+            className="text-muted-foreground"
+          >
+            <ArrowLeft size={20} />
+          </Button>
+          <h1 className="text-lg font-medium">Édition des articles</h1>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowHelp(!showHelp)}
+            className="text-muted-foreground"
+            aria-label="Aide"
+          >
+            <Info size={18} />
+          </Button>
+        </div>
       </div>
 
-      {/* Espace de dessin */}
-      <div
-        ref={containerRef}
-        className={`relative overflow-hidden ${
-          isAddingArticle ? "cursor-crosshair" : ""
-        }`}
-        onClick={handleContainerClick}
-        onMouseDown={handleContainerMouseDown}
-        onMouseMove={handleContainerMouseMove}
-        onMouseUp={handleContainerMouseUp}
-      >
-        <Image
-          ref={imageRef}
-          src={imageSrc}
-          alt={imageAlt}
-          className="block w-full h-auto max-h-[calc(100vh-150px)]"
-          style={{ objectFit: "contain" }}
-          width={imageWidth || 1200}
-          height={imageHeight || 900}
-          priority
-          unoptimized={!imageSrc.startsWith("http")}
-        />
-
-        {/* Articles */}
-        {articles.map((article) => {
-          if (article.positionX == null || article.positionY == null)
-            return null;
-
-          const articleStyle = calculateArticleStyle(article);
-
-          return (
-            <div
-              key={article.id}
-              className={`absolute border ${
-                selectedArticleId === article.id
-                  ? "border-blue-500"
-                  : hoveredArticleId === article.id
-                  ? "border-blue-300"
-                  : "border-white"
-              } rounded-md shadow-md overflow-hidden pointer-events-auto`}
-              style={{
-                ...articleStyle,
-                zIndex: selectedArticleId === article.id ? 10 : 5,
-                backgroundColor:
-                  hoveredArticleId === article.id
-                    ? "rgba(0, 0, 0, 0.3)"
-                    : "rgba(0, 0, 0, 0.2)",
-                cursor: "pointer",
-              }}
-              onClick={(e) => handleArticleClick(e, article)}
-              onMouseEnter={() => setHoveredArticleId(article.id)}
-              onMouseLeave={() => setHoveredArticleId(null)}
-            >
-              {renderResizeHandles(article)}
-            </div>
-          );
-        })}
-
-        {/* Tooltip pour l'article sélectionné */}
-        {selectedArticleId &&
-          (() => {
-            const article = articles.find((a) => a.id === selectedArticleId);
-            if (!article) return null;
-
-            return (
-              <div
-                className="absolute z-30 bg-background border shadow-lg rounded-md p-2 flex flex-col gap-2 w-48"
-                style={{
-                  top: `${tooltipPosition.y}px`,
-                  left: `${tooltipPosition.x}px`,
-                  transform: "translate(-50%, -100%)",
-                }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex justify-between items-center mb-1">
-                  <span className="font-bold text-sm truncate">
-                    {article.title}
-                  </span>
-                </div>
-                {article.description && (
-                  <div className="text-xs mb-2 text-gray-600 max-h-20 overflow-y-auto">
-                    {article.description}
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      startDragging(e, article);
-                    }}
-                    className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
-                  >
-                    <Move size={14} />
-                    <span>Déplacer</span>
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditArticle(article);
-                    }}
-                    className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
-                  >
-                    <Edit size={14} />
-                    <span>Modifier</span>
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteArticle(article);
-                    }}
-                    className="flex items-center gap-1 text-sm text-red-600 hover:text-red-800"
-                  >
-                    <Trash size={14} />
-                    <span>Supprimer</span>
-                  </button>
-                </div>
-                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white" />
-              </div>
-            );
-          })()}
-
-        {/* Rectangle de sélection pour nouvel article */}
-        {isDraggingNew && isAddingArticle && (
-          <div
-            className="absolute border-2 border-blue-500 bg-blue-100 bg-opacity-50 rounded-md z-20"
-            style={{
-              left: `${Math.min(
-                newArticleStart.x,
-                newArticleStart.x + newArticleSize.width
-              )}px`,
-              top: `${Math.min(
-                newArticleStart.y,
-                newArticleStart.y + newArticleSize.height
-              )}px`,
-              width: `${newArticleSize.width}px`,
-              height: `${newArticleSize.height}px`,
-              transform: "none", // Pas de transformation ici car on utilise des coordonnées absolues
-            }}
-          />
+      {/* Aide contextuelle */}
+      <AnimatePresence>
+        {showHelp && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-blue-50 text-blue-800 px-4 py-3 text-sm border-b border-blue-200"
+          >
+            <h3 className="font-medium mb-1">Guide d&apos;utilisation</h3>
+            <ul className="space-y-1 list-disc pl-5">
+              <li>Cliquez sur + pour ajouter un nouvel article</li>
+              <li>Sélectionnez un article pour le modifier</li>
+              <li>Utilisez les poignées pour redimensionner</li>
+              <li>Double-cliquez sur un article pour éditer ses infos</li>
+              <li>Sur mobile, touchez un article puis utilisez les boutons</li>
+              <li>Utilisez le zoom pour plus de précision</li>
+            </ul>
+          </motion.div>
         )}
-      </div>
-      {/* Modal pour éditer/créer un article */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-background rounded-lg p-6 max-w-md w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">
-                {modalArticle.id ? "Modifier l'article" : "Nouvel article"}
-              </h3>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-gray-500"
+      </AnimatePresence>
+
+      {/* Interface d'édition principale */}
+      <div className="flex flex-1 relative overflow-hidden">
+        {/* Panneau d'outils flottant */}
+        <AnimatePresence>
+          {showTools && (
+            <motion.div
+              initial={
+                isMobile
+                  ? { x: "-100%", opacity: 0 }
+                  : { y: "-100%", opacity: 0 }
+              }
+              animate={isMobile ? { x: 0, opacity: 1 } : { y: 0, opacity: 1 }}
+              exit={
+                isMobile
+                  ? { x: "-100%", opacity: 0 }
+                  : { y: "-100%", opacity: 0 }
+              }
+              className={`${isMobile ? "fixed bottom-16 left-4 z-30 flex-col" : "absolute left-4 top-4 z-20"} flex bg-white rounded-lg shadow-lg p-1 border gap-1`}
+            >
+              <Button
+                size="sm"
+                variant={editorMode === EditorMode.ADD ? "default" : "outline"}
+                onClick={() => {
+                  setEditorMode(EditorMode.ADD);
+                  setSelectedArticleId(null);
+                  triggerHapticFeedback("light");
+                }}
+                className="flex gap-1 items-center"
+                aria-label="Ajouter un article"
               >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Titre</label>
-                <input
-                  type="text"
-                  value={modalArticle.title}
-                  onChange={(e) =>
-                    setModalArticle({ ...modalArticle, title: e.target.value })
-                  }
-                  className="w-full border rounded px-3 py-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Description
-                </label>
-                <textarea
-                  value={modalArticle.description}
-                  onChange={(e) =>
-                    setModalArticle({
-                      ...modalArticle,
-                      description: e.target.value,
-                    })
-                  }
-                  className="w-full border rounded px-3 py-2"
-                  rows={3}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Largeur (%)
-                  </label>
-                  <input
-                    type="number"
-                    min={2}
-                    max={50}
-                    value={modalArticle.width}
-                    onChange={(e) =>
-                      setModalArticle({
-                        ...modalArticle,
-                        width: parseFloat(e.target.value),
-                      })
+                <Plus size={isMobile ? 18 : 16} />
+                <span className="hidden md:inline">Ajouter</span>
+              </Button>
+
+              {selectedArticleId && (
+                <>
+                  <Button
+                    size="sm"
+                    variant={
+                      editorMode === EditorMode.MOVE ? "default" : "outline"
                     }
-                    className="w-full border rounded px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Hauteur (%)
-                  </label>
-                  <input
-                    type="number"
-                    min={2}
-                    max={50}
-                    value={modalArticle.height}
-                    onChange={(e) =>
-                      setModalArticle({
-                        ...modalArticle,
-                        height: parseFloat(e.target.value),
-                      })
+                    onClick={() => {
+                      setEditorMode(EditorMode.MOVE);
+                      triggerHapticFeedback("light");
+                    }}
+                    className="flex gap-1 items-center"
+                    aria-label="Déplacer l'article"
+                  >
+                    <Move size={isMobile ? 18 : 16} />
+                    <span className="hidden md:inline">Déplacer</span>
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant={
+                      editorMode === EditorMode.RESIZE ? "default" : "outline"
                     }
-                    className="w-full border rounded px-3 py-2"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end gap-2">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 border rounded"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleSaveModal}
-                className="px-4 py-2 bg-blue-600 text-white rounded"
-              >
-                Enregistrer
-              </button>
+                    onClick={() => {
+                      setEditorMode(EditorMode.RESIZE);
+                      triggerHapticFeedback("light");
+                    }}
+                    className="flex gap-1 items-center"
+                    aria-label="Redimensionner l'article"
+                  >
+                    <Square size={isMobile ? 18 : 16} />
+                    <span className="hidden md:inline">Redimensionner</span>
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const article = articles.find(
+                        (a) => a.id === selectedArticleId
+                      );
+                      if (article) handleEditArticle(article);
+                    }}
+                    className="flex gap-1 items-center"
+                    aria-label="Éditer l'article"
+                  >
+                    <Edit size={isMobile ? 18 : 16} />
+                    <span className="hidden md:inline">Éditer</span>
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 flex gap-1 items-center"
+                    onClick={() => {
+                      const article = articles.find(
+                        (a) => a.id === selectedArticleId
+                      );
+                      if (article) handleDeleteArticle(article);
+                    }}
+                    aria-label="Supprimer l'article"
+                  >
+                    <Trash size={isMobile ? 18 : 16} />
+                    <span className="hidden md:inline">Supprimer</span>
+                  </Button>
+                </>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Contrôles de zoom flottants */}
+        <div className="absolute right-4 bottom-24 z-20 flex flex-col bg-white rounded-lg shadow-lg p-1 border gap-1">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setZoomLevel((prev) => Math.min(prev + 0.1, 3))}
+            className="flex items-center justify-center"
+            aria-label="Zoom avant"
+          >
+            <ZoomIn size={16} />
+          </Button>
+
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setZoomLevel(1)}
+            className="flex items-center justify-center text-xs"
+            aria-label="Réinitialiser le zoom"
+          >
+            {Math.round(zoomLevel * 100)}%
+          </Button>
+
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setZoomLevel((prev) => Math.max(prev - 0.1, 0.5))}
+            className="flex items-center justify-center"
+            aria-label="Zoom arrière"
+          >
+            <ZoomOut size={16} />
+          </Button>
+
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setZoomLevel(1);
+              setPanOffset({ x: 0, y: 0 });
+            }}
+            className="flex items-center justify-center"
+            aria-label="Ajuster"
+          >
+            <Maximize2 size={16} />
+          </Button>
+        </div>
+
+        {/* Bouton pour afficher/masquer la barre d'outils sur mobile */}
+        {isMobile && (
+          <Button
+            className="fixed bottom-4 right-4 z-30 rounded-full h-12 w-12 shadow-lg flex items-center justify-center"
+            onClick={() => {
+              setShowTools(!showTools);
+              triggerHapticFeedback("light");
+            }}
+            aria-label={
+              showTools ? "Masquer les outils" : "Afficher les outils"
+            }
+          >
+            {showTools ? <ChevronDown size={24} /> : <ChevronUp size={24} />}
+          </Button>
+        )}
+
+        {/* Toasts pour indiquer le mode actuel */}
+        {editorMode !== EditorMode.VIEW && (
+          <div className="absolute left-1/2 transform -translate-x-1/2 bottom-4 z-20 bg-black/70 text-white py-2 px-4 rounded-full text-sm">
+            {editorMode === EditorMode.ADD &&
+              "Mode ajout : dessinez pour ajouter un article"}
+            {editorMode === EditorMode.MOVE &&
+              "Mode déplacement : glissez pour déplacer l'article"}
+            {editorMode === EditorMode.RESIZE &&
+              "Mode redimensionnement : utilisez les poignées ou glissez les bords"}
+          </div>
+        )}
+
+        {/* Zone de travail principale avec zoom */}
+        <div
+          ref={zoomContainerRef}
+          className={`w-full h-full relative overflow-auto ${
+            editorMode === EditorMode.ADD
+              ? "cursor-crosshair"
+              : isPanning
+                ? "cursor-grabbing"
+                : "cursor-default"
+          }`}
+        >
+          {/* Conteneur pour le zoom et le pan */}
+          <div
+            style={{
+              transform: `scale(${zoomLevel})`,
+              transformOrigin: "center center",
+              transition: "transform 0.15s ease-out",
+              margin: "2rem auto",
+              width: "fit-content",
+              height: "fit-content",
+              position: "relative",
+              top: panOffset.y,
+              left: panOffset.x,
+            }}
+          >
+            {/* Conteneur de l'image et des articles */}
+            <div
+              ref={containerRef}
+              className="relative overflow-visible bg-[#f0f0f0]"
+              onClick={handleContainerClick}
+              onMouseDown={handleContainerMouseDown}
+              onMouseMove={handleContainerMouseMove}
+              onMouseUp={handleContainerMouseUp}
+              onMouseLeave={handleContainerMouseUp}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              {/* Image */}
+              <Image
+                ref={imageRef}
+                src={imageSrc}
+                alt={imageAlt}
+                className="block max-w-full h-auto"
+                style={{ objectFit: "contain" }}
+                width={imageWidth || 1200}
+                height={imageHeight || 900}
+                priority
+                unoptimized={!imageSrc.startsWith("http")}
+              />
+
+              {/* Articles */}
+              {articles.map((article) => {
+                if (article.positionX == null || article.positionY == null)
+                  return null;
+
+                const articleStyle = calculateArticleStyle(article);
+                const isSelected = selectedArticleId === article.id;
+                const isHovered = hoveredArticleId === article.id;
+
+                return (
+                  <div
+                    key={article.id}
+                    className={`absolute ${
+                      isSelected
+                        ? "border-2 border-blue-500"
+                        : isHovered
+                          ? "border-2 border-blue-300"
+                          : "border border-white"
+                    } rounded-md shadow-md overflow-hidden pointer-events-auto transition-all duration-150`}
+                    style={{
+                      ...articleStyle,
+                      zIndex: isSelected ? 10 : 5,
+                      backgroundColor: isSelected
+                        ? "rgba(59, 130, 246, 0.3)" // Bleu plus visible quand sélectionné
+                        : isHovered
+                          ? "rgba(59, 130, 246, 0.2)" // Bleu plus clair quand survolé
+                          : "rgba(0, 0, 0, 0.15)", // Gris très transparent par défaut
+                      cursor:
+                        editorMode === EditorMode.MOVE ? "move" : "pointer",
+                    }}
+                    onClick={(e) => handleArticleClick(e, article)}
+                    onMouseDown={(e) => {
+                      if (editorMode === EditorMode.MOVE) {
+                        startDragging(e, article);
+                      }
+                    }}
+                    onMouseEnter={() => setHoveredArticleId(article.id)}
+                    onMouseLeave={() => setHoveredArticleId(null)}
+                  >
+                    {/* Affiche le titre pour les petits articles lors du survol ou de la sélection */}
+                    {(isSelected || isHovered) && (
+                      <div
+                        className="absolute top-0 left-0 right-0 bg-blue-500/80 text-white text-xs p-1 text-center truncate"
+                        style={{ zIndex: 11 }}
+                      >
+                        {article.title}
+                      </div>
+                    )}
+
+                    {/* Affiche les poignées de redimensionnement quand approprié */}
+                    {isSelected &&
+                      (editorMode === EditorMode.RESIZE ||
+                        editorMode === EditorMode.VIEW) &&
+                      renderResizeHandles(article)}
+
+                    {/* Option de confirmation pour les actions */}
+                    {isSelected &&
+                      editorMode === EditorMode.MOVE &&
+                      isDragging && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute bottom-2 right-2 bg-green-500 text-white rounded-full p-1"
+                          title="Confirmer le déplacement"
+                        >
+                          <Check size={16} />
+                        </motion.div>
+                      )}
+                  </div>
+                );
+              })}
+
+              {/* Rectangle de sélection pour nouvel article */}
+              {isDraggingNew && editorMode === EditorMode.ADD && (
+                <motion.div
+                  initial={{ opacity: 0.6 }}
+                  animate={{ opacity: 0.8 }}
+                  className="absolute border-2 border-blue-500 bg-blue-100 rounded-md z-20"
+                  style={{
+                    left: `${Math.min(
+                      newArticleStart.x,
+                      newArticleStart.x + newArticleSize.width
+                    )}px`,
+                    top: `${Math.min(
+                      newArticleStart.y,
+                      newArticleStart.y + newArticleSize.height
+                    )}px`,
+                    width: `${Math.abs(newArticleSize.width)}px`,
+                    height: `${Math.abs(newArticleSize.height)}px`,
+                    transform: "none", // Pas de transformation ici car on utilise des coordonnées absolues
+                  }}
+                />
+              )}
             </div>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Modal pour éditer/créer un article */}
+      <AnimatePresence>
+        {showModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              transition={{ type: "spring", damping: 25 }}
+              className="bg-background rounded-lg shadow-xl max-w-md w-full overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center p-4 border-b">
+                <h3 className="text-lg font-medium">
+                  {modalArticle.id ? "Modifier l'article" : "Nouvel article"}
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowModal(false)}
+                  className="rounded-full w-8 h-8 p-0"
+                  aria-label="Fermer"
+                >
+                  <X size={18} />
+                </Button>
+              </div>
+
+              <div className="p-4 space-y-4">
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-muted-foreground">
+                    Titre
+                  </label>
+                  <input
+                    type="text"
+                    value={modalArticle.title}
+                    onChange={(e) =>
+                      setModalArticle({
+                        ...modalArticle,
+                        title: e.target.value,
+                      })
+                    }
+                    className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Titre de l'article"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-muted-foreground">
+                    Description
+                  </label>
+                  <textarea
+                    value={modalArticle.description}
+                    onChange={(e) =>
+                      setModalArticle({
+                        ...modalArticle,
+                        description: e.target.value,
+                      })
+                    }
+                    className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={4}
+                    placeholder="Description de l'article (optionnelle)"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-muted-foreground">
+                      Largeur (%)
+                    </label>
+                    <input
+                      type="number"
+                      min={5}
+                      max={50}
+                      value={modalArticle.width}
+                      onChange={(e) =>
+                        setModalArticle({
+                          ...modalArticle,
+                          width: parseFloat(e.target.value),
+                        })
+                      }
+                      className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-muted-foreground">
+                      Hauteur (%)
+                    </label>
+                    <input
+                      type="number"
+                      min={5}
+                      max={50}
+                      value={modalArticle.height}
+                      onChange={(e) =>
+                        setModalArticle({
+                          ...modalArticle,
+                          height: parseFloat(e.target.value),
+                        })
+                      }
+                      className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 border-t flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowModal(false)}>
+                  Annuler
+                </Button>
+
+                <Button onClick={handleSaveModal}>Enregistrer</Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Mode d'aide complet (overlay) */}
+      <AnimatePresence>
+        {showHelp && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowHelp(false)}
+          >
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -20, opacity: 0 }}
+              className="bg-white rounded-xl p-6 max-w-xl w-full max-h-[80vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold">
+                  Guide d&apos;édition des articles
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowHelp(false)}
+                  className="rounded-full h-8 w-8 p-0"
+                >
+                  <X size={18} />
+                </Button>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <h4 className="font-medium text-lg mb-2">
+                    Navigation et vue
+                  </h4>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-start gap-2">
+                      <ZoomIn
+                        className="text-blue-500 mt-0.5 flex-shrink-0"
+                        size={18}
+                      />
+                      <span>
+                        <strong>Zoom</strong> - Utilisez les boutons de zoom ou
+                        Ctrl+Molette pour agrandir l&apos;image
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Maximize2
+                        className="text-blue-500 mt-0.5 flex-shrink-0"
+                        size={18}
+                      />
+                      <span>
+                        <strong>Réinitialiser</strong> - Rétablit le zoom et le
+                        cadrage par défaut
+                      </span>
+                    </li>
+                    {!isMobile && (
+                      <li className="flex items-start gap-2">
+                        <Move
+                          className="text-blue-500 mt-0.5 flex-shrink-0"
+                          size={18}
+                        />
+                        <span>
+                          <strong>Déplacement de la vue</strong> - Clic central
+                          et glisser pour déplacer la vue
+                        </span>
+                      </li>
+                    )}
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className="font-medium text-lg mb-2">
+                    Édition d&apos;articles
+                  </h4>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-start gap-2">
+                      <Plus
+                        className="text-blue-500 mt-0.5 flex-shrink-0"
+                        size={18}
+                      />
+                      <div>
+                        <strong>Ajouter un article</strong> - Cliquez sur le
+                        bouton puis dessinez un rectangle sur l&apos;image
+                        <div className="text-muted-foreground mt-1">
+                          L&apos;outil vous demandera ensuite de saisir un titre
+                          et une description
+                        </div>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Square
+                        className="text-blue-500 mt-0.5 flex-shrink-0"
+                        size={18}
+                      />
+                      <div>
+                        <strong>Redimensionner</strong> - Sélectionnez un
+                        article puis utilisez ce mode pour modifier sa taille
+                        <div className="text-muted-foreground mt-1">
+                          Vous pouvez tirer sur les poignées aux coins et sur
+                          les bords
+                        </div>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Move
+                        className="text-blue-500 mt-0.5 flex-shrink-0"
+                        size={18}
+                      />
+                      <div>
+                        <strong>Déplacer</strong> - Positionnez précisément un
+                        article sur l&apos;image
+                        <div className="text-muted-foreground mt-1">
+                          Les modifications sont enregistrées automatiquement
+                        </div>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Edit
+                        className="text-blue-500 mt-0.5 flex-shrink-0"
+                        size={18}
+                      />
+                      <div>
+                        <strong>Éditer</strong> - Modifiez le titre et la
+                        description d&apos;un article
+                        <div className="text-muted-foreground mt-1">
+                          Vous pouvez aussi double-cliquer sur un article pour
+                          l&apos;éditer
+                        </div>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Trash
+                        className="text-red-500 mt-0.5 flex-shrink-0"
+                        size={18}
+                      />
+                      <div>
+                        <strong>Supprimer</strong> - Enlève définitivement un
+                        article
+                        <div className="text-muted-foreground mt-1">
+                          Une confirmation vous sera demandée
+                        </div>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className="font-medium text-lg mb-2">
+                    Raccourcis clavier
+                  </h4>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span>Annuler</span>
+                      <span className="bg-gray-100 px-2 py-0.5 rounded font-mono">
+                        Ctrl+Z
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Supprimer</span>
+                      <span className="bg-gray-100 px-2 py-0.5 rounded font-mono">
+                        Delete
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Zoom +</span>
+                      <span className="bg-gray-100 px-2 py-0.5 rounded font-mono">
+                        Ctrl++
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Zoom -</span>
+                      <span className="bg-gray-100 px-2 py-0.5 rounded font-mono">
+                        Ctrl+-
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Zoom 100%</span>
+                      <span className="bg-gray-100 px-2 py-0.5 rounded font-mono">
+                        Ctrl+0
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Annuler l&apos;action</span>
+                      <span className="bg-gray-100 px-2 py-0.5 rounded font-mono">
+                        Escape
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <h4 className="font-medium text-blue-700 mb-1">
+                    Conseils pour mobile
+                  </h4>
+                  <p className="text-sm text-blue-600">
+                    Sur mobile, utilisez le zoom pour plus de précision et les
+                    boutons d&apos;outils pour changer de mode. Appuyez une fois
+                    sur un article pour le sélectionner, puis utilisez les
+                    boutons qui apparaissent pour le modifier.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <Button variant="default" onClick={() => setShowHelp(false)}>
+                  J&apos;ai compris
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
