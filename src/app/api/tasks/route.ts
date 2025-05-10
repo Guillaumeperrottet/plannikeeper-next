@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 import { checkArticleAccess } from "@/lib/auth-session";
+import { calculateReminderDate } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
   const user = await getUser();
@@ -22,6 +23,7 @@ export async function POST(req: NextRequest) {
     period,
     endDate,
     articleId,
+    recurrenceReminderDate, // Peut être null ou une date explicite
   } = await req.json();
 
   // Vérifier que le nom de la tâche est présent
@@ -58,6 +60,25 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Calcul de la date de rappel automatiquement si nécessaire
+  let reminderDate = recurrenceReminderDate;
+
+  // Si la tâche est récurrente, avec période trimestrielle ou annuelle,
+  // et que realizationDate existe mais qu'aucune date de rappel explicite n'est fournie,
+  // alors calculer automatiquement une date de rappel (10 jours avant)
+  if (
+    recurring &&
+    realizationDate &&
+    (period === "quarterly" || period === "yearly") &&
+    !recurrenceReminderDate
+  ) {
+    reminderDate = calculateReminderDate(
+      new Date(realizationDate),
+      period,
+      10 // 10 jours avant l'échéance
+    );
+  }
+
   // Créer la tâche
   const task = await prisma.task.create({
     data: {
@@ -71,6 +92,7 @@ export async function POST(req: NextRequest) {
       recurring,
       period,
       endDate: endDate ? new Date(endDate) : null,
+      recurrenceReminderDate: reminderDate,
       articleId,
     },
   });
@@ -99,11 +121,14 @@ export async function POST(req: NextRequest) {
         link: `/dashboard/objet/${article.sector.object.id}/secteur/${article.sector.id}/article/${article.id}`,
         data: {
           taskId: task.id,
-          taskName: name, // Ajout du nom de la tâche
+          taskName: name,
           objectName: article.sector.object.nom,
           sectorName: article.sector.name,
           articleTitle: article.title,
-          assignerName: assignerUser?.name || "Un utilisateur", // Ajout de qui a assigné la tâche
+          assignerName: assignerUser?.name || "Un utilisateur",
+          isRecurring: recurring,
+          period: period,
+          reminderSet: !!reminderDate,
         },
       };
 

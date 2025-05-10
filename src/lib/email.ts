@@ -53,7 +53,7 @@ export const EmailService = {
         replyTo: process.env.RESEND_REPLY_TO_EMAIL,
         headers: {
           "List-Unsubscribe": `<${process.env.NEXT_PUBLIC_APP_URL}/unsubscribe?email=${encodeURIComponent(user.email)}>`,
-          "X-Entity-Ref-ID": `welcome-${user.id}-${Date.now()}`, // Identifiant unique pour éviter les duplications
+          "X-Entity-Ref-ID": `welcome-${user.id}-${Date.now()}`,
         },
       });
 
@@ -68,7 +68,7 @@ export const EmailService = {
       return { success: false, error };
     }
   },
-  // Ajouter cette méthode à votre service EmailService existant
+
   async sendSubscriptionConfirmationEmail(
     user: User,
     organization: Organization,
@@ -115,25 +115,24 @@ export const EmailService = {
     }
   },
 
-  // Fonction utilitaire pour obtenir le nom d'affichage du plan
-  getPlanDisplayName(planType: string): string {
-    switch (planType) {
-      case "FREE":
-        return "Gratuit";
-      case "PERSONAL":
-        return "Particulier";
-      case "PROFESSIONAL":
-        return "Indépendant";
-      case "ENTERPRISE":
+  getPlanDisplayName(planName: string): string {
+    switch (planName) {
+      case "basic":
+        return "Essentiel";
+      case "pro":
+        return "Professionnel";
+      case "enterprise":
         return "Entreprise";
       default:
-        return planType;
+        return planName;
     }
   },
-  async sendTaskAssignmentEmail(
+
+  async sendReminderEmail(
     to: string,
     userName: string,
-    tasks: TaskWithDetails[]
+    tasks: TaskWithDetails[],
+    daysBeforeDue: number
   ) {
     try {
       const { data, error } = await getResend().emails.send({
@@ -141,30 +140,29 @@ export const EmailService = {
           process.env.RESEND_FROM_EMAIL ||
           "PlanniKeeper <notifications@resend.dev>",
         to: [to],
-        subject: `Nouvelles tâches assignées - ${new Date().toLocaleDateString()}`,
-        html: generateTaskAssignmentEmailTemplate(userName, tasks),
+        subject: `Rappel : Tâches récurrentes à échéance dans ${daysBeforeDue} jours`,
+        html: generateReminderEmailTemplate(userName, tasks, daysBeforeDue),
         replyTo: process.env.RESEND_REPLY_TO_EMAIL,
       });
 
       if (error) {
-        console.error("Error sending email:", error);
+        console.error("Error sending reminder email:", error);
         return { success: false, error };
       }
 
       return { success: true, data };
     } catch (error) {
-      console.error("Error in email service:", error);
+      console.error("Error in email reminder service:", error);
       return { success: false, error };
     }
   },
 };
 
-/**
- * Génère le contenu HTML de l'email
- */
-function generateTaskAssignmentEmailTemplate(
+// Fonction utilitaire pour la génération du template HTML
+function generateReminderEmailTemplate(
   userName: string,
-  tasks: TaskWithDetails[]
+  tasks: TaskWithDetails[],
+  daysBeforeDue: number
 ): string {
   const formattedDate = new Date().toLocaleDateString("fr-FR");
   return `
@@ -172,7 +170,7 @@ function generateTaskAssignmentEmailTemplate(
     <html lang="fr">
     <head>
       <meta charset="UTF-8" />
-      <title>Tâches assignées</title>
+      <title>Rappel de tâches récurrentes</title>
       <style>
         body {
           font-family: Arial, sans-serif;
@@ -224,6 +222,16 @@ function generateTaskAssignmentEmailTemplate(
           color: #666;
           font-size: 14px;
         }
+        .reminder-banner {
+          background-color: #fff3cd;
+          border: 1px solid #ffeeba;
+          color: #856404;
+          padding: 10px;
+          border-radius: 5px;
+          margin-bottom: 15px;
+          text-align: center;
+          font-weight: bold;
+        }
         .footer {
           text-align: center;
           padding-top: 20px;
@@ -240,36 +248,24 @@ function generateTaskAssignmentEmailTemplate(
           border-radius: 5px;
           margin-top: 15px;
         }
-        .print-section {
-          display: none;
-        }
-        @media print {
-          .no-print {
-            display: none;
-          }
-          .print-section {
-            display: block;
-            margin: 20px 0;
-            padding: 10px;
-            border: 1px dashed #999;
-          }
-          .task-item {
-            break-inside: avoid;
-          }
-        }
       </style>
     </head>
     <body>
       <div class="container">
         <div class="header">
           <div class="logo">PlanniKeeper</div>
-          <div>Récapitulatif des tâches assignées</div>
+          <div>Rappel de tâches récurrentes</div>
           <div>${formattedDate}</div>
         </div>
         
         <div class="content">
           <p>Bonjour ${userName},</p>
-          <p>Voici les tâches qui vous ont été assignées récemment :</p>
+          
+          <div class="reminder-banner">
+            Vous avez ${tasks.length} tâche(s) récurrente(s) qui arrivent à échéance dans ${daysBeforeDue} jours.
+          </div>
+          
+          <p>Voici les tâches qui nécessitent votre attention prochainement :</p>
           
           <div class="task-list">
             ${tasks
@@ -283,31 +279,20 @@ function generateTaskAssignmentEmailTemplate(
                 </div>
                 ${
                   task.realizationDate
-                    ? `
-                <div class="task-details">
-                  <strong>Date prévue :</strong> ${new Date(task.realizationDate).toLocaleDateString("fr-FR")}
-                </div>
-                `
+                    ? `<div class="task-details"><strong>Date d'échéance :</strong> ${new Date(task.realizationDate).toLocaleDateString("fr-FR")}</div>`
                     : ""
                 }
-                <div class="task-details">
-                  <strong>Statut :</strong> ${getStatusText(task.status)}
-                </div>
+                <div class="task-details"><strong>Récurrence :</strong> ${getPeriodText(task.period || "")}</div>
               </div>
             `
               )
               .join("")}
           </div>
           
-          <div class="no-print">
-            <a href="${process.env.NEXT_PUBLIC_APP_URL}/profile/notifications" class="button">
+          <div>
+            <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard" class="button">
               Voir dans l'application
             </a>
-          </div>
-          
-          <div class="print-section">
-            <p>Notes :</p>
-            <div style="height: 100px; border-bottom: 1px solid #ddd;"></div>
           </div>
         </div>
         
@@ -321,20 +306,19 @@ function generateTaskAssignmentEmailTemplate(
   `;
 }
 
-/**
- * Convertit le statut technique en texte lisible
- */
-function getStatusText(status: string): string {
-  switch (status) {
-    case "pending":
-      return "En attente";
-    case "in_progress":
-      return "En cours";
-    case "completed":
-      return "Terminée";
-    case "cancelled":
-      return "Annulée";
+function getPeriodText(period: string): string {
+  switch (period) {
+    case "daily":
+      return "Quotidienne";
+    case "weekly":
+      return "Hebdomadaire";
+    case "monthly":
+      return "Mensuelle";
+    case "quarterly":
+      return "Trimestrielle";
+    case "yearly":
+      return "Annuelle";
     default:
-      return status;
+      return period;
   }
 }

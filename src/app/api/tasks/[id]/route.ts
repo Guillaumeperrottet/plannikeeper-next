@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 import { checkTaskAccess } from "@/lib/auth-session";
+import { calculateReminderDate } from "@/lib/utils";
 
 // Typage mis à jour : params est une Promise qui résout { id: string }
 type RouteParams = {
@@ -61,6 +62,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     period,
     endDate,
     executantComment,
+    recurrenceReminderDate, // Peut être null ou une date explicite
   } = await req.json();
 
   if (!name?.trim()) {
@@ -80,15 +82,54 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       },
     },
   });
+
   if (!task) {
     return NextResponse.json({ error: "Tâche non trouvée" }, { status: 404 });
   }
+
   const hasWriteAccess = await checkTaskAccess(user.id, taskId, "write");
   if (!hasWriteAccess) {
     return NextResponse.json(
       { error: "Vous n'avez pas les droits pour modifier cette tâche" },
       { status: 403 }
     );
+  }
+
+  // Gérer la date de rappel pour les tâches récurrentes
+  let reminderDate = recurrenceReminderDate;
+
+  // Si la tâche devient récurrente ou change de période vers trimestrielle/annuelle
+  if (
+    realizationDate &&
+    // La tâche devient récurrente
+    ((recurring && !task.recurring) ||
+      // Ou la période change vers un type qui nécessite un rappel
+      (recurring &&
+        task.recurring &&
+        (period === "quarterly" || period === "yearly") &&
+        task.period !== "quarterly" &&
+        task.period !== "yearly"))
+  ) {
+    // Si aucune date de rappel n'est fournie explicitement
+    if (recurrenceReminderDate === undefined) {
+      // Calculer automatiquement si c'est une période qui nécessite un rappel
+      if (period === "quarterly" || period === "yearly") {
+        reminderDate = calculateReminderDate(
+          new Date(realizationDate),
+          period,
+          10 // 10 jours avant l'échéance
+        );
+      } else {
+        reminderDate = null;
+      }
+    }
+  }
+  // Si la tâche n'est plus récurrente ou change vers une période qui ne nécessite pas de rappel
+  else if (
+    !recurring ||
+    (recurring && period !== "quarterly" && period !== "yearly")
+  ) {
+    reminderDate = null;
   }
 
   const updatedTask = await prisma.task.update({
@@ -106,6 +147,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       endDate: endDate ? new Date(endDate) : null,
       executantComment,
       done: status === "completed",
+      recurrenceReminderDate: reminderDate,
     },
   });
 

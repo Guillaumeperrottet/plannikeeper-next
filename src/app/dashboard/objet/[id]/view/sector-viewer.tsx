@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import ImageWithArticles from "@/app/components/ImageWithArticles";
 import AccessControl from "@/app/components/AccessControl";
-import MobileArticleList from "@/app/components/MobileArticleList"; // Importer le nouveau composant
+import ArticleList from "@/app/components/ArticleList"; // Importer le nouveau composant
 
 type Sector = {
   id: string;
@@ -220,7 +220,6 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                       )
                     }
                   >
-                    {/* <PlusCircle size={isMobile ? 16 : 20} className="mr-2" /> */}
                     {isMobile
                       ? "Modifier ou créer un article"
                       : "Modifier ou créer un article"}
@@ -231,7 +230,6 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                   <Link
                     href={`/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?addArticle=1`}
                   >
-                    {/* <PlusCircle size={isMobile ? 16 : 20} className="mr-2" /> */}
                     {isMobile
                       ? "Modifier ou créer un article"
                       : "Modifier ou créer un article"}
@@ -314,17 +312,33 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
               </button>
             </div>
 
-            {/* Nouveau composant : Liste des articles pour mobile */}
+            {/* Liste des articles pour mobile et desktop */}
             {selectedSector && !isFullscreen && (
-              <MobileArticleList
-                articles={articles}
-                selectedSectorName={selectedSector.name}
-                objetId={objetId}
-                sectorId={selectedSector.id}
-                onArticleClick={handleArticleClick}
-                onArticleHover={setHoveredArticleId}
-                hoveredArticleId={hoveredArticleId}
-              />
+              <>
+                {/* Version mobile */}
+                <ArticleList
+                  articles={articles}
+                  selectedSectorName={selectedSector.name}
+                  objetId={objetId}
+                  sectorId={selectedSector.id}
+                  onArticleClick={handleArticleClick}
+                  onArticleHover={setHoveredArticleId}
+                  hoveredArticleId={hoveredArticleId}
+                  isMobile={true}
+                />
+
+                {/* Version desktop */}
+                <ArticleList
+                  articles={articles}
+                  selectedSectorName={selectedSector.name}
+                  objetId={objetId}
+                  sectorId={selectedSector.id}
+                  onArticleClick={handleArticleClick}
+                  onArticleHover={setHoveredArticleId}
+                  hoveredArticleId={hoveredArticleId}
+                  isMobile={false}
+                />
+              </>
             )}
           </div>
         ) : (

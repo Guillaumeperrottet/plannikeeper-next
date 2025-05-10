@@ -608,6 +608,57 @@ export default function TaskFormWithDocuments({
                   </div>
                 </div>
               </div>
+              {/* section pour les notifications anticipées */}
+              {(formData.period === "quarterly" ||
+                formData.period === "yearly") && (
+                <div className="mt-4 border-t border-[color:var(--border-light)] pt-4">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="enableAdvanceNotification"
+                      checked={!!formData.recurrenceReminderDate}
+                      onChange={(e) => {
+                        // Si coché, calculer une date de rappel 10 jours avant la date de réalisation
+                        // Sinon, mettre à null
+                        setFormData({
+                          ...formData,
+                          recurrenceReminderDate:
+                            e.target.checked && formData.realizationDate
+                              ? new Date(
+                                  new Date(
+                                    formData.realizationDate as unknown as string
+                                  ).getTime() -
+                                    10 * 24 * 60 * 60 * 1000
+                                )
+                              : null,
+                        });
+                      }}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label
+                      htmlFor="enableAdvanceNotification"
+                      className="ml-2 text-xs sm:text-sm text-[color:var(--foreground)]"
+                    >
+                      Recevoir une notification 10 jours avant l&apos;échéance
+                    </label>
+                  </div>
+
+                  {formData.recurrenceReminderDate &&
+                    formData.realizationDate && (
+                      <div className="mt-2 text-xs sm:text-sm text-[color:var(--info-foreground)] bg-[color:var(--info-background-light)] p-2 rounded-md">
+                        Une notification sera envoyée le{" "}
+                        <strong>
+                          {new Date(
+                            new Date(
+                              formData.realizationDate as unknown as string
+                            ).getTime() -
+                              10 * 24 * 60 * 60 * 1000
+                          ).toLocaleDateString()}
+                        </strong>
+                      </div>
+                    )}
+                </div>
+              )}
             </div>
           )}
 

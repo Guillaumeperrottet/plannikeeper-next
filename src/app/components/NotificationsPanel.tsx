@@ -119,29 +119,15 @@ export default function NotificationsPanel({
     [refreshUnreadCount, onNotificationsRead]
   );
 
-  // Fonction markVisibleNotificationsAsRead modifiée pour mettre à jour l'UI
+  // Fonction markVisibleNotificationsAsRead définie avec useCallback
   const markVisibleNotificationsAsRead = useCallback(async () => {
     if (visibleNotifications.length === 0) return;
 
     try {
-      // Mettre à jour localement l'état des notifications
-      setNotifications((prevNotifications) =>
-        prevNotifications.map((notification) =>
-          visibleNotifications.includes(notification.id)
-            ? { ...notification, read: true }
-            : notification
-        )
-      );
-
-      // Envoyer les requêtes au serveur
       await Promise.all(
         visibleNotifications.map((id) => markAsRead(id, false))
       );
 
-      // Vider la liste des notifications visibles non lues
-      setVisibleNotifications([]);
-
-      // Rafraîchir le compteur
       refreshUnreadCount();
       onNotificationsRead();
     } catch (error) {
