@@ -200,11 +200,11 @@ const ArticleList: React.FC<ArticleListProps> = ({
       transition: {
         height: {
           type: "spring",
-          stiffness: 500,
-          damping: 30,
+          stiffness: 400,
+          damping: 40,
         },
         opacity: {
-          duration: 0.2,
+          duration: 0.3,
           delay: 0.1,
         },
       },
@@ -327,7 +327,7 @@ const ArticleList: React.FC<ArticleListProps> = ({
                   <motion.button
                     onClick={toggleFilters}
                     whileTap={{ scale: 0.9 }}
-                    className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md"
+                    className={`relative p-2 ${showFilters ? "bg-blue-100 text-blue-700" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"} rounded-md transition-colors`}
                     aria-label="Filtres et tri"
                   >
                     <Filter size={18} />
@@ -357,9 +357,10 @@ const ArticleList: React.FC<ArticleListProps> = ({
                     exit="hidden"
                     className="border-b border-gray-200 overflow-hidden"
                   >
-                    <div className="p-3 flex flex-col gap-3">
-                      {/* Recherche */}
-                      <div className="relative">
+                    {/* Augmentation du padding vertical de 3 à 5 pour plus d'espace */}
+                    <div className="p-5 flex flex-col gap-4">
+                      {/* Recherche - avec plus d'espace au-dessus */}
+                      <div className="relative mt-2">
                         <Search
                           size={16}
                           className="absolute left-2 top-2.5 text-gray-400"
@@ -382,15 +383,15 @@ const ArticleList: React.FC<ArticleListProps> = ({
                         )}
                       </div>
 
-                      {/* Options de tri */}
-                      <div className="flex flex-wrap gap-2 items-center">
-                        <span className="text-xs text-gray-500">
+                      {/* Options de tri - avec plus d'espace entre les éléments */}
+                      <div className="flex flex-wrap gap-3 items-center my-2">
+                        <span className="text-xs text-gray-500 font-medium">
                           Trier par:
                         </span>
                         <select
                           value={sortBy}
                           onChange={(e) => setSortBy(e.target.value)}
-                          className="text-sm border border-gray-200 rounded px-2 py-1 bg-white"
+                          className="text-sm border border-gray-200 rounded px-3 py-1.5 bg-white"
                         >
                           {sortOptions.map((option) => (
                             <option key={option.id} value={option.id}>
@@ -400,11 +401,11 @@ const ArticleList: React.FC<ArticleListProps> = ({
                         </select>
                       </div>
 
-                      {/* Bouton pour réinitialiser les filtres */}
-                      <div className="flex justify-end">
+                      {/* Bouton pour réinitialiser les filtres - avec plus d'espace en-dessous */}
+                      <div className="flex justify-end mt-2 mb-2">
                         <button
                           onClick={clearFilters}
-                          className="text-xs text-gray-500 hover:text-gray-700"
+                          className="text-xs font-medium text-gray-500 hover:text-gray-700 py-1.5 px-3 rounded hover:bg-gray-100"
                         >
                           Réinitialiser les filtres
                         </button>
@@ -419,9 +420,10 @@ const ArticleList: React.FC<ArticleListProps> = ({
                 ref={listRef}
                 style={{
                   overflowY: "auto",
+                  // Ajustement de la hauteur maximale pour s'adapter au panneau de filtres
                   maxHeight: isMobile
-                    ? "calc(80vh - 60px)"
-                    : "calc(100vh - 60px)",
+                    ? `calc(80vh - ${showFilters ? "180px" : "60px"})`
+                    : `calc(100vh - ${showFilters ? "180px" : "60px"})`,
                   WebkitOverflowScrolling: "touch",
                   paddingBottom: isMobile
                     ? "env(safe-area-inset-bottom, 16px)"
