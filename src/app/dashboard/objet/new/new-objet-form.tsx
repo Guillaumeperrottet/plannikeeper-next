@@ -40,6 +40,13 @@ export default function NewObjectForm() {
 
     const newSectors = [...sectors];
     newSectors.splice(index, 1);
+
+    // Vérifier qu'il reste au moins un secteur
+    if (newSectors.length === 0) {
+      toast.error("Au moins un secteur est requis pour créer un objet");
+      return;
+    }
+
     setSectors(newSectors);
   };
 
@@ -204,6 +211,7 @@ export default function NewObjectForm() {
   };
 
   const validateForm = (): boolean => {
+    // Vérifier les informations générales de l'objet
     if (!nom.trim()) {
       toast.error("Le nom de l'objet est requis");
       return false;
@@ -216,6 +224,12 @@ export default function NewObjectForm() {
 
     if (!secteurPrincipal.trim()) {
       toast.error("Le secteur principal est requis");
+      return false;
+    }
+
+    // S'assurer qu'il y a au moins un secteur
+    if (sectors.length === 0) {
+      toast.error("Au moins un secteur est requis pour créer un objet");
       return false;
     }
 
@@ -558,7 +572,15 @@ export default function NewObjectForm() {
           </Link>
           <Button
             type="submit"
-            disabled={isSubmitting || sectors.some((s) => s.isCompressing)}
+            disabled={
+              isSubmitting ||
+              sectors.some((s) => s.isCompressing) ||
+              sectors.length === 0 ||
+              sectors.some((s) => !s.name.trim() || !s.image) ||
+              !nom.trim() ||
+              !adresse.trim() ||
+              !secteurPrincipal.trim()
+            }
           >
             {isSubmitting ? (
               <>
@@ -569,6 +591,26 @@ export default function NewObjectForm() {
               "Créer l'objet"
             )}
           </Button>
+        </div>
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold border-b pb-2">Secteurs</h2>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-orange-600">
+              {sectors.length === 0 ||
+              sectors.some((s) => !s.name.trim() || !s.image)
+                ? "Au moins un secteur avec nom et image est requis"
+                : ""}
+            </span>
+            <button
+              type="button"
+              onClick={handleAddSector}
+              className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
+              disabled={isSubmitting}
+            >
+              <Plus size={16} />
+              <span>Ajouter un secteur</span>
+            </button>
+          </div>
         </div>
       </form>
     </div>

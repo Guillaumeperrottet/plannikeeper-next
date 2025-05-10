@@ -49,9 +49,18 @@ export async function POST(req: NextRequest) {
     const secteur = formData.get("secteur") as string;
     const sectorsCount = parseInt(formData.get("sectorsCount") as string, 10);
 
+    // Validation des données principales
     if (!nom || !adresse || !secteur) {
       return NextResponse.json(
-        { error: "Données incomplètes" },
+        { error: "Données incomplètes: nom, adresse et secteur sont requis" },
+        { status: 400 }
+      );
+    }
+
+    // Validation du nombre de secteurs
+    if (!sectorsCount || sectorsCount <= 0) {
+      return NextResponse.json(
+        { error: "Au moins un secteur est requis pour créer un objet" },
         { status: 400 }
       );
     }
@@ -107,14 +116,18 @@ export async function POST(req: NextRequest) {
 
     // 2. Traiter les secteurs
     const sectorsData = [];
+    let hasValidSector = false;
 
     for (let i = 0; i < sectorsCount; i++) {
       const sectorName = formData.get(`sector_${i}_name`) as string;
       const sectorImage = formData.get(`sector_${i}_image`) as File;
 
+      // Vérifier que chaque secteur a un nom et une image
       if (!sectorName || !sectorImage) {
         continue; // Ignorer les secteurs incomplets
       }
+
+      hasValidSector = true;
 
       // Lire l'image
       const buffer = Buffer.from(await sectorImage.arrayBuffer());
@@ -140,12 +153,23 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 3. Créer tous les secteurs
-    if (sectorsData.length > 0) {
-      await prisma.sector.createMany({
-        data: sectorsData,
+    // Vérifier qu'au moins un secteur valide a été créé
+    if (!hasValidSector || sectorsData.length === 0) {
+      // Si aucun secteur valide, supprimer l'objet créé précédemment
+      await prisma.objet.delete({
+        where: { id: objet.id },
       });
+
+      return NextResponse.json(
+        { error: "Au moins un secteur avec nom et image est requis" },
+        { status: 400 }
+      );
     }
+
+    // 3. Créer tous les secteurs
+    await prisma.sector.createMany({
+      data: sectorsData,
+    });
 
     // 4. Récupérer l'objet complet avec ses secteurs
     const objetAvecSecteurs = await prisma.objet.findUnique({
