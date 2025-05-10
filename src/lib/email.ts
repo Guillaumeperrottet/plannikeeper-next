@@ -1,10 +1,8 @@
 // src/lib/email.ts
 import { Resend } from "resend";
-import { Task } from "@prisma/client";
-import { Plan, Organization, User } from "@prisma/client";
-import { getSubscriptionConfirmationTemplate } from "./email-templates/subscription-confirmation";
-import { getWelcomeEmailTemplate } from "./email-templates/welcome-email";
+import { Task, Plan, Organization, User } from "@prisma/client";
 
+// Définition du type TaskWithDetails harmonisée pour être compatible avec tous les templates
 export type TaskWithDetails = Task & {
   article: {
     title: string;
@@ -19,7 +17,15 @@ export type TaskWithDetails = Task & {
     name: string;
     email: string;
   } | null;
+  // Le champ period peut être string, null ou undefined
+  period?: string | null;
 };
+
+// Import direct des templates
+import { getSubscriptionConfirmationTemplate } from "./email-templates/subscription-confirmation";
+import { getWelcomeEmailTemplate } from "./email-templates/welcome-email";
+import { getTaskAssignmentEmailTemplate } from "./email-templates/task-assignement-email";
+import { getTasksReminderEmailTemplate } from "./email-templates/tasks-reminder-mail";
 
 let resend: Resend | null = null;
 
@@ -70,7 +76,6 @@ export const EmailService = {
     }
   },
 
-  // Ajouter cette méthode à votre service EmailService existant
   async sendSubscriptionConfirmationEmail(
     user: User,
     organization: Organization,
@@ -148,7 +153,7 @@ export const EmailService = {
           "PlanniKeeper <notifications@resend.dev>",
         to: [to],
         subject: `Nouvelles tâches assignées - ${new Date().toLocaleDateString()}`,
-        html: generateTaskAssignmentEmailTemplate(userName, tasks),
+        html: getTaskAssignmentEmailTemplate(userName, tasks),
         replyTo: process.env.RESEND_REPLY_TO_EMAIL,
       });
 
@@ -180,7 +185,7 @@ export const EmailService = {
           "PlanniKeeper <notifications@resend.dev>",
         to: [to],
         subject: `Rappel : Tâches récurrentes à échéance dans ${daysBeforeDue} jours`,
-        html: generateReminderEmailTemplate(userName, tasks, daysBeforeDue),
+        html: getTasksReminderEmailTemplate(userName, tasks, daysBeforeDue),
         replyTo: process.env.RESEND_REPLY_TO_EMAIL,
       });
 
@@ -196,359 +201,3 @@ export const EmailService = {
     }
   },
 };
-
-/**
- * Génère le contenu HTML de l'email d'assignation de tâches
- */
-function generateTaskAssignmentEmailTemplate(
-  userName: string,
-  tasks: TaskWithDetails[]
-): string {
-  const formattedDate = new Date().toLocaleDateString("fr-FR");
-  return `
-    <!DOCTYPE html>
-    <html lang="fr">
-    <head>
-      <meta charset="UTF-8" />
-      <title>Tâches assignées</title>
-      <style>
-        body {
-          font-family: Arial, sans-serif;
-          background-color: #f4f4f4;
-          margin: 0;
-          padding: 0;
-        }
-        .container {
-          max-width: 600px;
-          margin: 30px auto;
-          background: #fff;
-          border-radius: 8px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-          padding: 20px;
-        }
-        .header {
-          text-align: center;
-          padding: 20px 0;
-          border-bottom: 2px solid #d9840d;
-        }
-        .logo {
-          font-size: 24px;
-          font-weight: bold;
-          color: #d9840d;
-        }
-        .content {
-          padding: 20px 0;
-        }
-        .task-list {
-          margin-top: 20px;
-        }
-        .task-item {
-          border: 1px solid #ddd;
-          border-radius: 5px;
-          padding: 15px;
-          margin-bottom: 15px;
-          background-color: #f9f9f9;
-        }
-        .task-title {
-          font-weight: bold;
-          font-size: 18px;
-          color: #d9840d;
-          margin-bottom: 5px;
-        }
-        .task-details {
-          margin-bottom: 5px;
-        }
-        .task-location {
-          color: #666;
-          font-size: 14px;
-        }
-        .footer {
-          text-align: center;
-          padding-top: 20px;
-          border-top: 1px solid #ddd;
-          color: #777;
-          font-size: 12px;
-        }
-        .button {
-          display: inline-block;
-          background-color: #d9840d;
-          color: white;
-          padding: 10px 20px;
-          text-decoration: none;
-          border-radius: 5px;
-          margin-top: 15px;
-        }
-        .print-section {
-          display: none;
-        }
-        @media print {
-          .no-print {
-            display: none;
-          }
-          .print-section {
-            display: block;
-            margin: 20px 0;
-            padding: 10px;
-            border: 1px dashed #999;
-          }
-          .task-item {
-            break-inside: avoid;
-          }
-        }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <div class="logo">PlanniKeeper</div>
-          <div>Récapitulatif des tâches assignées</div>
-          <div>${formattedDate}</div>
-        </div>
-        
-        <div class="content">
-          <p>Bonjour ${userName},</p>
-          <p>Voici les tâches qui vous ont été assignées récemment :</p>
-          
-          <div class="task-list">
-            ${tasks
-              .map(
-                (task) => `
-              <div class="task-item">
-                <div class="task-title">${task.name}</div>
-                ${task.description ? `<div class="task-details">${task.description}</div>` : ""}
-                <div class="task-location">
-                  ${task.article.sector.object.nom} › ${task.article.sector.name} › ${task.article.title}
-                </div>
-                ${
-                  task.realizationDate
-                    ? `
-                <div class="task-details">
-                  <strong>Date prévue :</strong> ${new Date(task.realizationDate).toLocaleDateString("fr-FR")}
-                </div>
-                `
-                    : ""
-                }
-                <div class="task-details">
-                  <strong>Statut :</strong> ${getStatusText(task.status)}
-                </div>
-              </div>
-            `
-              )
-              .join("")}
-          </div>
-          
-          <div class="no-print">
-            <a href="${process.env.NEXT_PUBLIC_APP_URL}/profile/notifications" class="button">
-              Voir dans l'application
-            </a>
-          </div>
-          
-          <div class="print-section">
-            <p>Notes :</p>
-            <div style="height: 100px; border-bottom: 1px solid #ddd;"></div>
-          </div>
-        </div>
-        
-        <div class="footer">
-          <p>Cet email a été envoyé automatiquement par PlanniKeeper.</p>
-          <p>Vous pouvez modifier vos préférences de notification dans votre profil.</p>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
-}
-
-/**
- * Génère le template HTML pour les emails de rappel
- */
-function generateReminderEmailTemplate(
-  userName: string,
-  tasks: TaskWithDetails[],
-  daysBeforeDue: number
-): string {
-  const formattedDate = new Date().toLocaleDateString("fr-FR");
-  return `
-    <!DOCTYPE html>
-    <html lang="fr">
-    <head>
-      <meta charset="UTF-8" />
-      <title>Rappel de tâches récurrentes</title>
-      <style>
-        body {
-          font-family: Arial, sans-serif;
-          background-color: #f4f4f4;
-          margin: 0;
-          padding: 0;
-        }
-        .container {
-          max-width: 600px;
-          margin: 30px auto;
-          background: #fff;
-          border-radius: 8px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-          padding: 20px;
-        }
-        .header {
-          text-align: center;
-          padding: 20px 0;
-          border-bottom: 2px solid #d9840d;
-        }
-        .logo {
-          font-size: 24px;
-          font-weight: bold;
-          color: #d9840d;
-        }
-        .content {
-          padding: 20px 0;
-        }
-        .task-list {
-          margin-top: 20px;
-        }
-        .task-item {
-          border: 1px solid #ddd;
-          border-radius: 5px;
-          padding: 15px;
-          margin-bottom: 15px;
-          background-color: #f9f9f9;
-        }
-        .task-title {
-          font-weight: bold;
-          font-size: 18px;
-          color: #d9840d;
-          margin-bottom: 5px;
-        }
-        .task-details {
-          margin-bottom: 5px;
-        }
-        .task-location {
-          color: #666;
-          font-size: 14px;
-        }
-        .reminder-banner {
-          background-color: #fff3cd;
-          border: 1px solid #ffeeba;
-          color: #856404;
-          padding: 10px;
-          border-radius: 5px;
-          margin-bottom: 15px;
-          text-align: center;
-          font-weight: bold;
-        }
-        .footer {
-          text-align: center;
-          padding-top: 20px;
-          border-top: 1px solid #ddd;
-          color: #777;
-          font-size: 12px;
-        }
-        .button {
-          display: inline-block;
-          background-color: #d9840d;
-          color: white;
-          padding: 10px 20px;
-          text-decoration: none;
-          border-radius: 5px;
-          margin-top: 15px;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <div class="logo">PlanniKeeper</div>
-          <div>Rappel de tâches récurrentes</div>
-          <div>${formattedDate}</div>
-        </div>
-        
-        <div class="content">
-          <p>Bonjour ${userName},</p>
-          
-          <div class="reminder-banner">
-            Vous avez ${tasks.length} tâche(s) récurrente(s) qui arrivent à échéance dans ${daysBeforeDue} jours.
-          </div>
-          
-          <p>Voici les tâches qui nécessitent votre attention prochainement :</p>
-          
-          <div class="task-list">
-            ${tasks
-              .map(
-                (task) => `
-              <div class="task-item">
-                <div class="task-title">${task.name}</div>
-                ${task.description ? `<div class="task-details">${task.description}</div>` : ""}
-                <div class="task-location">
-                  ${task.article.sector.object.nom} › ${task.article.sector.name} › ${task.article.title}
-                </div>
-                ${
-                  task.realizationDate
-                    ? `
-                <div class="task-details">
-                  <strong>Date d'échéance :</strong> ${new Date(task.realizationDate).toLocaleDateString("fr-FR")}
-                </div>
-                `
-                    : ""
-                }
-                <div class="task-details">
-                  <strong>Récurrence :</strong> ${getPeriodText(task.period || "")}
-                </div>
-              </div>
-            `
-              )
-              .join("")}
-          </div>
-          
-          <div>
-            <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard" class="button">
-              Voir dans l'application
-            </a>
-          </div>
-        </div>
-        
-        <div class="footer">
-          <p>Cet email a été envoyé automatiquement par PlanniKeeper.</p>
-          <p>Vous pouvez modifier vos préférences de notification dans votre profil.</p>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
-}
-
-/**
- * Convertit le statut technique en texte lisible
- */
-function getStatusText(status: string): string {
-  switch (status) {
-    case "pending":
-      return "En attente";
-    case "in_progress":
-      return "En cours";
-    case "completed":
-      return "Terminée";
-    case "cancelled":
-      return "Annulée";
-    default:
-      return status;
-  }
-}
-
-/**
- * Convertit la période technique en texte lisible
- */
-function getPeriodText(period: string): string {
-  switch (period) {
-    case "daily":
-      return "Quotidienne";
-    case "weekly":
-      return "Hebdomadaire";
-    case "monthly":
-      return "Mensuelle";
-    case "quarterly":
-      return "Trimestrielle";
-    case "yearly":
-      return "Annuelle";
-    default:
-      return period;
-  }
-}
