@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   List,
   X,
@@ -74,13 +74,9 @@ const ArticleList: React.FC<ArticleListProps> = ({
   const listRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Mettre à jour les articles filtrés quand les articles source changent
-  useEffect(() => {
-    applyFiltersAndSort();
-  }, [articles, searchTerm, sortBy, hasPositionFilter]);
-
   // Fonction pour appliquer les filtres et le tri
-  const applyFiltersAndSort = () => {
+  // Utiliser useCallback pour la mémoriser et éviter les recréations
+  const applyFiltersAndSort = useCallback(() => {
     // Appliquer le filtre de recherche
     let filtered = articles.filter(
       (article) =>
@@ -103,7 +99,12 @@ const ArticleList: React.FC<ArticleListProps> = ({
     }
 
     setFilteredArticles(filtered);
-  };
+  }, [articles, searchTerm, sortBy, hasPositionFilter]);
+
+  // Mettre à jour les articles filtrés quand les articles source changent
+  useEffect(() => {
+    applyFiltersAndSort();
+  }, [articles, searchTerm, sortBy, hasPositionFilter, applyFiltersAndSort]);
 
   // Focus sur le champ de recherche quand les filtres sont affichés
   useEffect(() => {
