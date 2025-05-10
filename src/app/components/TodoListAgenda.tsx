@@ -750,7 +750,7 @@ export default function TodoListAgenda() {
                       className="w-1/2 bg-[color:var(--background)] text-[color:var(--foreground)] px-3 py-1.5 rounded border border-[color:var(--border)] text-sm"
                     >
                       <option value="all">Tous les statuts</option>
-                      <option value="pending">En attente</option>
+                      <option value="pending">A faire</option>
                       <option value="in_progress">En cours</option>
                       <option value="completed">Terminées</option>
                       <option value="cancelled">Annulées</option>
@@ -842,7 +842,7 @@ export default function TodoListAgenda() {
                             <span className="font-medium">{task.name}</span>
                             <span className="text-xs py-0.5 px-2 rounded-full bg-[color:var(--muted)] text-[color:var(--muted-foreground)]">
                               {task.status === "pending"
-                                ? "En attente"
+                                ? "A faire"
                                 : task.status === "in_progress"
                                   ? "En cours"
                                   : task.status === "completed"
@@ -926,7 +926,7 @@ export default function TodoListAgenda() {
                             <span className="font-medium">{task.name}</span>
                             <span className="text-xs py-0.5 px-2 rounded-full bg-[color:var(--muted)] text-[color:var(--muted-foreground)]">
                               {task.status === "pending"
-                                ? "En attente"
+                                ? "A faire"
                                 : task.status === "in_progress"
                                   ? "En cours"
                                   : task.status === "completed"
