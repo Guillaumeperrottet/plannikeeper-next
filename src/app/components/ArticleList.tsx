@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   List,
   X,
@@ -6,6 +6,11 @@ import {
   PanelLeft,
   ChevronLeft,
   ChevronRight,
+  Search,
+  Filter,
+  CheckSquare,
+  Square,
+  XCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -30,6 +35,28 @@ interface ArticleListProps {
   isMobile?: boolean;
 }
 
+// Options disponibles pour le tri
+type SortOption = {
+  id: string;
+  label: string;
+  compareFn: (a: Article, b: Article) => number;
+};
+
+const sortOptions: SortOption[] = [
+  {
+    id: "title-asc",
+    label: "Titre (A-Z)",
+    compareFn: (a, b) =>
+      a.title.toLowerCase() > b.title.toLowerCase() ? 1 : -1,
+  },
+  {
+    id: "title-desc",
+    label: "Titre (Z-A)",
+    compareFn: (a, b) =>
+      a.title.toLowerCase() < b.title.toLowerCase() ? 1 : -1,
+  },
+];
+
 const ArticleList: React.FC<ArticleListProps> = ({
   articles,
   selectedSectorName,
@@ -39,7 +66,51 @@ const ArticleList: React.FC<ArticleListProps> = ({
   isMobile = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("title-asc");
+  const [filteredArticles, setFilteredArticles] = useState<Article[]>(articles);
+  const [hasPositionFilter, setHasPositionFilter] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Mettre à jour les articles filtrés quand les articles source changent
+  useEffect(() => {
+    applyFiltersAndSort();
+  }, [articles, searchTerm, sortBy, hasPositionFilter]);
+
+  // Fonction pour appliquer les filtres et le tri
+  const applyFiltersAndSort = () => {
+    // Appliquer le filtre de recherche
+    let filtered = articles.filter(
+      (article) =>
+        article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (article.description &&
+          article.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    // Appliquer le filtre de position
+    if (hasPositionFilter) {
+      filtered = filtered.filter(
+        (article) => article.positionX !== null && article.positionY !== null
+      );
+    }
+
+    // Appliquer le tri
+    const sortOption = sortOptions.find((option) => option.id === sortBy);
+    if (sortOption) {
+      filtered.sort(sortOption.compareFn);
+    }
+
+    setFilteredArticles(filtered);
+  };
+
+  // Focus sur le champ de recherche quand les filtres sont affichés
+  useEffect(() => {
+    if (showFilters && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [showFilters]);
 
   // Feedback haptique pour les interactions
   const triggerHapticFeedback = (intensity = "light") => {
@@ -63,9 +134,34 @@ const ArticleList: React.FC<ArticleListProps> = ({
     setIsOpen(!isOpen);
   };
 
+  const toggleFilters = () => {
+    triggerHapticFeedback();
+    setShowFilters(!showFilters);
+  };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setSortBy("title-asc");
+    setHasPositionFilter(false);
+    triggerHapticFeedback("medium");
+  };
+
   const handleArticleSelect = (articleId: string) => {
     triggerHapticFeedback("medium");
     onArticleClick(articleId);
+  };
+
+  const togglePositionFilter = () => {
+    setHasPositionFilter(!hasPositionFilter);
+    triggerHapticFeedback();
+  };
+
+  const getFilterCount = () => {
+    let count = 0;
+    if (searchTerm) count++;
+    if (sortBy !== "title-asc") count++;
+    if (hasPositionFilter) count++;
+    return count;
   };
 
   // Animations
@@ -109,6 +205,25 @@ const ArticleList: React.FC<ArticleListProps> = ({
         duration: 0.3,
       },
     }),
+  };
+
+  const filterBarVariants = {
+    hidden: { height: 0, opacity: 0 },
+    visible: {
+      height: "auto",
+      opacity: 1,
+      transition: {
+        height: {
+          type: "spring",
+          stiffness: 500,
+          damping: 30,
+        },
+        opacity: {
+          duration: 0.2,
+          delay: 0.1,
+        },
+      },
+    },
   };
 
   return (
@@ -215,22 +330,120 @@ const ArticleList: React.FC<ArticleListProps> = ({
                   borderBottom: "1px solid #eee",
                 }}
               >
-                <h3 style={{ fontWeight: 500, margin: 0 }}>
-                  Articles de &quot;{selectedSectorName}&quot;
-                </h3>
-                <motion.button
-                  onClick={togglePanel}
-                  whileTap={{ scale: 0.9 }}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: "8px",
-                  }}
-                >
-                  <X size={20} />
-                </motion.button>
+                <div className="flex items-center">
+                  <h3 style={{ fontWeight: 500, margin: 0 }}>
+                    Articles de &quot;{selectedSectorName}&quot;
+                  </h3>
+                  <div className="text-xs bg-gray-100 px-2 ml-2 rounded-full">
+                    {filteredArticles.length}/{articles.length}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <motion.button
+                    onClick={toggleFilters}
+                    whileTap={{ scale: 0.9 }}
+                    className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md"
+                    aria-label="Filtres et tri"
+                  >
+                    <Filter size={18} />
+                    {getFilterCount() > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                        {getFilterCount()}
+                      </span>
+                    )}
+                  </motion.button>
+                  <motion.button
+                    onClick={togglePanel}
+                    whileTap={{ scale: 0.9 }}
+                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md"
+                  >
+                    <X size={18} />
+                  </motion.button>
+                </div>
               </div>
+
+              {/* Barre de filtres - apparaît/disparaît en fonction de showFilters */}
+              <AnimatePresence>
+                {showFilters && (
+                  <motion.div
+                    variants={filterBarVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="hidden"
+                    className="border-b border-gray-200 overflow-hidden"
+                  >
+                    <div className="p-3 flex flex-col gap-3">
+                      {/* Recherche */}
+                      <div className="relative">
+                        <Search
+                          size={16}
+                          className="absolute left-2 top-2.5 text-gray-400"
+                        />
+                        <input
+                          ref={searchInputRef}
+                          type="text"
+                          placeholder="Rechercher..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="w-full py-2 pl-8 pr-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                        {searchTerm && (
+                          <button
+                            onClick={() => setSearchTerm("")}
+                            className="absolute right-2 top-2.5 text-gray-400 hover:text-gray-600"
+                          >
+                            <XCircle size={16} />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Options de tri et filtres */}
+                      <div className="flex flex-wrap gap-2 items-center">
+                        <span className="text-xs text-gray-500">
+                          Trier par:
+                        </span>
+                        <select
+                          value={sortBy}
+                          onChange={(e) => setSortBy(e.target.value)}
+                          className="text-sm border border-gray-200 rounded px-2 py-1 bg-white"
+                        >
+                          {sortOptions.map((option) => (
+                            <option key={option.id} value={option.id}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+
+                        <button
+                          onClick={togglePositionFilter}
+                          className={`flex items-center gap-1 text-xs py-1 px-2 rounded border ${
+                            hasPositionFilter
+                              ? "bg-blue-50 border-blue-200 text-blue-600"
+                              : "border-gray-200"
+                          }`}
+                        >
+                          {hasPositionFilter ? (
+                            <CheckSquare size={14} />
+                          ) : (
+                            <Square size={14} />
+                          )}
+                          Avec position
+                        </button>
+                      </div>
+
+                      {/* Bouton pour réinitialiser les filtres */}
+                      <div className="flex justify-end">
+                        <button
+                          onClick={clearFilters}
+                          className="text-xs text-gray-500 hover:text-gray-700"
+                        >
+                          Réinitialiser les filtres
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Contenu du panneau avec défilement */}
               <div
@@ -246,7 +459,7 @@ const ArticleList: React.FC<ArticleListProps> = ({
                     : 0,
                 }}
               >
-                {articles.length === 0 ? (
+                {filteredArticles.length === 0 ? (
                   <div
                     style={{
                       textAlign: "center",
@@ -254,11 +467,13 @@ const ArticleList: React.FC<ArticleListProps> = ({
                       color: "#666",
                     }}
                   >
-                    Aucun article disponible pour ce secteur
+                    {articles.length === 0
+                      ? "Aucun article disponible pour ce secteur"
+                      : "Aucun article ne correspond à vos critères"}
                   </div>
                 ) : (
                   <div style={{ padding: "12px 16px" }}>
-                    {articles.map((article, index) => (
+                    {filteredArticles.map((article, index) => (
                       <motion.div
                         key={article.id}
                         custom={index}
@@ -291,6 +506,12 @@ const ArticleList: React.FC<ArticleListProps> = ({
                             }}
                           >
                             {article.title}
+                            {article.positionX !== null &&
+                              article.positionY !== null && (
+                                <span className="inline-block ml-2 text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded">
+                                  Positionné
+                                </span>
+                              )}
                           </h4>
                           <ExternalLink
                             size={14}
@@ -327,7 +548,7 @@ const ArticleList: React.FC<ArticleListProps> = ({
               </div>
 
               {/* Boutons de navigation - uniquement sur desktop */}
-              {!isMobile && articles.length > 0 && (
+              {!isMobile && filteredArticles.length > 0 && (
                 <div
                   style={{
                     borderTop: "1px solid #eee",
