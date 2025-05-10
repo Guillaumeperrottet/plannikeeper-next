@@ -188,8 +188,8 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
     >
       {!isFullscreen && (
         <div className="p-2 md:p-4 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4 bg-transparent">
-          {/* Interface de sélection de secteur - adaptative pour mobile et desktop */}
-          <div className="w-full sm:w-auto flex-1">
+          {/* Interface de sélection de secteur avec bouton de liste d'articles en desktop */}
+          <div className="w-full sm:w-auto flex-1 flex items-center">
             <DropdownMenu
               items={sectors.map((s) => ({ id: s.id, label: s.name }))}
               selectedId={selectedSector?.id}
@@ -201,6 +201,20 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 selectedSector ? selectedSector.name : "Sélectionner un secteur"
               }
             />
+
+            {/* Liste d'articles desktop - positionnée à côté du sélecteur */}
+            {selectedSector && (
+              <ArticleList
+                articles={articles}
+                selectedSectorName={selectedSector.name}
+                objetId={objetId}
+                sectorId={selectedSector.id}
+                onArticleClick={handleArticleClick}
+                onArticleHover={setHoveredArticleId}
+                hoveredArticleId={hoveredArticleId}
+                isMobile={false}
+              />
+            )}
           </div>
 
           {/* Bouton pour ajouter/déplacer un article */}
@@ -312,7 +326,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
               </button>
             </div>
 
-            {/* Liste des articles pour mobile et desktop */}
+            {/* Liste des articles pour mobile uniquement */}
             {selectedSector && !isFullscreen && (
               <>
                 {/* Version mobile */}
@@ -325,18 +339,6 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                   onArticleHover={setHoveredArticleId}
                   hoveredArticleId={hoveredArticleId}
                   isMobile={true}
-                />
-
-                {/* Version desktop */}
-                <ArticleList
-                  articles={articles}
-                  selectedSectorName={selectedSector.name}
-                  objetId={objetId}
-                  sectorId={selectedSector.id}
-                  onArticleClick={handleArticleClick}
-                  onArticleHover={setHoveredArticleId}
-                  hoveredArticleId={hoveredArticleId}
-                  isMobile={false}
                 />
               </>
             )}
