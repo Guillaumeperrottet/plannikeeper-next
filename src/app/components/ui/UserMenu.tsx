@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useRef, useEffect } from "react";
 import {
   LogOut,
@@ -8,6 +6,7 @@ import {
   LayoutDashboard,
   CreditCard,
   Users,
+  Lightbulb, // Nouvel import pour l'icône
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -58,6 +57,12 @@ export default function UserMenu({ user, isAdmin = false }: UserMenuProps) {
       icon: <User size={16} />,
       label: "Mon profil",
       href: "/profile",
+    },
+    // Nouvel élément de menu pour les fonctionnalités/bugs
+    {
+      icon: <Lightbulb size={16} />,
+      label: "Proposer une amélioration",
+      href: "/features",
     },
     ...(isAdmin
       ? [
