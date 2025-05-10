@@ -1,4 +1,4 @@
-// src/app/components/TodoListAgenda.tsx optimisé
+// src/app/components/TodoListAgenda.tsx optimisé avec sélecteur d'articles
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -11,6 +11,7 @@ import {
   Briefcase,
   ArrowUp,
   SearchIcon,
+  ExternalLink,
 } from "lucide-react";
 import CalendarView from "./CalendarView";
 import { useGlobalLoader } from "@/app/components/GlobalLoader";
@@ -72,6 +73,13 @@ type AppObject = {
   nom: string;
 };
 
+// Type pour représenter un article pour le filtrage
+type ArticleOption = {
+  id: string;
+  title: string;
+  sectorName: string;
+};
+
 // Enum pour les modes d'affichage
 enum ViewMode {
   LIST = "list",
@@ -94,6 +102,13 @@ export default function TodoListAgenda() {
   const [showControls, setShowControls] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  // Nouveau state pour le filtre par article
+  const [articleFilter, setArticleFilter] = useState<string>("all");
+  // State pour stocker les articles disponibles pour le filtre
+  const [availableArticles, setAvailableArticles] = useState<ArticleOption[]>(
+    []
+  );
 
   // Animation spring pour une sensation plus naturelle
   const springHeight = useSpring(agendaHeight, {
@@ -345,6 +360,19 @@ export default function TodoListAgenda() {
             assignedToId: task.assignedToId || null,
           }));
           setTasks(tasksWithDateObjects);
+
+          // Extraire les articles des tâches pour le filtre
+          const articlesMap = new Map<string, ArticleOption>();
+          tasksWithDateObjects.forEach((task) => {
+            if (!articlesMap.has(task.article.id)) {
+              articlesMap.set(task.article.id, {
+                id: task.article.id,
+                title: task.article.title,
+                sectorName: task.article.sector.name,
+              });
+            }
+          });
+          setAvailableArticles(Array.from(articlesMap.values()));
         }
       } catch (error) {
         console.error("Erreur lors de la récupération des tâches :", error);
@@ -454,7 +482,11 @@ export default function TodoListAgenda() {
     // Filtrer par statut
     const statusMatch = statusFilter === "all" || task.status === statusFilter;
 
-    return searchMatch && statusMatch;
+    // Filtrer par article
+    const articleMatch =
+      articleFilter === "all" || task.article.id === articleFilter;
+
+    return searchMatch && statusMatch && articleMatch;
   };
 
   // Regroupement des tâches avec filtrage
@@ -509,6 +541,22 @@ export default function TodoListAgenda() {
       thisWeekRef.current.scrollIntoView({ behavior: "smooth" });
     } else if (section === "upcoming" && upcomingRef.current) {
       upcomingRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  // Fonction pour obtenir la couleur de statut
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "bg-[color:var(--warning-background)] text-[color:var(--warning-foreground)] border-[color:var(--warning-border)]";
+      case "in_progress":
+        return "bg-[color:var(--info-background)] text-[color:var(--info-foreground)] border-[color:var(--info-border)]";
+      case "completed":
+        return "bg-[color:var(--success-background)] text-[color:var(--success-foreground)] border-[color:var(--success-border)]";
+      case "cancelled":
+        return "bg-[color:var(--destructive-background)] text-[color:var(--destructive-foreground)] border-[color:var(--destructive-border)]";
+      default:
+        return "bg-[color:var(--muted)] text-[color:var(--muted-foreground)] border-[color:var(--border)]";
     }
   };
 
@@ -669,12 +717,12 @@ export default function TodoListAgenda() {
 
               {/* Deuxième ligne: recherche et filtres (seulement visible en mode liste) */}
               {viewMode === ViewMode.LIST && (
-                <div className="flex gap-2 mt-1">
+                <div className="space-y-2 mt-1">
                   {/* Barre de recherche */}
                   <div className="relative flex-1">
                     <SearchIcon
                       size={16}
-                      className="absolute left-2 top-2 text-[color:var(--muted-foreground)]"
+                      className="absolute left-2 top-2.5 text-[color:var(--muted-foreground)]"
                     />
                     <input
                       type="text"
@@ -686,42 +734,58 @@ export default function TodoListAgenda() {
                     {searchTerm && (
                       <button
                         onClick={() => setSearchTerm("")}
-                        className="absolute right-2 top-2 text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)]"
+                        className="absolute right-2 top-2.5 text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)]"
                       >
                         <X size={16} />
                       </button>
                     )}
                   </div>
 
-                  {/* Filtre par statut */}
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="bg-[color:var(--background)] text-[color:var(--foreground)] px-3 py-1.5 rounded border border-[color:var(--border)] text-sm"
-                  >
-                    <option value="all">Tous les statuts</option>
-                    <option value="pending">En attente</option>
-                    <option value="in_progress">En cours</option>
-                    <option value="completed">Terminées</option>
-                  </select>
-                </div>
-              )}
+                  {/* Filtres : statut et article */}
+                  <div className="flex justify-between gap-3">
+                    {/* Filtre par statut */}
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="w-1/2 bg-[color:var(--background)] text-[color:var(--foreground)] px-3 py-1.5 rounded border border-[color:var(--border)] text-sm"
+                    >
+                      <option value="all">Tous les statuts</option>
+                      <option value="pending">En attente</option>
+                      <option value="in_progress">En cours</option>
+                      <option value="completed">Terminées</option>
+                      <option value="cancelled">Annulées</option>
+                    </select>
 
-              {/* Troisième ligne: navigation rapide en mode liste */}
-              {viewMode === ViewMode.LIST && (
-                <div className="flex justify-between mt-1">
-                  <button
-                    onClick={() => scrollToSection("thisWeek")}
-                    className="text-sm text-[color:var(--primary)] hover:underline flex items-center"
-                  >
-                    Cette semaine ({thisWeekTasks.length})
-                  </button>
-                  <button
-                    onClick={() => scrollToSection("upcoming")}
-                    className="text-sm text-[color:var(--primary)] hover:underline flex items-center"
-                  >
-                    À venir ({upcomingTasks.length})
-                  </button>
+                    {/* Filtre par article */}
+                    <select
+                      value={articleFilter}
+                      onChange={(e) => setArticleFilter(e.target.value)}
+                      className="w-1/2 bg-[color:var(--background)] text-[color:var(--foreground)] px-3 py-1.5 rounded border border-[color:var(--border)] text-sm"
+                    >
+                      <option value="all">Tous les articles</option>
+                      {availableArticles.map((article) => (
+                        <option key={article.id} value={article.id}>
+                          {article.title} ({article.sectorName})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Troisième ligne: navigation rapide en mode liste */}
+                  <div className="flex justify-between mt-1">
+                    <button
+                      onClick={() => scrollToSection("thisWeek")}
+                      className="text-sm text-[color:var(--primary)] hover:underline flex items-center"
+                    >
+                      Cette semaine ({thisWeekTasks.length})
+                    </button>
+                    <button
+                      onClick={() => scrollToSection("upcoming")}
+                      className="text-sm text-[color:var(--primary)] hover:underline flex items-center"
+                    >
+                      À venir ({upcomingTasks.length})
+                    </button>
+                  </div>
                 </div>
               )}
             </motion.div>
@@ -733,7 +797,7 @@ export default function TodoListAgenda() {
           ref={contentRef}
           className="overflow-y-auto agenda-content"
           style={{
-            height: `calc(100% - ${isExpanded && showControls ? (viewMode === ViewMode.LIST ? "150px" : "96px") : "48px"})`,
+            height: `calc(100% - ${isExpanded && showControls ? (viewMode === ViewMode.LIST ? "170px" : "96px") : "48px"})`,
           }}
           onClick={handleContentClick} // Empêcher la propagation
         >
@@ -755,7 +819,9 @@ export default function TodoListAgenda() {
                 </h3>
                 {thisWeekTasks.length === 0 ? (
                   <p className="text-[color:var(--muted-foreground)] p-4 bg-[color:var(--muted)]/20 rounded-lg text-center">
-                    {searchTerm || statusFilter !== "all"
+                    {searchTerm ||
+                    statusFilter !== "all" ||
+                    articleFilter !== "all"
                       ? "Aucune tâche ne correspond à vos critères de recherche."
                       : "Aucune tâche pour cette semaine."}
                   </p>
@@ -765,13 +831,7 @@ export default function TodoListAgenda() {
                       <motion.li
                         key={task.id}
                         whileTap={{ scale: 0.98 }}
-                        className={`cursor-pointer hover:bg-[color:var(--muted)] rounded-lg p-3 text-[color:var(--foreground)] active:bg-[color:var(--muted)]/80 transition-colors shadow-sm border border-[color:var(--border)] ${
-                          task.status === "completed"
-                            ? "bg-[color:var(--success-background)] border-[color:var(--success-border)]"
-                            : task.status === "in_progress"
-                              ? "bg-[color:var(--info-background)] border-[color:var(--info-border)]"
-                              : "bg-[color:var(--card)]"
-                        }`}
+                        className={`cursor-pointer hover:bg-[color:var(--muted)] rounded-lg p-3 text-[color:var(--foreground)] active:bg-[color:var(--muted)]/80 transition-colors shadow-sm border ${getStatusColor(task.status)}`}
                         onClick={(e) => {
                           e.stopPropagation(); // Empêcher la propagation ici aussi
                           navigateToTask(task);
@@ -787,16 +847,20 @@ export default function TodoListAgenda() {
                                   ? "En cours"
                                   : task.status === "completed"
                                     ? "Terminée"
-                                    : task.status}
+                                    : task.status === "cancelled"
+                                      ? "Annulée"
+                                      : task.status}
                             </span>
                           </div>
+
                           {task.description && (
                             <p className="text-sm text-[color:var(--muted-foreground)] mt-1 line-clamp-2">
                               {task.description}
                             </p>
                           )}
-                          <div className="flex text-xs text-[color:var(--muted-foreground)] mt-2 justify-between">
-                            <div className="flex items-center gap-2">
+
+                          <div className="flex items-center justify-between mt-2">
+                            <div className="flex items-center gap-2 text-xs text-[color:var(--muted-foreground)]">
                               {task.realizationDate && (
                                 <span className="bg-[color:var(--muted)]/40 py-0.5 px-1.5 rounded">
                                   {formatDate(task.realizationDate)}
@@ -804,9 +868,26 @@ export default function TodoListAgenda() {
                               )}
                               <span>• {task.article.sector.name}</span>
                             </div>
-                            {task.assignedTo && (
-                              <span>Assignée à: {task.assignedTo.name}</span>
-                            )}
+
+                            <div className="flex items-center gap-1">
+                              {task.assignedTo && (
+                                <span className="text-xs text-[color:var(--muted-foreground)]">
+                                  {task.assignedTo.name}
+                                </span>
+                              )}
+
+                              <ExternalLink
+                                size={14}
+                                className="text-[color:var(--muted-foreground)] ml-1"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Titre de l'article */}
+                          <div className="mt-1 pt-1 border-t border-[color:var(--border)]/30">
+                            <span className="text-xs text-[color:var(--muted-foreground)]">
+                              Article: {task.article.title}
+                            </span>
                           </div>
                         </div>
                       </motion.li>
@@ -822,7 +903,9 @@ export default function TodoListAgenda() {
                 </h3>
                 {upcomingTasks.length === 0 ? (
                   <p className="text-[color:var(--muted-foreground)] p-4 bg-[color:var(--muted)]/20 rounded-lg text-center">
-                    {searchTerm || statusFilter !== "all"
+                    {searchTerm ||
+                    statusFilter !== "all" ||
+                    articleFilter !== "all"
                       ? "Aucune tâche ne correspond à vos critères de recherche."
                       : "Aucune tâche à venir."}
                   </p>
@@ -832,13 +915,7 @@ export default function TodoListAgenda() {
                       <motion.li
                         key={task.id}
                         whileTap={{ scale: 0.98 }}
-                        className={`cursor-pointer hover:bg-[color:var(--muted)] rounded-lg p-3 text-[color:var(--foreground)] active:bg-[color:var(--muted)]/80 transition-colors shadow-sm border border-[color:var(--border)] ${
-                          task.status === "completed"
-                            ? "bg-[color:var(--success-background)] border-[color:var(--success-border)]"
-                            : task.status === "in_progress"
-                              ? "bg-[color:var(--info-background)] border-[color:var(--info-border)]"
-                              : "bg-[color:var(--card)]"
-                        }`}
+                        className={`cursor-pointer hover:bg-[color:var(--muted)] rounded-lg p-3 text-[color:var(--foreground)] active:bg-[color:var(--muted)]/80 transition-colors shadow-sm border ${getStatusColor(task.status)}`}
                         onClick={(e) => {
                           e.stopPropagation(); // Empêcher la propagation ici aussi
                           navigateToTask(task);
@@ -854,16 +931,20 @@ export default function TodoListAgenda() {
                                   ? "En cours"
                                   : task.status === "completed"
                                     ? "Terminée"
-                                    : task.status}
+                                    : task.status === "cancelled"
+                                      ? "Annulée"
+                                      : task.status}
                             </span>
                           </div>
+
                           {task.description && (
                             <p className="text-sm text-[color:var(--muted-foreground)] mt-1 line-clamp-2">
                               {task.description}
                             </p>
                           )}
-                          <div className="flex text-xs text-[color:var(--muted-foreground)] mt-2 justify-between">
-                            <div className="flex items-center gap-2">
+
+                          <div className="flex items-center justify-between mt-2">
+                            <div className="flex items-center gap-2 text-xs text-[color:var(--muted-foreground)]">
                               {task.realizationDate && (
                                 <span className="bg-[color:var(--muted)]/40 py-0.5 px-1.5 rounded">
                                   {formatDate(task.realizationDate)}
@@ -871,9 +952,26 @@ export default function TodoListAgenda() {
                               )}
                               <span>• {task.article.sector.name}</span>
                             </div>
-                            {task.assignedTo && (
-                              <span>Assignée à: {task.assignedTo.name}</span>
-                            )}
+
+                            <div className="flex items-center gap-1">
+                              {task.assignedTo && (
+                                <span className="text-xs text-[color:var(--muted-foreground)]">
+                                  {task.assignedTo.name}
+                                </span>
+                              )}
+
+                              <ExternalLink
+                                size={14}
+                                className="text-[color:var(--muted-foreground)] ml-1"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Titre de l'article */}
+                          <div className="mt-1 pt-1 border-t border-[color:var(--border)]/30">
+                            <span className="text-xs text-[color:var(--muted-foreground)]">
+                              Article: {task.article.title}
+                            </span>
                           </div>
                         </div>
                       </motion.li>
