@@ -1,4 +1,4 @@
-// src/app/components/TodoListAgenda.tsx optimisé pour mobile
+// src/app/components/TodoListAgenda.tsx optimisé
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -10,6 +10,7 @@ import {
   ChevronUp,
   Briefcase,
   ArrowUp,
+  SearchIcon,
 } from "lucide-react";
 import CalendarView from "./CalendarView";
 import { useGlobalLoader } from "@/app/components/GlobalLoader";
@@ -91,6 +92,8 @@ export default function TodoListAgenda() {
   const [lastScrollTop, setLastScrollTop] = useState(0);
   const [interactionLocked, setInteractionLocked] = useState(false);
   const [showControls, setShowControls] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   // Animation spring pour une sensation plus naturelle
   const springHeight = useSpring(agendaHeight, {
@@ -100,6 +103,8 @@ export default function TodoListAgenda() {
 
   const agendaRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const thisWeekRef = useRef<HTMLDivElement>(null);
+  const upcomingRef = useRef<HTMLDivElement>(null);
   const customRouter = useCustomRouter();
   const { hideLoader } = useGlobalLoader();
 
@@ -112,7 +117,11 @@ export default function TodoListAgenda() {
     const checkMobile = () => {
       const isMobileView = window.innerWidth < 768;
       setIsMobile(isMobileView);
-      setMaxHeight(window.innerHeight * 0.8);
+
+      // Ajuster la hauteur maximale en fonction de la taille de l'écran
+      // Pour les grands écrans on utilise 85% de la hauteur de la fenêtre
+      // Pour les petits écrans on utilise 80% pour laisser de l'espace pour la navigation
+      setMaxHeight(window.innerHeight * (isMobileView ? 0.8 : 0.85));
     };
 
     // Vérifier si nous sommes en PWA
@@ -431,17 +440,37 @@ export default function TodoListAgenda() {
     e.stopPropagation();
   };
 
-  // Regroupement des tâches
+  // Fonction pour déterminer si une tâche correspond aux filtres
+  const taskMatchesFilters = (task: Task): boolean => {
+    // Filtrer par texte de recherche
+    const searchMatch =
+      searchTerm === "" ||
+      task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (task.description &&
+        task.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      task.article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.article.sector.name.toLowerCase().includes(searchTerm.toLowerCase());
+
+    // Filtrer par statut
+    const statusMatch = statusFilter === "all" || task.status === statusFilter;
+
+    return searchMatch && statusMatch;
+  };
+
+  // Regroupement des tâches avec filtrage
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const thisWeekEnd = new Date(today);
   thisWeekEnd.setDate(today.getDate() + (7 - today.getDay()));
 
+  // Appliquer les filtres au moment de regrouper les tâches
+  const filteredTasks = tasks.filter(taskMatchesFilters);
+
   const thisWeekTasks: Task[] = [];
   const upcomingTasks: Task[] = [];
 
-  tasks.forEach((task) => {
-    if (task.status === "completed") return;
+  filteredTasks.forEach((task) => {
+    if (task.status === "completed" && statusFilter !== "completed") return;
     if (!task.realizationDate) {
       thisWeekTasks.push(task);
       return;
@@ -473,6 +502,15 @@ export default function TodoListAgenda() {
         <h2 className="text-base font-semibold sm:hidden">Agenda</h2>
       </>
     );
+
+  // Fonction pour scroller vers une section spécifique
+  const scrollToSection = (section: "thisWeek" | "upcoming") => {
+    if (section === "thisWeek" && thisWeekRef.current) {
+      thisWeekRef.current.scrollIntoView({ behavior: "smooth" });
+    } else if (section === "upcoming" && upcomingRef.current) {
+      upcomingRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
 
   return (
     <>
@@ -584,48 +622,108 @@ export default function TodoListAgenda() {
           </div>
         </div>
 
-        {/* Barre des contrôles supplémentaires (uniquement affichée quand l'agenda est ouvert sur mobile) */}
+        {/* Barre des contrôles supplémentaires (uniquement affichée quand l'agenda est ouvert) */}
         <AnimatePresence>
-          {isMobile && showControls && (
+          {isExpanded && showControls && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="flex justify-between items-center px-4 py-2 bg-[color:var(--muted)] border-b border-[color:var(--border)]"
+              className="flex flex-col gap-2 px-4 py-2 bg-[color:var(--muted)] border-b border-[color:var(--border)]"
             >
-              {/* Contrôles de vue (liste/calendrier) */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={toggleViewMode}
-                  className={`flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full text-sm ${
-                    viewMode === ViewMode.LIST
-                      ? "bg-[color:var(--primary)] text-[color:var(--primary-foreground)]"
-                      : "bg-[color:var(--background)] text-[color:var(--foreground)]"
-                  }`}
-                >
-                  <ListIcon size={14} />
-                  <span>Liste</span>
-                </button>
-                <button
-                  onClick={toggleViewMode}
-                  className={`flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full text-sm ${
-                    viewMode === ViewMode.CALENDAR
-                      ? "bg-[color:var(--primary)] text-[color:var(--primary-foreground)]"
-                      : "bg-[color:var(--background)] text-[color:var(--foreground)]"
-                  }`}
-                >
-                  <CalendarIcon size={14} />
-                  <span>Calendrier</span>
-                </button>
+              {/* Première ligne: Contrôles de vue (liste/calendrier) */}
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={toggleViewMode}
+                    className={`flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full text-sm ${
+                      viewMode === ViewMode.LIST
+                        ? "bg-[color:var(--primary)] text-[color:var(--primary-foreground)]"
+                        : "bg-[color:var(--background)] text-[color:var(--foreground)]"
+                    }`}
+                  >
+                    <ListIcon size={14} />
+                    <span>Liste</span>
+                  </button>
+                  <button
+                    onClick={toggleViewMode}
+                    className={`flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full text-sm ${
+                      viewMode === ViewMode.CALENDAR
+                        ? "bg-[color:var(--primary)] text-[color:var(--primary-foreground)]"
+                        : "bg-[color:var(--background)] text-[color:var(--foreground)]"
+                    }`}
+                  >
+                    <CalendarIcon size={14} />
+                    <span>Calendrier</span>
+                  </button>
+                </div>
+
+                {/* Information sur l'objet sélectionné */}
+                <div className="flex items-center text-sm text-[color:var(--muted-foreground)]">
+                  <Briefcase size={14} className="mr-1" />
+                  <span className="truncate max-w-[120px]">
+                    {selectedObjectName}
+                  </span>
+                </div>
               </div>
 
-              {/* Information sur l'objet sélectionné */}
-              <div className="flex items-center text-sm text-[color:var(--muted-foreground)]">
-                <Briefcase size={14} className="mr-1" />
-                <span className="truncate max-w-[120px]">
-                  {selectedObjectName}
-                </span>
-              </div>
+              {/* Deuxième ligne: recherche et filtres (seulement visible en mode liste) */}
+              {viewMode === ViewMode.LIST && (
+                <div className="flex gap-2 mt-1">
+                  {/* Barre de recherche */}
+                  <div className="relative flex-1">
+                    <SearchIcon
+                      size={16}
+                      className="absolute left-2 top-2 text-[color:var(--muted-foreground)]"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Rechercher une tâche..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full py-1.5 pl-8 pr-3 text-sm rounded border border-[color:var(--border)] bg-[color:var(--background)]"
+                    />
+                    {searchTerm && (
+                      <button
+                        onClick={() => setSearchTerm("")}
+                        className="absolute right-2 top-2 text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)]"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Filtre par statut */}
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="bg-[color:var(--background)] text-[color:var(--foreground)] px-3 py-1.5 rounded border border-[color:var(--border)] text-sm"
+                  >
+                    <option value="all">Tous les statuts</option>
+                    <option value="pending">En attente</option>
+                    <option value="in_progress">En cours</option>
+                    <option value="completed">Terminées</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Troisième ligne: navigation rapide en mode liste */}
+              {viewMode === ViewMode.LIST && (
+                <div className="flex justify-between mt-1">
+                  <button
+                    onClick={() => scrollToSection("thisWeek")}
+                    className="text-sm text-[color:var(--primary)] hover:underline flex items-center"
+                  >
+                    Cette semaine ({thisWeekTasks.length})
+                  </button>
+                  <button
+                    onClick={() => scrollToSection("upcoming")}
+                    className="text-sm text-[color:var(--primary)] hover:underline flex items-center"
+                  >
+                    À venir ({upcomingTasks.length})
+                  </button>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -635,7 +733,7 @@ export default function TodoListAgenda() {
           ref={contentRef}
           className="overflow-y-auto agenda-content"
           style={{
-            height: `calc(100% - ${isMobile && showControls ? "96px" : "48px"})`,
+            height: `calc(100% - ${isExpanded && showControls ? (viewMode === ViewMode.LIST ? "150px" : "96px") : "48px"})`,
           }}
           onClick={handleContentClick} // Empêcher la propagation
         >
@@ -647,37 +745,68 @@ export default function TodoListAgenda() {
           ) : viewMode === ViewMode.CALENDAR ? (
             <CalendarView tasks={tasks} navigateToTask={navigateToTask} />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+            <div
+              className={`grid grid-cols-1 ${isMobile ? "" : "md:grid-cols-2"} gap-4 p-4`}
+            >
               {/* Cette semaine */}
-              <div>
-                <h3 className="text-lg font-semibold mb-2 text-[color:var(--foreground)]">
+              <div ref={thisWeekRef}>
+                <h3 className="text-lg font-semibold mb-2 text-[color:var(--foreground)] sticky top-0 bg-[color:var(--background)] py-2 z-10">
                   Cette semaine
                 </h3>
                 {thisWeekTasks.length === 0 ? (
-                  <p className="text-[color:var(--muted-foreground)]">
-                    Aucune tâche pour cette semaine.
+                  <p className="text-[color:var(--muted-foreground)] p-4 bg-[color:var(--muted)]/20 rounded-lg text-center">
+                    {searchTerm || statusFilter !== "all"
+                      ? "Aucune tâche ne correspond à vos critères de recherche."
+                      : "Aucune tâche pour cette semaine."}
                   </p>
                 ) : (
-                  <ul className="space-y-2">
+                  <ul className="space-y-2 pb-4">
                     {thisWeekTasks.map((task) => (
                       <motion.li
                         key={task.id}
                         whileTap={{ scale: 0.98 }}
-                        className="cursor-pointer hover:bg-[color:var(--muted)] rounded-lg p-3 text-[color:var(--foreground)] active:bg-[color:var(--muted)]/80 transition-colors shadow-sm border border-[color:var(--border)]"
+                        className={`cursor-pointer hover:bg-[color:var(--muted)] rounded-lg p-3 text-[color:var(--foreground)] active:bg-[color:var(--muted)]/80 transition-colors shadow-sm border border-[color:var(--border)] ${
+                          task.status === "completed"
+                            ? "bg-[color:var(--success-background)] border-[color:var(--success-border)]"
+                            : task.status === "in_progress"
+                              ? "bg-[color:var(--info-background)] border-[color:var(--info-border)]"
+                              : "bg-[color:var(--card)]"
+                        }`}
                         onClick={(e) => {
                           e.stopPropagation(); // Empêcher la propagation ici aussi
                           navigateToTask(task);
                         }}
                       >
                         <div className="flex flex-col">
-                          <span className="font-medium">{task.name}</span>
-                          <div className="flex text-xs text-[color:var(--muted-foreground)] mt-1">
-                            {task.realizationDate && (
-                              <span className="mr-2">
-                                {formatDate(task.realizationDate)}
-                              </span>
+                          <div className="flex justify-between items-start">
+                            <span className="font-medium">{task.name}</span>
+                            <span className="text-xs py-0.5 px-2 rounded-full bg-[color:var(--muted)] text-[color:var(--muted-foreground)]">
+                              {task.status === "pending"
+                                ? "En attente"
+                                : task.status === "in_progress"
+                                  ? "En cours"
+                                  : task.status === "completed"
+                                    ? "Terminée"
+                                    : task.status}
+                            </span>
+                          </div>
+                          {task.description && (
+                            <p className="text-sm text-[color:var(--muted-foreground)] mt-1 line-clamp-2">
+                              {task.description}
+                            </p>
+                          )}
+                          <div className="flex text-xs text-[color:var(--muted-foreground)] mt-2 justify-between">
+                            <div className="flex items-center gap-2">
+                              {task.realizationDate && (
+                                <span className="bg-[color:var(--muted)]/40 py-0.5 px-1.5 rounded">
+                                  {formatDate(task.realizationDate)}
+                                </span>
+                              )}
+                              <span>• {task.article.sector.name}</span>
+                            </div>
+                            {task.assignedTo && (
+                              <span>Assignée à: {task.assignedTo.name}</span>
                             )}
-                            <span>• {task.article.sector.name}</span>
                           </div>
                         </div>
                       </motion.li>
@@ -687,35 +816,64 @@ export default function TodoListAgenda() {
               </div>
 
               {/* À venir */}
-              <div>
-                <h3 className="text-lg font-semibold mb-2 text-[color:var(--foreground)]">
+              <div ref={upcomingRef}>
+                <h3 className="text-lg font-semibold mb-2 text-[color:var(--foreground)] sticky top-0 bg-[color:var(--background)] py-2 z-10">
                   À venir
                 </h3>
                 {upcomingTasks.length === 0 ? (
-                  <p className="text-[color:var(--muted-foreground)]">
-                    Aucune tâche à venir.
+                  <p className="text-[color:var(--muted-foreground)] p-4 bg-[color:var(--muted)]/20 rounded-lg text-center">
+                    {searchTerm || statusFilter !== "all"
+                      ? "Aucune tâche ne correspond à vos critères de recherche."
+                      : "Aucune tâche à venir."}
                   </p>
                 ) : (
-                  <ul className="space-y-2">
+                  <ul className="space-y-2 pb-4">
                     {upcomingTasks.map((task) => (
                       <motion.li
                         key={task.id}
                         whileTap={{ scale: 0.98 }}
-                        className="cursor-pointer hover:bg-[color:var(--muted)] rounded-lg p-3 text-[color:var(--foreground)] active:bg-[color:var(--muted)]/80 transition-colors shadow-sm border border-[color:var(--border)]"
+                        className={`cursor-pointer hover:bg-[color:var(--muted)] rounded-lg p-3 text-[color:var(--foreground)] active:bg-[color:var(--muted)]/80 transition-colors shadow-sm border border-[color:var(--border)] ${
+                          task.status === "completed"
+                            ? "bg-[color:var(--success-background)] border-[color:var(--success-border)]"
+                            : task.status === "in_progress"
+                              ? "bg-[color:var(--info-background)] border-[color:var(--info-border)]"
+                              : "bg-[color:var(--card)]"
+                        }`}
                         onClick={(e) => {
                           e.stopPropagation(); // Empêcher la propagation ici aussi
                           navigateToTask(task);
                         }}
                       >
                         <div className="flex flex-col">
-                          <span className="font-medium">{task.name}</span>
-                          <div className="flex text-xs text-[color:var(--muted-foreground)] mt-1">
-                            {task.realizationDate && (
-                              <span className="mr-2">
-                                {formatDate(task.realizationDate)}
-                              </span>
+                          <div className="flex justify-between items-start">
+                            <span className="font-medium">{task.name}</span>
+                            <span className="text-xs py-0.5 px-2 rounded-full bg-[color:var(--muted)] text-[color:var(--muted-foreground)]">
+                              {task.status === "pending"
+                                ? "En attente"
+                                : task.status === "in_progress"
+                                  ? "En cours"
+                                  : task.status === "completed"
+                                    ? "Terminée"
+                                    : task.status}
+                            </span>
+                          </div>
+                          {task.description && (
+                            <p className="text-sm text-[color:var(--muted-foreground)] mt-1 line-clamp-2">
+                              {task.description}
+                            </p>
+                          )}
+                          <div className="flex text-xs text-[color:var(--muted-foreground)] mt-2 justify-between">
+                            <div className="flex items-center gap-2">
+                              {task.realizationDate && (
+                                <span className="bg-[color:var(--muted)]/40 py-0.5 px-1.5 rounded">
+                                  {formatDate(task.realizationDate)}
+                                </span>
+                              )}
+                              <span>• {task.article.sector.name}</span>
+                            </div>
+                            {task.assignedTo && (
+                              <span>Assignée à: {task.assignedTo.name}</span>
                             )}
-                            <span>• {task.article.sector.name}</span>
                           </div>
                         </div>
                       </motion.li>
