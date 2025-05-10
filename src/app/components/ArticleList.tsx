@@ -1,3 +1,4 @@
+// src/app/components/ArticleList.tsx (modifié)
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   List,
@@ -8,8 +9,6 @@ import {
   ChevronRight,
   Search,
   Filter,
-  CheckSquare,
-  Square,
   XCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -70,7 +69,6 @@ const ArticleList: React.FC<ArticleListProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("title-asc");
   const [filteredArticles, setFilteredArticles] = useState<Article[]>(articles);
-  const [hasPositionFilter, setHasPositionFilter] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -78,19 +76,12 @@ const ArticleList: React.FC<ArticleListProps> = ({
   // Utiliser useCallback pour la mémoriser et éviter les recréations
   const applyFiltersAndSort = useCallback(() => {
     // Appliquer le filtre de recherche
-    let filtered = articles.filter(
+    const filtered = articles.filter(
       (article) =>
         article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (article.description &&
           article.description.toLowerCase().includes(searchTerm.toLowerCase()))
     );
-
-    // Appliquer le filtre de position
-    if (hasPositionFilter) {
-      filtered = filtered.filter(
-        (article) => article.positionX !== null && article.positionY !== null
-      );
-    }
 
     // Appliquer le tri
     const sortOption = sortOptions.find((option) => option.id === sortBy);
@@ -99,12 +90,12 @@ const ArticleList: React.FC<ArticleListProps> = ({
     }
 
     setFilteredArticles(filtered);
-  }, [articles, searchTerm, sortBy, hasPositionFilter]);
+  }, [articles, searchTerm, sortBy]);
 
   // Mettre à jour les articles filtrés quand les articles source changent
   useEffect(() => {
     applyFiltersAndSort();
-  }, [articles, searchTerm, sortBy, hasPositionFilter, applyFiltersAndSort]);
+  }, [articles, searchTerm, sortBy, applyFiltersAndSort]);
 
   // Focus sur le champ de recherche quand les filtres sont affichés
   useEffect(() => {
@@ -143,7 +134,6 @@ const ArticleList: React.FC<ArticleListProps> = ({
   const clearFilters = () => {
     setSearchTerm("");
     setSortBy("title-asc");
-    setHasPositionFilter(false);
     triggerHapticFeedback("medium");
   };
 
@@ -152,16 +142,10 @@ const ArticleList: React.FC<ArticleListProps> = ({
     onArticleClick(articleId);
   };
 
-  const togglePositionFilter = () => {
-    setHasPositionFilter(!hasPositionFilter);
-    triggerHapticFeedback();
-  };
-
   const getFilterCount = () => {
     let count = 0;
     if (searchTerm) count++;
     if (sortBy !== "title-asc") count++;
-    if (hasPositionFilter) count++;
     return count;
   };
 
@@ -398,7 +382,7 @@ const ArticleList: React.FC<ArticleListProps> = ({
                         )}
                       </div>
 
-                      {/* Options de tri et filtres */}
+                      {/* Options de tri */}
                       <div className="flex flex-wrap gap-2 items-center">
                         <span className="text-xs text-gray-500">
                           Trier par:
@@ -414,22 +398,6 @@ const ArticleList: React.FC<ArticleListProps> = ({
                             </option>
                           ))}
                         </select>
-
-                        <button
-                          onClick={togglePositionFilter}
-                          className={`flex items-center gap-1 text-xs py-1 px-2 rounded border ${
-                            hasPositionFilter
-                              ? "bg-blue-50 border-blue-200 text-blue-600"
-                              : "border-gray-200"
-                          }`}
-                        >
-                          {hasPositionFilter ? (
-                            <CheckSquare size={14} />
-                          ) : (
-                            <Square size={14} />
-                          )}
-                          Avec position
-                        </button>
                       </div>
 
                       {/* Bouton pour réinitialiser les filtres */}
@@ -507,12 +475,6 @@ const ArticleList: React.FC<ArticleListProps> = ({
                             }}
                           >
                             {article.title}
-                            {article.positionX !== null &&
-                              article.positionY !== null && (
-                                <span className="inline-block ml-2 text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded">
-                                  Positionné
-                                </span>
-                              )}
                           </h4>
                           <ExternalLink
                             size={14}

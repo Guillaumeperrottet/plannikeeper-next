@@ -1,5 +1,3 @@
-// Modifications à apporter à ImageWithArticles.tsx
-
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 
@@ -65,7 +63,7 @@ export default function ImageWithArticles({
       x: number;
       y: number;
     };
-    articleId: string | null; // Ajout d'un ID d'article pour le suivi
+    articleId: string | null;
   }>({
     visible: false,
     content: {
@@ -93,26 +91,18 @@ export default function ImageWithArticles({
     };
   }, []);
 
-  // Fonction pour mettre à jour les dimensions - extraite pour pouvoir l'appeler à différents moments
+  // Fonction pour mettre à jour les dimensions
   const updateDimensions = useCallback(() => {
-    // Code inchangé pour updateDimensions
     if (!containerRef.current || !imageRef.current) return;
 
     const image = imageRef.current;
-
-    // Obtenir les dimensions réelles de l'élément img affiché
     const rect = image.getBoundingClientRect();
     const displayWidth = rect.width;
     const displayHeight = rect.height;
-
-    // L'aspect ratio original de l'image
     const originalAspectRatio = originalWidth / originalHeight;
-
-    // L'aspect ratio de l'affichage actuel
     const displayAspectRatio = displayWidth / displayHeight;
 
     // Déterminer comment l'image est contrainte (par largeur ou hauteur)
-    // C'est crucial pour le calcul correct des coordonnées
     let effectiveWidth, effectiveHeight;
 
     if (displayAspectRatio > originalAspectRatio) {
@@ -147,14 +137,12 @@ export default function ImageWithArticles({
     }
   }, [originalWidth, originalHeight]);
 
-  // Effets inchangés...
   // Gérer le redimensionnement et le montage initial
   useEffect(() => {
     setMounted(true);
 
     // Observer les changements de taille
     const resizeObserver = new ResizeObserver(() => {
-      // Utiliser requestAnimationFrame pour limiter les appels
       window.requestAnimationFrame(() => {
         updateDimensions();
       });
@@ -164,7 +152,6 @@ export default function ImageWithArticles({
       resizeObserver.observe(containerRef.current);
     }
 
-    // S'assurer que les dimensions sont mises à jour lorsque l'image est chargée
     const handleImageLoad = () => {
       updateDimensions();
     };
@@ -175,7 +162,6 @@ export default function ImageWithArticles({
       setTimeout(() => updateDimensions(), 1000),
     ];
 
-    // Store a reference to the current image element
     const currentImageRef = imageRef.current;
 
     if (currentImageRef) {
@@ -206,12 +192,11 @@ export default function ImageWithArticles({
       // Mise à jour immédiate
       updateDimensions();
 
-      // Mise à jour différée pour s'assurer que le navigateur a bien terminé le rendu
+      // Mises à jour différées pour s'assurer que le navigateur a bien terminé le rendu
       const timer1 = setTimeout(() => {
         updateDimensions();
       }, 50);
 
-      // Deuxième mise à jour différée au cas où
       const timer2 = setTimeout(() => {
         updateDimensions();
       }, 300);
@@ -223,7 +208,7 @@ export default function ImageWithArticles({
     }
   }, [imageSrc, updateDimensions]);
 
-  // Calculer la position et les dimensions d'un article en tenant compte des contraintes
+  // Calculer la position et les dimensions d'un article
   const calculateArticleStyle = useCallback(
     (article: Article) => {
       if (!article.positionX || !article.positionY) {
@@ -260,8 +245,7 @@ export default function ImageWithArticles({
     [imageSize]
   );
 
-  // ** MODIFICATION POUR L'UX MOBILE **
-  // Fonction pour fermer le tooltip si on en touche un autre
+  // Fermer le tooltip
   const closeTooltip = () => {
     setTooltipInfo((prev) => ({ ...prev, visible: false, articleId: null }));
     if (onArticleHover) onArticleHover(null);
@@ -282,20 +266,17 @@ export default function ImageWithArticles({
       if (tooltipInfo.visible && tooltipInfo.articleId === article.id) {
         closeTooltip();
       }
-      // Si c'est un nouvel article, afficher son tooltip (et fermer tout autre tooltip ouvert)
+      // Si c'est un nouvel article, afficher son tooltip
       else {
-        // Calcul optimisé pour la position du tooltip qui tient compte du zoom et du scroll
-        // On utilise viewportWidth pour s'assurer que le tooltip reste dans l'écran visible
         const viewportWidth = window.innerWidth;
 
-        // Calculer la position optimale qui tient compte des bords de l'écran
+        // Calculer la position optimale pour le tooltip
         let tooltipX = rect.left + rect.width / 2;
         let tooltipY = rect.top;
 
-        // S'assurer que le tooltip reste dans les limites de l'écran visible
-        // Tenant compte d'une largeur estimée du tooltip de 250px et une hauteur de 150px
+        // S'assurer que le tooltip reste dans les limites de l'écran
         tooltipX = Math.max(125, Math.min(tooltipX, viewportWidth - 125));
-        tooltipY = Math.max(150, tooltipY); // Au moins 150px du haut pour avoir de la place
+        tooltipY = Math.max(150, tooltipY);
 
         setTooltipInfo({
           visible: true,
@@ -317,7 +298,7 @@ export default function ImageWithArticles({
         }
       }
     }
-    // Sur desktop, comportement inchangé
+    // Sur desktop, comportement de clic standard
     else if (onArticleClick) {
       onArticleClick(article.id);
     }
@@ -325,7 +306,7 @@ export default function ImageWithArticles({
 
   // Gérer le survol d'un article (uniquement sur desktop)
   const handleArticleMouseEnter = (e: React.MouseEvent, article: Article) => {
-    if (isMobile) return; // Ignorer sur mobile
+    if (isMobile) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
     setTooltipInfo({
@@ -344,21 +325,19 @@ export default function ImageWithArticles({
   };
 
   const handleArticleMouseLeave = () => {
-    if (isMobile) return; // Ignorer sur mobile
-
+    if (isMobile) return;
     closeTooltip();
   };
 
   // Gérer le clic sur le bouton "Gérer les tâches" dans le tooltip mobile
   const handleViewTasksClick = () => {
-    // Si on a un ID d'article et la fonction de navigation, utiliser la navigation
     if (tooltipInfo.articleId && onArticleClick) {
       // Feedback haptique avant la navigation
       if ("vibrate" in navigator) {
-        navigator.vibrate([15, 30, 15]); // Motif de vibration pour indiquer la navigation
+        navigator.vibrate([15, 30, 15]);
       }
 
-      // Petit délai avant la navigation pour que l'utilisateur perçoive le feedback
+      // Petit délai avant la navigation
       setTimeout(() => {
         if (tooltipInfo.articleId && onArticleClick) {
           onArticleClick(tooltipInfo.articleId);
@@ -367,30 +346,25 @@ export default function ImageWithArticles({
     }
   };
 
-  // Ajouter un écouteur pour les changements de zoom/scale
+  // Gestion du zoom et des événements tactiles
   useEffect(() => {
     const handleZoomChange = () => {
-      // Si un tooltip est visible et que l'utilisateur zoome, mieux vaut le fermer
-      // pour éviter les problèmes de positionnement
       if (tooltipInfo.visible) {
         closeTooltip();
       }
     };
 
-    // Écouter les événements de zoom (même si l'API n'est pas standard)
     window.addEventListener("resize", handleZoomChange);
 
-    // Sur iOS Safari, on peut détecter les gestes de pinch qui indiquent un zoom
+    // Gestion des gestes de pinch sur iOS Safari
     let lastTouchDistance = 0;
     const handleTouchMove = (e: TouchEvent) => {
       if (e.touches.length >= 2) {
-        // Calculer la distance entre les deux points de toucher
         const touchDistance = Math.hypot(
           e.touches[0].pageX - e.touches[1].pageX,
           e.touches[0].pageY - e.touches[1].pageY
         );
 
-        // Si la distance change significativement, c'est probablement un pinch zoom
         if (
           lastTouchDistance &&
           Math.abs(touchDistance - lastTouchDistance) > 10
@@ -469,12 +443,12 @@ export default function ImageWithArticles({
             onMouseEnter={(e) => handleArticleMouseEnter(e, article)}
             onMouseLeave={handleArticleMouseLeave}
           >
-            {/* Contenu de l'article ici, si nécessaire */}
+            {/* Zone cliquable/survolable pour chaque article positionné */}
           </div>
         );
       })}
 
-      {/* Tooltip global détaché du flux DOM - modifié pour mobile */}
+      {/* Tooltip détaché pour les infos d'article */}
       {tooltipInfo.visible && (
         <div
           className="fixed w-64 bg-black bg-opacity-90 text-white p-3 rounded-md shadow-lg"
@@ -483,12 +457,12 @@ export default function ImageWithArticles({
             top: tooltipInfo.position.y - 10,
             transform: "translate(-50%, -100%)",
             zIndex: 9999,
-            pointerEvents: "auto", // Changé de "none" à "auto" pour permettre les interactions
+            pointerEvents: "auto",
             maxWidth: "250px",
           }}
-          onClick={(e) => e.stopPropagation()} // Empêcher la propagation du clic
+          onClick={(e) => e.stopPropagation()}
         >
-          {/* Bouton de fermeture du tooltip (X) - Ajouté pour faciliter la fermeture sur mobile */}
+          {/* Bouton de fermeture du tooltip */}
           <button
             className="absolute top-1 right-1 text-gray-300 hover:text-white"
             onClick={closeTooltip}
@@ -522,7 +496,6 @@ export default function ImageWithArticles({
 
           <div className="mt-3 flex justify-center">
             {isMobile ? (
-              // Sur mobile: bouton cliquable
               <button
                 onClick={handleViewTasksClick}
                 className="text-xs bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded transition-colors w-full"
@@ -530,7 +503,6 @@ export default function ImageWithArticles({
                 Gérer les tâches
               </button>
             ) : (
-              // Sur desktop: texte informatif
               <span className="text-xs text-center text-blue-300">
                 Cliquez pour gérer les tâches
               </span>
