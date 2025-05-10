@@ -112,20 +112,16 @@ const ArticleList: React.FC<ArticleListProps> = ({
   };
 
   return (
-    <div className={isMobile ? "md:hidden" : "hidden md:block"}>
-      {/* Bouton flottant pour ouvrir la liste */}
+    <div className={isMobile ? "md:hidden" : "hidden md:inline-block"}>
+      {/* Bouton pour ouvrir la liste */}
       <motion.button
         onClick={togglePanel}
-        className={`fixed ${isMobile ? "bottom-20 left-4" : "top-6 left-1/2 transform -translate-x-1/2"} z-[999] flex items-center gap-1 bg-primary text-primary-foreground rounded-full shadow-lg px-3 py-3`}
+        className={`${isMobile ? "fixed bottom-20 left-4" : "relative ml-2"} z-[50] flex items-center gap-1 bg-primary text-primary-foreground rounded-lg shadow-md px-3 py-2`}
         whileTap={{ scale: 0.95 }}
         style={{
-          position: "fixed",
-          zIndex: 999,
           backgroundColor: "var(--primary)",
           color: "white",
-          borderRadius: "9999px",
-          padding: "12px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
         }}
       >
         {isOpen ? (
