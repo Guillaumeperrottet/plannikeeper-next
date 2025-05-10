@@ -573,7 +573,8 @@ export default function TaskFormMobileOptimized({
 
         {/* Recurring Tab */}
         {activeTab === "recurring" && (
-          <div className="p-3 space-y-4">
+          <div className="space-y-4">
+            {/* Section récurrence avec description explicative */}
             <div className="flex items-center">
               <input
                 type="checkbox"
@@ -589,44 +590,99 @@ export default function TaskFormMobileOptimized({
             </div>
 
             {formData.recurring && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Périodicité
-                  </label>
-                  <select
-                    name="period"
-                    value={formData.period || "weekly"}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)]"
-                  >
-                    <option value="daily">Quotidienne</option>
-                    <option value="weekly">Hebdomadaire</option>
-                    <option value="monthly">Mensuelle</option>
-                    <option value="quarterly">Trimestrielle</option>
-                    <option value="yearly">Annuelle</option>
-                  </select>
-                </div>
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                <p className="text-xs text-blue-700 mb-4">
+                  Les tâches récurrentes sont automatiquement recréées selon la
+                  périodicité définie, jusqu&apos;à la date de fin optionnelle.
+                </p>
 
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Date de fin
-                  </label>
-                  <input
-                    type="date"
-                    name="endDate"
-                    value={
-                      formData.endDate
-                        ? new Date(formData.endDate as unknown as string)
-                            .toISOString()
-                            .split("T")[0]
-                        : ""
-                    }
-                    onChange={handleChange}
-                    className="w-full px-3 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)]"
-                  />
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Périodicité
+                      <span className="ml-1 text-xs text-blue-600 font-normal">
+                        À quelle fréquence cette tâche doit-elle se répéter ?
+                      </span>
+                    </label>
+                    <select
+                      name="period"
+                      value={formData.period || "weekly"}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)]"
+                    >
+                      <option value="daily">Quotidienne</option>
+                      <option value="weekly">Hebdomadaire</option>
+                      <option value="monthly">Mensuelle</option>
+                      <option value="quarterly">Trimestrielle</option>
+                      <option value="yearly">Annuelle</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Date de fin
+                      <span className="ml-1 text-xs text-blue-600 font-normal">
+                        (Optionnelle) Quand arrêter de recréer cette tâche ?
+                      </span>
+                    </label>
+                    <input
+                      type="date"
+                      name="endDate"
+                      value={
+                        formData.endDate
+                          ? new Date(formData.endDate as unknown as string)
+                              .toISOString()
+                              .split("T")[0]
+                          : ""
+                      }
+                      onChange={handleChange}
+                      className="w-full px-3 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)]"
+                    />
+                  </div>
+
+                  {/* Section notifications pour les tâches trimestrielles et annuelles */}
+                  {(formData.period === "quarterly" ||
+                    formData.period === "yearly") && (
+                    <div className="border-t border-blue-200 pt-4 mt-4">
+                      <div className="flex items-start">
+                        <input
+                          type="checkbox"
+                          id="enableAdvanceNotification"
+                          checked={!!formData.recurrenceReminderDate}
+                          onChange={(e) => {
+                            setFormData({
+                              ...formData,
+                              recurrenceReminderDate:
+                                e.target.checked && formData.realizationDate
+                                  ? new Date(
+                                      new Date(
+                                        formData.realizationDate as unknown as string
+                                      ).getTime() -
+                                        10 * 24 * 60 * 60 * 1000
+                                    )
+                                  : null,
+                            });
+                          }}
+                          className="w-4 h-4 mt-1 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <div className="ml-2">
+                          <label
+                            htmlFor="enableAdvanceNotification"
+                            className="text-sm font-medium"
+                          >
+                            Notification anticipée
+                          </label>
+                          <p className="text-xs text-blue-700">
+                            Recevoir une notification 10 jours avant
+                            l&apos;échéance (Recommandé pour les tâches peu
+                            fréquentes)
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </>
+              </div>
             )}
           </div>
         )}

@@ -31,6 +31,7 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
+  RefreshCcw, // Ajout de l'icône pour les tâches récurrentes
 } from "lucide-react";
 
 type User = {
@@ -89,6 +90,7 @@ export default function ModernTasksPage({
   const [filterStatus, setFilterStatus] = useState<string[]>([]);
   const [filterAssignee, setFilterAssignee] = useState<string | null>(null);
   const [filterTaskType, setFilterTaskType] = useState<string | null>(null);
+  const [filterRecurring, setFilterRecurring] = useState<boolean | null>(null);
   const [useOptimizedForm, setUseOptimizedForm] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -209,8 +211,20 @@ export default function ModernTasksPage({
       result = result.filter((task) => task.taskType === filterTaskType);
     }
 
+    // Nouveau filtre pour les tâches récurrentes
+    if (filterRecurring !== null) {
+      result = result.filter((task) => task.recurring === filterRecurring);
+    }
+
     setFilteredTasks(result);
-  }, [tasks, searchQuery, filterStatus, filterAssignee, filterTaskType]);
+  }, [
+    tasks,
+    searchQuery,
+    filterStatus,
+    filterAssignee,
+    filterTaskType,
+    filterRecurring,
+  ]);
 
   // Get unique task types for filter dropdown
   const uniqueTaskTypes = useMemo(() => {
@@ -531,6 +545,7 @@ export default function ModernTasksPage({
     setFilterStatus([]);
     setFilterAssignee(null);
     setFilterTaskType(null);
+    setFilterRecurring(null);
     if (searchInputRef.current) {
       searchInputRef.current.value = "";
     }
@@ -717,6 +732,45 @@ export default function ModernTasksPage({
                           )}
                         </div>
 
+                        {/* Ajout d'un filtre pour les tâches récurrentes */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Type de récurrence
+                          </label>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              onClick={() => setFilterRecurring(null)}
+                              className={`px-2 py-0.5 text-xs rounded-full border ${
+                                filterRecurring === null
+                                  ? "bg-gray-700 text-white border-gray-700"
+                                  : "border-gray-300 bg-white text-gray-700"
+                              }`}
+                            >
+                              Toutes
+                            </button>
+                            <button
+                              onClick={() => setFilterRecurring(true)}
+                              className={`px-2 py-0.5 text-xs rounded-full border ${
+                                filterRecurring === true
+                                  ? "bg-blue-700 text-white border-blue-700"
+                                  : "border-gray-300 bg-white text-gray-700"
+                              }`}
+                            >
+                              Récurrentes
+                            </button>
+                            <button
+                              onClick={() => setFilterRecurring(false)}
+                              className={`px-2 py-0.5 text-xs rounded-full border ${
+                                filterRecurring === false
+                                  ? "bg-purple-700 text-white border-purple-700"
+                                  : "border-gray-300 bg-white text-gray-700"
+                              }`}
+                            >
+                              Ponctuelles
+                            </button>
+                          </div>
+                        </div>
+
                         {/* Reset filters button */}
                         <div className="flex justify-end">
                           <button
@@ -804,6 +858,25 @@ export default function ModernTasksPage({
                                         }}
                                         onClick={() => handleTaskClick(task.id)}
                                       >
+                                        {/* Indicateur de tâche récurrente en haut à droite */}
+                                        {task.recurring && (
+                                          <div className="absolute top-1 right-1 bg-blue-100 text-blue-700 rounded-full px-1.5 py-0.5 text-[9px] flex items-center gap-0.5">
+                                            <RefreshCcw size={8} />
+                                            <span>
+                                              {task.period === "daily" &&
+                                                "Quotidienne"}
+                                              {task.period === "weekly" &&
+                                                "Hebdo"}
+                                              {task.period === "monthly" &&
+                                                "Mensuelle"}
+                                              {task.period === "quarterly" &&
+                                                "Trim."}
+                                              {task.period === "yearly" &&
+                                                "Annuelle"}
+                                            </span>
+                                          </div>
+                                        )}
+
                                         <div className="flex justify-between items-start mb-1">
                                           <h4 className="font-medium text-xs">
                                             {task.name}
@@ -844,10 +917,21 @@ export default function ModernTasksPage({
                                                             "completed"
                                                           );
                                                         }}
-                                                        className="w-full text-left px-3 py-1 hover:bg-gray-100 flex items-center gap-2 text-emerald-600"
+                                                        className="w-full text-left px-3 py-1 hover:bg-gray-100 flex items-center gap-2 text-emerald-600 relative group"
                                                       >
                                                         <CheckCircle2 className="w-3 h-3" />
-                                                        Complete
+                                                        <span>Complete</span>
+                                                        {task.recurring && (
+                                                          <div className="tooltip-wrapper">
+                                                            <div className="absolute invisible group-hover:visible w-48 bg-gray-800 text-white text-[9px] rounded px-2 py-1 bottom-full left-0 mb-1 z-10">
+                                                              Cette tâche
+                                                              récurrente sera
+                                                              automatiquement
+                                                              recréée pour la
+                                                              prochaine période.
+                                                            </div>
+                                                          </div>
+                                                        )}
                                                       </button>
                                                     </li>
                                                   )}
@@ -888,16 +972,16 @@ export default function ModernTasksPage({
                                           </div>
                                         </div>
 
-                                        {/* Task details */}
-                                        <div>
-                                          {task.description && (
-                                            <p className="text-[10px] text-gray-600 line-clamp-1 mb-1">
-                                              {task.description}
-                                            </p>
-                                          )}
+                                        {/* ... Contenu original de la carte ... */}
+                                        {task.description && (
+                                          <p className="text-[10px] text-gray-600 line-clamp-1 mb-1">
+                                            {task.description}
+                                          </p>
+                                        )}
 
-                                          <div className="flex flex-wrap gap-1">
-                                            {task.realizationDate && (
+                                        <div className="flex flex-wrap gap-1">
+                                          {task.realizationDate &&
+                                            !task.recurring && (
                                               <span className="flex items-center gap-0.5 text-[10px] bg-gray-100 px-1 py-0.5 rounded">
                                                 <Calendar className="w-2 h-2 text-gray-500" />
                                                 <span>
@@ -908,30 +992,49 @@ export default function ModernTasksPage({
                                               </span>
                                             )}
 
-                                            {task.assignedTo && (
-                                              <span className="flex items-center gap-0.5 text-[10px] bg-gray-100 px-1 py-0.5 rounded">
-                                                <User className="w-2 h-2 text-gray-500" />
-                                                <span className="truncate max-w-[80px]">
-                                                  {task.assignedTo.name}
-                                                </span>
+                                          {task.assignedTo && (
+                                            <span className="flex items-center gap-0.5 text-[10px] bg-gray-100 px-1 py-0.5 rounded">
+                                              <User className="w-2 h-2 text-gray-500" />
+                                              <span className="truncate max-w-[80px]">
+                                                {task.assignedTo.name}
                                               </span>
-                                            )}
+                                            </span>
+                                          )}
 
-                                            {task.taskType && (
-                                              <span className="flex items-center gap-0.5 text-[10px] bg-gray-100 px-1 py-0.5 rounded">
-                                                <Tag className="w-2 h-2 text-gray-500" />
-                                                <span>{task.taskType}</span>
-                                              </span>
-                                            )}
+                                          {task.taskType && (
+                                            <span className="flex items-center gap-0.5 text-[10px] bg-gray-100 px-1 py-0.5 rounded">
+                                              <Tag className="w-2 h-2 text-gray-500" />
+                                              <span>{task.taskType}</span>
+                                            </span>
+                                          )}
 
-                                            {task.recurring && (
-                                              <span className="flex items-center gap-0.5 text-[10px] bg-blue-50 text-blue-700 px-1 py-0.5 rounded">
-                                                <Clock className="w-2 h-2" />
-                                                <span>Recurring</span>
-                                              </span>
-                                            )}
-                                          </div>
+                                          {task.recurring && (
+                                            <span className="flex items-center gap-0.5 text-[10px] bg-blue-50 text-blue-700 px-1 py-0.5 rounded">
+                                              <Clock className="w-2 h-2" />
+                                              <span>Recurring</span>
+                                            </span>
+                                          )}
                                         </div>
+
+                                        {/* Affichage amélioré pour les dates de récurrence */}
+                                        {task.recurring &&
+                                          task.realizationDate && (
+                                            <div className="mt-1 flex items-center gap-0.5 text-[10px] bg-blue-50 px-1 py-0.5 rounded text-blue-700">
+                                              <Calendar className="w-2 h-2" />
+                                              <span>
+                                                Échéance:{" "}
+                                                {formatDate(
+                                                  task.realizationDate
+                                                )}
+                                              </span>
+                                              {task.endDate && (
+                                                <span className="ml-1">
+                                                  (jusqu&apos;au{" "}
+                                                  {formatDate(task.endDate)})
+                                                </span>
+                                              )}
+                                            </div>
+                                          )}
                                       </div>
                                     )}
                                   </Draggable>
@@ -985,7 +1088,8 @@ export default function ModernTasksPage({
           {searchQuery ||
           filterStatus.length > 0 ||
           filterAssignee ||
-          filterTaskType ? (
+          filterTaskType ||
+          filterRecurring !== null ? (
             <div className="text-center max-w-sm">
               <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
                 <Filter className="w-5 h-5 text-gray-400" />

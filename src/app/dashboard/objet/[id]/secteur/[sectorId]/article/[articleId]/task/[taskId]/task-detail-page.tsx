@@ -45,6 +45,7 @@ type Task = {
   recurring: boolean;
   period: string | null;
   endDate: Date | null;
+  recurrenceReminderDate?: Date | null;
   assignedToId: string | null;
   assignedTo: User | null;
   createdAt: Date;
@@ -462,6 +463,143 @@ export default function ModernTaskDetailPage({
           {/* Task details panel - always visible on desktop, conditionally on mobile */}
           {(activeTab === "details" || !isMobile) && (
             <div className="md:col-span-2 space-y-6">
+              {/* Bloc édition récurrence (avant la description) */}
+              {isEditing && (
+                <div className="mb-6">
+                  <div className="flex items-center mb-2">
+                    <input
+                      type="checkbox"
+                      id="recurring-edit"
+                      checked={editedTask.recurring}
+                      onChange={(e) =>
+                        setEditedTask({
+                          ...editedTask,
+                          recurring: e.target.checked,
+                        })
+                      }
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    />
+                    <label
+                      htmlFor="recurring-edit"
+                      className="ml-2 text-sm font-medium"
+                    >
+                      Tâche récurrente
+                    </label>
+                  </div>
+                  {editedTask.recurring && (
+                    <div className="ml-6 mt-2 space-y-3 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Périodicité
+                        </label>
+                        <select
+                          value={editedTask.period || "weekly"}
+                          onChange={(e) =>
+                            setEditedTask({
+                              ...editedTask,
+                              period: e.target.value,
+                            })
+                          }
+                          className="w-full p-2 border rounded-md text-sm"
+                        >
+                          <option value="daily">Quotidienne</option>
+                          <option value="weekly">Hebdomadaire</option>
+                          <option value="monthly">Mensuelle</option>
+                          <option value="quarterly">Trimestrielle</option>
+                          <option value="yearly">Annuelle</option>
+                        </select>
+                        <p className="text-xs text-blue-600 mt-1">
+                          Définit à quelle fréquence la tâche doit se répéter.
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Date de fin (optionnelle)
+                        </label>
+                        <input
+                          type="date"
+                          value={
+                            editedTask.endDate
+                              ? new Date(
+                                  editedTask.endDate instanceof Date
+                                    ? editedTask.endDate
+                                    : new Date(editedTask.endDate)
+                                )
+                                  .toISOString()
+                                  .split("T")[0]
+                              : ""
+                          }
+                          onChange={(e) =>
+                            setEditedTask({
+                              ...editedTask,
+                              endDate: e.target.value
+                                ? new Date(e.target.value)
+                                : null,
+                            })
+                          }
+                          className="w-full p-2 border rounded-md text-sm"
+                        />
+                        <p className="text-xs text-blue-600 mt-1">
+                          Si définie, la tâche ne sera plus recréée après cette
+                          date. Si non définie, la tâche se répétera
+                          indéfiniment.
+                        </p>
+                      </div>
+                      {(editedTask.period === "quarterly" ||
+                        editedTask.period === "yearly") && (
+                        <div className="border-t border-blue-200 pt-3">
+                          <div className="flex items-start">
+                            <input
+                              type="checkbox"
+                              id="reminder-notification"
+                              checked={!!editedTask.recurrenceReminderDate}
+                              onChange={(e) => {
+                                if (
+                                  e.target.checked &&
+                                  editedTask.realizationDate
+                                ) {
+                                  // Calculer date 10 jours avant réalisation
+                                  const reminderDate = new Date(
+                                    editedTask.realizationDate instanceof Date
+                                      ? editedTask.realizationDate
+                                      : new Date(editedTask.realizationDate)
+                                  );
+                                  reminderDate.setDate(
+                                    reminderDate.getDate() - 10
+                                  );
+                                  setEditedTask({
+                                    ...editedTask,
+                                    recurrenceReminderDate: reminderDate,
+                                  });
+                                } else {
+                                  setEditedTask({
+                                    ...editedTask,
+                                    recurrenceReminderDate: null,
+                                  });
+                                }
+                              }}
+                              className="w-4 h-4 mt-1 text-blue-600 rounded focus:ring-blue-500"
+                            />
+                            <div className="ml-2">
+                              <label
+                                htmlFor="reminder-notification"
+                                className="text-sm font-medium"
+                              >
+                                Activer la notification anticipée
+                              </label>
+                              <p className="text-xs text-blue-600">
+                                Envoi d&apos;une notification 10 jours avant
+                                l&apos;échéance (recommandé pour les tâches peu
+                                fréquentes)
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
               {/* Description */}
               <div className="bg-white rounded-lg border shadow-sm p-4">
                 <h2 className="text-lg font-medium mb-3 flex items-center gap-1.5">
@@ -489,7 +627,105 @@ export default function ModernTaskDetailPage({
                   </div>
                 )}
               </div>
-
+              {/* Bloc affichage récurrence (après la description) */}
+              {task.recurring && (
+                <div className="bg-white rounded-lg border shadow-sm p-4 mt-4">
+                  <h2 className="text-lg font-medium mb-3 flex items-center gap-1.5">
+                    <RefreshCcw className="h-5 w-5 text-blue-500" />
+                    Récurrence
+                  </h2>
+                  <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
+                    <div className="flex flex-col space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-700">
+                          Type de récurrence:
+                        </span>
+                        <span className="text-sm font-medium">
+                          {task.period === "daily" && "Quotidienne"}
+                          {task.period === "weekly" && "Hebdomadaire"}
+                          {task.period === "monthly" && "Mensuelle"}
+                          {task.period === "quarterly" && "Trimestrielle"}
+                          {task.period === "yearly" && "Annuelle"}
+                        </span>
+                      </div>
+                      {task.realizationDate && (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-700">
+                            Prochaine échéance:
+                          </span>
+                          <span className="text-sm font-medium">
+                            {formatDate(task.realizationDate)}
+                          </span>
+                        </div>
+                      )}
+                      {task.endDate ? (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-700">
+                            Date de fin de récurrence:
+                          </span>
+                          <span className="text-sm font-medium">
+                            {formatDate(task.endDate)}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-700">
+                            Date de fin de récurrence:
+                          </span>
+                          <span className="text-sm font-medium text-gray-500">
+                            Non définie (répétition sans fin)
+                          </span>
+                        </div>
+                      )}
+                      {(task.period === "quarterly" ||
+                        task.period === "yearly") && (
+                        <>
+                          {task.recurrenceReminderDate ? (
+                            <div className="flex justify-between">
+                              <span className="text-sm text-blue-600">
+                                Date de notification anticipée:
+                              </span>
+                              <span className="text-sm font-medium text-blue-600">
+                                {formatDate(task.recurrenceReminderDate)}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-700">
+                                Notification anticipée:
+                              </span>
+                              <span className="text-sm font-medium text-gray-500">
+                                Non activée
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  {/* Explication du fonctionnement des tâches récurrentes */}
+                  <div className="mt-4 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <p className="flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 text-blue-500" />
+                      <span>
+                        Cette tâche se répète automatiquement. Une fois
+                        terminée, une nouvelle instance sera créée pour la
+                        prochaine échéance.
+                      </span>
+                    </p>
+                    {task.status === "completed" && (
+                      <p className="mt-2 text-blue-600 flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span>
+                          Lorsque vous marquez cette tâche comme terminée, une
+                          nouvelle instance sera automatiquement créée pour la
+                          prochaine période.
+                        </span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
               {/* Execution comment (if exists) */}
               {(task.executantComment || isEditing) && (
                 <div className="bg-white rounded-lg border shadow-sm p-4">
