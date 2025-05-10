@@ -9,9 +9,12 @@ import {
   Image as ImageIcon,
   FileText,
   Loader2,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { useEffect } from "react";
 
 type User = {
   id: string;
@@ -218,6 +221,143 @@ export default function TaskFormMobileOptimized({
     }
   };
 
+  // Types prédéfinis de tâches
+  const PREDEFINED_TASK_TYPES = ["Maintenance", "Entretien", "Réparation"];
+
+  // Composant pour le sélecteur de type de tâche
+  function TaskTypeSelect({
+    value,
+    onChange,
+    className = "",
+  }: {
+    value: string | null;
+    onChange: (value: string) => void;
+    className?: string;
+  }) {
+    const [open, setOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [customMode, setCustomMode] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    // Détecter si la valeur actuelle est personnalisée
+    useEffect(() => {
+      if (value && !PREDEFINED_TASK_TYPES.includes(value)) {
+        setCustomMode(true);
+        setSearchTerm(value);
+      } else {
+        setSearchTerm("");
+      }
+    }, [value]);
+
+    // Activer l'input en mode personnalisé
+    useEffect(() => {
+      if (customMode && open && inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, [customMode, open]);
+
+    // Filtrer les types prédéfinis selon la recherche
+    const filteredTypes = searchTerm
+      ? PREDEFINED_TASK_TYPES.filter((type) =>
+          type.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      : PREDEFINED_TASK_TYPES;
+
+    return (
+      <div className={`relative ${className}`}>
+        <div
+          className="flex items-center justify-between w-full px-3 py-2 border border-[color:var(--border)] rounded-lg cursor-pointer bg-[color:var(--background)]"
+          onClick={() => setOpen(!open)}
+        >
+          {!customMode ? (
+            <span
+              className={
+                value
+                  ? "text-[color:var(--foreground)]"
+                  : "text-[color:var(--muted-foreground)]"
+              }
+            >
+              {value || "Sélectionner ou saisir un type"}
+            </span>
+          ) : (
+            <input
+              ref={inputRef}
+              type="text"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                onChange(e.target.value);
+              }}
+              className="w-full bg-transparent outline-none"
+              placeholder="Saisir un type personnalisé"
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
+          <ChevronsUpDown size={16} className="opacity-50" />
+        </div>
+
+        {open && (
+          <div className="absolute z-10 w-full mt-1 bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg shadow-lg">
+            <div className="max-h-60 overflow-y-auto">
+              <div className="p-1">
+                {/* Option pour basculer en mode personnalisé */}
+                <div
+                  className="flex items-center px-3 py-2 hover:bg-[color:var(--muted)] rounded cursor-pointer"
+                  onClick={() => {
+                    setCustomMode(true);
+                    setOpen(false);
+                    setTimeout(() => {
+                      setOpen(true);
+                      if (inputRef.current) inputRef.current.focus();
+                    }, 10);
+                  }}
+                >
+                  <span className="text-[color:var(--primary)]">
+                    + Saisir un type personnalisé
+                  </span>
+                </div>
+
+                {/* Types prédéfinis */}
+                {customMode && searchTerm
+                  ? filteredTypes.map((type) => (
+                      <div
+                        key={type}
+                        className="flex items-center px-3 py-2 hover:bg-[color:var(--muted)] rounded cursor-pointer"
+                        onClick={() => {
+                          onChange(type);
+                          setCustomMode(false);
+                          setOpen(false);
+                        }}
+                      >
+                        <span>{type}</span>
+                      </div>
+                    ))
+                  : PREDEFINED_TASK_TYPES.map((type) => (
+                      <div
+                        key={type}
+                        className="flex items-center justify-between px-3 py-2 hover:bg-[color:var(--muted)] rounded cursor-pointer"
+                        onClick={() => {
+                          onChange(type);
+                          setOpen(false);
+                        }}
+                      >
+                        <span>{type}</span>
+                        {type === value && (
+                          <Check
+                            size={16}
+                            className="text-[color:var(--primary)]"
+                          />
+                        )}
+                      </div>
+                    ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   // (AccordionSection removed because it was unused)
 
   return (
@@ -382,16 +522,17 @@ export default function TaskFormMobileOptimized({
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">
+              <label
+                htmlFor="taskType"
+                className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-[color:var(--foreground)]"
+              >
                 Type de tâche
               </label>
-              <input
-                type="text"
-                name="taskType"
-                value={formData.taskType || ""}
-                onChange={handleChange}
-                placeholder="Ex: Maintenance, Nettoyage..."
-                className="w-full px-3 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)]"
+              <TaskTypeSelect
+                value={formData.taskType}
+                onChange={(value) =>
+                  setFormData((prev) => ({ ...prev, taskType: value }))
+                }
               />
             </div>
 

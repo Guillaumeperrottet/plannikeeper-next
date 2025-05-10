@@ -25,6 +25,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const userRole = await prisma.organizationUser.findFirst({
+      where: {
+        userId: user.id,
+        organizationId: userDb.Organization.id,
+      },
+      select: { role: true },
+    });
+
+    if (!userRole || userRole.role !== "admin") {
+      return NextResponse.json(
+        { error: "Vous n'avez pas les droits nécessaires pour créer un objet" },
+        { status: 403 }
+      );
+    }
+
     // Vérifier les limites d'objets
     const limitsCheck = await checkOrganizationLimits(
       userDb.Organization.id,
@@ -91,26 +106,7 @@ export async function POST(req: NextRequest) {
           objectId: objet.id,
           accessLevel: "none",
         })),
-      });
-    }
-
-    // Récupérer tous les utilisateurs de l'organisation qui ne sont pas admin
-    const orgUsers = await prisma.organizationUser.findMany({
-      where: {
-        organizationId: userDb.Organization.id,
-        role: { not: "admin" },
-      },
-      select: { userId: true },
-    });
-
-    // Créer des entrées d'accès "none" pour chaque utilisateur
-    if (orgUsers.length > 0) {
-      await prisma.objectAccess.createMany({
-        data: orgUsers.map((ou) => ({
-          userId: ou.userId,
-          objectId: objet.id,
-          accessLevel: "none",
-        })),
+        skipDuplicates: true,
       });
     }
 
