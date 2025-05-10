@@ -79,7 +79,7 @@ export default function TaskFormMobileOptimized({
   const [activeTab, setActiveTab] = useState<TabId>("essential");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const defaultColor = "var(--primary)";
+  const defaultColor = "#d9840d";
 
   const [formData, setFormData] = useState<
     Omit<Task, "id" | "assignedTo" | "createdAt" | "updatedAt">

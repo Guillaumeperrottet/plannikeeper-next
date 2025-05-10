@@ -199,7 +199,7 @@ export default function TaskFormWithDocuments({
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const defaultColor = "var(--primary)"; // Utilisation de la variable CSS
+  const defaultColor = "#d9840d";
 
   const [formData, setFormData] = useState<
     Omit<Task, "id" | "assignedTo" | "createdAt" | "updatedAt">
@@ -584,7 +584,7 @@ export default function TaskFormWithDocuments({
                     htmlFor="endDate"
                     className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-[color:var(--foreground)]"
                   >
-                    Date de fin (optionnelle)
+                    Date de fin
                   </label>
                   <div className="relative">
                     <input
