@@ -116,7 +116,7 @@ const ArticleList: React.FC<ArticleListProps> = ({
       {/* Bouton flottant pour ouvrir la liste */}
       <motion.button
         onClick={togglePanel}
-        className={`fixed ${isMobile ? "bottom-20 left-4" : "top-20 left-20"} z-[999] flex items-center gap-1 bg-primary text-primary-foreground rounded-full shadow-lg px-3 py-3`}
+        className={`fixed ${isMobile ? "bottom-20 left-4" : "top-6 left-1/2 transform -translate-x-1/2"} z-[999] flex items-center gap-1 bg-primary text-primary-foreground rounded-full shadow-lg px-3 py-3`}
         whileTap={{ scale: 0.95 }}
         style={{
           position: "fixed",
