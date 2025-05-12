@@ -1,3 +1,5 @@
+// Modification de sector-viewer.tsx pour ajouter un contrôle de zoom
+
 "use client";
 
 import DropdownMenu from "@/app/components/ui/dropdownmenu";
@@ -11,6 +13,8 @@ import {
   Layers,
   Maximize2,
   Minimize2,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import ImageWithArticles from "@/app/components/ImageWithArticles";
 import AccessControl from "@/app/components/AccessControl";
@@ -49,6 +53,12 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const viewerRef = useRef<HTMLDivElement>(null);
+
+  // Nouvel état pour contrôler le niveau de zoom
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const maxZoom = 2.5;
+  const minZoom = 0.7;
+  const zoomStep = 0.1;
 
   // Détection du mode mobile
   useEffect(() => {
@@ -139,7 +149,20 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
     }
   }, [isFullscreen]);
 
-  // Gestion des touches clavier pour la navigation
+  // Fonctions pour contrôler le zoom
+  const zoomIn = useCallback(() => {
+    setZoomLevel((prev) => Math.min(prev + zoomStep, maxZoom));
+  }, []);
+
+  const zoomOut = useCallback(() => {
+    setZoomLevel((prev) => Math.max(prev - zoomStep, minZoom));
+  }, []);
+
+  const resetZoom = useCallback(() => {
+    setZoomLevel(1);
+  }, []);
+
+  // Gestion des touches clavier pour la navigation et le zoom
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "ArrowLeft") {
@@ -150,6 +173,15 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
         setIsFullscreen(false);
       } else if (event.key === "f" || event.key === "F") {
         toggleFullscreen();
+      } else if (event.key === "+" || event.key === "=") {
+        // Zoom in avec + ou =
+        zoomIn();
+      } else if (event.key === "-") {
+        // Zoom out avec -
+        zoomOut();
+      } else if (event.key === "0") {
+        // Reset zoom avec 0
+        resetZoom();
       }
     };
 
@@ -162,6 +194,9 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
     navigateToPreviousSector,
     isFullscreen,
     toggleFullscreen,
+    zoomIn,
+    zoomOut,
+    resetZoom,
   ]);
 
   // Gestion de la sortie du mode plein écran via l'API Fullscreen
@@ -178,12 +213,28 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
     };
   }, [isFullscreen]);
 
+  // Gestion de la molette de souris pour le zoom
+  const handleMouseWheel = useCallback(
+    (e: React.WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        if (e.deltaY < 0) {
+          zoomIn();
+        } else {
+          zoomOut();
+        }
+      }
+    },
+    [zoomIn, zoomOut]
+  );
+
   return (
     <div
       ref={viewerRef}
       className={`flex-1 flex flex-col ${
         isFullscreen ? "fixed inset-0 z-50 bg-transparent" : ""
       }`}
+      onWheel={handleMouseWheel}
     >
       {/* Header avec contrôles - caché en plein écran */}
       {!isFullscreen && (
@@ -289,7 +340,13 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 <div className="animate-spin rounded-full h-8 w-8 md:h-12 md:w-12 border-t-2 border-b-2 border-[#d9840d]"></div>
               </div>
             ) : (
-              <div className="max-w-full">
+              <div
+                className="max-w-full"
+                style={{
+                  transform: `scale(${zoomLevel})`,
+                  transition: "transform 0.2s ease-out",
+                }}
+              >
                 <ImageWithArticles
                   imageSrc={selectedSector.image}
                   imageAlt={selectedSector.name}
@@ -314,6 +371,33 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                   {selectedIndex + 1} / {sectors.length}: {selectedSector.name}
                 </span>
               </div>
+
+              {/* Contrôles de zoom */}
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={zoomOut}
+                  className="p-1 rounded hover:bg-gray-200"
+                  title="Zoom arrière"
+                >
+                  <ZoomOut size={isMobile ? 12 : 16} />
+                </button>
+
+                <span
+                  className="text-xs font-mono"
+                  title="Niveau de zoom actuel"
+                >
+                  {Math.round(zoomLevel * 100)}%
+                </span>
+
+                <button
+                  onClick={zoomIn}
+                  className="p-1 rounded hover:bg-gray-200"
+                  title="Zoom avant"
+                >
+                  <ZoomIn size={isMobile ? 12 : 16} />
+                </button>
+              </div>
+
               <button
                 onClick={toggleFullscreen}
                 className="p-1 rounded hover:bg-gray-200"
