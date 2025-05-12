@@ -588,9 +588,6 @@ const ModernLandingPage = () => {
                   poster: "/images/plannikeeper1copy4.png",
                 },
               ]}
-              backgroundColor="#19140d"
-              accentColor="#d9840d"
-              textColor="#f5f3ef"
             />
           </motion.div>
 
