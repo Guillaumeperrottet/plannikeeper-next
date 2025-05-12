@@ -191,7 +191,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
       {!isFullscreen && (
         <div className="p-2 md:p-4 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4 bg-transparent relative">
           {/* Interface de sélection de secteur */}
-          <div className="w-full sm:w-auto flex-1 flex items-center justify-center">
+          <div className="w-full sm:w-auto flex-1 flex items-center">
             <DropdownMenu
               items={sectors.map((s) => ({ id: s.id, label: s.name }))}
               selectedId={selectedSector?.id}
