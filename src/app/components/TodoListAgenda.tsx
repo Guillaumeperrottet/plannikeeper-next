@@ -600,34 +600,6 @@ export default function TodoListAgenda() {
         >
           {/* Partie gauche : sur desktop = contrôles de vue, sur mobile = vide ou icône */}
           <div className="w-1/4 flex items-center">
-            {!isMobile && (
-              <button
-                onClick={toggleViewMode}
-                className="flex items-center gap-1.5 rounded-full border border-[color:var(--border)] px-3 py-1 hover:bg-[color:var(--muted)] active:scale-95 transition-all bg-[color:var(--background)]"
-              >
-                {viewMode === ViewMode.LIST ? (
-                  <>
-                    <ListIcon
-                      size={14}
-                      className="text-[color:var(--foreground)]"
-                    />
-                    <span className="text-sm text-[color:var(--foreground)] hidden sm:block">
-                      Liste
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <CalendarIcon
-                      size={14}
-                      className="text-[color:var(--foreground)]"
-                    />
-                    <span className="text-sm text-[color:var(--foreground)] hidden sm:block">
-                      Calendrier
-                    </span>
-                  </>
-                )}
-              </button>
-            )}
             {isMobile && isExpanded && (
               <button
                 onClick={closeAgenda}
