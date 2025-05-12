@@ -191,7 +191,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
       {!isFullscreen && (
         <div className="p-2 md:p-4 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4 bg-transparent relative">
           {/* Interface de sélection de secteur */}
-          <div className="w-full sm:w-auto flex-1 flex items-center">
+          <div className="w-full sm:w-auto flex-1 flex items-center gap-2">
             <DropdownMenu
               items={sectors.map((s) => ({ id: s.id, label: s.name }))}
               selectedId={selectedSector?.id}
@@ -203,6 +203,21 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 selectedSector ? selectedSector.name : "Sélectionner un secteur"
               }
             />
+
+            {/* Bouton Articles à droite du sélecteur */}
+            <Button
+              variant="secondary"
+              className="ml-2"
+              onClick={() => {
+                // Redirige vers la liste d'articles du secteur sélectionné
+                if (selectedSector) {
+                  window.location.href = `/dashboard/objet/${objetId}/secteur/${selectedSector.id}/articles`;
+                }
+              }}
+            >
+              <Layers className="mr-1" size={16} />
+              Articles
+            </Button>
 
             {/* Liste d'articles desktop - positionnée de manière absolue */}
             {selectedSector && !isMobile && (
