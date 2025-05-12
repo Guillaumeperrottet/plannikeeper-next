@@ -8,7 +8,7 @@ import { Button } from "@/app/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronRight, Check } from "lucide-react";
-import FeatureVideoShowcase from "@/app/components/landing/FeatureVideoShowcase";
+import ModernFeatureVideoShowcase from "@/app/components/landing/ModernFeatureVideoShowcase";
 
 const ModernLandingPage = () => {
   // Removed unused activeSection state
@@ -545,48 +545,32 @@ const ModernLandingPage = () => {
             transition={{ duration: 0.8, delay: 0.2 }}
             viewport={{ once: true, amount: 0.3 }}
           >
-            <FeatureVideoShowcase
+            <ModernFeatureVideoShowcase
               features={[
                 {
                   id: "feature-1",
                   title: "Visualisation interactive des biens",
                   description:
-                    "Naviguez intuitivement à travers vos propriétés avec notre interface interactive et découvrez comment accéder rapidement à toutes les informations concernant vos biens immobiliers. Notre solution permet de visualiser l'ensemble de votre parc immobilier en un coup d'œil et d'accéder aux détails en quelques clics.",
-                  videoSrc: "/videos/feature-visualisation.mp4",
-                  poster: "/images/plannikeeper1copy4.png",
+                    "Naviguez intuitivement à travers vos propriétés avec notre interface interactive et découvrez comment accéder rapidement à toutes les informations concernant vos biens immobiliers.",
+                  images: [
+                    "/images/features/visualisation-1.png",
+                    "/images/features/visualisation-2.png",
+                    "/images/features/visualisation-3.png",
+                    "/images/features/visualisation-4.png",
+                  ],
                 },
                 {
                   id: "feature-2",
                   title: "Gestion des tâches intelligente",
                   description:
-                    "Créez, assignez et suivez toutes vos tâches de maintenance et de gestion en quelques clics avec notre calendrier interactif. Notre système vous permet de définir des échéances, d'attribuer des priorités et de recevoir des notifications pour ne jamais manquer une échéance importante.",
-                  videoSrc: "/videos/feature-tasks.mp4",
-                  poster: "/images/plannikeeper1copy5.png",
+                    "Créez, assignez et suivez toutes vos tâches de maintenance et de gestion en quelques clics avec notre calendrier interactif.",
+                  images: [
+                    "/images/features/tasks-1.png",
+                    "/images/features/tasks-2.png",
+                    "/images/features/tasks-3.png",
+                  ],
                 },
-                {
-                  id: "feature-3",
-                  title: "Collaboration en temps réel",
-                  description:
-                    "Travaillez efficacement avec votre équipe grâce à notre système de notifications et de partage instantané des informations. Notre plateforme permet à tous les membres de votre équipe d'accéder aux données pertinentes, de suivre l'avancement des projets et de communiquer directement au sein de l'application.",
-                  videoSrc: "/videos/feature-collaboration.mp4",
-                  poster: "/images/plannikeeper1copy4.png",
-                },
-                {
-                  id: "feature-4",
-                  title: "Centralisation documentaire",
-                  description:
-                    "Stockez et retrouvez facilement tous vos documents importants associés à chaque bien dans notre interface organisée. Contrats de location, factures, diagnostics techniques, plans... tous vos documents sont classés, indexés et accessibles en quelques clics.",
-                  videoSrc: "/videos/feature-documents.mp4",
-                  poster: "/images/plannikeeper1copy4.png",
-                },
-                {
-                  id: "feature-5",
-                  title: "Gestion des accès et des utilisateurs",
-                  description:
-                    "Gérez les accès de votre équipe et attribuez des rôles spécifiques pour une collaboration fluide et sécurisée. Définissez précisément qui peut voir quelles informations et qui peut effectuer quelles actions, pour un contrôle total sur vos données sensibles.",
-                  videoSrc: "/videos/feature-organisation.mp4",
-                  poster: "/images/plannikeeper1copy4.png",
-                },
+                // Ajoutez d'autres fonctionnalités...
               ]}
             />
           </motion.div>
