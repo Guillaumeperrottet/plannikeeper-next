@@ -1,4 +1,4 @@
-// src/app/components/ArticleList.tsx (modifié)
+// src/app/components/ArticleList.tsx (avec barre de recherche corrigée)
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   List,
@@ -385,11 +385,11 @@ const ArticleList: React.FC<ArticleListProps> = ({
                     className="border-b border-gray-200 overflow-hidden"
                   >
                     <div className="p-4">
-                      {/* Recherche */}
-                      <div className="relative">
+                      {/* Recherche - CORRECTION ICI */}
+                      <div className="relative w-full">
                         <Search
                           size={16}
-                          className="absolute left-2 top-2.5 text-gray-400"
+                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                         />
                         <input
                           ref={searchInputRef}
@@ -397,12 +397,12 @@ const ArticleList: React.FC<ArticleListProps> = ({
                           placeholder="Rechercher..."
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
-                          className="w-full py-2 pl-8 pr-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                          className="w-full py-2 pl-10 pr-8 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                         />
                         {searchTerm && (
                           <button
                             onClick={() => setSearchTerm("")}
-                            className="absolute right-2 top-2.5 text-gray-400 hover:text-gray-600"
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                           >
                             <XCircle size={16} />
                           </button>

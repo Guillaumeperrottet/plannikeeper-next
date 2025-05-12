@@ -341,7 +341,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
               </div>
             ) : (
               <div
-                className="max-w-full"
+                className=""
                 style={{
                   transform: `scale(${zoomLevel})`,
                   transition: "transform 0.2s ease-out",
