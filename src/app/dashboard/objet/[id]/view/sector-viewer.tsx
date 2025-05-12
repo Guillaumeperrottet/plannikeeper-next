@@ -190,9 +190,10 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
     >
       {/* Header avec contrôles - caché en plein écran */}
       {!isFullscreen && (
-        <div className="p-2 md:p-4 flex flex-col gap-2 bg-transparent relative">
-          {/* Interface centrée de sélection de secteur */}
-          <div className="w-full flex items-center justify-center mb-2">
+        <div className="p-2 md:p-4 bg-transparent relative">
+          {/* Barre horizontale centrée avec les contrôles */}
+          <div className="w-full flex flex-wrap items-center justify-center gap-4">
+            {/* Sélecteur de secteur */}
             <div ref={dropdownRef} className="relative">
               <DropdownMenu
                 items={sectors.map((s) => ({ id: s.id, label: s.name }))}
@@ -208,6 +209,42 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 }
               />
             </div>
+
+            {/* Bouton pour ajouter/modifier un article */}
+            {selectedSector && (
+              <div>
+                <AccessControl
+                  entityType="sector"
+                  entityId={selectedSector.id}
+                  requiredLevel="write"
+                  fallback={
+                    <Button
+                      variant="outline"
+                      className="sm:w-auto opacity-60"
+                      onClick={() =>
+                        toast.info(
+                          "Vous n'avez pas les droits pour modifier ce secteur"
+                        )
+                      }
+                    >
+                      {isMobile
+                        ? "Modifier/Créer un article"
+                        : "Modifier ou créer un article"}
+                    </Button>
+                  }
+                >
+                  <Button asChild variant="outline" className="sm:w-auto">
+                    <Link
+                      href={`/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?addArticle=1`}
+                    >
+                      {isMobile
+                        ? "Modifier/Créer un article"
+                        : "Modifier ou créer un article"}
+                    </Link>
+                  </Button>
+                </AccessControl>
+              </div>
+            )}
           </div>
 
           {/* Liste d'articles desktop - positionnée sous le menu */}
@@ -230,46 +267,6 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 hoveredArticleId={hoveredArticleId}
                 isMobile={false}
               />
-            </div>
-          )}
-
-          {/* Bouton pour ajouter/modifier un article */}
-          {selectedSector && (
-            <div className="w-full flex justify-center">
-              <AccessControl
-                entityType="sector"
-                entityId={selectedSector.id}
-                requiredLevel="write"
-                fallback={
-                  <Button
-                    variant="outline"
-                    className="max-w-md w-full sm:w-auto opacity-60"
-                    onClick={() =>
-                      toast.info(
-                        "Vous n'avez pas les droits pour modifier ce secteur"
-                      )
-                    }
-                  >
-                    {isMobile
-                      ? "Modifier/Créer un article"
-                      : "Modifier ou créer un article"}
-                  </Button>
-                }
-              >
-                <Button
-                  asChild
-                  variant="outline"
-                  className="max-w-md w-full sm:w-auto"
-                >
-                  <Link
-                    href={`/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?addArticle=1`}
-                  >
-                    {isMobile
-                      ? "Modifier/Créer un article"
-                      : "Modifier ou créer un article"}
-                  </Link>
-                </Button>
-              </AccessControl>
             </div>
           )}
         </div>
