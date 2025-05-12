@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import DropdownMenu from "@/app/components/ui/dropdownmenu";
 import { Button } from "@/app/components/ui/button";
