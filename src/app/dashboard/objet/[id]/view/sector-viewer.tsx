@@ -51,7 +51,6 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
   const [isMobile, setIsMobile] = useState(false);
   const viewerRef = useRef<HTMLDivElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Détection du mode mobile
   useEffect(() => {
@@ -190,36 +189,24 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
     >
       {/* Header avec contrôles - caché en plein écran */}
       {!isFullscreen && (
-        <div className="p-2 md:p-4 bg-transparent relative">
-          {/* Barre horizontale centrée avec les contrôles */}
-          <div className="w-full flex flex-wrap items-center justify-center gap-4">
-            {/* Sélecteur de secteur */}
-            <div ref={dropdownRef} className="relative">
-              <DropdownMenu
-                items={sectors.map((s) => ({ id: s.id, label: s.name }))}
-                selectedId={selectedSector?.id}
-                onSelect={(id) => {
-                  const sector = sectors.find((s) => s.id === id);
-                  if (sector) handleSectorChange(sector);
-                }}
-                label={
-                  selectedSector
-                    ? selectedSector.name
-                    : "Sélectionner un secteur"
-                }
-              />
-            </div>
+        <div className="p-2 md:p-4 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4 bg-transparent relative">
+          {/* Interface de sélection de secteur */}
+          <div className="w-full sm:w-auto flex-1 flex items-center justify-center">
+            <DropdownMenu
+              items={sectors.map((s) => ({ id: s.id, label: s.name }))}
+              selectedId={selectedSector?.id}
+              onSelect={(id) => {
+                const sector = sectors.find((s) => s.id === id);
+                if (sector) handleSectorChange(sector);
+              }}
+              label={
+                selectedSector ? selectedSector.name : "Sélectionner un secteur"
+              }
+            />
 
-            {/* Liste d'articles desktop - positionnée sous le menu */}
+            {/* Liste d'articles desktop - positionnée de manière absolue */}
             {selectedSector && !isMobile && (
-              <div
-                className="hidden md:block absolute top-full left-0 z-10"
-                style={{
-                  left: dropdownRef.current
-                    ? `${dropdownRef.current.getBoundingClientRect().left}px`
-                    : "0px",
-                }}
-              >
+              <div className="hidden md:block absolute top-full left-0 z-10">
                 <ArticleList
                   articles={articles}
                   selectedSectorName={selectedSector.name}
@@ -232,43 +219,43 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 />
               </div>
             )}
-
-            {/* Bouton pour ajouter/modifier un article */}
-            {selectedSector && (
-              <div>
-                <AccessControl
-                  entityType="sector"
-                  entityId={selectedSector.id}
-                  requiredLevel="write"
-                  fallback={
-                    <Button
-                      variant="outline"
-                      className="sm:w-auto opacity-60"
-                      onClick={() =>
-                        toast.info(
-                          "Vous n'avez pas les droits pour modifier ce secteur"
-                        )
-                      }
-                    >
-                      {isMobile
-                        ? "Modifier/Créer un article"
-                        : "Modifier ou créer un article"}
-                    </Button>
-                  }
-                >
-                  <Button asChild variant="outline" className="sm:w-auto">
-                    <Link
-                      href={`/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?addArticle=1`}
-                    >
-                      {isMobile
-                        ? "Modifier/Créer un article"
-                        : "Modifier ou créer un article"}
-                    </Link>
-                  </Button>
-                </AccessControl>
-              </div>
-            )}
           </div>
+
+          {/* Bouton pour ajouter/modifier un article */}
+          {selectedSector && (
+            <div className="w-full sm:w-auto">
+              <AccessControl
+                entityType="sector"
+                entityId={selectedSector.id}
+                requiredLevel="write"
+                fallback={
+                  <Button
+                    variant="outline"
+                    className="w-full sm:w-auto opacity-60"
+                    onClick={() =>
+                      toast.info(
+                        "Vous n'avez pas les droits pour modifier ce secteur"
+                      )
+                    }
+                  >
+                    {isMobile
+                      ? "Modifier/Créer un article"
+                      : "Modifier ou créer un article"}
+                  </Button>
+                }
+              >
+                <Button asChild variant="outline" className="w-full sm:w-auto">
+                  <Link
+                    href={`/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?addArticle=1`}
+                  >
+                    {isMobile
+                      ? "Modifier/Créer un article"
+                      : "Modifier ou créer un article"}
+                  </Link>
+                </Button>
+              </AccessControl>
+            </div>
+          )}
         </div>
       )}
 
