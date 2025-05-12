@@ -210,6 +210,29 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
               />
             </div>
 
+            {/* Liste d'articles desktop - positionnée sous le menu */}
+            {selectedSector && !isMobile && (
+              <div
+                className="hidden md:block absolute top-full left-0 z-10"
+                style={{
+                  left: dropdownRef.current
+                    ? `${dropdownRef.current.getBoundingClientRect().left}px`
+                    : "0px",
+                }}
+              >
+                <ArticleList
+                  articles={articles}
+                  selectedSectorName={selectedSector.name}
+                  objetId={objetId}
+                  sectorId={selectedSector.id}
+                  onArticleClick={handleArticleClick}
+                  onArticleHover={setHoveredArticleId}
+                  hoveredArticleId={hoveredArticleId}
+                  isMobile={false}
+                />
+              </div>
+            )}
+
             {/* Bouton pour ajouter/modifier un article */}
             {selectedSector && (
               <div>
@@ -246,29 +269,6 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
               </div>
             )}
           </div>
-
-          {/* Liste d'articles desktop - positionnée sous le menu */}
-          {selectedSector && !isMobile && (
-            <div
-              className="hidden md:block absolute top-full left-0 z-10"
-              style={{
-                left: dropdownRef.current
-                  ? `${dropdownRef.current.getBoundingClientRect().left}px`
-                  : "0px",
-              }}
-            >
-              <ArticleList
-                articles={articles}
-                selectedSectorName={selectedSector.name}
-                objetId={objetId}
-                sectorId={selectedSector.id}
-                onArticleClick={handleArticleClick}
-                onArticleHover={setHoveredArticleId}
-                hoveredArticleId={hoveredArticleId}
-                isMobile={false}
-              />
-            </div>
-          )}
         </div>
       )}
 
