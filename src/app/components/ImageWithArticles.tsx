@@ -411,7 +411,7 @@ export default function ImageWithArticles({
         alt={imageAlt}
         width={originalWidth}
         height={originalHeight}
-        className="block w-full h-auto max-h-[calc(100vh-150px)]"
+        className="block h-auto max-h-[calc(100vh-150px)]"
         style={{ objectFit: "contain" }}
         onLoadingComplete={updateDimensions}
         priority
