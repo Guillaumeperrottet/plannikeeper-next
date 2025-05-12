@@ -4,6 +4,7 @@ import DropdownMenu from "@/app/components/ui/dropdownmenu";
 import { Button } from "@/app/components/ui/button";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
+
 import Link from "next/link";
 import {
   ChevronLeft,
@@ -14,7 +15,7 @@ import {
 } from "lucide-react";
 import ImageWithArticles from "@/app/components/ImageWithArticles";
 import AccessControl from "@/app/components/AccessControl";
-import ArticleList from "@/app/components/ArticleList";
+import MobileArticleList from "@/app/components/MobileArticleList"; // Importer le nouveau composant
 
 type Sector = {
   id: string;
@@ -185,11 +186,10 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
         isFullscreen ? "fixed inset-0 z-50 bg-transparent" : ""
       }`}
     >
-      {/* Header avec contrôles - caché en plein écran */}
       {!isFullscreen && (
         <div className="p-2 md:p-4 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4 bg-transparent">
-          {/* Interface de sélection de secteur */}
-          <div className="w-full sm:w-auto flex-1 flex items-center">
+          {/* Interface de sélection de secteur - adaptative pour mobile et desktop */}
+          <div className="w-full sm:w-auto flex-1">
             <DropdownMenu
               items={sectors.map((s) => ({ id: s.id, label: s.name }))}
               selectedId={selectedSector?.id}
@@ -201,23 +201,9 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 selectedSector ? selectedSector.name : "Sélectionner un secteur"
               }
             />
-
-            {/* Liste d'articles desktop */}
-            {selectedSector && (
-              <ArticleList
-                articles={articles}
-                selectedSectorName={selectedSector.name}
-                objetId={objetId}
-                sectorId={selectedSector.id}
-                onArticleClick={handleArticleClick}
-                onArticleHover={setHoveredArticleId}
-                hoveredArticleId={hoveredArticleId}
-                isMobile={false}
-              />
-            )}
           </div>
 
-          {/* Bouton pour ajouter/modifier un article */}
+          {/* Bouton pour ajouter/déplacer un article */}
           {selectedSector && (
             <div className="w-full sm:w-auto">
               <AccessControl
@@ -234,8 +220,9 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                       )
                     }
                   >
+                    {/* <PlusCircle size={isMobile ? 16 : 20} className="mr-2" /> */}
                     {isMobile
-                      ? "Modifier/Créer un article"
+                      ? "Modifier ou créer un article"
                       : "Modifier ou créer un article"}
                   </Button>
                 }
@@ -244,8 +231,9 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                   <Link
                     href={`/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?addArticle=1`}
                   >
+                    {/* <PlusCircle size={isMobile ? 16 : 20} className="mr-2" /> */}
                     {isMobile
-                      ? "Modifier/Créer un article"
+                      ? "Modifier ou créer un article"
                       : "Modifier ou créer un article"}
                   </Link>
                 </Button>
@@ -255,15 +243,13 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
         </div>
       )}
 
-      {/* Container principal de visualisation */}
       <div
         className={`flex-1 flex items-center justify-center overflow-hidden ${
           isFullscreen ? "bg-transparent" : "bg-transparent p-1"
         }`}
       >
         {selectedSector ? (
-          <div className="relative w-full max-h-full flex items-center justify-center">
-            {/* Boutons de navigation entre secteurs */}
+          <div className="relative w-full max-h-full">
             {sectors.length > 1 && (
               <>
                 <button
@@ -283,13 +269,12 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
               </>
             )}
 
-            {/* Indicateur de chargement */}
             {isLoading ? (
               <div className="flex items-center justify-center h-64 w-full">
                 <div className="animate-spin rounded-full h-8 w-8 md:h-12 md:w-12 border-t-2 border-b-2 border-[#d9840d]"></div>
               </div>
             ) : (
-              <div className="">
+              <div>
                 <ImageWithArticles
                   imageSrc={selectedSector.image}
                   imageAlt={selectedSector.name}
@@ -306,11 +291,11 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
               </div>
             )}
 
-            {/* Barre d'information en bas de l'image */}
-            <div className="absolute bottom-2 md:bottom-4 left-1/2 transform -translate-x-1/2 bg-background bg-opacity-80 px-2 md:px-4 py-1 md:py-2 rounded-full shadow-md z-10 flex items-center gap-2 md:gap-4 text-xs md:text-sm">
+            {/* Information bar at bottom */}
+            <div className="absolute bottom-2 md:bottom-4 left-1/2 transform -translate-x-1/2 bg-background bg-opacity-80 px-2 md:px-4 py-1 md:py-2 rounded-full shadow-md z-10 flex items-center gap-2 md:gap-4 text-xs md:text-base">
               <div className="flex items-center gap-1 md:gap-2">
                 <Layers size={isMobile ? 12 : 16} />
-                <span className="truncate max-w-[150px] md:max-w-[250px]">
+                <span className="truncate max-w-[150px] md:max-w-none">
                   {selectedIndex + 1} / {sectors.length}: {selectedSector.name}
                 </span>
               </div>
@@ -329,9 +314,9 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
               </button>
             </div>
 
-            {/* Liste des articles pour mobile uniquement - visible seulement quand pas en plein écran */}
+            {/* Nouveau composant : Liste des articles pour mobile */}
             {selectedSector && !isFullscreen && (
-              <ArticleList
+              <MobileArticleList
                 articles={articles}
                 selectedSectorName={selectedSector.name}
                 objetId={objetId}
@@ -339,7 +324,6 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 onArticleClick={handleArticleClick}
                 onArticleHover={setHoveredArticleId}
                 hoveredArticleId={hoveredArticleId}
-                isMobile={true}
               />
             )}
           </div>
