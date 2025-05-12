@@ -51,6 +51,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
   const [isMobile, setIsMobile] = useState(false);
   const viewerRef = useRef<HTMLDivElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Détection du mode mobile
   useEffect(() => {
@@ -189,41 +190,52 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
     >
       {/* Header avec contrôles - caché en plein écran */}
       {!isFullscreen && (
-        <div className="p-2 md:p-4 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4 bg-transparent relative">
-          {/* Interface de sélection de secteur */}
-          <div className="w-full sm:w-auto flex-1 flex items-center justify-center">
-            <DropdownMenu
-              items={sectors.map((s) => ({ id: s.id, label: s.name }))}
-              selectedId={selectedSector?.id}
-              onSelect={(id) => {
-                const sector = sectors.find((s) => s.id === id);
-                if (sector) handleSectorChange(sector);
-              }}
-              label={
-                selectedSector ? selectedSector.name : "Sélectionner un secteur"
-              }
-            />
-
-            {/* Liste d'articles desktop - positionnée de manière absolue */}
-            {selectedSector && !isMobile && (
-              <div className="hidden md:block absolute top-full left-0 z-10">
-                <ArticleList
-                  articles={articles}
-                  selectedSectorName={selectedSector.name}
-                  objetId={objetId}
-                  sectorId={selectedSector.id}
-                  onArticleClick={handleArticleClick}
-                  onArticleHover={setHoveredArticleId}
-                  hoveredArticleId={hoveredArticleId}
-                  isMobile={false}
-                />
-              </div>
-            )}
+        <div className="p-2 md:p-4 flex flex-col gap-2 bg-transparent relative">
+          {/* Interface centrée de sélection de secteur */}
+          <div className="w-full flex items-center justify-center mb-2">
+            <div ref={dropdownRef} className="relative">
+              <DropdownMenu
+                items={sectors.map((s) => ({ id: s.id, label: s.name }))}
+                selectedId={selectedSector?.id}
+                onSelect={(id) => {
+                  const sector = sectors.find((s) => s.id === id);
+                  if (sector) handleSectorChange(sector);
+                }}
+                label={
+                  selectedSector
+                    ? selectedSector.name
+                    : "Sélectionner un secteur"
+                }
+              />
+            </div>
           </div>
+
+          {/* Liste d'articles desktop - positionnée sous le menu */}
+          {selectedSector && !isMobile && (
+            <div
+              className="hidden md:block absolute top-full left-0 z-10"
+              style={{
+                left: dropdownRef.current
+                  ? `${dropdownRef.current.getBoundingClientRect().left}px`
+                  : "0px",
+              }}
+            >
+              <ArticleList
+                articles={articles}
+                selectedSectorName={selectedSector.name}
+                objetId={objetId}
+                sectorId={selectedSector.id}
+                onArticleClick={handleArticleClick}
+                onArticleHover={setHoveredArticleId}
+                hoveredArticleId={hoveredArticleId}
+                isMobile={false}
+              />
+            </div>
+          )}
 
           {/* Bouton pour ajouter/modifier un article */}
           {selectedSector && (
-            <div className="w-full sm:w-auto">
+            <div className="w-full flex justify-center">
               <AccessControl
                 entityType="sector"
                 entityId={selectedSector.id}
@@ -231,7 +243,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 fallback={
                   <Button
                     variant="outline"
-                    className="w-full sm:w-auto opacity-60"
+                    className="max-w-md w-full sm:w-auto opacity-60"
                     onClick={() =>
                       toast.info(
                         "Vous n'avez pas les droits pour modifier ce secteur"
@@ -244,7 +256,11 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                   </Button>
                 }
               >
-                <Button asChild variant="outline" className="w-full sm:w-auto">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="max-w-md w-full sm:w-auto"
+                >
                   <Link
                     href={`/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?addArticle=1`}
                   >
