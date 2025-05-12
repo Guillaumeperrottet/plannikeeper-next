@@ -10,6 +10,8 @@ import {
   Search,
   Filter,
   XCircle,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -67,10 +69,12 @@ const ArticleList: React.FC<ArticleListProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("title-asc");
   const [filteredArticles, setFilteredArticles] = useState<Article[]>(articles);
   const listRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // État pour gérer l'icône de tri
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   // Fonction pour appliquer les filtres et le tri
   // Utiliser useCallback pour la mémoriser et éviter les recréations
@@ -83,19 +87,24 @@ const ArticleList: React.FC<ArticleListProps> = ({
           article.description.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
-    // Appliquer le tri
-    const sortOption = sortOptions.find((option) => option.id === sortBy);
+    // Appliquer le tri en fonction de la direction
+    const sortOption = sortOptions.find((option) =>
+      sortDirection === "asc"
+        ? option.id === "title-asc"
+        : option.id === "title-desc"
+    );
+
     if (sortOption) {
       filtered.sort(sortOption.compareFn);
     }
 
     setFilteredArticles(filtered);
-  }, [articles, searchTerm, sortBy]);
+  }, [articles, searchTerm, sortDirection]);
 
   // Mettre à jour les articles filtrés quand les articles source changent
   useEffect(() => {
     applyFiltersAndSort();
-  }, [articles, searchTerm, sortBy, applyFiltersAndSort]);
+  }, [articles, searchTerm, sortDirection, applyFiltersAndSort]);
 
   // Focus sur le champ de recherche quand les filtres sont affichés
   useEffect(() => {
@@ -131,9 +140,17 @@ const ArticleList: React.FC<ArticleListProps> = ({
     setShowFilters(!showFilters);
   };
 
+  // Fonction pour alterner la direction de tri
+  const toggleSortDirection = () => {
+    setSortDirection((prevDirection) =>
+      prevDirection === "asc" ? "desc" : "asc"
+    );
+    triggerHapticFeedback("light");
+  };
+
   const clearFilters = () => {
     setSearchTerm("");
-    setSortBy("title-asc");
+    setSortDirection("asc");
     triggerHapticFeedback("medium");
   };
 
@@ -145,7 +162,6 @@ const ArticleList: React.FC<ArticleListProps> = ({
   const getFilterCount = () => {
     let count = 0;
     if (searchTerm) count++;
-    if (sortBy !== "title-asc") count++;
     return count;
   };
 
@@ -229,9 +245,7 @@ const ArticleList: React.FC<ArticleListProps> = ({
         ) : (
           <>
             {isMobile ? <List size={18} /> : <PanelLeft size={18} />}
-            <span className="ml-1 text-sm font-medium">
-              {articles.length} Articles
-            </span>
+            <span className="ml-1 text-sm font-medium">Articles</span>
           </>
         )}
       </motion.button>
@@ -319,16 +333,29 @@ const ArticleList: React.FC<ArticleListProps> = ({
                   <h3 style={{ fontWeight: 500, margin: 0 }}>
                     Articles de &quot;{selectedSectorName}&quot;
                   </h3>
-                  <div className="text-xs bg-gray-100 px-2 ml-2 rounded-full">
-                    {filteredArticles.length}/{articles.length}
-                  </div>
+                  {/* Bouton de tri */}
+                  <button
+                    onClick={toggleSortDirection}
+                    className="ml-2 p-1 rounded hover:bg-gray-100"
+                    title={
+                      sortDirection === "asc"
+                        ? "Tri croissant"
+                        : "Tri décroissant"
+                    }
+                  >
+                    {sortDirection === "asc" ? (
+                      <ArrowUp size={16} className="text-gray-500" />
+                    ) : (
+                      <ArrowDown size={16} className="text-gray-500" />
+                    )}
+                  </button>
                 </div>
                 <div className="flex items-center gap-2">
                   <motion.button
                     onClick={toggleFilters}
                     whileTap={{ scale: 0.9 }}
                     className={`relative p-2 ${showFilters ? "bg-blue-100 text-blue-700" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"} rounded-md transition-colors`}
-                    aria-label="Filtres et tri"
+                    aria-label="Filtres"
                   >
                     <Filter size={18} />
                     {getFilterCount() > 0 && (
@@ -357,10 +384,9 @@ const ArticleList: React.FC<ArticleListProps> = ({
                     exit="hidden"
                     className="border-b border-gray-200 overflow-hidden"
                   >
-                    {/* Augmentation du padding vertical de 3 à 5 pour plus d'espace */}
-                    <div className="p-5 flex flex-col gap-4">
-                      {/* Recherche - avec plus d'espace au-dessus */}
-                      <div className="relative mt-2">
+                    <div className="p-4">
+                      {/* Recherche */}
+                      <div className="relative">
                         <Search
                           size={16}
                           className="absolute left-2 top-2.5 text-gray-400"
@@ -383,26 +409,8 @@ const ArticleList: React.FC<ArticleListProps> = ({
                         )}
                       </div>
 
-                      {/* Options de tri - avec plus d'espace entre les éléments */}
-                      <div className="flex flex-wrap gap-3 items-center my-2">
-                        <span className="text-xs text-gray-500 font-medium">
-                          Trier par:
-                        </span>
-                        <select
-                          value={sortBy}
-                          onChange={(e) => setSortBy(e.target.value)}
-                          className="text-sm border border-gray-200 rounded px-3 py-1.5 bg-white"
-                        >
-                          {sortOptions.map((option) => (
-                            <option key={option.id} value={option.id}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Bouton pour réinitialiser les filtres - avec plus d'espace en-dessous */}
-                      <div className="flex justify-end mt-2 mb-2">
+                      {/* Bouton pour réinitialiser les filtres */}
+                      <div className="flex justify-end mt-2">
                         <button
                           onClick={clearFilters}
                           className="text-xs font-medium text-gray-500 hover:text-gray-700 py-1.5 px-3 rounded hover:bg-gray-100"
@@ -422,8 +430,8 @@ const ArticleList: React.FC<ArticleListProps> = ({
                   overflowY: "auto",
                   // Ajustement de la hauteur maximale pour s'adapter au panneau de filtres
                   maxHeight: isMobile
-                    ? `calc(80vh - ${showFilters ? "180px" : "60px"})`
-                    : `calc(100vh - ${showFilters ? "180px" : "60px"})`,
+                    ? `calc(80vh - ${showFilters ? "130px" : "60px"})`
+                    : `calc(100vh - ${showFilters ? "130px" : "60px"})`,
                   WebkitOverflowScrolling: "touch",
                   paddingBottom: isMobile
                     ? "env(safe-area-inset-bottom, 16px)"

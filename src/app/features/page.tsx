@@ -12,7 +12,7 @@ export default function FeaturesPage() {
   return (
     <div className="container max-w-3xl px-4 py-8 mx-auto">
       <h1 className="text-2xl font-bold mb-6 text-[color:var(--foreground)]">
-        Proposer une amélioration
+        Proposer une amélioration / reporter un bug
       </h1>
 
       <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg p-6 shadow-sm mb-6">
