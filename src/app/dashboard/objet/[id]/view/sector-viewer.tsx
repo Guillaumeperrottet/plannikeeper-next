@@ -15,6 +15,7 @@ import {
 import ImageWithArticles from "@/app/components/ImageWithArticles";
 import AccessControl from "@/app/components/AccessControl";
 import ArticleList from "@/app/components/ArticleList";
+import MobileArticleList from "@/app/components/MobileArticleList";
 
 type Sector = {
   id: string;
@@ -49,6 +50,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const viewerRef = useRef<HTMLDivElement>(null);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
 
   // Détection du mode mobile
   useEffect(() => {
@@ -181,8 +183,8 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
   return (
     <div
       ref={viewerRef}
-      className={`flex-1 flex flex-col ${
-        isFullscreen ? "fixed inset-0 z-50 bg-transparent" : ""
+      className={`flex-1 flex flex-col h-full ${
+        isFullscreen ? "fixed inset-0 z-50 bg-background" : ""
       }`}
     >
       {/* Header avec contrôles - caché en plein écran */}
@@ -201,20 +203,6 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 selectedSector ? selectedSector.name : "Sélectionner un secteur"
               }
             />
-
-            {/* Liste d'articles desktop */}
-            {selectedSector && (
-              <ArticleList
-                articles={articles}
-                selectedSectorName={selectedSector.name}
-                objetId={objetId}
-                sectorId={selectedSector.id}
-                onArticleClick={handleArticleClick}
-                onArticleHover={setHoveredArticleId}
-                hoveredArticleId={hoveredArticleId}
-                isMobile={false}
-              />
-            )}
           </div>
 
           {/* Bouton pour ajouter/modifier un article */}
@@ -257,39 +245,57 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
 
       {/* Container principal de visualisation */}
       <div
-        className={`flex-1 flex items-center justify-center overflow-hidden ${
-          isFullscreen ? "bg-transparent" : "bg-transparent p-1"
-        }`}
+        className={`flex-1 flex ${isFullscreen ? "h-screen" : "h-[calc(100vh-150px)]"} overflow-hidden`}
       >
-        {selectedSector ? (
-          <div className="relative w-full max-h-full flex items-center justify-center">
-            {/* Boutons de navigation entre secteurs */}
-            {sectors.length > 1 && (
-              <>
-                <button
-                  onClick={navigateToPreviousSector}
-                  className="absolute left-1 md:left-2 top-1/2 transform -translate-y-1/2 p-1 md:p-2 bg-background bg-opacity-80 rounded-full shadow-md hover:bg-opacity-100 z-10"
-                  aria-label="Secteur précédent"
-                >
-                  <ChevronLeft size={isMobile ? 16 : 24} />
-                </button>
-                <button
-                  onClick={navigateToNextSector}
-                  className="absolute right-1 md:right-2 top-1/2 transform -translate-y-1/2 p-1 md:p-2 bg-background bg-opacity-80 rounded-full shadow-md hover:bg-opacity-100 z-10"
-                  aria-label="Secteur suivant"
-                >
-                  <ChevronRight size={isMobile ? 16 : 24} />
-                </button>
-              </>
-            )}
+        {/* Liste d'articles desktop */}
+        {selectedSector && !isMobile && (
+          <ArticleList
+            articles={articles}
+            selectedSectorName={selectedSector.name}
+            objetId={objetId}
+            sectorId={selectedSector.id}
+            onArticleClick={handleArticleClick}
+            onArticleHover={setHoveredArticleId}
+            hoveredArticleId={hoveredArticleId}
+            isMobile={false}
+          />
+        )}
 
-            {/* Indicateur de chargement */}
-            {isLoading ? (
-              <div className="flex items-center justify-center h-64 w-full">
-                <div className="animate-spin rounded-full h-8 w-8 md:h-12 md:w-12 border-t-2 border-b-2 border-[#d9840d]"></div>
-              </div>
-            ) : (
-              <div className="max-w-full">
+        {/* Container principal de l'image */}
+        <div
+          ref={imageContainerRef}
+          className={`flex-1 relative flex items-center justify-center ${
+            isFullscreen ? "p-0" : "p-1"
+          }`}
+        >
+          {selectedSector ? (
+            <>
+              {/* Boutons de navigation entre secteurs */}
+              {sectors.length > 1 && (
+                <>
+                  <button
+                    onClick={navigateToPreviousSector}
+                    className="absolute left-1 md:left-2 top-1/2 transform -translate-y-1/2 p-1 md:p-2 bg-background bg-opacity-80 rounded-full shadow-md hover:bg-opacity-100 z-10"
+                    aria-label="Secteur précédent"
+                  >
+                    <ChevronLeft size={isMobile ? 16 : 24} />
+                  </button>
+                  <button
+                    onClick={navigateToNextSector}
+                    className="absolute right-1 md:right-2 top-1/2 transform -translate-y-1/2 p-1 md:p-2 bg-background bg-opacity-80 rounded-full shadow-md hover:bg-opacity-100 z-10"
+                    aria-label="Secteur suivant"
+                  >
+                    <ChevronRight size={isMobile ? 16 : 24} />
+                  </button>
+                </>
+              )}
+
+              {/* Indicateur de chargement */}
+              {isLoading ? (
+                <div className="flex items-center justify-center h-64 w-full">
+                  <div className="animate-spin rounded-full h-8 w-8 md:h-12 md:w-12 border-t-2 border-b-2 border-[#d9840d]"></div>
+                </div>
+              ) : (
                 <ImageWithArticles
                   imageSrc={selectedSector.image}
                   imageAlt={selectedSector.name}
@@ -299,56 +305,54 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                   onArticleClick={handleArticleClick}
                   onArticleHover={setHoveredArticleId}
                   hoveredArticleId={hoveredArticleId}
-                  className={`${
-                    isFullscreen ? "max-h-screen" : "max-h-[calc(100vh-150px)]"
-                  }`}
+                  className="max-h-full w-full"
                 />
-              </div>
-            )}
+              )}
 
-            {/* Barre d'information en bas de l'image */}
-            <div className="absolute bottom-2 md:bottom-4 left-1/2 transform -translate-x-1/2 bg-background bg-opacity-80 px-2 md:px-4 py-1 md:py-2 rounded-full shadow-md z-10 flex items-center gap-2 md:gap-4 text-xs md:text-sm">
-              <div className="flex items-center gap-1 md:gap-2">
-                <Layers size={isMobile ? 12 : 16} />
-                <span className="truncate max-w-[150px] md:max-w-[250px]">
-                  {selectedIndex + 1} / {sectors.length}: {selectedSector.name}
-                </span>
+              {/* Barre d'information en bas de l'image */}
+              <div className="absolute bottom-2 md:bottom-4 left-1/2 transform -translate-x-1/2 bg-background bg-opacity-80 px-2 md:px-4 py-1 md:py-2 rounded-full shadow-md z-10 flex items-center gap-2 md:gap-4 text-xs md:text-sm">
+                <div className="flex items-center gap-1 md:gap-2">
+                  <Layers size={isMobile ? 12 : 16} />
+                  <span className="truncate max-w-[150px] md:max-w-[250px]">
+                    {selectedIndex + 1} / {sectors.length}:{" "}
+                    {selectedSector.name}
+                  </span>
+                </div>
+                <button
+                  onClick={toggleFullscreen}
+                  className="p-1 rounded hover:bg-gray-200"
+                  title={
+                    isFullscreen ? "Quitter le plein écran" : "Mode plein écran"
+                  }
+                >
+                  {isFullscreen ? (
+                    <Minimize2 size={isMobile ? 12 : 16} />
+                  ) : (
+                    <Maximize2 size={isMobile ? 12 : 16} />
+                  )}
+                </button>
               </div>
-              <button
-                onClick={toggleFullscreen}
-                className="p-1 rounded hover:bg-gray-200"
-                title={
-                  isFullscreen ? "Quitter le plein écran" : "Mode plein écran"
-                }
-              >
-                {isFullscreen ? (
-                  <Minimize2 size={isMobile ? 12 : 16} />
-                ) : (
-                  <Maximize2 size={isMobile ? 12 : 16} />
-                )}
-              </button>
+            </>
+          ) : (
+            <div className="text-center text-gray-500 p-4">
+              Sélectionnez un secteur pour afficher son image
             </div>
-
-            {/* Liste des articles pour mobile uniquement - visible seulement quand pas en plein écran */}
-            {selectedSector && !isFullscreen && (
-              <ArticleList
-                articles={articles}
-                selectedSectorName={selectedSector.name}
-                objetId={objetId}
-                sectorId={selectedSector.id}
-                onArticleClick={handleArticleClick}
-                onArticleHover={setHoveredArticleId}
-                hoveredArticleId={hoveredArticleId}
-                isMobile={true}
-              />
-            )}
-          </div>
-        ) : (
-          <div className="text-center text-gray-500 p-4">
-            Sélectionnez un secteur pour afficher son image
-          </div>
-        )}
+          )}
+        </div>
       </div>
+
+      {/* Liste des articles pour mobile uniquement - visible seulement quand pas en plein écran */}
+      {selectedSector && !isFullscreen && isMobile && (
+        <MobileArticleList
+          articles={articles}
+          selectedSectorName={selectedSector.name}
+          objetId={objetId}
+          sectorId={selectedSector.id}
+          onArticleClick={handleArticleClick}
+          onArticleHover={setHoveredArticleId}
+          hoveredArticleId={hoveredArticleId}
+        />
+      )}
     </div>
   );
 }
