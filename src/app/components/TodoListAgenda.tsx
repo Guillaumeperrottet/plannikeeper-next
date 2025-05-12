@@ -611,9 +611,11 @@ export default function TodoListAgenda() {
             )}
           </div>
 
-          {/* Titre centré */}
-          <div className="flex-1 flex justify-center items-center">
-            {titleContent}
+          {/* Titre centré - position absolute pour un vrai centrage */}
+          <div className="flex-1 flex justify-center items-center relative">
+            <div className="absolute left-1/2 transform -translate-x-1/2">
+              {titleContent}
+            </div>
           </div>
 
           {/* Partie droite : sur desktop = sélecteur d'objet, sur mobile = icône d'expansion */}
