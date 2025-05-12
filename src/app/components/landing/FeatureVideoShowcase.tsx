@@ -2,16 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Play,
-  Pause,
-  ChevronLeft,
-  ChevronRight,
-  Info,
-  Maximize2,
-  Volume2,
-  VolumeX,
-} from "lucide-react";
+import { Play, Pause, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 
 interface VideoFeature {
@@ -24,26 +15,14 @@ interface VideoFeature {
 
 interface VideoShowcaseProps {
   features: VideoFeature[];
-  backgroundColor?: string;
-  accentColor?: string;
-  textColor?: string;
 }
 
-export default function EnhancedFeatureVideoShowcase({
-  features,
-  backgroundColor = "#19140d",
-  accentColor = "#d9840d",
-}: VideoShowcaseProps) {
+export default function FeatureVideoShowcase({ features }: VideoShowcaseProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [showInfo, setShowInfo] = useState(false);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
-  const videoContainerRef = useRef<HTMLDivElement>(null);
 
   const activeFeature = features[activeIndex];
 
@@ -76,9 +55,6 @@ export default function EnhancedFeatureVideoShowcase({
     // Lecture de la vidéo active si nécessaire
     const activeVideo = videoRefs.current[activeIndex];
     if (activeVideo) {
-      activeVideo.currentTime = 0; // Réinitialiser la vidéo au début
-      activeVideo.muted = isMuted;
-
       if (isPlaying) {
         activeVideo.play().catch((e) => {
           console.error("Erreur lors de la lecture de la vidéo:", e);
@@ -88,89 +64,25 @@ export default function EnhancedFeatureVideoShowcase({
         activeVideo.pause();
       }
     }
-  }, [activeIndex, isPlaying, isMuted]);
-
-  // Mettre à jour la progression de la vidéo
-  useEffect(() => {
-    const activeVideo = videoRefs.current[activeIndex];
-    if (!activeVideo) return;
-
-    const updateProgress = () => {
-      const currentProgress =
-        (activeVideo.currentTime / activeVideo.duration) * 100;
-      setProgress(currentProgress);
-    };
-
-    const handleVideoEnd = () => {
-      setIsPlaying(false);
-      setProgress(0);
-    };
-
-    activeVideo.addEventListener("timeupdate", updateProgress);
-    activeVideo.addEventListener("ended", handleVideoEnd);
-
-    return () => {
-      activeVideo.removeEventListener("timeupdate", updateProgress);
-      activeVideo.removeEventListener("ended", handleVideoEnd);
-    };
-  }, [activeIndex]);
-
-  // Gérer le mode plein écran
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => {
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
-    };
-  }, []);
+  }, [activeIndex, isPlaying]);
 
   const handleNext = () => {
     setActiveIndex((prev) => (prev + 1) % features.length);
     setIsPlaying(false);
-    setShowInfo(false);
   };
 
   const handlePrev = () => {
     setActiveIndex((prev) => (prev - 1 + features.length) % features.length);
     setIsPlaying(false);
-    setShowInfo(false);
   };
 
   const togglePlayPause = () => {
     setIsPlaying(!isPlaying);
   };
 
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
-    const activeVideo = videoRefs.current[activeIndex];
-    if (activeVideo) activeVideo.muted = !isMuted;
-  };
-
-  const toggleFullscreen = () => {
-    if (!videoContainerRef.current) return;
-
-    if (!document.fullscreenElement) {
-      videoContainerRef.current.requestFullscreen().catch((err) => {
-        console.error(
-          `Erreur lors de la tentative de passage en plein écran: ${err.message}`
-        );
-      });
-    } else {
-      document.exitFullscreen();
-    }
-  };
-
-  const toggleInfo = () => {
-    setShowInfo(!showInfo);
-  };
-
   const selectFeature = (index: number) => {
     setActiveIndex(index);
     setIsPlaying(false);
-    setShowInfo(false);
   };
 
   // Effet de reconnaissance du swipe sur mobile
@@ -189,14 +101,15 @@ export default function EnhancedFeatureVideoShowcase({
     };
 
     const handleTouchEnd = () => {
+      // Minimum swipe distance (en pixels)
       const minSwipeDistance = 50;
       const swipeDistance = touchEndX - touchStartX;
 
       if (Math.abs(swipeDistance) > minSwipeDistance) {
         if (swipeDistance > 0) {
-          handlePrev();
+          handlePrev(); // Swipe droite
         } else {
-          handleNext();
+          handleNext(); // Swipe gauche
         }
       }
     };
@@ -216,17 +129,12 @@ export default function EnhancedFeatureVideoShowcase({
   return (
     <div
       ref={containerRef}
-      className="w-full max-w-7xl mx-auto rounded-3xl overflow-hidden border border-[#beac93] shadow-xl bg-white"
+      className="w-full max-w-7xl mx-auto bg-[#f5f3ef] rounded-3xl overflow-hidden border border-[#beac93] shadow-xl"
     >
+      {/* Layout adaptatif selon l'appareil */}
       <div className="flex flex-col md:flex-row">
-        {/* Section vidéo - version améliorée */}
-        <div
-          ref={videoContainerRef}
-          className={`relative w-full md:w-3/5 overflow-hidden transition-all duration-300 ${
-            isFullscreen ? "h-screen" : ""
-          }`}
-          style={{ backgroundColor }}
-        >
+        {/* Section vidéo - occupe tout l'espace sur mobile, 60% sur desktop */}
+        <div className="md:w-3/5 bg-[#19140d] relative overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeFeature.id}
@@ -235,164 +143,103 @@ export default function EnhancedFeatureVideoShowcase({
               exit={{ opacity: 0 }}
               transition={{ duration: 0.5 }}
               className="w-full relative"
-              style={{ aspectRatio: "16/9" }}
+              style={{ aspectRatio: "16/9" }} // Forcer le format 16:9
             >
               {features.map((feature, idx) => (
                 <div
                   key={feature.id}
                   className={`absolute inset-0 ${activeIndex === idx ? "block" : "hidden"}`}
                 >
-                  {/* Image poster en fallback */}
+                  {/* Fallback sur une image de poster si la vidéo ne se charge pas ou sur mobile à faible bande passante */}
                   {feature.poster && (
                     <Image
                       src={feature.poster}
                       alt={feature.title}
                       fill
                       sizes="(max-width: 768px) 100vw, 60vw"
-                      className={`object-cover transition-opacity duration-300 ${
-                        isPlaying ? "opacity-0" : "opacity-100"
-                      }`}
+                      className={`object-cover ${isPlaying ? "opacity-0" : "opacity-100"}`}
                       priority={idx === activeIndex}
                     />
                   )}
 
-                  {/* Vidéo avec preload optimisé */}
-                  <video
-                    ref={(el) => {
-                      videoRefs.current[idx] = el;
-                    }}
-                    src={feature.videoSrc}
-                    poster={feature.poster}
-                    className="w-full h-full object-cover"
-                    playsInline
-                    loop
-                    preload={idx === activeIndex ? "auto" : "none"}
-                    onClick={togglePlayPause}
-                  />
+                  {/* ===== SOLUTION À L'ESPACE NOIR ===== */}
+                  {/* Ajout du conteneur avec position relative pour maintenir les proportions */}
+                  <div className="relative w-full h-full bg-[#19140d]">
+                    <video
+                      ref={(el) => {
+                        videoRefs.current[idx] = el;
+                      }}
+                      src={feature.videoSrc}
+                      poster={feature.poster}
+                      className="absolute inset-0 w-full h-full object-contain" // object-contain au lieu de object-cover
+                      playsInline
+                      loop
+                      muted
+                      preload={idx === activeIndex ? "auto" : "none"}
+                    />
+                  </div>
+                  {/* ===== FIN DE LA SOLUTION ===== */}
                 </div>
               ))}
 
-              {/* Overlay de contrôle amélioré */}
-              <div
-                className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent 
-                flex flex-col justify-end p-4 md:p-6 transition-opacity duration-300 
-                ${isPlaying && !showInfo ? "opacity-0 hover:opacity-100" : "opacity-100"}`}
-              >
-                {/* Titre et description */}
-                <motion.div
+              {/* Superposition avec titre et contrôles - adapté pour mobile */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-4 md:p-6">
+                <motion.h3
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="mb-4"
+                  className="text-xl md:text-2xl font-bold text-white mb-2"
                 >
-                  <h3 className="text-xl md:text-2xl font-bold text-white mb-2">
-                    {activeFeature.title}
-                  </h3>
-                  <p
-                    className={`text-sm md:text-base text-white/80 max-w-2xl 
-                    ${showInfo ? "" : "line-clamp-2 md:line-clamp-2"}`}
-                  >
-                    {activeFeature.description}
-                  </p>
-                </motion.div>
+                  {activeFeature.title}
+                </motion.h3>
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                  className="text-sm md:text-base text-white/80 mb-4 max-w-2xl line-clamp-2 md:line-clamp-none"
+                >
+                  {activeFeature.description}
+                </motion.p>
 
-                {/* Barre de progression */}
-                <div className="w-full h-1 bg-white/20 rounded-full mb-4 overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-300"
-                    style={{
-                      width: `${progress}%`,
-                      backgroundColor: accentColor,
-                    }}
-                  ></div>
-                </div>
-
-                {/* Contrôles principaux */}
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    {/* Bouton play/pause */}
-                    <motion.button
-                      whileTap={{ scale: 0.95 }}
-                      onClick={togglePlayPause}
-                      className={`w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center 
-                      transition-colors hover:bg-white/10 backdrop-blur-sm`}
-                      style={{ backgroundColor: `${accentColor}` }}
-                      aria-label={isPlaying ? "Pause" : "Lecture"}
-                    >
-                      {isPlaying ? (
-                        <Pause
-                          size={isMobile ? 18 : 24}
-                          className="text-white"
-                        />
-                      ) : (
-                        <Play
-                          size={isMobile ? 18 : 24}
-                          className="ml-1 text-white"
-                        />
-                      )}
-                    </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={togglePlayPause}
+                    className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-[#d9840d] text-white flex items-center justify-center hover:bg-[#c6780c] transition-colors"
+                    aria-label={isPlaying ? "Pause" : "Lecture"}
+                  >
+                    {isPlaying ? (
+                      <Pause size={isMobile ? 16 : 20} />
+                    ) : (
+                      <Play size={isMobile ? 16 : 20} className="ml-1" />
+                    )}
+                  </motion.button>
 
-                    {/* Bouton muet/son */}
-                    <motion.button
-                      whileTap={{ scale: 0.95 }}
-                      onClick={toggleMute}
-                      className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm text-white flex items-center justify-center hover:bg-white/20"
-                      aria-label={isMuted ? "Activer le son" : "Couper le son"}
-                    >
-                      {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-                    </motion.button>
-
-                    {/* Bouton info */}
-                    <motion.button
-                      whileTap={{ scale: 0.95 }}
-                      onClick={toggleInfo}
-                      className={`w-10 h-10 rounded-full backdrop-blur-sm flex items-center justify-center
-                      ${showInfo ? "bg-white/30" : "bg-white/10 hover:bg-white/20"}`}
-                      aria-label="Plus d'informations"
-                    >
-                      <Info size={18} className="text-white" />
-                    </motion.button>
+                  {/* Indicateurs de navigation sur mobile */}
+                  <div className="flex md:hidden space-x-1.5">
+                    {features.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => selectFeature(idx)}
+                        className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                          activeIndex === idx
+                            ? "w-5 bg-[#d9840d]"
+                            : "bg-[#beac93]/50"
+                        }`}
+                        aria-label={`Voir fonctionnalité ${idx + 1}`}
+                      />
+                    ))}
                   </div>
-
-                  <div className="flex items-center space-x-3">
-                    {/* Bouton plein écran */}
-                    <motion.button
-                      whileTap={{ scale: 0.95 }}
-                      onClick={toggleFullscreen}
-                      className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm text-white flex items-center justify-center hover:bg-white/20"
-                      aria-label="Plein écran"
-                    >
-                      <Maximize2 size={18} />
-                    </motion.button>
-                  </div>
-                </div>
-
-                {/* Indicateurs de navigation sur mobile */}
-                <div className="flex md:hidden justify-center mt-4 space-x-1.5">
-                  {features.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => selectFeature(idx)}
-                      className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                        activeIndex === idx ? "w-5" : "bg-white/30"
-                      }`}
-                      style={{
-                        backgroundColor:
-                          activeIndex === idx ? accentColor : undefined,
-                      }}
-                      aria-label={`Voir fonctionnalité ${idx + 1}`}
-                    />
-                  ))}
                 </div>
               </div>
 
-              {/* Boutons de navigation sur desktop */}
+              {/* Navigation sur desktop */}
               <div className="absolute top-1/2 left-0 right-0 transform -translate-y-1/2 flex justify-between px-4 pointer-events-none hidden md:flex">
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handlePrev}
-                  className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-colors pointer-events-auto shadow-lg"
+                  className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors pointer-events-auto"
                   aria-label="Fonctionnalité précédente"
                 >
                   <ChevronLeft size={20} className="mx-auto" />
@@ -402,7 +249,7 @@ export default function EnhancedFeatureVideoShowcase({
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleNext}
-                  className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 transition-colors pointer-events-auto shadow-lg"
+                  className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors pointer-events-auto"
                   aria-label="Fonctionnalité suivante"
                 >
                   <ChevronRight size={20} className="mx-auto" />
@@ -412,7 +259,7 @@ export default function EnhancedFeatureVideoShowcase({
           </AnimatePresence>
         </div>
 
-        {/* Panneau latéral avec les fonctionnalités */}
+        {/* Panneau latéral avec les fonctionnalités - caché sur mobile en mode liste compacte */}
         <div className="md:w-2/5 bg-[#f2e8d9] p-4 md:p-6 lg:p-8 flex flex-col">
           <div className="hidden md:block">
             <h3 className="text-xl md:text-2xl lg:text-3xl font-bold mb-6 text-[#141313]">
@@ -444,7 +291,7 @@ export default function EnhancedFeatureVideoShowcase({
             ))}
           </div>
 
-          {/* Version mobile - liste horizontale scrollable */}
+          {/* Version mobile - liste horizontale scrollable des caractéristiques */}
           <div className="md:hidden py-4 w-full">
             <div className="flex overflow-x-auto touch-pan-x pb-4 -mx-4 px-4 space-x-3 scrollbar-hide">
               {features.map((feature, index) => (
