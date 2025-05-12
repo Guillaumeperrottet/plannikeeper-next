@@ -20,7 +20,6 @@ const ModernLandingPage = () => {
 
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-    // Removed setActiveSection(id) as activeSection is unused
   };
 
   const features = [
@@ -582,10 +581,10 @@ const ModernLandingPage = () => {
                 },
                 {
                   id: "feature-5",
-                  title: "Tableau de bord personnalisable",
+                  title: "Gestion des accès et des utilisateurs",
                   description:
-                    "Accédez à toutes les informations essentielles en un coup d'œil grâce à notre tableau de bord entièrement personnalisable.",
-                  videoSrc: "/videos/feature-dashboard.mp4",
+                    "Gérer les accès de votre équipe et attribuer des rôles spécifiques pour une collaboration fluide et sécurisée.",
+                  videoSrc: "/videos/feature-organisation.mp4",
                   poster: "/images/plannikeeper1copy4.png",
                 },
               ]}
