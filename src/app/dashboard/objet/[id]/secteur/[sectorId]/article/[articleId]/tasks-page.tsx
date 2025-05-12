@@ -31,7 +31,7 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
-  RefreshCcw, // Ajout de l'icône pour les tâches récurrentes
+  RefreshCcw,
 } from "lucide-react";
 
 type User = {
@@ -211,7 +211,7 @@ export default function ModernTasksPage({
       result = result.filter((task) => task.taskType === filterTaskType);
     }
 
-    // Nouveau filtre pour les tâches récurrentes
+    // Filtre pour les tâches récurrentes
     if (filterRecurring !== null) {
       result = result.filter((task) => task.recurring === filterRecurring);
     }
@@ -252,7 +252,7 @@ export default function ModernTasksPage({
     return (
       <button
         onClick={() => toggleSort(status)}
-        className="ml-1 p-1 rounded-full hover:bg-gray-200 focus:outline-none"
+        className="ml-1 p-1 rounded-full hover:bg-[color:var(--muted)] focus:outline-none"
         title={
           sortDirection[status]
             ? sortDirection[status] === "asc"
@@ -306,26 +306,28 @@ export default function ModernTasksPage({
         }),
       });
 
-      if (!response.ok) throw new Error("Failed to update task status");
+      if (!response.ok) throw new Error("Échec de la mise à jour du statut");
 
-      toast.success(`Task moved to ${getStatusName(destination.droppableId)}`);
+      toast.success(
+        `Tâche déplacée vers ${getStatusName(destination.droppableId)}`
+      );
     } catch {
       // Revert the change if it fails
       setTasks((prev) => prev.map((t) => (t.id === draggableId ? task : t)));
-      toast.error("Failed to update task status");
+      toast.error("Échec de la mise à jour du statut");
     }
   };
 
   const getStatusName = (status: string) => {
     switch (status) {
       case "pending":
-        return "To Do";
+        return "À faire";
       case "in_progress":
-        return "In Progress";
+        return "En cours";
       case "completed":
-        return "Completed";
+        return "Terminé";
       case "cancelled":
-        return "Cancelled";
+        return "Annulé";
       default:
         return status;
     }
@@ -334,30 +336,34 @@ export default function ModernTasksPage({
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
-        return "bg-amber-50 border-amber-200 text-amber-700";
+        return "bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950 dark:border-amber-900 dark:text-amber-400";
       case "in_progress":
-        return "bg-blue-50 border-blue-200 text-blue-700";
+        return "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950 dark:border-blue-900 dark:text-blue-400";
       case "completed":
-        return "bg-emerald-50 border-emerald-200 text-emerald-700";
+        return "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950 dark:border-emerald-900 dark:text-emerald-400";
       case "cancelled":
-        return "bg-red-50 border-red-200 text-red-700";
+        return "bg-red-50 border-red-200 text-red-700 dark:bg-red-950 dark:border-red-900 dark:text-red-400";
       default:
-        return "bg-gray-50 border-gray-200 text-gray-700";
+        return "bg-[color:var(--muted)] border-[color:var(--border)] text-[color:var(--foreground)]";
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "pending":
-        return <Clock className="w-4 h-4 text-amber-500" />;
+        return <Clock className="w-4 h-4 text-amber-500 dark:text-amber-400" />;
       case "in_progress":
-        return <Clock className="w-4 h-4 text-blue-500" />;
+        return <Clock className="w-4 h-4 text-blue-500 dark:text-blue-400" />;
       case "completed":
-        return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
+        return (
+          <CheckCircle2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+        );
       case "cancelled":
-        return <CircleOff className="w-4 h-4 text-red-500" />;
+        return <CircleOff className="w-4 h-4 text-red-500 dark:text-red-400" />;
       default:
-        return <Clock className="w-4 h-4 text-gray-500" />;
+        return (
+          <Clock className="w-4 h-4 text-[color:var(--muted-foreground)]" />
+        );
     }
   };
 
@@ -402,13 +408,13 @@ export default function ModernTasksPage({
         }),
       });
 
-      if (!response.ok) throw new Error("Failed to update task status");
+      if (!response.ok) throw new Error("Échec de la mise à jour du statut");
 
-      toast.success(`Task moved to ${getStatusName(newStatus)}`);
+      toast.success(`Tâche déplacée vers ${getStatusName(newStatus)}`);
     } catch {
       // Revert the change if it fails
       setTasks((prev) => prev.map((t) => (t.id === taskId ? task : t)));
-      toast.error("Failed to update task status");
+      toast.error("Échec de la mise à jour du statut");
     } finally {
       setTaskMenuOpen(null);
     }
@@ -421,7 +427,7 @@ export default function ModernTasksPage({
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    if (!confirm("Are you sure you want to delete this task?")) return;
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cette tâche ?")) return;
 
     // Optimistically remove from UI
     const taskToDelete = tasks.find((t) => t.id === taskId);
@@ -433,15 +439,15 @@ export default function ModernTasksPage({
         method: "DELETE",
       });
 
-      if (!response.ok) throw new Error("Failed to delete task");
+      if (!response.ok) throw new Error("Échec de la suppression");
 
-      toast.success("Task deleted successfully");
+      toast.success("Tâche supprimée avec succès");
     } catch {
       // Restore the task if delete fails
       if (taskToDelete) {
         setTasks((prev) => [...prev, taskToDelete]);
       }
-      toast.error("Failed to delete task");
+      toast.error("Échec de la suppression de la tâche");
     }
   };
 
@@ -474,11 +480,11 @@ export default function ModernTasksPage({
           }),
         });
 
-        if (!response.ok) throw new Error("Error creating task");
+        if (!response.ok) throw new Error("Erreur lors de la création");
 
         const newTask = await response.json();
         setTasks((prev) => [newTask, ...prev]);
-        toast.success("Task created successfully");
+        toast.success("Tâche créée avec succès");
 
         if (documents && documents.length > 0) {
           await uploadDocumentsForTask(newTask.id, documents);
@@ -491,13 +497,13 @@ export default function ModernTasksPage({
           body: JSON.stringify(updatedTask),
         });
 
-        if (!response.ok) throw new Error("Error updating task");
+        if (!response.ok) throw new Error("Erreur lors de la mise à jour");
 
         const updated = await response.json();
         setTasks((prev) =>
           prev.map((t) => (t.id === updated.id ? updated : t))
         );
-        toast.success("Task updated successfully");
+        toast.success("Tâche mise à jour avec succès");
 
         if (documents && documents.length > 0) {
           await uploadDocumentsForTask(updated.id, documents);
@@ -507,7 +513,9 @@ export default function ModernTasksPage({
       setShowAddForm(false);
       setSelectedTaskId(null);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "An error occurred");
+      toast.error(
+        error instanceof Error ? error.message : "Une erreur est survenue"
+      );
     }
   };
 
@@ -524,18 +532,22 @@ export default function ModernTasksPage({
 
         if (!response.ok) {
           const error = await response.json();
-          throw new Error(error.error || `Error uploading ${document.name}`);
+          throw new Error(
+            error.error || `Erreur lors du téléchargement de ${document.name}`
+          );
         }
 
         return response.json();
       });
 
       await Promise.all(uploadPromises);
-      toast.success(`${documents.length} document(s) added to task`);
+      toast.success(`${documents.length} document(s) ajouté(s) à la tâche`);
     } catch (error) {
-      console.error("Error uploading documents:", error);
+      console.error("Erreur lors du téléchargement des documents:", error);
       toast.error(
-        error instanceof Error ? error.message : "Error adding documents"
+        error instanceof Error
+          ? error.message
+          : "Erreur lors de l'ajout des documents"
       );
     }
   };
@@ -559,7 +571,7 @@ export default function ModernTasksPage({
   const [hoveredColumn, setHoveredColumn] = useState<string | null>(null);
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-screen bg-[color:var(--background)]">
       {/* Main content area with integrated filter area */}
       <div
         ref={contentRef}
@@ -603,25 +615,25 @@ export default function ModernTasksPage({
             <DragDropContext onDragEnd={handleDragEnd}>
               <div className="flex-1 flex flex-col">
                 {/* Compact header with title, search and actions */}
-                <div className="bg-white border-b p-2 flex justify-between items-center gap-2">
-                  <div className="font-medium truncate text-sm md:text-base">
+                <div className="bg-[color:var(--card)] border-b border-[color:var(--border)] p-2 flex justify-between items-center gap-2">
+                  <div className="font-medium truncate text-sm md:text-base text-[color:var(--foreground)]">
                     {articleTitle}
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="relative w-40 md:w-52">
-                      <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
+                      <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-[color:var(--muted-foreground)] w-3.5 h-3.5" />
                       <input
                         ref={searchInputRef}
                         type="text"
-                        placeholder="Search tasks..."
+                        placeholder="Rechercher des tâches..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-8 pr-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full pl-8 pr-2 py-1 text-xs border border-[color:var(--border)] rounded-md focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)] bg-[color:var(--background)] text-[color:var(--foreground)]"
                       />
                       {searchQuery && (
                         <button
                           onClick={() => setSearchQuery("")}
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400"
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[color:var(--muted-foreground)]"
                         >
                           <X className="w-3 h-3" />
                         </button>
@@ -629,13 +641,17 @@ export default function ModernTasksPage({
                     </div>
                     <button
                       onClick={() => setShowFilters(!showFilters)}
-                      className={`p-1 rounded-md ${showFilters ? "bg-blue-50 text-blue-600" : "text-gray-600 hover:bg-gray-100"}`}
+                      className={`p-1 rounded-md ${
+                        showFilters
+                          ? "bg-[color:var(--primary)] text-[color:var(--primary-foreground)]"
+                          : "text-[color:var(--foreground)] hover:bg-[color:var(--muted)]"
+                      }`}
                     >
                       <Filter className="w-4 h-4" />
                     </button>
                     <button
                       onClick={handleNewTask}
-                      className="bg-blue-600 text-white p-1 rounded-md shadow-sm hover:bg-blue-700"
+                      className="bg-[color:var(--primary)] text-[color:var(--primary-foreground)] p-1 rounded-md shadow-sm hover:opacity-90"
                     >
                       <Plus className="w-4 h-4" />
                     </button>
@@ -650,13 +666,13 @@ export default function ModernTasksPage({
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="bg-white border-b border-gray-200 overflow-hidden"
+                      className="bg-[color:var(--card)] border-b border-[color:var(--border)] overflow-hidden"
                     >
                       <div className="p-3 space-y-3">
                         {/* Status filter */}
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Status
+                          <label className="block text-xs font-medium text-[color:var(--foreground)] mb-1">
+                            Statut
                           </label>
                           <div className="flex flex-wrap gap-2">
                             {[
@@ -677,7 +693,7 @@ export default function ModernTasksPage({
                                 className={`px-2 py-0.5 text-xs rounded-full border ${
                                   filterStatus.includes(status)
                                     ? getStatusColor(status)
-                                    : "border-gray-300 bg-white text-gray-700"
+                                    : "border-[color:var(--border)] bg-[color:var(--background)] text-[color:var(--foreground)]"
                                 }`}
                               >
                                 {getStatusName(status)}
@@ -689,17 +705,17 @@ export default function ModernTasksPage({
                         <div className="grid grid-cols-2 gap-3">
                           {/* Assignee filter */}
                           <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">
-                              Assignee
+                            <label className="block text-xs font-medium text-[color:var(--foreground)] mb-1">
+                              Assigné à
                             </label>
                             <select
                               value={filterAssignee || ""}
                               onChange={(e) =>
                                 setFilterAssignee(e.target.value || null)
                               }
-                              className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-full px-2 py-1 text-xs border border-[color:var(--border)] rounded-md focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)] bg-[color:var(--background)] text-[color:var(--foreground)]"
                             >
-                              <option value="">All assignees</option>
+                              <option value="">Tous les assignés</option>
                               {users.map((user) => (
                                 <option key={user.id} value={user.id}>
                                   {user.name}
@@ -711,17 +727,17 @@ export default function ModernTasksPage({
                           {/* Task type filter if types exist */}
                           {uniqueTaskTypes.length > 0 && (
                             <div>
-                              <label className="block text-xs font-medium text-gray-700 mb-1">
-                                Task type
+                              <label className="block text-xs font-medium text-[color:var(--foreground)] mb-1">
+                                Type de tâche
                               </label>
                               <select
                                 value={filterTaskType || ""}
                                 onChange={(e) =>
                                   setFilterTaskType(e.target.value || null)
                                 }
-                                className="w-full px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                className="w-full px-2 py-1 text-xs border border-[color:var(--border)] rounded-md focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)] bg-[color:var(--background)] text-[color:var(--foreground)]"
                               >
-                                <option value="">All types</option>
+                                <option value="">Tous les types</option>
                                 {uniqueTaskTypes.map((type) => (
                                   <option key={type} value={type}>
                                     {type}
@@ -732,9 +748,9 @@ export default function ModernTasksPage({
                           )}
                         </div>
 
-                        {/* Ajout d'un filtre pour les tâches récurrentes */}
+                        {/* Filtre pour les tâches récurrentes */}
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                          <label className="block text-xs font-medium text-[color:var(--foreground)] mb-1">
                             Type de récurrence
                           </label>
                           <div className="flex flex-wrap gap-2">
@@ -742,8 +758,8 @@ export default function ModernTasksPage({
                               onClick={() => setFilterRecurring(null)}
                               className={`px-2 py-0.5 text-xs rounded-full border ${
                                 filterRecurring === null
-                                  ? "bg-gray-700 text-white border-gray-700"
-                                  : "border-gray-300 bg-white text-gray-700"
+                                  ? "bg-[color:var(--primary)] text-[color:var(--primary-foreground)] border-[color:var(--primary)]"
+                                  : "border-[color:var(--border)] bg-[color:var(--background)] text-[color:var(--foreground)]"
                               }`}
                             >
                               Toutes
@@ -752,8 +768,8 @@ export default function ModernTasksPage({
                               onClick={() => setFilterRecurring(true)}
                               className={`px-2 py-0.5 text-xs rounded-full border ${
                                 filterRecurring === true
-                                  ? "bg-blue-700 text-white border-blue-700"
-                                  : "border-gray-300 bg-white text-gray-700"
+                                  ? "bg-blue-500 text-white border-blue-500 dark:bg-blue-700 dark:border-blue-700"
+                                  : "border-[color:var(--border)] bg-[color:var(--background)] text-[color:var(--foreground)]"
                               }`}
                             >
                               Récurrentes
@@ -762,8 +778,8 @@ export default function ModernTasksPage({
                               onClick={() => setFilterRecurring(false)}
                               className={`px-2 py-0.5 text-xs rounded-full border ${
                                 filterRecurring === false
-                                  ? "bg-purple-700 text-white border-purple-700"
-                                  : "border-gray-300 bg-white text-gray-700"
+                                  ? "bg-purple-500 text-white border-purple-500 dark:bg-purple-700 dark:border-purple-700"
+                                  : "border-[color:var(--border)] bg-[color:var(--background)] text-[color:var(--foreground)]"
                               }`}
                             >
                               Ponctuelles
@@ -775,9 +791,9 @@ export default function ModernTasksPage({
                         <div className="flex justify-end">
                           <button
                             onClick={resetFilters}
-                            className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                            className="px-2 py-1 text-xs bg-[color:var(--muted)] text-[color:var(--foreground)] rounded hover:bg-[color:var(--muted)] hover:opacity-80"
                           >
-                            Reset filters
+                            Réinitialiser les filtres
                           </button>
                         </div>
                       </div>
@@ -806,7 +822,7 @@ export default function ModernTasksPage({
                               {/* Bouton de tri par date */}
                               {renderSortButton(status)}
                             </div>
-                            <span className="text-xs px-1.5 py-0.5 bg-white bg-opacity-70 rounded-full">
+                            <span className="text-xs px-1.5 py-0.5 bg-[color:var(--background)] bg-opacity-70 rounded-full">
                               {
                                 taskColumns[status as keyof typeof taskColumns]
                                   .length
@@ -820,18 +836,20 @@ export default function ModernTasksPage({
                             <div
                               ref={provided.innerRef}
                               {...provided.droppableProps}
-                              className={`bg-white rounded-b-md p-1 shadow-sm border border-t-0 border-gray-200 h-[calc(100vh-110px)] overflow-y-auto ${
-                                snapshot.isDraggingOver ? "bg-blue-50" : ""
+                              className={`bg-[color:var(--card)] rounded-b-md p-1 shadow-sm border border-t-0 border-[color:var(--border)] h-[calc(100vh-110px)] overflow-y-auto ${
+                                snapshot.isDraggingOver
+                                  ? "bg-[color:var(--muted)]"
+                                  : ""
                               }`}
                               onMouseEnter={() => setHoveredColumn(status)}
                               onMouseLeave={() => setHoveredColumn(null)}
                             >
                               {taskColumns[status as keyof typeof taskColumns]
                                 .length === 0 ? (
-                                <div className="text-center py-2 text-gray-500 text-xs">
+                                <div className="text-center py-2 text-[color:var(--muted-foreground)] text-xs">
                                   {status === "pending"
-                                    ? "No tasks yet. Add one!"
-                                    : `No ${getStatusName(status).toLowerCase()} tasks`}
+                                    ? "Aucune tâche pour le moment. Ajoutez-en une !"
+                                    : `Aucune tâche ${getStatusName(status).toLowerCase()}`}
                                 </div>
                               ) : (
                                 taskColumns[
@@ -847,7 +865,7 @@ export default function ModernTasksPage({
                                         ref={provided.innerRef}
                                         {...provided.draggableProps}
                                         {...provided.dragHandleProps}
-                                        className={`relative p-2 mb-1 bg-white border rounded-md shadow-sm ${
+                                        className={`relative p-2 mb-1 bg-[color:var(--background)] border border-[color:var(--border)] rounded-md shadow-sm ${
                                           snapshot.isDragging ? "shadow-md" : ""
                                         }`}
                                         style={{
@@ -860,7 +878,7 @@ export default function ModernTasksPage({
                                       >
                                         {/* Indicateur de tâche récurrente en haut à droite */}
                                         {task.recurring && (
-                                          <div className="absolute top-1 right-1 bg-blue-100 text-blue-700 rounded-full px-1.5 py-0.5 text-[9px] flex items-center gap-0.5">
+                                          <div className="absolute top-1 right-1 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded-full px-1.5 py-0.5 text-[9px] flex items-center gap-0.5">
                                             <RefreshCcw size={8} />
                                             <span>
                                               {task.period === "daily" &&
@@ -878,7 +896,7 @@ export default function ModernTasksPage({
                                         )}
 
                                         <div className="flex justify-between items-start mb-1">
-                                          <h4 className="font-medium text-xs">
+                                          <h4 className="font-medium text-xs text-[color:var(--foreground)]">
                                             {task.name}
                                           </h4>
                                           <div className="relative">
@@ -886,14 +904,14 @@ export default function ModernTasksPage({
                                               onClick={(e) =>
                                                 handleTaskMenuToggle(task.id, e)
                                               }
-                                              className="text-gray-500 hover:text-gray-700 p-0.5"
+                                              className="text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)] p-0.5"
                                             >
                                               <MoreHorizontal className="w-3 h-3" />
                                             </button>
 
                                             {/* Dropdown menu */}
                                             {taskMenuOpen === task.id && (
-                                              <div className="absolute right-0 z-10 mt-1 bg-white border rounded-md shadow-lg w-36">
+                                              <div className="absolute right-0 z-10 mt-1 bg-[color:var(--card)] border border-[color:var(--border)] rounded-md shadow-lg w-36">
                                                 <ul className="py-1 text-xs">
                                                   <li>
                                                     <button
@@ -901,10 +919,10 @@ export default function ModernTasksPage({
                                                         e.stopPropagation();
                                                         handleEditTask(task.id);
                                                       }}
-                                                      className="w-full text-left px-3 py-1 hover:bg-gray-100 flex items-center gap-2"
+                                                      className="w-full text-left px-3 py-1 hover:bg-[color:var(--muted)] text-[color:var(--foreground)] flex items-center gap-2"
                                                     >
                                                       <Edit className="w-3 h-3" />
-                                                      Edit
+                                                      Modifier
                                                     </button>
                                                   </li>
                                                   {status !== "completed" && (
@@ -917,13 +935,13 @@ export default function ModernTasksPage({
                                                             "completed"
                                                           );
                                                         }}
-                                                        className="w-full text-left px-3 py-1 hover:bg-gray-100 flex items-center gap-2 text-emerald-600 relative group"
+                                                        className="w-full text-left px-3 py-1 hover:bg-[color:var(--muted)] flex items-center gap-2 text-emerald-600 dark:text-emerald-400 relative group"
                                                       >
                                                         <CheckCircle2 className="w-3 h-3" />
-                                                        <span>Complete</span>
+                                                        <span>Terminer</span>
                                                         {task.recurring && (
                                                           <div className="tooltip-wrapper">
-                                                            <div className="absolute invisible group-hover:visible w-48 bg-gray-800 text-white text-[9px] rounded px-2 py-1 bottom-full left-0 mb-1 z-10">
+                                                            <div className="absolute invisible group-hover:visible w-48 bg-gray-800 text-white dark:bg-black text-[9px] rounded px-2 py-1 bottom-full left-0 mb-1 z-10">
                                                               Cette tâche
                                                               récurrente sera
                                                               automatiquement
@@ -945,10 +963,10 @@ export default function ModernTasksPage({
                                                             "pending"
                                                           );
                                                         }}
-                                                        className="w-full text-left px-3 py-1 hover:bg-gray-100 flex items-center gap-2"
+                                                        className="w-full text-left px-3 py-1 hover:bg-[color:var(--muted)] text-[color:var(--foreground)] flex items-center gap-2"
                                                       >
                                                         <Clock className="w-3 h-3" />
-                                                        Reopen
+                                                        Rouvrir
                                                       </button>
                                                     </li>
                                                   )}
@@ -960,10 +978,10 @@ export default function ModernTasksPage({
                                                           task.id
                                                         );
                                                       }}
-                                                      className="w-full text-left px-3 py-1 hover:bg-gray-100 text-red-600 flex items-center gap-2"
+                                                      className="w-full text-left px-3 py-1 hover:bg-[color:var(--muted)] text-red-600 dark:text-red-400 flex items-center gap-2"
                                                     >
                                                       <Trash2 className="w-3 h-3" />
-                                                      Delete
+                                                      Supprimer
                                                     </button>
                                                   </li>
                                                 </ul>
@@ -972,9 +990,8 @@ export default function ModernTasksPage({
                                           </div>
                                         </div>
 
-                                        {/* ... Contenu original de la carte ... */}
                                         {task.description && (
-                                          <p className="text-[10px] text-gray-600 line-clamp-1 mb-1">
+                                          <p className="text-[10px] text-[color:var(--muted-foreground)] line-clamp-1 mb-1">
                                             {task.description}
                                           </p>
                                         )}
@@ -982,8 +999,8 @@ export default function ModernTasksPage({
                                         <div className="flex flex-wrap gap-1">
                                           {task.realizationDate &&
                                             !task.recurring && (
-                                              <span className="flex items-center gap-0.5 text-[10px] bg-gray-100 px-1 py-0.5 rounded">
-                                                <Calendar className="w-2 h-2 text-gray-500" />
+                                              <span className="flex items-center gap-0.5 text-[10px] bg-[color:var(--muted)] px-1 py-0.5 rounded text-[color:var(--foreground)]">
+                                                <Calendar className="w-2 h-2 text-[color:var(--muted-foreground)]" />
                                                 <span>
                                                   {formatDate(
                                                     task.realizationDate
@@ -993,8 +1010,8 @@ export default function ModernTasksPage({
                                             )}
 
                                           {task.assignedTo && (
-                                            <span className="flex items-center gap-0.5 text-[10px] bg-gray-100 px-1 py-0.5 rounded">
-                                              <User className="w-2 h-2 text-gray-500" />
+                                            <span className="flex items-center gap-0.5 text-[10px] bg-[color:var(--muted)] px-1 py-0.5 rounded text-[color:var(--foreground)]">
+                                              <User className="w-2 h-2 text-[color:var(--muted-foreground)]" />
                                               <span className="truncate max-w-[80px]">
                                                 {task.assignedTo.name}
                                               </span>
@@ -1002,16 +1019,16 @@ export default function ModernTasksPage({
                                           )}
 
                                           {task.taskType && (
-                                            <span className="flex items-center gap-0.5 text-[10px] bg-gray-100 px-1 py-0.5 rounded">
-                                              <Tag className="w-2 h-2 text-gray-500" />
+                                            <span className="flex items-center gap-0.5 text-[10px] bg-[color:var(--muted)] px-1 py-0.5 rounded text-[color:var(--foreground)]">
+                                              <Tag className="w-2 h-2 text-[color:var(--muted-foreground)]" />
                                               <span>{task.taskType}</span>
                                             </span>
                                           )}
 
                                           {task.recurring && (
-                                            <span className="flex items-center gap-0.5 text-[10px] bg-blue-50 text-blue-700 px-1 py-0.5 rounded">
+                                            <span className="flex items-center gap-0.5 text-[10px] bg-blue-50 text-blue-700 dark:bg-blue-900 dark:text-blue-300 px-1 py-0.5 rounded">
                                               <Clock className="w-2 h-2" />
-                                              <span>Recurring</span>
+                                              <span>Récurrente</span>
                                             </span>
                                           )}
                                         </div>
@@ -1019,7 +1036,7 @@ export default function ModernTasksPage({
                                         {/* Affichage amélioré pour les dates de récurrence */}
                                         {task.recurring &&
                                           task.realizationDate && (
-                                            <div className="mt-1 flex items-center gap-0.5 text-[10px] bg-blue-50 px-1 py-0.5 rounded text-blue-700">
+                                            <div className="mt-1 flex items-center gap-0.5 text-[10px] bg-blue-50 dark:bg-blue-900 px-1 py-0.5 rounded text-blue-700 dark:text-blue-300">
                                               <Calendar className="w-2 h-2" />
                                               <span>
                                                 Échéance:{" "}
@@ -1051,7 +1068,7 @@ export default function ModernTasksPage({
                                   requiredLevel="write"
                                   fallback={
                                     <button
-                                      className="opacity-50 cursor-not-allowed"
+                                      className="w-full text-[color:var(--muted-foreground)] bg-[color:var(--muted)] bg-opacity-40 p-2 rounded mt-2 opacity-50 cursor-not-allowed text-xs flex items-center justify-center gap-1"
                                       onClick={() =>
                                         toast.info(
                                           "Vous n'avez pas les droits pour créer des tâches"
@@ -1063,7 +1080,10 @@ export default function ModernTasksPage({
                                     </button>
                                   }
                                 >
-                                  <button onClick={handleNewTask}>
+                                  <button
+                                    onClick={handleNewTask}
+                                    className="w-full text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)] bg-[color:var(--muted)] hover:bg-opacity-70 bg-opacity-40 p-2 rounded mt-2 text-xs flex items-center justify-center gap-1"
+                                  >
                                     <Plus size={16} />
                                     <span>Ajouter une tâche</span>
                                   </button>
@@ -1084,46 +1104,47 @@ export default function ModernTasksPage({
 
       {/* Empty state when no tasks and no filters */}
       {filteredTasks.length === 0 && !showAddForm && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-90 z-10 p-4">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[color:var(--background)] bg-opacity-90 z-10 p-4">
           {searchQuery ||
           filterStatus.length > 0 ||
           filterAssignee ||
           filterTaskType ||
           filterRecurring !== null ? (
             <div className="text-center max-w-sm">
-              <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                <Filter className="w-5 h-5 text-gray-400" />
+              <div className="w-10 h-10 rounded-full bg-[color:var(--muted)] flex items-center justify-center mx-auto mb-3">
+                <Filter className="w-5 h-5 text-[color:var(--muted-foreground)]" />
               </div>
-              <h2 className="text-lg font-medium mb-2 text-gray-900">
-                No matching tasks
+              <h2 className="text-lg font-medium mb-2 text-[color:var(--foreground)]">
+                Aucune tâche correspondante
               </h2>
-              <p className="text-sm text-gray-600 mb-4">
-                Try adjusting your filters to find what you&apos;re looking for.
+              <p className="text-sm text-[color:var(--muted-foreground)] mb-4">
+                Essayez d&apos;ajuster vos filtres pour trouver ce que vous
+                recherchez.
               </p>
               <button
                 onClick={resetFilters}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
+                className="px-4 py-2 bg-[color:var(--primary)] text-[color:var(--primary-foreground)] rounded-lg shadow hover:opacity-90"
               >
-                Reset all filters
+                Réinitialiser tous les filtres
               </button>
             </div>
           ) : (
             <div className="text-center max-w-sm">
-              <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                <LayoutList className="w-7 h-7 text-gray-400" />
+              <div className="w-14 h-14 rounded-full bg-[color:var(--muted)] flex items-center justify-center mx-auto mb-4">
+                <LayoutList className="w-7 h-7 text-[color:var(--muted-foreground)]" />
               </div>
-              <h2 className="text-xl font-medium mb-2 text-gray-900">
-                No tasks yet
+              <h2 className="text-xl font-medium mb-2 text-[color:var(--foreground)]">
+                Aucune tâche pour le moment
               </h2>
-              <p className="text-sm text-gray-600 mb-6">
-                Get started by creating your first task for this article.
+              <p className="text-sm text-[color:var(--muted-foreground)] mb-6">
+                Commencez par créer votre première tâche pour cet article.
               </p>
               <button
                 onClick={handleNewTask}
-                className="px-5 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 flex items-center gap-2 mx-auto"
+                className="px-5 py-2 bg-[color:var(--primary)] text-[color:var(--primary-foreground)] rounded-lg shadow-sm hover:opacity-90 flex items-center gap-2 mx-auto"
               >
                 <Plus className="w-5 h-5" />
-                <span>Create first task</span>
+                <span>Créer une première tâche</span>
               </button>
             </div>
           )}
@@ -1135,7 +1156,7 @@ export default function ModernTasksPage({
         <div className="md:hidden fixed bottom-5 right-5 z-10">
           <button
             onClick={handleNewTask}
-            className="bg-blue-600 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700"
+            className="bg-[color:var(--primary)] text-[color:var(--primary-foreground)] w-12 h-12 rounded-full shadow-lg flex items-center justify-center hover:opacity-90"
           >
             <Plus className="w-6 h-6" />
           </button>
