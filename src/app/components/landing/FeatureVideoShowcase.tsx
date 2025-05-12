@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Play, Pause, ChevronLeft, ChevronRight } from "lucide-react";
+import Image from "next/image";
 
 interface VideoFeature {
   id: string;
@@ -19,9 +20,25 @@ interface VideoShowcaseProps {
 export default function FeatureVideoShowcase({ features }: VideoShowcaseProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const activeFeature = features[activeIndex];
+
+  // Détecter si l'utilisateur est sur mobile
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkIsMobile();
+    window.addEventListener("resize", checkIsMobile);
+
+    return () => {
+      window.removeEventListener("resize", checkIsMobile);
+    };
+  }, []);
 
   // Initialiser les refs pour chaque vidéo
   useEffect(() => {
@@ -68,12 +85,56 @@ export default function FeatureVideoShowcase({ features }: VideoShowcaseProps) {
     setIsPlaying(false);
   };
 
+  // Effet de reconnaissance du swipe sur mobile
+  useEffect(() => {
+    if (!containerRef.current || !isMobile) return;
+
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX = e.touches[0].clientX;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      touchEndX = e.touches[0].clientX;
+    };
+
+    const handleTouchEnd = () => {
+      // Minimum swipe distance (en pixels)
+      const minSwipeDistance = 50;
+      const swipeDistance = touchEndX - touchStartX;
+
+      if (Math.abs(swipeDistance) > minSwipeDistance) {
+        if (swipeDistance > 0) {
+          handlePrev(); // Swipe droite
+        } else {
+          handleNext(); // Swipe gauche
+        }
+      }
+    };
+
+    const container = containerRef.current;
+    container.addEventListener("touchstart", handleTouchStart);
+    container.addEventListener("touchmove", handleTouchMove);
+    container.addEventListener("touchend", handleTouchEnd);
+
+    return () => {
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchmove", handleTouchMove);
+      container.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [isMobile]);
+
   return (
-    <div className="w-full max-w-7xl mx-auto bg-[#f5f3ef] rounded-3xl overflow-hidden border border-[#beac93] shadow-xl">
-      {/* Layout modifié - Orientation verticale pour les mobiles, horizontale pour les grands écrans */}
-      <div className="flex flex-col lg:flex-row">
-        {/* Section vidéo - maintenant en premier pour donner plus d'importance */}
-        <div className="lg:w-3/5 bg-[#19140d] relative overflow-hidden">
+    <div
+      ref={containerRef}
+      className="w-full max-w-7xl mx-auto bg-[#f5f3ef] rounded-3xl overflow-hidden border border-[#beac93] shadow-xl"
+    >
+      {/* Layout adaptatif selon l'appareil */}
+      <div className="flex flex-col md:flex-row">
+        {/* Section vidéo - occupe tout l'espace sur mobile, 60% sur desktop */}
+        <div className="md:w-3/5 bg-[#19140d] relative overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeFeature.id}
@@ -82,13 +143,24 @@ export default function FeatureVideoShowcase({ features }: VideoShowcaseProps) {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.5 }}
               className="w-full relative"
-              style={{ aspectRatio: "16/9" }} // Force un aspect ratio 16:9
+              style={{ aspectRatio: "16/9" }} // Forcer le format 16:9
             >
               {features.map((feature, idx) => (
                 <div
                   key={feature.id}
                   className={`absolute inset-0 ${activeIndex === idx ? "block" : "hidden"}`}
                 >
+                  {/* Fallback sur une image de poster si la vidéo ne se charge pas ou sur mobile à faible bande passante */}
+                  {feature.poster && (
+                    <Image
+                      src={feature.poster}
+                      alt={feature.title}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 60vw"
+                      className={`object-cover ${isPlaying ? "opacity-0" : "opacity-100"}`}
+                      priority={idx === activeIndex}
+                    />
+                  )}
                   <video
                     ref={(el) => {
                       videoRefs.current[idx] = el;
@@ -99,50 +171,98 @@ export default function FeatureVideoShowcase({ features }: VideoShowcaseProps) {
                     playsInline
                     loop
                     muted
+                    preload={idx === activeIndex ? "auto" : "none"}
                   />
                 </div>
               ))}
 
-              {/* Superposition avec titre et contrôles */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-6">
-                <h3 className="text-2xl font-bold text-white mb-2">
+              {/* Superposition avec titre et contrôles - adapté pour mobile */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-4 md:p-6">
+                <motion.h3
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="text-xl md:text-2xl font-bold text-white mb-2"
+                >
                   {activeFeature.title}
-                </h3>
-                <p className="text-white/80 mb-4 max-w-2xl">
+                </motion.h3>
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                  className="text-sm md:text-base text-white/80 mb-4 max-w-2xl line-clamp-2 md:line-clamp-none"
+                >
                   {activeFeature.description}
-                </p>
+                </motion.p>
 
-                <div className="flex items-center">
-                  <button
+                <div className="flex items-center justify-between">
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
                     onClick={togglePlayPause}
-                    className="w-12 h-12 rounded-full bg-[#d9840d] text-white flex items-center justify-center hover:bg-[#c6780c] transition-colors"
+                    className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-[#d9840d] text-white flex items-center justify-center hover:bg-[#c6780c] transition-colors"
                     aria-label={isPlaying ? "Pause" : "Lecture"}
                   >
                     {isPlaying ? (
-                      <Pause size={20} />
+                      <Pause size={isMobile ? 16 : 20} />
                     ) : (
-                      <Play size={20} className="ml-1" />
+                      <Play size={isMobile ? 16 : 20} className="ml-1" />
                     )}
-                  </button>
+                  </motion.button>
 
-                  <div className="ml-4 text-white/60 text-sm">
-                    {isPlaying
-                      ? "Cliquez pour mettre en pause"
-                      : "Cliquez pour voir en action"}
+                  {/* Indicateurs de navigation sur mobile */}
+                  <div className="flex md:hidden space-x-1.5">
+                    {features.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => selectFeature(idx)}
+                        className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                          activeIndex === idx
+                            ? "w-5 bg-[#d9840d]"
+                            : "bg-[#beac93]/50"
+                        }`}
+                        aria-label={`Voir fonctionnalité ${idx + 1}`}
+                      />
+                    ))}
                   </div>
                 </div>
+              </div>
+
+              {/* Navigation sur desktop */}
+              <div className="absolute top-1/2 left-0 right-0 transform -translate-y-1/2 flex justify-between px-4 pointer-events-none hidden md:flex">
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handlePrev}
+                  className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors pointer-events-auto"
+                  aria-label="Fonctionnalité précédente"
+                >
+                  <ChevronLeft size={20} className="mx-auto" />
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleNext}
+                  className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors pointer-events-auto"
+                  aria-label="Fonctionnalité suivante"
+                >
+                  <ChevronRight size={20} className="mx-auto" />
+                </motion.button>
               </div>
             </motion.div>
           </AnimatePresence>
         </div>
 
-        {/* Panneau latéral avec les fonctionnalités - maintenant après la vidéo */}
-        <div className="lg:w-2/5 bg-[#f2e8d9] p-6 lg:p-8 flex flex-col">
-          <h3 className="text-2xl md:text-3xl font-bold mb-6 text-[#141313]">
-            Découvrez nos fonctionnalités
-          </h3>
+        {/* Panneau latéral avec les fonctionnalités - caché sur mobile en mode liste compacte */}
+        <div className="md:w-2/5 bg-[#f2e8d9] p-4 md:p-6 lg:p-8 flex flex-col">
+          <div className="hidden md:block">
+            <h3 className="text-xl md:text-2xl lg:text-3xl font-bold mb-6 text-[#141313]">
+              Découvrez nos fonctionnalités
+            </h3>
+          </div>
 
-          <div className="space-y-4 mb-6 flex-1 overflow-y-auto">
+          {/* Liste des fonctionnalités - version desktop */}
+          <div className="hidden md:flex flex-col space-y-4 mb-6 flex-1 overflow-y-auto max-h-[400px] pr-2 scrollbar-thin">
             {features.map((feature, index) => (
               <motion.div
                 key={feature.id}
@@ -153,6 +273,7 @@ export default function FeatureVideoShowcase({ features }: VideoShowcaseProps) {
                 }`}
                 onClick={() => selectFeature(index)}
                 whileHover={{ x: activeIndex === index ? 0 : 5 }}
+                whileTap={{ scale: 0.98 }}
               >
                 <h4 className="font-medium text-lg mb-1">{feature.title}</h4>
                 <p
@@ -164,14 +285,45 @@ export default function FeatureVideoShowcase({ features }: VideoShowcaseProps) {
             ))}
           </div>
 
-          <div className="flex justify-between items-center">
-            <button
+          {/* Version mobile - liste horizontale scrollable des caractéristiques */}
+          <div className="md:hidden py-4 w-full">
+            <div className="flex overflow-x-auto touch-pan-x pb-4 -mx-4 px-4 space-x-3 scrollbar-hide">
+              {features.map((feature, index) => (
+                <motion.div
+                  key={feature.id}
+                  className={`flex-shrink-0 p-3 rounded-xl cursor-pointer transition-all duration-300 ${
+                    activeIndex === index
+                      ? "bg-[#d9840d] text-white shadow-md"
+                      : "bg-white border border-[#beac93]/30"
+                  }`}
+                  style={{ width: "200px" }}
+                  onClick={() => selectFeature(index)}
+                  whileTap={{ scale: 0.97 }}
+                >
+                  <h4 className="font-medium text-sm mb-1 truncate">
+                    {feature.title}
+                  </h4>
+                  <p
+                    className={`text-xs ${activeIndex === index ? "text-white/90" : "text-[#62605d]"} line-clamp-2`}
+                  >
+                    {feature.description}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          {/* Navigation sur desktop */}
+          <div className="hidden md:flex justify-between items-center mt-auto">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={handlePrev}
               className="w-10 h-10 flex items-center justify-center rounded-full bg-white text-[#141313] hover:bg-[#d9840d] hover:text-white transition-colors"
               aria-label="Fonctionnalité précédente"
             >
               <ChevronLeft size={20} />
-            </button>
+            </motion.button>
 
             <div className="flex space-x-1">
               {features.map((_, idx) => (
@@ -186,13 +338,15 @@ export default function FeatureVideoShowcase({ features }: VideoShowcaseProps) {
               ))}
             </div>
 
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={handleNext}
               className="w-10 h-10 flex items-center justify-center rounded-full bg-white text-[#141313] hover:bg-[#d9840d] hover:text-white transition-colors"
               aria-label="Fonctionnalité suivante"
             >
               <ChevronRight size={20} />
-            </button>
+            </motion.button>
           </div>
         </div>
       </div>
