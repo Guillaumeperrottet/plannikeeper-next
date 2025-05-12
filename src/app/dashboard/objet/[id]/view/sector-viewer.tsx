@@ -14,6 +14,10 @@ import {
   ListFilter,
   X,
   ExternalLink,
+  Search,
+  ArrowUp,
+  ArrowDown,
+  XCircle,
 } from "lucide-react";
 import ImageWithArticles from "@/app/components/ImageWithArticles";
 import AccessControl from "@/app/components/AccessControl";
@@ -39,6 +43,8 @@ type Article = {
   height: number | null;
 };
 
+type SortDirection = "asc" | "desc";
+
 interface SectorViewerProps {
   sectors: Sector[];
   objetId: string;
@@ -46,6 +52,9 @@ interface SectorViewerProps {
 
 export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
   const [articles, setArticles] = useState<Article[]>([]);
+  const [filteredArticles, setFilteredArticles] = useState<Article[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [hoveredArticleId, setHoveredArticleId] = useState<string | null>(null);
   const [selectedArticleId] = useState<string | null>(null);
   const [selectedSector, setSelectedSector] = useState<Sector | null>(null);
@@ -56,6 +65,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const viewerRef = useRef<HTMLDivElement>(null);
   const mainContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Détection du mode mobile
   useEffect(() => {
@@ -85,6 +95,51 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
       fetchArticles(selectedSector.id);
     }
   }, [selectedSector]);
+
+  // Filtrer les articles en fonction du terme de recherche et du tri
+  useEffect(() => {
+    if (!articles.length) {
+      setFilteredArticles([]);
+      return;
+    }
+
+    // Filtrer les articles en fonction du terme de recherche
+    let filtered = [...articles];
+
+    if (searchTerm) {
+      const lowerSearchTerm = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (article) =>
+          article.title.toLowerCase().includes(lowerSearchTerm) ||
+          (article.description &&
+            article.description.toLowerCase().includes(lowerSearchTerm))
+      );
+    }
+
+    // Trier les articles
+    filtered.sort((a, b) => {
+      const titleA = a.title.toLowerCase();
+      const titleB = b.title.toLowerCase();
+
+      if (sortDirection === "asc") {
+        return titleA > titleB ? 1 : -1;
+      } else {
+        return titleA < titleB ? 1 : -1;
+      }
+    });
+
+    setFilteredArticles(filtered);
+  }, [articles, searchTerm, sortDirection]);
+
+  // Mettre le focus sur l'input de recherche quand la sidebar s'ouvre
+  useEffect(() => {
+    if (sidebarOpen && searchInputRef.current && !isMobile) {
+      // Petit délai pour laisser l'animation se terminer
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 300);
+    }
+  }, [sidebarOpen, isMobile]);
 
   const fetchArticles = async (sectorId: string) => {
     try {
@@ -153,6 +208,22 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
   // Fonction pour basculer la barre latérale d'articles
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  // Fonction pour basculer la direction du tri
+  const toggleSortDirection = () => {
+    setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+
+    // Feedback haptique si disponible
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(10);
+    }
+  };
+
+  // Fonction pour effacer le terme de recherche
+  const clearSearch = () => {
+    setSearchTerm("");
+    searchInputRef.current?.focus();
   };
 
   // Gestion des touches clavier pour la navigation
@@ -235,6 +306,26 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
         type: "spring",
         stiffness: 300,
         damping: 30,
+      },
+    },
+  };
+
+  // Animation pour la barre de recherche
+  const searchBarVariants = {
+    hidden: { height: 0, opacity: 0, overflow: "hidden" },
+    visible: {
+      height: "auto",
+      opacity: 1,
+      transition: {
+        height: {
+          type: "spring",
+          stiffness: 400,
+          damping: 40,
+        },
+        opacity: {
+          duration: 0.3,
+          delay: 0.1,
+        },
       },
     },
   };
@@ -481,43 +572,83 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                             }}
                           />
 
-                          {/* En-tête du panneau */}
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              padding: "10px 16px",
-                              borderBottom: "1px solid #eee",
-                            }}
-                          >
-                            <h3 style={{ fontWeight: 500, margin: 0 }}>
-                              Articles de &quot;{selectedSector.name}&quot;
-                            </h3>
-                            <button
-                              onClick={toggleSidebar}
-                              style={{
-                                background: "none",
-                                border: "none",
-                                cursor: "pointer",
-                                padding: "8px",
-                              }}
-                            >
-                              <X size={20} />
-                            </button>
+                          {/* En-tête du panneau avec barre de recherche */}
+                          <div className="border-b border-gray-200">
+                            <div className="flex justify-between items-center p-3">
+                              <div className="flex items-center">
+                                <h3 className="font-medium">
+                                  Articles de &quot;{selectedSector.name}&quot;
+                                </h3>
+                                <button
+                                  onClick={toggleSortDirection}
+                                  className="ml-2 p-1 rounded hover:bg-gray-100"
+                                  title={
+                                    sortDirection === "asc"
+                                      ? "Tri A-Z"
+                                      : "Tri Z-A"
+                                  }
+                                >
+                                  {sortDirection === "asc" ? (
+                                    <ArrowUp
+                                      size={16}
+                                      className="text-gray-500"
+                                    />
+                                  ) : (
+                                    <ArrowDown
+                                      size={16}
+                                      className="text-gray-500"
+                                    />
+                                  )}
+                                </button>
+                              </div>
+                              <button
+                                onClick={toggleSidebar}
+                                className="p-2 rounded-full hover:bg-gray-100"
+                              >
+                                <X size={18} />
+                              </button>
+                            </div>
+
+                            {/* Barre de recherche */}
+                            <div className="px-3 pb-3">
+                              <div className="relative">
+                                <Search
+                                  size={16}
+                                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                                />
+                                <input
+                                  ref={searchInputRef}
+                                  type="text"
+                                  placeholder="Rechercher un article..."
+                                  value={searchTerm}
+                                  onChange={(e) =>
+                                    setSearchTerm(e.target.value)
+                                  }
+                                  className="w-full py-2 pl-10 pr-8 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                                />
+                                {searchTerm && (
+                                  <button
+                                    onClick={clearSearch}
+                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                  >
+                                    <XCircle size={16} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
                           </div>
 
-                          {/* Liste d'articles */}
+                          {/* Liste d'articles filtrée */}
                           <div
                             style={{
                               overflowY: "auto",
-                              maxHeight: "calc(80vh - 60px)",
+                              maxHeight: "calc(80vh - 100px)",
                               WebkitOverflowScrolling: "touch",
                               paddingBottom:
                                 "env(safe-area-inset-bottom, 16px)",
                             }}
                           >
-                            {articles.length === 0 ? (
+                            {filteredArticles.length === 0 ? (
                               <div
                                 style={{
                                   textAlign: "center",
@@ -525,11 +656,13 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                                   color: "#666",
                                 }}
                               >
-                                Aucun article disponible pour ce secteur
+                                {articles.length === 0
+                                  ? "Aucun article disponible pour ce secteur"
+                                  : "Aucun article ne correspond à votre recherche"}
                               </div>
                             ) : (
                               <div style={{ padding: "12px 16px" }}>
-                                {articles.map((article) => (
+                                {filteredArticles.map((article) => (
                                   <div
                                     key={article.id}
                                     onClick={() =>
@@ -610,7 +743,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
           )}
         </div>
 
-        {/* Barre latérale d'articles pour desktop - position fixe à droite */}
+        {/* Barre latérale d'articles pour desktop avec barre de recherche - position fixe à droite */}
         <AnimatePresence>
           {sidebarOpen && !isMobile && selectedSector && (
             <motion.div
@@ -625,11 +758,24 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 borderLeft: "1px solid #eee",
               }}
             >
-              {/* En-tête de la barre latérale */}
-              <div className="flex justify-between items-center p-4 border-b">
-                <h3 className="font-medium text-lg">
-                  Articles de &quot;{selectedSector.name}&quot;
-                </h3>
+              {/* En-tête de la barre latérale avec options de tri */}
+              <div className="flex justify-between items-center p-3 border-b">
+                <div className="flex items-center">
+                  <h3 className="font-medium truncate max-w-[200px]">
+                    Articles ({filteredArticles.length})
+                  </h3>
+                  <button
+                    onClick={toggleSortDirection}
+                    className="ml-2 p-1 rounded hover:bg-gray-100"
+                    title={sortDirection === "asc" ? "Tri A-Z" : "Tri Z-A"}
+                  >
+                    {sortDirection === "asc" ? (
+                      <ArrowUp size={16} className="text-gray-500" />
+                    ) : (
+                      <ArrowDown size={16} className="text-gray-500" />
+                    )}
+                  </button>
+                </div>
                 <button
                   onClick={toggleSidebar}
                   className="p-1 hover:bg-gray-100 rounded-full"
@@ -638,14 +784,47 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 </button>
               </div>
 
-              {/* Liste des articles */}
+              {/* Barre de recherche */}
+              <motion.div
+                variants={searchBarVariants}
+                initial="visible"
+                animate="visible"
+                className="border-b border-gray-200 p-3"
+              >
+                <div className="relative">
+                  <Search
+                    size={16}
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Rechercher un article..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full py-2 pl-10 pr-8 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={clearSearch}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <XCircle size={16} />
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+
+              {/* Liste des articles filtrée */}
               <div className="flex-1 overflow-y-auto p-3">
-                {articles.length === 0 ? (
+                {filteredArticles.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
-                    Aucun article disponible pour ce secteur
+                    {articles.length === 0
+                      ? "Aucun article disponible pour ce secteur"
+                      : "Aucun article ne correspond à votre recherche"}
                   </div>
                 ) : (
-                  articles.map((article) => (
+                  filteredArticles.map((article) => (
                     <div
                       key={article.id}
                       className={`mb-3 p-4 border rounded-lg cursor-pointer transition-colors ${
