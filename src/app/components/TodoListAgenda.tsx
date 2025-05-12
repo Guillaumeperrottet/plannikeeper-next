@@ -1,4 +1,3 @@
-// src/app/components/TodoListAgenda.tsx optimisé avec sélecteur d'articles
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -12,6 +11,7 @@ import {
   ArrowUp,
   SearchIcon,
   ExternalLink,
+  Filter,
 } from "lucide-react";
 import CalendarView from "./CalendarView";
 import { useGlobalLoader } from "@/app/components/GlobalLoader";
@@ -102,6 +102,7 @@ export default function TodoListAgenda() {
   const [showControls, setShowControls] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [showFiltersPanel, setShowFiltersPanel] = useState<boolean>(false);
 
   // Nouveau state pour le filtre par article
   const [articleFilter, setArticleFilter] = useState<string>("all");
@@ -172,6 +173,7 @@ export default function TodoListAgenda() {
     } else {
       // Masquer les contrôles immédiatement pour l'animation de fermeture
       setShowControls(false);
+      setShowFiltersPanel(false);
     }
   }, [isExpanded]);
 
@@ -495,14 +497,25 @@ export default function TodoListAgenda() {
   const thisWeekEnd = new Date(today);
   thisWeekEnd.setDate(today.getDate() + (7 - today.getDay()));
 
-  // Appliquer les filtres au moment de regrouper les tâches
-  const filteredTasks = tasks.filter(taskMatchesFilters);
+  // Filtrer les tâches avec un pré-filtre pour masquer les tâches terminées et annulées par défaut
+  const filteredTasks = tasks.filter((task) => {
+    // Exclure par défaut les tâches terminées et annulées,
+    // sauf si l'utilisateur a explicitement demandé à les voir
+    if (
+      (task.status === "completed" || task.status === "cancelled") &&
+      statusFilter !== "completed" &&
+      statusFilter !== "cancelled"
+    ) {
+      return false;
+    }
+
+    return taskMatchesFilters(task);
+  });
 
   const thisWeekTasks: Task[] = [];
   const upcomingTasks: Task[] = [];
 
   filteredTasks.forEach((task) => {
-    if (task.status === "completed" && statusFilter !== "completed") return;
     if (!task.realizationDate) {
       thisWeekTasks.push(task);
       return;
@@ -679,7 +692,7 @@ export default function TodoListAgenda() {
               exit={{ opacity: 0, height: 0 }}
               className="flex flex-col gap-2 px-4 py-2 bg-[color:var(--muted)] border-b border-[color:var(--border)]"
             >
-              {/* Première ligne: Contrôles de vue (liste/calendrier) */}
+              {/* Première ligne: Contrôles de vue (liste/calendrier) et bouton de filtre */}
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <button
@@ -704,6 +717,21 @@ export default function TodoListAgenda() {
                     <CalendarIcon size={14} />
                     <span>Calendrier</span>
                   </button>
+
+                  {/* Nouveau bouton pour afficher/masquer les filtres */}
+                  {viewMode === ViewMode.LIST && (
+                    <button
+                      onClick={() => setShowFiltersPanel(!showFiltersPanel)}
+                      className={`flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full text-sm ${
+                        showFiltersPanel
+                          ? "bg-[color:var(--primary)] text-[color:var(--primary-foreground)]"
+                          : "bg-[color:var(--background)] text-[color:var(--foreground)]"
+                      }`}
+                    >
+                      <Filter size={14} />
+                      <span className="hidden sm:inline">Filtres</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Information sur l'objet sélectionné */}
@@ -715,77 +743,86 @@ export default function TodoListAgenda() {
                 </div>
               </div>
 
-              {/* Deuxième ligne: recherche et filtres (seulement visible en mode liste) */}
-              {viewMode === ViewMode.LIST && (
-                <div className="space-y-2 mt-1">
-                  {/* Barre de recherche */}
-                  <div className="relative flex-1">
-                    <SearchIcon
-                      size={16}
-                      className="absolute left-2 top-2.5 text-[color:var(--muted-foreground)]"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Rechercher une tâche..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full py-1.5 pl-8 pr-3 text-sm rounded border border-[color:var(--border)] bg-[color:var(--background)]"
-                    />
-                    {searchTerm && (
-                      <button
-                        onClick={() => setSearchTerm("")}
-                        className="absolute right-2 top-2.5 text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)]"
+              {/* Panneau de filtres conditionnel */}
+              <AnimatePresence>
+                {viewMode === ViewMode.LIST && showFiltersPanel && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="space-y-2 mt-1"
+                  >
+                    {/* Barre de recherche */}
+                    <div className="relative flex-1">
+                      <SearchIcon
+                        size={16}
+                        className="absolute left-2 top-2.5 text-[color:var(--muted-foreground)]"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Rechercher une tâche..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full py-1.5 pl-8 pr-3 text-sm rounded border border-[color:var(--border)] bg-[color:var(--background)]"
+                      />
+                      {searchTerm && (
+                        <button
+                          onClick={() => setSearchTerm("")}
+                          className="absolute right-2 top-2.5 text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)]"
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Filtres : statut et article */}
+                    <div className="flex justify-between gap-3">
+                      {/* Filtre par statut */}
+                      <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="w-1/2 bg-[color:var(--background)] text-[color:var(--foreground)] px-3 py-1.5 rounded border border-[color:var(--border)] text-sm"
                       >
-                        <X size={16} />
-                      </button>
-                    )}
-                  </div>
+                        <option value="all">Tous les statuts</option>
+                        <option value="pending">A faire</option>
+                        <option value="in_progress">En cours</option>
+                        <option value="completed">Terminées</option>
+                        <option value="cancelled">Annulées</option>
+                      </select>
 
-                  {/* Filtres : statut et article */}
-                  <div className="flex justify-between gap-3">
-                    {/* Filtre par statut */}
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="w-1/2 bg-[color:var(--background)] text-[color:var(--foreground)] px-3 py-1.5 rounded border border-[color:var(--border)] text-sm"
-                    >
-                      <option value="all">Tous les statuts</option>
-                      <option value="pending">A faire</option>
-                      <option value="in_progress">En cours</option>
-                      <option value="completed">Terminées</option>
-                      <option value="cancelled">Annulées</option>
-                    </select>
+                      {/* Filtre par article */}
+                      <select
+                        value={articleFilter}
+                        onChange={(e) => setArticleFilter(e.target.value)}
+                        className="w-1/2 bg-[color:var(--background)] text-[color:var(--foreground)] px-3 py-1.5 rounded border border-[color:var(--border)] text-sm"
+                      >
+                        <option value="all">Tous les articles</option>
+                        {availableArticles.map((article) => (
+                          <option key={article.id} value={article.id}>
+                            {article.title} ({article.sectorName})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-                    {/* Filtre par article */}
-                    <select
-                      value={articleFilter}
-                      onChange={(e) => setArticleFilter(e.target.value)}
-                      className="w-1/2 bg-[color:var(--background)] text-[color:var(--foreground)] px-3 py-1.5 rounded border border-[color:var(--border)] text-sm"
-                    >
-                      <option value="all">Tous les articles</option>
-                      {availableArticles.map((article) => (
-                        <option key={article.id} value={article.id}>
-                          {article.title} ({article.sectorName})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Troisième ligne: navigation rapide en mode liste */}
-                  <div className="flex justify-between mt-1">
-                    <button
-                      onClick={() => scrollToSection("thisWeek")}
-                      className="text-sm text-[color:var(--primary)] hover:underline flex items-center"
-                    >
-                      Cette semaine ({thisWeekTasks.length})
-                    </button>
-                    <button
-                      onClick={() => scrollToSection("upcoming")}
-                      className="text-sm text-[color:var(--primary)] hover:underline flex items-center"
-                    >
-                      À venir ({upcomingTasks.length})
-                    </button>
-                  </div>
+              {/* Navigation rapide en mode liste - toujours visible */}
+              {viewMode === ViewMode.LIST && (
+                <div className="flex justify-between mt-1">
+                  <button
+                    onClick={() => scrollToSection("thisWeek")}
+                    className="text-sm text-[color:var(--primary)] hover:underline flex items-center"
+                  >
+                    Cette semaine ({thisWeekTasks.length})
+                  </button>
+                  <button
+                    onClick={() => scrollToSection("upcoming")}
+                    className="text-sm text-[color:var(--primary)] hover:underline flex items-center"
+                  >
+                    À venir ({upcomingTasks.length})
+                  </button>
                 </div>
               )}
             </motion.div>
@@ -797,7 +834,7 @@ export default function TodoListAgenda() {
           ref={contentRef}
           className="overflow-y-auto agenda-content"
           style={{
-            height: `calc(100% - ${isExpanded && showControls ? (viewMode === ViewMode.LIST ? "170px" : "96px") : "48px"})`,
+            height: `calc(100% - ${isExpanded && showControls ? (viewMode === ViewMode.LIST ? "110px" : "96px") : "48px"})`,
           }}
           onClick={handleContentClick} // Empêcher la propagation
         >
