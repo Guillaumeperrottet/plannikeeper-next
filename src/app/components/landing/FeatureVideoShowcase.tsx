@@ -70,9 +70,74 @@ export default function FeatureVideoShowcase({ features }: VideoShowcaseProps) {
 
   return (
     <div className="w-full max-w-7xl mx-auto bg-[#f5f3ef] rounded-3xl overflow-hidden border border-[#beac93] shadow-xl">
-      <div className="grid grid-cols-1 lg:grid-cols-5">
-        {/* Panneau latéral avec les fonctionnalités */}
-        <div className="lg:col-span-2 bg-[#f2e8d9] p-6 lg:p-8 flex flex-col">
+      {/* Layout modifié - Orientation verticale pour les mobiles, horizontale pour les grands écrans */}
+      <div className="flex flex-col lg:flex-row">
+        {/* Section vidéo - maintenant en premier pour donner plus d'importance */}
+        <div className="lg:w-3/5 bg-[#19140d] relative overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeFeature.id}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="w-full relative"
+              style={{ aspectRatio: "16/9" }} // Force un aspect ratio 16:9
+            >
+              {features.map((feature, idx) => (
+                <div
+                  key={feature.id}
+                  className={`absolute inset-0 ${activeIndex === idx ? "block" : "hidden"}`}
+                >
+                  <video
+                    ref={(el) => {
+                      videoRefs.current[idx] = el;
+                    }}
+                    src={feature.videoSrc}
+                    poster={feature.poster}
+                    className="w-full h-full object-cover"
+                    playsInline
+                    loop
+                    muted
+                  />
+                </div>
+              ))}
+
+              {/* Superposition avec titre et contrôles */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-6">
+                <h3 className="text-2xl font-bold text-white mb-2">
+                  {activeFeature.title}
+                </h3>
+                <p className="text-white/80 mb-4 max-w-2xl">
+                  {activeFeature.description}
+                </p>
+
+                <div className="flex items-center">
+                  <button
+                    onClick={togglePlayPause}
+                    className="w-12 h-12 rounded-full bg-[#d9840d] text-white flex items-center justify-center hover:bg-[#c6780c] transition-colors"
+                    aria-label={isPlaying ? "Pause" : "Lecture"}
+                  >
+                    {isPlaying ? (
+                      <Pause size={20} />
+                    ) : (
+                      <Play size={20} className="ml-1" />
+                    )}
+                  </button>
+
+                  <div className="ml-4 text-white/60 text-sm">
+                    {isPlaying
+                      ? "Cliquez pour mettre en pause"
+                      : "Cliquez pour voir en action"}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Panneau latéral avec les fonctionnalités - maintenant après la vidéo */}
+        <div className="lg:w-2/5 bg-[#f2e8d9] p-6 lg:p-8 flex flex-col">
           <h3 className="text-2xl md:text-3xl font-bold mb-6 text-[#141313]">
             Découvrez nos fonctionnalités
           </h3>
@@ -129,69 +194,6 @@ export default function FeatureVideoShowcase({ features }: VideoShowcaseProps) {
               <ChevronRight size={20} />
             </button>
           </div>
-        </div>
-
-        {/* Section vidéo */}
-        <div className="lg:col-span-3 bg-[#19140d] relative overflow-hidden">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeFeature.id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.5 }}
-              className="w-full h-full relative aspect-video"
-            >
-              {features.map((feature, idx) => (
-                <div
-                  key={feature.id}
-                  className={`absolute inset-0 ${activeIndex === idx ? "block" : "hidden"}`}
-                >
-                  <video
-                    ref={(el) => {
-                      videoRefs.current[idx] = el;
-                    }}
-                    src={feature.videoSrc}
-                    poster={feature.poster}
-                    className="w-full h-full object-cover"
-                    playsInline
-                    loop
-                    muted
-                  />
-                </div>
-              ))}
-
-              {/* Superposition avec titre et contrôles */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-6">
-                <h3 className="text-2xl font-bold text-white mb-2">
-                  {activeFeature.title}
-                </h3>
-                <p className="text-white/80 mb-4 max-w-2xl">
-                  {activeFeature.description}
-                </p>
-
-                <div className="flex items-center">
-                  <button
-                    onClick={togglePlayPause}
-                    className="w-12 h-12 rounded-full bg-[#d9840d] text-white flex items-center justify-center hover:bg-[#c6780c] transition-colors"
-                    aria-label={isPlaying ? "Pause" : "Lecture"}
-                  >
-                    {isPlaying ? (
-                      <Pause size={20} />
-                    ) : (
-                      <Play size={20} className="ml-1" />
-                    )}
-                  </button>
-
-                  <div className="ml-4 text-white/60 text-sm">
-                    {isPlaying
-                      ? "Cliquez pour mettre en pause"
-                      : "Cliquez pour voir en action"}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
         </div>
       </div>
     </div>
