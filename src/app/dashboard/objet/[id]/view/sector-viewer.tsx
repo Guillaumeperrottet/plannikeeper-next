@@ -189,7 +189,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
     >
       {/* Header avec contrôles - caché en plein écran */}
       {!isFullscreen && (
-        <div className="p-2 md:p-4 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4 bg-transparent">
+        <div className="p-2 md:p-4 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4 bg-transparent relative">
           {/* Interface de sélection de secteur */}
           <div className="w-full sm:w-auto flex-1 flex items-center">
             <DropdownMenu
@@ -203,6 +203,22 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 selectedSector ? selectedSector.name : "Sélectionner un secteur"
               }
             />
+
+            {/* Liste d'articles desktop - positionnée de manière absolue */}
+            {selectedSector && !isMobile && (
+              <div className="hidden md:block absolute top-full left-0 z-10">
+                <ArticleList
+                  articles={articles}
+                  selectedSectorName={selectedSector.name}
+                  objetId={objetId}
+                  sectorId={selectedSector.id}
+                  onArticleClick={handleArticleClick}
+                  onArticleHover={setHoveredArticleId}
+                  hoveredArticleId={hoveredArticleId}
+                  isMobile={false}
+                />
+              </div>
+            )}
           </div>
 
           {/* Bouton pour ajouter/modifier un article */}
@@ -245,22 +261,8 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
 
       {/* Container principal de visualisation */}
       <div
-        className={`flex-1 flex ${isFullscreen ? "h-screen" : "h-[calc(100vh-150px)]"} overflow-hidden`}
+        className={`flex-1 ${isFullscreen ? "h-screen" : "h-[calc(100vh-150px)]"} overflow-hidden`}
       >
-        {/* Liste d'articles desktop */}
-        {selectedSector && !isMobile && (
-          <ArticleList
-            articles={articles}
-            selectedSectorName={selectedSector.name}
-            objetId={objetId}
-            sectorId={selectedSector.id}
-            onArticleClick={handleArticleClick}
-            onArticleHover={setHoveredArticleId}
-            hoveredArticleId={hoveredArticleId}
-            isMobile={false}
-          />
-        )}
-
         {/* Container principal de l'image */}
         <div
           ref={imageContainerRef}
