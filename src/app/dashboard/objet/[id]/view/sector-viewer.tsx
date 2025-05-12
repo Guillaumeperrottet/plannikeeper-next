@@ -49,6 +49,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [showArticleList, setShowArticleList] = useState(false);
   const viewerRef = useRef<HTMLDivElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
 
@@ -141,6 +142,10 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
     }
   }, [isFullscreen]);
 
+  const toggleArticleList = useCallback(() => {
+    setShowArticleList(!showArticleList);
+  }, [showArticleList]);
+
   // Gestion des touches clavier pour la navigation
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -180,6 +185,11 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
     };
   }, [isFullscreen]);
 
+  // Cacher la liste d'articles lors du changement de secteur
+  useEffect(() => {
+    setShowArticleList(false);
+  }, [selectedSector]);
+
   return (
     <div
       ref={viewerRef}
@@ -190,8 +200,8 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
       {/* Header avec contrôles - caché en plein écran */}
       {!isFullscreen && (
         <div className="p-2 md:p-4 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4 bg-transparent relative">
-          {/* Interface de sélection de secteur */}
-          <div className="w-full sm:w-auto flex-1 flex items-center gap-2">
+          {/* Interface de sélection de secteur et bouton Articles */}
+          <div className="w-full sm:w-auto flex-1 flex items-center">
             <DropdownMenu
               items={sectors.map((s) => ({ id: s.id, label: s.name }))}
               selectedId={selectedSector?.id}
@@ -204,34 +214,17 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
               }
             />
 
-            {/* Bouton Articles à droite du sélecteur */}
-            <Button
-              variant="secondary"
-              className="ml-2"
-              onClick={() => {
-                // Redirige vers la liste d'articles du secteur sélectionné
-                if (selectedSector) {
-                  window.location.href = `/dashboard/objet/${objetId}/secteur/${selectedSector.id}/articles`;
-                }
-              }}
-            >
-              <Layers className="mr-1" size={16} />
-              Articles
-            </Button>
-
-            {/* Liste d'articles desktop - positionnée de manière absolue */}
-            {selectedSector && !isMobile && (
-              <div className="hidden md:block absolute top-full left-0 z-10">
-                <ArticleList
-                  articles={articles}
-                  selectedSectorName={selectedSector.name}
-                  objetId={objetId}
-                  sectorId={selectedSector.id}
-                  onArticleClick={handleArticleClick}
-                  onArticleHover={setHoveredArticleId}
-                  hoveredArticleId={hoveredArticleId}
-                  isMobile={false}
-                />
+            {/* Bouton Articles */}
+            {selectedSector && (
+              <div className="ml-2">
+                <Button
+                  variant={showArticleList ? "default" : "secondary"}
+                  onClick={toggleArticleList}
+                  className="flex items-center gap-2"
+                >
+                  <Layers size={16} />
+                  <span className="hidden sm:inline">Articles</span>
+                </Button>
               </div>
             )}
           </div>
@@ -274,6 +267,22 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
         </div>
       )}
 
+      {/* Panel de liste d'articles desktop - affiché conditionnellement */}
+      {showArticleList && selectedSector && !isMobile && !isFullscreen && (
+        <div className="hidden md:block absolute left-0 top-[72px] z-10 bg-background shadow-lg rounded-br-lg border border-t-0 border-l-0 border-muted">
+          <ArticleList
+            articles={articles}
+            selectedSectorName={selectedSector.name}
+            objetId={objetId}
+            sectorId={selectedSector.id}
+            onArticleClick={handleArticleClick}
+            onArticleHover={setHoveredArticleId}
+            hoveredArticleId={hoveredArticleId}
+            isMobile={false}
+          />
+        </div>
+      )}
+
       {/* Container principal de visualisation */}
       <div
         className={`flex-1 ${isFullscreen ? "h-screen" : "h-[calc(100vh-150px)]"} overflow-hidden`}
@@ -281,7 +290,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
         {/* Container principal de l'image */}
         <div
           ref={imageContainerRef}
-          className={`flex-1 relative flex items-center justify-center ${
+          className={`w-full h-full relative flex items-center justify-center ${
             isFullscreen ? "p-0" : "p-1"
           }`}
         >
