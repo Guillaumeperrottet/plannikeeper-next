@@ -874,7 +874,6 @@ export default function ModernTaskDetailPage({
               <div className="bg-white rounded-lg border shadow-sm p-4">
                 <h2 className="text-lg font-medium mb-4 flex items-center gap-1.5">
                   <MessageCircle className="h-5 w-5 text-gray-500" />
-                  Discussion
                 </h2>
                 <TaskComments taskId={task.id} />
               </div>
