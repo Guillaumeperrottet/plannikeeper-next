@@ -259,7 +259,7 @@ export default function Breadcrumbs() {
     <nav className="flex" aria-label="Fil d'Ariane">
       <ol className="flex items-center space-x-2">
         {breadcrumbs.map((breadcrumb, index) => (
-          <li key={breadcrumb.href} className="flex items-center">
+          <li key={`${breadcrumb.href}-${index}`} className="flex items-center">
             {index > 0 && (
               <ChevronRight
                 className="mx-1 h-4 w-4 text-[color:var(--muted-foreground)]"

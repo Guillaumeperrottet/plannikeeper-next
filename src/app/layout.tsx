@@ -10,6 +10,7 @@ import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Script from "next/script";
 import { LoadingSystemProvider } from "./components/LoadingSystem";
+import ServiceWorkerRegistration from "./service-worker";
 
 export const metadata = {
   title: {
@@ -87,6 +88,7 @@ export default async function RootLayout({
         </Script>
         <Analytics />
         <SpeedInsights />
+        <ServiceWorkerRegistration />
       </head>
       <body className="bg-background" suppressHydrationWarning>
         {/* Wrapper pour les indicateurs de navigation et de chargement */}

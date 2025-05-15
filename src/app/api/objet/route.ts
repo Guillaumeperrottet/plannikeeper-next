@@ -1,7 +1,7 @@
-// Mise à jour de src/app/api/objet/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
+import { withCacheHeaders, CacheDurations } from "@/lib/cache-config";
 
 export async function GET() {
   const user = await getUser();
@@ -43,7 +43,10 @@ export async function GET() {
         secteur: true,
       },
     });
-    return NextResponse.json(objects);
+
+    // Utilisation du cache: les données changent peu fréquemment
+    const response = NextResponse.json(objects);
+    return withCacheHeaders(response, CacheDurations.SHORT);
   }
 
   // Sinon, uniquement retourner les objets auxquels l'utilisateur a accès
@@ -73,5 +76,8 @@ export async function GET() {
       secteur: true,
     },
   });
-  return NextResponse.json(objects);
+
+  // Utilisation du cache: les données changent peu fréquemment
+  const response = NextResponse.json(objects);
+  return withCacheHeaders(response, CacheDurations.SHORT);
 }
