@@ -14,6 +14,7 @@ import {
   Filter,
 } from "lucide-react";
 import CalendarView from "./CalendarView";
+import PrintButton from "./ui/PrintButton";
 import { useGlobalLoader } from "@/app/components/GlobalLoader";
 import { motion, AnimatePresence, useSpring } from "framer-motion";
 import { useRouter as useCustomRouter } from "@/lib/router-helper";
@@ -600,7 +601,7 @@ export default function TodoListAgenda() {
         >
           {/* Partie gauche : sur desktop = contrôles de vue, sur mobile = vide ou icône */}
           <div className="w-1/4 flex items-center">
-            {isMobile && isExpanded && (
+            {isMobile && isExpanded ? (
               <button
                 onClick={closeAgenda}
                 className="ml-2 p-2 rounded-full hover:bg-[color:var(--muted)]"
@@ -608,6 +609,18 @@ export default function TodoListAgenda() {
               >
                 <X size={20} className="text-[color:var(--foreground)]" />
               </button>
+            ) : (
+              <PrintButton
+                tasks={tasks}
+                filteredTasks={filteredTasks}
+                objectName={selectedObjectName}
+                searchTerm={searchTerm}
+                statusFilter={statusFilter}
+                articleFilter={articleFilter}
+                availableArticles={availableArticles}
+                isMobile={isMobile}
+                thisWeekEnd={thisWeekEnd}
+              />
             )}
           </div>
 
