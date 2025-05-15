@@ -6,5 +6,5 @@ export const authClient = createAuthClient({
       ? `${window.location.origin}/api/auth`
       : process.env.NODE_ENV === "development"
         ? "http://localhost:3000/api/auth"
-        : "https://plannikeeper-next.vercel.app/api/auth", // URL complète en production
+        : "https://plannikeeper-next.vercel.app/api/auth",
 });

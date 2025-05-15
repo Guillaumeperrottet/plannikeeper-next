@@ -26,7 +26,9 @@ export function middleware(request: NextRequest) {
     return new NextResponse(null, {
       status: 204,
       headers: {
-        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Origin": isDevelopment
+          ? request.headers.get("Origin") || "*"
+          : origin,
         "Access-Control-Allow-Methods":
           "GET, POST, OPTIONS, PUT, DELETE, PATCH",
         "Access-Control-Allow-Headers":
@@ -37,11 +39,16 @@ export function middleware(request: NextRequest) {
     });
   }
 
-  // Pour les autres requêtes, ajouter les headers CORS à la réponse
+  // Pour les autres requêtes
   const response = NextResponse.next();
-
-  // Headers CORS de base
-  response.headers.set("Access-Control-Allow-Origin", "*"); // Utiliser "*" en développement
+  if (isDevelopment) {
+    response.headers.set(
+      "Access-Control-Allow-Origin",
+      request.headers.get("Origin") || "*"
+    );
+  } else {
+    response.headers.set("Access-Control-Allow-Origin", origin);
+  }
   response.headers.set("Access-Control-Allow-Credentials", "true");
   response.headers.set(
     "Access-Control-Allow-Methods",
