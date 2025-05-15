@@ -13,6 +13,10 @@ const STATIC_CACHE_URLS = [
   "/offline", // Créez une page offline pour une meilleure expérience
   // CSS, JS, images et autres ressources statiques
   "/images/logo.png",
+  "/manifest.json",
+  "/icons/icon-96x96.png",
+  "/icons/icon-192x192.png",
+  "/icons/icon-512x512.png",
 ];
 
 // Installation du service worker
