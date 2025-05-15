@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   AlertCircle,
   X,
-  MessageCircle,
   Paperclip,
   Edit,
   Trash2,
@@ -872,9 +871,6 @@ export default function ModernTaskDetailPage({
           {(activeTab === "comments" || !isMobile) && (
             <div className={`${isMobile ? "" : "md:col-span-3"} space-y-6`}>
               <div className="bg-white rounded-lg border shadow-sm p-4">
-                <h2 className="text-lg font-medium mb-4 flex items-center gap-1.5">
-                  <MessageCircle className="h-5 w-5 text-gray-500" />
-                </h2>
                 <TaskComments taskId={task.id} />
               </div>
             </div>

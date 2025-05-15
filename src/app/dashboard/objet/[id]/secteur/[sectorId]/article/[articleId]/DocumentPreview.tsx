@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/app/components/ui/dialog";
-import { File, X, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { File, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 
 interface Document {
@@ -91,14 +91,6 @@ export default function DocumentPreview({
             >
               <Download size={20} />
             </a>
-
-            {/* Fermer */}
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full"
-            >
-              <X size={20} />
-            </button>
           </div>
         </DialogHeader>
 
