@@ -1,14 +1,28 @@
-// src/hooks/useData.ts
+// src/hooks/useData.tsx
 import useSWR from "swr";
 
-// Fetcher de base avec gestion d'erreur
+class FetchError extends Error {
+  info?: unknown;
+  status?: number;
+
+  constructor(message: string, status?: number, info?: unknown) {
+    super(message);
+    this.name = "FetchError";
+    this.status = status;
+    this.info = info;
+  }
+}
+
+// Fetcher avec une meilleure gestion d'erreur
 const fetcher = async (url: string) => {
   const response = await fetch(url);
   if (!response.ok) {
-    const error = new Error("Une erreur est survenue lors de la requête");
-    error.info = await response.json();
-    error.status = response.status;
-    throw error;
+    const info = await response.json().catch(() => null);
+    throw new FetchError(
+      `Erreur ${response.status}: ${response.statusText}`,
+      response.status,
+      info
+    );
   }
   return response.json();
 };
