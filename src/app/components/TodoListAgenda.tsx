@@ -1,4 +1,3 @@
-// Ajout des importations nécessaires (les autres importations existantes restent inchangées)
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -13,6 +12,7 @@ import {
   ExternalLink,
   Filter,
   User,
+  RefreshCcw,
 } from "lucide-react";
 import CalendarView from "./CalendarView";
 import PrintButton from "./ui/PrintButton";
@@ -94,7 +94,16 @@ enum ViewMode {
   CALENDAR = "calendar",
 }
 
-export default function TodoListAgenda() {
+// Ajout des props pour le refresh
+interface TodoListAgendaProps {
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
+}
+
+export default function TodoListAgenda({
+  onRefresh,
+  isRefreshing,
+}: TodoListAgendaProps) {
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [agendaHeight, setAgendaHeight] = useState<number>(48); // Hauteur en px
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -793,17 +802,34 @@ export default function TodoListAgenda() {
 
                   {/* Bouton pour afficher/masquer les filtres */}
                   {viewMode === ViewMode.LIST && (
-                    <button
-                      onClick={() => setShowFiltersPanel(!showFiltersPanel)}
-                      className={`flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full text-sm ${
-                        showFiltersPanel
-                          ? "bg-[color:var(--primary)] text-[color:var(--primary-foreground)]"
-                          : "bg-[color:var(--background)] text-[color:var(--foreground)]"
-                      }`}
-                    >
-                      <Filter size={14} />
-                      <span className="hidden sm:inline">Filtres</span>
-                    </button>
+                    <>
+                      <button
+                        onClick={() => setShowFiltersPanel(!showFiltersPanel)}
+                        className={`flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full text-sm ${
+                          showFiltersPanel
+                            ? "bg-[color:var(--primary)] text-[color:var(--primary-foreground)]"
+                            : "bg-[color:var(--background)] text-[color:var(--foreground)]"
+                        }`}
+                      >
+                        <Filter size={14} />
+                        <span className="hidden sm:inline">Filtres</span>
+                      </button>
+                      {/* Bouton refresh */}
+                      {onRefresh && (
+                        <button
+                          onClick={onRefresh}
+                          className="ml-2 flex items-center justify-center rounded-full p-2 hover:bg-[color:var(--muted)] transition-colors"
+                          title="Rafraîchir la liste"
+                          aria-label="Rafraîchir la liste"
+                          disabled={isRefreshing}
+                        >
+                          <RefreshCcw
+                            size={18}
+                            className={`text-[color:var(--foreground)] ${isRefreshing ? "animate-spin" : ""}`}
+                          />
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
 
