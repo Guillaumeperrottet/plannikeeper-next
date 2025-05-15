@@ -1,3 +1,4 @@
+// Ajout des importations nécessaires (les autres importations existantes restent inchangées)
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -7,11 +8,11 @@ import {
   ListIcon,
   X,
   ChevronUp,
-  Briefcase,
   ArrowUp,
   SearchIcon,
   ExternalLink,
   Filter,
+  User,
 } from "lucide-react";
 import CalendarView from "./CalendarView";
 import PrintButton from "./ui/PrintButton";
@@ -51,6 +52,12 @@ type Task = {
   } | null;
   createdAt: Date;
   updatedAt: Date;
+};
+
+// Type pour les utilisateurs qui peuvent être assignés aux tâches
+type AssignableUser = {
+  id: string;
+  name: string;
 };
 
 // Raw task type from API before date conversion
@@ -112,6 +119,13 @@ export default function TodoListAgenda() {
     []
   );
 
+  // Nouveau state pour le filtre d'assignation
+  const [assigneeFilter, setAssigneeFilter] = useState<string>("me");
+  // State pour stocker les utilisateurs assignables
+  const [assignableUsers, setAssignableUsers] = useState<AssignableUser[]>([]);
+  // State pour stocker l'ID de l'utilisateur courant
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+
   // Animation spring pour une sensation plus naturelle
   const springHeight = useSpring(agendaHeight, {
     stiffness: 300,
@@ -154,6 +168,20 @@ export default function TodoListAgenda() {
 
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Au lieu de faire un appel API, utiliser l'ID utilisateur depuis les données de session
+  useEffect(() => {
+    // Vous pouvez accéder à l'ID de l'utilisateur via une variable globale ou un contexte
+    // Ici, nous utilisons une approche simplifiée avec un attribut data sur l'élément html
+    const htmlElement = document.documentElement;
+    const userId = htmlElement.getAttribute("data-user-id");
+
+    if (userId) {
+      setCurrentUserId(userId);
+    } else {
+      console.warn("ID utilisateur non disponible dans la session");
+    }
   }, []);
 
   // Après un changement d'état d'expansion, verrouiller brièvement les interactions
@@ -375,6 +403,22 @@ export default function TodoListAgenda() {
             }
           });
           setAvailableArticles(Array.from(articlesMap.values()));
+
+          // Extraire les utilisateurs assignés aux tâches pour le filtre
+          const usersMap = new Map<string, AssignableUser>();
+          tasksWithDateObjects.forEach((task) => {
+            if (task.assignedTo && !usersMap.has(task.assignedTo.id)) {
+              // Ne pas ajouter l'utilisateur courant à la liste des filtres
+              // car nous avons déjà l'option "Mes tâches"
+              if (task.assignedTo.id !== currentUserId) {
+                usersMap.set(task.assignedTo.id, {
+                  id: task.assignedTo.id,
+                  name: task.assignedTo.name,
+                });
+              }
+            }
+          });
+          setAssignableUsers(Array.from(usersMap.values()));
         }
       } catch (error) {
         console.error("Erreur lors de la récupération des tâches :", error);
@@ -517,7 +561,20 @@ export default function TodoListAgenda() {
     const articleMatch =
       articleFilter === "all" || task.article.id === articleFilter;
 
-    return searchMatch && statusMatch && articleMatch;
+    // Filtrer par assignation
+    let assigneeMatch = true;
+    if (assigneeFilter === "me" && currentUserId) {
+      // Mes tâches = tâches assignées à l'utilisateur courant
+      assigneeMatch = task.assignedToId === currentUserId;
+    } else if (assigneeFilter === "all") {
+      // Toutes les tâches
+      assigneeMatch = true;
+    } else if (assigneeFilter !== "me") {
+      // Tâches assignées à un utilisateur spécifique
+      assigneeMatch = task.assignedToId === assigneeFilter;
+    }
+
+    return searchMatch && statusMatch && articleMatch && assigneeMatch;
   };
 
   // Regroupement des tâches avec filtrage
@@ -554,10 +611,6 @@ export default function TodoListAgenda() {
     if (taskDate <= thisWeekEnd) thisWeekTasks.push(task);
     else upcomingTasks.push(task);
   });
-
-  // Récupérer le nom de l'objet sélectionné
-  const selectedObjectName =
-    objects.find((obj) => obj.id === selectedObjectId)?.nom || "Objet";
 
   // Définir le contenu du titre en fonction de l'état d'expansion
   const titleContent =
@@ -641,7 +694,10 @@ export default function TodoListAgenda() {
               <PrintButton
                 tasks={tasks}
                 filteredTasks={filteredTasks}
-                objectName={selectedObjectName}
+                objectName={
+                  objects.find((obj) => obj.id === selectedObjectId)?.nom ||
+                  "Objet"
+                }
                 searchTerm={searchTerm}
                 statusFilter={statusFilter}
                 articleFilter={articleFilter}
@@ -733,7 +789,7 @@ export default function TodoListAgenda() {
                     <span>Calendrier</span>
                   </button>
 
-                  {/* Nouveau bouton pour afficher/masquer les filtres */}
+                  {/* Bouton pour afficher/masquer les filtres */}
                   {viewMode === ViewMode.LIST && (
                     <button
                       onClick={() => setShowFiltersPanel(!showFiltersPanel)}
@@ -749,12 +805,31 @@ export default function TodoListAgenda() {
                   )}
                 </div>
 
-                {/* Information sur l'objet sélectionné */}
-                <div className="flex items-center text-sm text-[color:var(--muted-foreground)]">
-                  <Briefcase size={14} className="mr-1" />
-                  <span className="truncate max-w-[120px]">
-                    {selectedObjectName}
-                  </span>
+                {/* Remplacer l'info de l'objet par le sélecteur d'assignation */}
+                <div className="flex items-center">
+                  <div className="relative">
+                    <User
+                      className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-[color:var(--muted-foreground)]"
+                      size={14}
+                    />
+                    <select
+                      className="bg-[color:var(--background)] text-[color:var(--foreground)] pl-8 pr-2 py-1.5 rounded border border-[color:var(--border)] text-sm transition-all active:scale-95"
+                      value={assigneeFilter}
+                      onChange={(e) => setAssigneeFilter(e.target.value)}
+                      style={{
+                        WebkitAppearance: isMobile ? "none" : undefined,
+                        maxWidth: "160px",
+                      }}
+                    >
+                      <option value="me">Mes tâches</option>
+                      <option value="all">Toutes les tâches</option>
+                      {assignableUsers.map((user) => (
+                        <option key={user.id} value={user.id}>
+                          {user.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -873,7 +948,8 @@ export default function TodoListAgenda() {
                   <p className="text-[color:var(--muted-foreground)] p-4 bg-[color:var(--muted)]/20 rounded-lg text-center">
                     {searchTerm ||
                     statusFilter !== "all" ||
-                    articleFilter !== "all"
+                    articleFilter !== "all" ||
+                    assigneeFilter !== "all"
                       ? "Aucune tâche ne correspond à vos critères de recherche."
                       : "Aucune tâche pour cette semaine."}
                   </p>
@@ -957,7 +1033,8 @@ export default function TodoListAgenda() {
                   <p className="text-[color:var(--muted-foreground)] p-4 bg-[color:var(--muted)]/20 rounded-lg text-center">
                     {searchTerm ||
                     statusFilter !== "all" ||
-                    articleFilter !== "all"
+                    articleFilter !== "all" ||
+                    assigneeFilter !== "all"
                       ? "Aucune tâche ne correspond à vos critères de recherche."
                       : "Aucune tâche à venir."}
                   </p>
