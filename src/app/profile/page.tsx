@@ -5,6 +5,7 @@ import Link from "next/link";
 import EditName from "./edit-name";
 import EditOrganizationName from "./edit-organization-name";
 import ChangePasswordForm from "./change-password-form";
+import UpdateProfileImage from "./UpdateProfileImage";
 
 export default async function ProfilePage() {
   const user = await getUser();
@@ -33,12 +34,13 @@ export default async function ProfilePage() {
             <h2 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3">
               Informations personnelles
             </h2>
+            <div className="flex flex-col items-center gap-6 mb-4">
+              <UpdateProfileImage
+                initialImage={user.image ?? null}
+                userName={user.name ?? ""}
+              />
+            </div>
             <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-              <div className="flex-shrink-0">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-muted flex items-center justify-center text-2xl sm:text-3xl text-muted-foreground font-bold">
-                  {user.name?.[0] ?? "?"}
-                </div>
-              </div>
               <div className="flex-1 w-full text-center sm:text-left">
                 <div className="mb-3">
                   <label className="block font-semibold mb-1 text-foreground">
