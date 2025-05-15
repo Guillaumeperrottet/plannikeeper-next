@@ -691,20 +691,22 @@ export default function TodoListAgenda() {
                 <X size={20} className="text-[color:var(--foreground)]" />
               </button>
             ) : (
-              <PrintButton
-                tasks={tasks}
-                filteredTasks={filteredTasks}
-                objectName={
-                  objects.find((obj) => obj.id === selectedObjectId)?.nom ||
-                  "Objet"
-                }
-                searchTerm={searchTerm}
-                statusFilter={statusFilter}
-                articleFilter={articleFilter}
-                availableArticles={availableArticles}
-                isMobile={isMobile}
-                thisWeekEnd={thisWeekEnd}
-              />
+              !isMobile && (
+                <PrintButton
+                  tasks={tasks}
+                  filteredTasks={filteredTasks}
+                  objectName={
+                    objects.find((obj) => obj.id === selectedObjectId)?.nom ||
+                    "Objet"
+                  }
+                  searchTerm={searchTerm}
+                  statusFilter={statusFilter}
+                  articleFilter={articleFilter}
+                  availableArticles={availableArticles}
+                  isMobile={isMobile}
+                  thisWeekEnd={thisWeekEnd}
+                />
+              )
             )}
           </div>
 
