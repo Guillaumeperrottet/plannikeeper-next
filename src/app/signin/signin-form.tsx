@@ -8,6 +8,7 @@ import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function SignInForm({
   className,
@@ -20,6 +21,7 @@ export default function SignInForm({
 
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get("redirect") || "/dashboard";
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -39,10 +41,11 @@ export default function SignInForm({
       }
 
       // Petite pause pour permettre aux cookies d'être définis
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-      // Utiliser window.location.href pour une redirection forcée
-      window.location.href = redirectPath;
+      // Utiliser le router Next.js au lieu de window.location.href
+      router.push(redirectPath);
+      router.refresh(); // Force Next.js à revalider les données
     } catch (err) {
       console.error("Login error:", err);
       setError("Une erreur est survenue, veuillez réessayer");

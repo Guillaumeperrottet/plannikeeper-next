@@ -41,7 +41,7 @@ export function middleware(request: NextRequest) {
   const response = NextResponse.next();
 
   // Headers CORS de base
-  response.headers.set("Access-Control-Allow-Origin", origin);
+  response.headers.set("Access-Control-Allow-Origin", "*"); // Utiliser "*" en développement
   response.headers.set("Access-Control-Allow-Credentials", "true");
   response.headers.set(
     "Access-Control-Allow-Methods",

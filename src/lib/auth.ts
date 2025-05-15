@@ -25,19 +25,20 @@ export const auth = betterAuth({
 
   advanced: {
     defaultCookieAttributes: {
-      sameSite: "lax", // Utiliser 'lax' qui est plus permissif pour les cookies
-      secure: false, // Important: mettre à false en développement local!
+      sameSite: "none", // Changer de "lax" à "none" pour le développement
+      secure: false, // Reste à false pour HTTP en développement local
       domain: undefined,
       maxAge: 60 * 60 * 24 * 30,
       httpOnly: true,
+      path: "/", // Ajouter cette ligne pour s'assurer que le cookie est disponible partout
     },
 
     cookies: {
       session_token: {
         name: "session",
         attributes: {
-          sameSite: "lax",
-          secure: false, // Important: false pour le développement local
+          sameSite: "none", // Changer de "lax" à "none"
+          secure: false, // Reste à false
           path: "/",
           maxAge: 60 * 60 * 24 * 30,
           httpOnly: true,
