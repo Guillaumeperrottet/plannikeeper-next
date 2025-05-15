@@ -1,5 +1,6 @@
 // src/hooks/useData.tsx
 import useSWR from "swr";
+import { Notification, NotificationsResponse } from "@/types/index";
 
 class FetchError extends Error {
   info?: unknown;
@@ -130,10 +131,11 @@ export function useTaskComments(taskId: string | null) {
   });
 }
 
-// Hook pour les notifications
+// Hook pour les notifications - Ajout des types explicites
 export function useNotifications(limit = 10, unreadOnly = false) {
   const url = `/api/notifications?limit=${limit}${unreadOnly ? "&unread=true" : ""}`;
-  const { data, error, mutate } = useSWR(url, fetcher, {
+  // Spécifier explicitement le type de retour de useSWR
+  const { data, error, mutate } = useSWR<NotificationsResponse>(url, fetcher, {
     refreshInterval: 30000, // 30 secondes
   });
 
@@ -143,12 +145,12 @@ export function useNotifications(limit = 10, unreadOnly = false) {
         method: "POST",
       });
 
-      // Mise à jour optimiste du cache
+      // Mise à jour optimiste du cache avec typage explicite
       mutate(
         data
           ? {
               ...data,
-              notifications: data.notifications.map((n) =>
+              notifications: data.notifications.map((n: Notification) =>
                 n.id === notificationId ? { ...n, read: true } : n
               ),
               unreadCount: Math.max(0, data.unreadCount - 1),
@@ -170,12 +172,12 @@ export function useNotifications(limit = 10, unreadOnly = false) {
         method: "POST",
       });
 
-      // Mise à jour optimiste du cache
+      // Mise à jour optimiste du cache avec typage explicite
       mutate(
         data
           ? {
               ...data,
-              notifications: data.notifications.map((n) => ({
+              notifications: data.notifications.map((n: Notification) => ({
                 ...n,
                 read: true,
               })),
@@ -195,8 +197,9 @@ export function useNotifications(limit = 10, unreadOnly = false) {
     }
   };
 
+  // Retour explicitement typé
   return {
-    notifications: data?.notifications || [],
+    notifications: (data?.notifications || []) as Notification[],
     unreadCount: data?.unreadCount || 0,
     isLoading: !error && !data,
     isError: error,
