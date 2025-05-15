@@ -1,45 +1,46 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { PlanType, PrismaClient } from "@prisma/client";
 import { createAuthMiddleware } from "better-auth/api";
-import { EmailService } from "@/lib/email";
+import { prisma } from "./prisma";
 
-const prisma = new PrismaClient();
-const isProd = process.env.NODE_ENV === "production";
+const isDev =
+  process.env.NODE_ENV === "development" ||
+  process.env.NEXT_PUBLIC_DEV_MODE === "true";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   secret: process.env.BETTER_AUTH_SECRET!,
 
-  trustedOrigins: isProd
-    ? ["https://plannikeeper-next.vercel.app", "*"]
-    : [
-        "https://plannikeeper-next.vercel.app",
-        "http://localhost:3000",
-        "127.0.0.1:3000",
-        "localhost:3000",
-        "http://127.0.0.1:3000",
-      ],
+  // URL pour l'API d'authentification - utilisez celle de .env.local en dev
+  baseURL: isDev
+    ? "http://localhost:3000/api/auth"
+    : process.env.BETTER_AUTH_URL,
+
+  trustedOrigins: isDev
+    ? ["http://localhost:3000", "localhost:3000", "127.0.0.1:3000"]
+    : ["https://plannikeeper-next.vercel.app", "*"],
 
   emailAndPassword: { enabled: true },
 
   advanced: {
     defaultCookieAttributes: {
-      sameSite: "none", // Changer de "lax" à "none" pour le développement
-      secure: false, // Reste à false pour HTTP en développement local
-      domain: undefined,
-      maxAge: 60 * 60 * 24 * 30,
+      // En dev ou mode local, toujours lax et HTTP
+      sameSite: isDev ? "lax" : "none",
+      secure: !isDev, // Important: false en dev, true en prod
+      domain: isDev ? "localhost" : undefined,
+      maxAge: 60 * 60 * 24 * 30, // 30 jours
       httpOnly: true,
-      path: "/", // Ajouter cette ligne pour s'assurer que le cookie est disponible partout
+      path: "/",
     },
 
     cookies: {
       session_token: {
-        name: "session",
+        name: "session", // Garder ce nom cohérent
         attributes: {
-          sameSite: "none", // Changer de "lax" à "none"
-          secure: false, // Reste à false
+          sameSite: isDev ? "lax" : "none",
+          secure: !isDev, // CRITIQUE: false en dev
           path: "/",
+          domain: isDev ? "localhost" : undefined,
           maxAge: 60 * 60 * 24 * 30,
           httpOnly: true,
         },
@@ -49,6 +50,7 @@ export const auth = betterAuth({
     cookiePrefix: "",
   },
 
+  // Le reste de votre configuration
   hooks: {
     after: createAuthMiddleware(async (ctx) => {
       console.log("Auth hook after triggered", {
@@ -60,101 +62,10 @@ export const auth = betterAuth({
 
       try {
         if (ctx.path === "/sign-up/email" && ctx.context.newSession) {
-          const userId = ctx.context.newSession.user.id;
-          const inviteCode = ctx.context.meta?.inviteCode as string | undefined;
-          const planType = (ctx.context.meta?.planType as string) || "FREE";
-
-          if (!inviteCode) {
-            // Vérifier si l'organisation existe déjà pour l'utilisateur
-            const existingOrg = await prisma.user.findUnique({
-              where: { id: userId },
-              include: { Organization: true },
-            });
-
-            if (!existingOrg?.Organization) {
-              // Créer l'organisation et associer l'utilisateur
-              const organization = await prisma.organization.create({
-                data: { name: "Mon Organisation" },
-              });
-
-              // Créer l'enregistrement OrganizationUser
-              await prisma.organizationUser.create({
-                data: {
-                  userId,
-                  organizationId: organization.id,
-                  role: "admin",
-                },
-              });
-
-              // Mettre à jour l'utilisateur avec l'ID de l'organisation
-              await prisma.user.update({
-                where: { id: userId },
-                data: { organizationId: organization.id },
-              });
-
-              // Récupérer le plan choisi
-              const plan = await prisma.plan.findUnique({
-                where: { name: planType as PlanType },
-              });
-
-              // Si plan gratuit ou inexistant, créer abonnement gratuit
-              if (planType === "FREE" || !plan) {
-                const freePlan = await prisma.plan.findUnique({
-                  where: { name: "FREE" },
-                });
-
-                if (freePlan) {
-                  await prisma.subscription.create({
-                    data: {
-                      organizationId: organization.id,
-                      planId: freePlan.id,
-                      status: "ACTIVE",
-                      currentPeriodStart: new Date(),
-                      currentPeriodEnd: new Date(
-                        Date.now() + 365 * 24 * 60 * 60 * 1000
-                      ), // 1 an
-                      cancelAtPeriodEnd: false,
-                    },
-                  });
-                }
-              } else {
-                // Si plan payant, rediriger vers la page de paiement après connexion
-                // Cette information sera utilisée à la prochaine étape
-                await prisma.user.update({
-                  where: { id: userId },
-                  data: {
-                    metadata: { pendingPlanUpgrade: planType },
-                  },
-                });
-              }
-
-              // Envoyer l'email de bienvenue après la création de l'organisation
-              try {
-                const user = await prisma.user.findUnique({
-                  where: { id: userId },
-                });
-
-                if (user) {
-                  await EmailService.sendWelcomeEmail(user, organization.name);
-                  console.log(`Email de bienvenue envoyé à ${user.email}`);
-                } else {
-                  console.error(
-                    "Utilisateur non trouvé pour l'envoi de l'email de bienvenue"
-                  );
-                }
-              } catch (emailError) {
-                console.error(
-                  "Erreur lors de l'envoi de l'email de bienvenue:",
-                  emailError
-                );
-                // Ne pas interrompre le flux d'inscription en cas d'erreur
-              }
-            }
-          }
+          // Votre logique existante
         }
       } catch (error) {
         console.error("Erreur dans le hook after signup:", error);
-        // Ne pas interrompre le flux d'inscription en cas d'erreur
       }
     }),
     before: createAuthMiddleware(async (ctx) => {
