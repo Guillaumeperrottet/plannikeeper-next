@@ -147,7 +147,7 @@ export default function TodoListAgendaWrapper() {
     <button
       onClick={handleManualRefresh}
       disabled={isRefreshing}
-      className={`fixed bottom-24 right-4 z-50 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center transition-transform ${
+      className={`fixed bottom-24 right-8 z-50 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center transition-transform ${
         isRefreshing ? "opacity-70" : "hover:scale-105 active:scale-95"
       }`}
       aria-label="Rafraîchir les données"
