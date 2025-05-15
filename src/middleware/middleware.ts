@@ -30,8 +30,8 @@ export function middleware(request: NextRequest) {
     return new NextResponse(null, {
       status: 204,
       headers: {
+
         "Access-Control-Allow-Origin": origin,
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS, PUT, DELETE",
         "Access-Control-Allow-Headers":
           "Content-Type, Authorization, X-Requested-With, Cookie",
         "Access-Control-Allow-Credentials": "true",
