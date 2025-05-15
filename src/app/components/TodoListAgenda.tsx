@@ -401,7 +401,8 @@ export default function TodoListAgenda() {
       await customRouter.navigateWithLoading(
         `/dashboard/objet/${task.article.sector.object.id}` +
           `/secteur/${task.article.sector.id}` +
-          `/article/${task.article.id}`,
+          `/article/${task.article.id}` +
+          `/task/${task.id}`,
         {
           loadingMessage: "Chargement de la tâche...",
           hapticFeedback: true,
