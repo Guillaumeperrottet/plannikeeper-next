@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useState, useRef } from "react";
 import { authClient } from "@/lib/auth-client";
 import { useSearchParams } from "next/navigation";
 import { Input } from "@/app/components/ui/input";
@@ -8,6 +8,8 @@ import { Label } from "@/app/components/ui/label";
 import { Button } from "@/app/components/ui/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import SignupImageUpload from "./SignupImageUpload";
+import { toast } from "sonner";
 
 export default function SignUpForm() {
   const searchParams = useSearchParams();
@@ -15,6 +17,8 @@ export default function SignUpForm() {
   const [isInvite, setIsInvite] = useState(false);
   const [organizationName, setOrganizationName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const planType = searchParams.get("plan") || "FREE";
 
   // Déterminer si le plan est payant
@@ -60,46 +64,85 @@ export default function SignUpForm() {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
     const name = formData.get("name") as string;
-    const image = (formData.get("image") as string) || undefined;
 
     const submitButton = event.currentTarget.querySelector(
       'button[type="submit"]'
     ) as HTMLButtonElement;
 
-    await authClient.signUp.email(
-      {
-        email,
-        password,
-        name,
-        image,
-        // Modifions la callbackURL pour inclure une référence au plan
-        callbackURL: inviteCode
-          ? `/join/${inviteCode}?plan=${planType}`
-          : `/subscribe-redirect?plan=${planType}`,
-      },
-      {
-        onRequest: () => {
-          submitButton.disabled = true;
-          submitButton.textContent = "Inscription en cours...";
-        },
-        onSuccess: () => {
-          // Redirection modifiée pour utiliser la même URL que callbackURL
-          window.location.href = inviteCode
-            ? `/join/${inviteCode}?plan=${planType}`
-            : `/subscribe-redirect?plan=${planType}`;
-        },
-        onError: (ctx) => {
-          console.error("Erreur complète:", ctx.error);
-          let errorMessage = "Une erreur est survenue lors de l'inscription.";
-          if (ctx.error && ctx.error.message) {
-            errorMessage = ctx.error.message;
+    try {
+      submitButton.disabled = true;
+      submitButton.textContent = "Inscription en cours...";
+
+      let imageUrl: string | undefined = undefined;
+
+      // Si un fichier d'image est sélectionné, l'uploader d'abord
+      if (selectedFile) {
+        const imageFormData = new FormData();
+        imageFormData.append("file", selectedFile);
+
+        try {
+          // Simuler une notification de téléchargement
+          const toastId = toast.loading("Téléchargement de l'image...");
+
+          // Uploader l'image vers la route temporaire spéciale pour l'inscription
+          const uploadResponse = await fetch("/api/auth/temp-image-upload", {
+            method: "POST",
+            body: imageFormData,
+          });
+
+          if (!uploadResponse.ok) {
+            throw new Error("Erreur lors de l'upload de l'image");
           }
-          setError(errorMessage);
-          submitButton.disabled = false;
-          submitButton.textContent = "S'inscrire";
-        },
+
+          const uploadData = await uploadResponse.json();
+          imageUrl = uploadData.imageUrl;
+
+          toast.success("Image téléchargée avec succès", { id: toastId });
+        } catch (uploadError) {
+          console.error("Erreur upload:", uploadError);
+          toast.error(
+            "Impossible de télécharger l'image. L'inscription continuera sans image de profil."
+          );
+          // Continuer l'inscription sans image
+        }
       }
-    );
+
+      // Inscription avec ou sans image
+      await authClient.signUp.email(
+        {
+          email,
+          password,
+          name,
+          image: imageUrl,
+          callbackURL: inviteCode
+            ? `/join/${inviteCode}?plan=${planType}`
+            : `/subscribe-redirect?plan=${planType}`,
+        },
+        {
+          onSuccess: () => {
+            // Redirection
+            window.location.href = inviteCode
+              ? `/join/${inviteCode}?plan=${planType}`
+              : `/subscribe-redirect?plan=${planType}`;
+          },
+          onError: (ctx) => {
+            console.error("Erreur complète:", ctx.error);
+            let errorMessage = "Une erreur est survenue lors de l'inscription.";
+            if (ctx.error && ctx.error.message) {
+              errorMessage = ctx.error.message;
+            }
+            setError(errorMessage);
+            submitButton.disabled = false;
+            submitButton.textContent = "S'inscrire";
+          },
+        }
+      );
+    } catch (err) {
+      console.error("Erreur d'inscription:", err);
+      setError("Une erreur inattendue est survenue");
+      submitButton.disabled = false;
+      submitButton.textContent = "S'inscrire";
+    }
   }
 
   return (
@@ -142,7 +185,14 @@ export default function SignUpForm() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form
+        ref={formRef}
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-4"
+      >
+        {/* Nouveau composant d'upload d'image */}
+        <SignupImageUpload onImageSelect={setSelectedFile} />
+
         <div>
           <Label htmlFor="name">Nom complet</Label>
           <Input
@@ -172,15 +222,6 @@ export default function SignUpForm() {
             required
             placeholder="Créez un mot de passe (min. 8 caractères)"
             minLength={8}
-          />
-        </div>
-        <div>
-          <Label htmlFor="image">URL d&apos;image de profil (optionnel)</Label>
-          <Input
-            id="image"
-            name="image"
-            type="url"
-            placeholder="https://example.com/votre-image.jpg"
           />
         </div>
         <Button type="submit" className="w-full">
