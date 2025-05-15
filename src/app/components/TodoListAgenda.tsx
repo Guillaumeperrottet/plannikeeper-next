@@ -427,7 +427,7 @@ export default function TodoListAgenda() {
       }
     };
     fetchTasks();
-  }, [selectedObjectId]);
+  }, [selectedObjectId, currentUserId]);
 
   // Met à jour l'état de navigation lors de la navigation vers une tâche
   const navigateToTask = async (task: Task): Promise<void> => {
