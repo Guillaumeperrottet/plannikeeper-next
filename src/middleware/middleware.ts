@@ -2,6 +2,13 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
+  const isDev =
+    process.env.NODE_ENV === "development" ||
+    process.env.NEXT_PUBLIC_DEV_MODE === "true";
+  const origin = isDev
+    ? "http://localhost:3000"
+    : request.headers.get("Origin") || "*";
+
   // Get the pathname from the URL
   const { pathname } = request.nextUrl;
 
@@ -17,20 +24,14 @@ export function middleware(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith("/api/webhooks/stripe")) {
     return NextResponse.next();
   }
-  // Améliorer le middleware pour mieux gérer les requêtes auth
-  const origin = request.headers.get("Origin") || "*";
-  const isDevelopment = process.env.NODE_ENV === "development";
 
   // Pour les requêtes OPTIONS (preflight)
   if (request.method === "OPTIONS") {
     return new NextResponse(null, {
       status: 204,
       headers: {
-        "Access-Control-Allow-Origin": isDevelopment
-          ? request.headers.get("Origin") || "*"
-          : origin,
-        "Access-Control-Allow-Methods":
-          "GET, POST, OPTIONS, PUT, DELETE, PATCH",
+
+        "Access-Control-Allow-Origin": origin,
         "Access-Control-Allow-Headers":
           "Content-Type, Authorization, X-Requested-With, Cookie",
         "Access-Control-Allow-Credentials": "true",
@@ -38,17 +39,15 @@ export function middleware(request: NextRequest) {
       },
     });
   }
-
+  // Pour les autres requêtes, ajouter les headers CORS à la réponse
   // Pour les autres requêtes
   const response = NextResponse.next();
-  if (isDevelopment) {
-    response.headers.set(
-      "Access-Control-Allow-Origin",
-      request.headers.get("Origin") || "*"
-    );
-  } else {
-    response.headers.set("Access-Control-Allow-Origin", origin);
-  }
+
+  // Définir les en-têtes CORS appropriés
+  response.headers.set(
+    "Access-Control-Allow-Origin",
+    isDev ? "http://localhost:3000" : request.headers.get("Origin") || "*"
+  );
   response.headers.set("Access-Control-Allow-Credentials", "true");
   response.headers.set(
     "Access-Control-Allow-Methods",
@@ -58,12 +57,6 @@ export function middleware(request: NextRequest) {
     "Access-Control-Allow-Headers",
     "Content-Type, Authorization, X-Requested-With, Cookie"
   );
-
-  // En développement, permettre l'accès depuis n'importe quelle origine
-  if (isDevelopment) {
-    response.headers.set("Access-Control-Allow-Origin", origin);
-  }
-
   return response;
 }
 
