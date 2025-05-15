@@ -130,6 +130,6 @@ export function createDynamicResponse(data: unknown): NextResponse {
 /**
  * Wrapper pour les routes API qui ne doivent pas être mises en cache
  */
-export function createUncachedResponse(data: unknow): NextResponse {
+export function createUncachedResponse(data: unknown): NextResponse {
   return createCachedResponse(data, CacheDurations.NEVER);
 }
