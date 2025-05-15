@@ -106,10 +106,28 @@ export function useArticles(sectorId: string | null) {
 
 // Hook pour les tâches
 export function useTasks(objectId: string | null) {
-  return useSWR(objectId ? `/api/tasks/object/${objectId}` : null, fetcher, {
-    revalidateOnFocus: true,
-    refreshInterval: 60000, // 1 minute, pour des mises à jour plus fréquentes
-  });
+  const { data, error, mutate } = useSWR(
+    objectId ? `/api/tasks/object/${objectId}` : null,
+    fetcher,
+    {
+      revalidateOnFocus: true,
+      refreshInterval: 30000, // Réduire à 30 secondes pour les tâches
+      dedupingInterval: 5000, // Réduire l'intervalle de déduplication
+    }
+  );
+
+  // Ajouter une fonction d'invalidation de cache
+  const invalidateCache = () => {
+    mutate();
+  };
+
+  return {
+    tasks: data,
+    isLoading: !error && !data,
+    isError: error,
+    mutate,
+    invalidateCache,
+  };
 }
 
 // Hook pour une tâche spécifique avec tous les détails

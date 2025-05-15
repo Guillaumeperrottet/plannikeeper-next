@@ -1,17 +1,12 @@
-// Service Worker pour PlanniKeeper
-// Ce service worker gère la mise en cache des ressources statiques,
-// la synchronisation en arrière-plan et les notifications push.
-// Il est conçu pour fonctionner avec une application web progressive (PWA).
-
-const CACHE_VERSION = "1.0.0";
+const CACHE_VERSION = "1.1.0"; // Augmenter la version à chaque changement important
 const CACHE_NAME = `plannikeeper-cache-v${CACHE_VERSION}`;
+const DATA_CACHE_NAME = `plannikeeper-data-v${CACHE_VERSION}`; // Cache séparé pour les données API
 
 // Ressources à mettre en cache lors de l'installation
 const STATIC_CACHE_URLS = [
   "/",
   "/dashboard",
-  "/offline", // Créez une page offline pour une meilleure expérience
-  // CSS, JS, images et autres ressources statiques
+  "/offline",
   "/images/logo.png",
   "/manifest.json",
   "/icons/icon-96x96.png",
@@ -19,7 +14,7 @@ const STATIC_CACHE_URLS = [
   "/icons/icon-512x512.png",
 ];
 
-// Installation du service worker
+// Installation du service worker avec précaching des ressources essentielles
 self.addEventListener("install", (event) => {
   console.log("Service Worker: Installation en cours");
 
@@ -50,8 +45,10 @@ self.addEventListener("activate", (event) => {
             .filter((cacheName) => {
               // Supprimer les anciens caches
               return (
-                cacheName.startsWith("plannikeeper-cache-") &&
-                cacheName !== CACHE_NAME
+                (cacheName.startsWith("plannikeeper-cache-") &&
+                  cacheName !== CACHE_NAME) ||
+                (cacheName.startsWith("plannikeeper-data-") &&
+                  cacheName !== DATA_CACHE_NAME)
               );
             })
             .map((cacheName) => {
@@ -74,14 +71,14 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  // Ne pas intercepter les requêtes pour les API qui ne doivent pas être mises en cache
+  // Pour les requêtes API, utiliser Network First, Store in Cache
   if (url.pathname.startsWith("/api/")) {
-    // Laisser le navigateur gérer normalement ces requêtes
-    // On pourrait aussi implémenter une stratégie network-first spécifique ici
+    // Stratégie spécifique pour les API
+    event.respondWith(networkFirstWithBackup(event.request));
     return;
   }
 
-  // Stratégie Cache First pour les ressources statiques
+  // Pour les ressources statiques, utiliser Cache First
   if (
     event.request.method === "GET" &&
     (url.pathname.startsWith("/images/") ||
@@ -90,147 +87,275 @@ self.addEventListener("fetch", (event) => {
       url.pathname === "/" ||
       url.pathname === "/favicon.ico")
   ) {
-    event.respondWith(
-      caches.match(event.request).then((cachedResponse) => {
-        if (cachedResponse) {
-          // Retourner la réponse du cache
-          return cachedResponse;
-        }
-
-        // Sinon, faire la requête réseau et mettre en cache
-        return fetch(event.request)
-          .then((networkResponse) => {
-            // Vérifier que la requête a réussi
-            if (
-              !networkResponse ||
-              networkResponse.status !== 200 ||
-              networkResponse.type !== "basic"
-            ) {
-              return networkResponse;
-            }
-
-            // Mise en cache de la nouvelle ressource
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-
-            return networkResponse;
-          })
-          .catch(() => {
-            // En cas d'erreur réseau, retourner une page offline
-            if (event.request.mode === "navigate") {
-              return caches.match("/offline");
-            }
-
-            // Ou une image par défaut pour les requêtes d'images
-            if (event.request.destination === "image") {
-              return caches.match("/images/offline-image.png");
-            }
-
-            // Sinon, propager l'erreur
-            return new Response("Connexion perdue", {
-              status: 503,
-              statusText: "Service Unavailable",
-              headers: new Headers({
-                "Content-Type": "text/plain",
-              }),
-            });
-          });
-      })
-    );
+    event.respondWith(cacheFirst(event.request));
     return;
   }
 
-  // Pour les autres requêtes: stratégie network first
-  event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request).then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-
-        // Si on navigue vers une page et qu'elle n'est pas en cache
-        if (event.request.mode === "navigate") {
-          return caches.match("/offline");
-        }
-
-        // Sinon, propager l'erreur
-        throw new Error(
-          "Pas de connexion réseau et ressource non disponible dans le cache"
-        );
-      });
-    })
-  );
+  // Pour toute autre requête, utiliser Network First
+  event.respondWith(networkFirst(event.request));
 });
 
-// Gérer les mises à jour des ressources en cache (background sync)
-self.addEventListener("sync", (event) => {
-  if (event.tag === "sync-updates") {
-    event.waitUntil(syncUpdates());
+// Stratégie Cache First avec fallback sur réseau
+async function cacheFirst(request) {
+  const cachedResponse = await caches.match(request);
+  if (cachedResponse) {
+    return cachedResponse;
   }
-});
 
-// Fonction pour synchroniser les mises à jour en attente
-async function syncUpdates() {
+  // Si non trouvé dans le cache, essayer le réseau
   try {
-    // Récupérer les mises à jour en attente depuis IndexedDB ou localStorage
-    const pendingUpdates = await getPendingUpdates();
-
-    // Traiter chaque mise à jour
-    for (const update of pendingUpdates) {
-      await processUpdate(update);
+    const networkResponse = await fetch(request);
+    // Mettre à jour le cache avec la nouvelle réponse
+    const cache = await caches.open(CACHE_NAME);
+    cache.put(request, networkResponse.clone());
+    return networkResponse;
+  } catch (error) {
+    // En cas d'erreur réseau, essayer de retourner une page offline
+    if (request.mode === "navigate") {
+      const cache = await caches.open(CACHE_NAME);
+      return cache.match("/offline");
     }
 
-    // Nettoyer les mises à jour traitées
-    await clearProcessedUpdates(pendingUpdates);
-
-    return true;
-  } catch (error) {
-    console.error("Erreur lors de la synchronisation:", error);
-    return false;
+    throw error;
   }
 }
 
-// Ces fonctions seraient à implémenter selon votre système de stockage
-function getPendingUpdates() {
-  // Récupérer depuis IndexedDB ou localStorage
-  return Promise.resolve([]);
+// Stratégie Network First avec stockage en cache
+async function networkFirst(request) {
+  try {
+    const networkResponse = await fetch(request);
+    // Mettre à jour le cache avec la nouvelle réponse
+    const cache = await caches.open(CACHE_NAME);
+    cache.put(request, networkResponse.clone());
+    return networkResponse;
+  } catch (error) {
+    // En cas d'erreur réseau, essayer le cache
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
+    // Si pas en cache et mode navigation, retourner la page offline
+    if (request.mode === "navigate") {
+      const cache = await caches.open(CACHE_NAME);
+      return cache.match("/offline");
+    }
+
+    throw error;
+  }
 }
 
-function processUpdate() {
-  // Traiter la mise à jour (requête fetch vers votre API)
-  return Promise.resolve();
+// Stratégie spécifique pour les API: Network First, mais avec invalidation automatique
+async function networkFirstWithBackup(request) {
+  const url = new URL(request.url);
+
+  try {
+    // Essayer d'abord le réseau
+    const networkResponse = await fetch(request);
+
+    // Ne mettre en cache que les GET (pas les mutations)
+    if (request.method === "GET") {
+      const cache = await caches.open(DATA_CACHE_NAME);
+      cache.put(request, networkResponse.clone());
+
+      // Si la réponse est une mise à jour de données, notifier les clients
+      if (networkResponse.ok) {
+        notifyClientsOfDataChange(url.pathname);
+      }
+    } else if (
+      request.method === "POST" ||
+      request.method === "PUT" ||
+      request.method === "DELETE"
+    ) {
+      // Pour les mutations, invalider les caches correspondants
+      invalidateRelatedCaches(url.pathname);
+    }
+
+    return networkResponse;
+  } catch (error) {
+    console.warn("Network request failed, falling back to cache", error);
+
+    // En cas d'erreur réseau, essayer le cache
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
+    // Aucune donnée disponible
+    return new Response(
+      JSON.stringify({ error: "Network error, no cached data available" }),
+      {
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
 }
 
-function clearProcessedUpdates() {
-  // Nettoyer les mises à jour traitées
-  return Promise.resolve();
+// Invalider les caches liés à une ressource modifiée
+async function invalidateRelatedCaches(pathname) {
+  // Extraire le type de ressource du chemin d'accès
+  const matches = {
+    task: pathname.includes("/tasks/"),
+    article: pathname.includes("/articles/"),
+    object: pathname.includes("/objet/"),
+    sector: pathname.includes("/sectors/"),
+  };
+
+  const cache = await caches.open(DATA_CACHE_NAME);
+  const keys = await cache.keys();
+
+  // Invalider les caches correspondants
+  const keysToDelete = keys.filter((request) => {
+    const url = new URL(request.url);
+
+    // Invalider les listes de tâches si une tâche est modifiée
+    if (matches.task && url.pathname.includes("/api/tasks")) {
+      return true;
+    }
+
+    // Invalider les listes d'articles si un article est modifié
+    if (matches.article && url.pathname.includes("/api/articles")) {
+      return true;
+    }
+
+    // Invalider les données d'objet si un objet est modifié
+    if (matches.object && url.pathname.includes("/api/objet")) {
+      return true;
+    }
+
+    // Invalider les données de secteur si un secteur est modifié
+    if (matches.sector && url.pathname.includes("/api/sectors")) {
+      return true;
+    }
+
+    return false;
+  });
+
+  // Supprimer les entrées de cache
+  await Promise.all(keysToDelete.map((key) => cache.delete(key)));
+
+  // Notifier les clients du changement
+  notifyClientsOfDataChange(pathname);
+}
+
+// Notifier tous les clients qu'un changement de données a eu lieu
+async function notifyClientsOfDataChange(pathname) {
+  const clients = await self.clients.matchAll({ type: "window" });
+
+  // Déterminer le type d'événement en fonction du chemin
+  let eventType = "data-change";
+
+  if (pathname.includes("/tasks/")) {
+    eventType = "task-change";
+  } else if (pathname.includes("/articles/")) {
+    eventType = "article-change";
+  } else if (pathname.includes("/objet/")) {
+    eventType = "object-change";
+  } else if (pathname.includes("/sectors/")) {
+    eventType = "sector-change";
+  }
+
+  clients.forEach((client) => {
+    client.postMessage({
+      type: eventType,
+      path: pathname,
+      timestamp: Date.now(),
+    });
+  });
+}
+
+// Gérer les messages provenant des clients (par exemple pour forcer un rafraîchissement)
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.action === "skipWaiting") {
+    self.skipWaiting();
+  }
+
+  if (event.data && event.data.action === "clearCache") {
+    clearAllCaches().then(() => {
+      event.ports[0].postMessage({ result: "success" });
+    });
+  }
+
+  if (event.data && event.data.action === "invalidateCache") {
+    const { pathname } = event.data;
+    invalidateRelatedCaches(pathname).then(() => {
+      event.ports[0].postMessage({ result: "success" });
+    });
+  }
+});
+
+// Utilitaire pour effacer tous les caches
+async function clearAllCaches() {
+  const cacheNames = await caches.keys();
+  return Promise.all(
+    cacheNames
+      .filter((name) => name.startsWith("plannikeeper-"))
+      .map((name) => caches.delete(name))
+  );
 }
 
 // Gérer les notifications push
 self.addEventListener("push", (event) => {
-  if (!event.data) {
-    return;
+  if (!event.data) return;
+
+  try {
+    const data = event.data.json();
+
+    // Options de notification
+    const options = {
+      body: data.message,
+      icon: "/icons/icon-192x192.png",
+      badge: "/icons/badge-icon.png",
+      data: {
+        url: data.url || "/",
+        actionType: data.actionType,
+      },
+      actions: data.actions || [],
+    };
+
+    event.waitUntil(self.registration.showNotification(data.title, options));
+  } catch (error) {
+    console.error("Erreur lors du traitement de la notification push:", error);
   }
-
-  const data = event.data.json();
-
-  const options = {
-    body: data.message,
-    icon: "/images/notification-icon.png",
-    badge: "/images/badge-icon.png",
-    data: {
-      url: data.url || "/",
-    },
-  };
-
-  event.waitUntil(self.registration.showNotification(data.title, options));
 });
 
 // Gérer le clic sur les notifications
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  event.waitUntil(clients.openWindow(event.notification.data.url));
+  // Identifier l'action cliquée ou utiliser l'URL par défaut
+  const url =
+    event.action === "viewDetails" && event.notification.data.detailsUrl
+      ? event.notification.data.detailsUrl
+      : event.notification.data.url;
+
+  event.waitUntil(
+    clients.matchAll({ type: "window" }).then((clientList) => {
+      // Si une fenêtre existe déjà, la focaliser et y naviguer
+      for (const client of clientList) {
+        if (client.url === url && "focus" in client) {
+          return client.focus();
+        }
+      }
+
+      // Sinon, ouvrir une nouvelle fenêtre
+      return clients.openWindow(url);
+    })
+  );
 });
+
+// Gérer la synchronisation en arrière-plan
+self.addEventListener("sync", (event) => {
+  if (event.tag === "sync-pending-actions") {
+    event.waitUntil(syncPendingActions());
+  }
+});
+
+// Fonction pour synchroniser les actions en attente
+async function syncPendingActions() {
+  // Cette fonction serait implémentée pour traiter les données en IndexedDB
+  // et effectuer les requêtes API en attente
+  console.log("Synchronisation des actions en attente");
+  // Voir lib/offline-sync.ts pour l'implémentation
+}
