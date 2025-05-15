@@ -123,7 +123,7 @@ export default function TodoListAgenda() {
   const thisWeekRef = useRef<HTMLDivElement>(null);
   const upcomingRef = useRef<HTMLDivElement>(null);
   const customRouter = useCustomRouter();
-  const { hideLoader } = useLoadingSystem();
+  const { showLoader, hideLoader, hideAllLoaders } = useLoadingSystem();
   // Constantes pour les limites de hauteur
   const MIN_HEIGHT = 48; // Hauteur minimale (fermé)
 
@@ -397,21 +397,49 @@ export default function TodoListAgenda() {
       setAgendaHeight(MIN_HEIGHT);
       setIsExpanded(false);
 
-      // Utiliser la fonction de navigation personnalisée avec gestion du chargement
-      await customRouter.navigateWithLoading(
-        `/dashboard/objet/${task.article.sector.object.id}` +
-          `/secteur/${task.article.sector.id}` +
-          `/article/${task.article.id}` +
-          `/task/${task.id}`,
-        {
-          loadingMessage: "Chargement de la tâche...",
-          hapticFeedback: true,
-          delay: 50, // Petit délai pour permettre la fermeture de l'agenda
+      // Créer un loader manuel avec un ID que nous pouvons suivre
+      const loaderId = showLoader({
+        message: "Chargement de la tâche...",
+        source: "taskNavigation",
+        priority: 20, // Priorité plus élevée que la navigation standard
+        skipDelay: true,
+      });
+
+      // Utiliser le router Next.js standard au lieu de la version avec loader intégré
+      // Cela nous permet de gérer manuellement le loader
+      const url = `/dashboard/objet/${task.article.sector.object.id}/secteur/${task.article.sector.id}/article/${task.article.id}/task/${task.id}`;
+
+      // Créer une variable pour suivre si le navigateur a visiblement navigué
+      let navigationCompleted = false;
+
+      // Ajouter un listener temporaire pour détecter quand la page a changé
+      const navigationObserver = () => {
+        navigationCompleted = true;
+        document.removeEventListener("visibilitychange", navigationObserver);
+      };
+      document.addEventListener("visibilitychange", navigationObserver);
+
+      // Démarrer la navigation
+      customRouter.push(url);
+
+      // Stratégie avancée : timer adaptatif qui s'ajuste si la navigation prend du temps
+      // On commence par un délai modéré
+      setTimeout(() => {
+        if (!navigationCompleted) {
+          // Navigation prend plus de temps que prévu, laissons le loader encore un peu
+          setTimeout(() => {
+            // Si nous sommes toujours sur la même page après 1.5s total, masquer le loader
+            // pour éviter qu'il reste bloqué indéfiniment
+            hideLoader(loaderId);
+          }, 1000);
+        } else {
+          // Si la navigation s'est terminée, masquer le loader
+          hideLoader(loaderId);
         }
-      );
+      }, 500);
     } catch (error) {
       console.error("Erreur de navigation:", error);
-      hideLoader("default"); // S'assurer que le loader est caché en cas d'erreur
+      hideAllLoaders(); // S'assurer que tous les loaders sont cachés en cas d'erreur
     }
   };
 
