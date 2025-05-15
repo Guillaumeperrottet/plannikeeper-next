@@ -127,18 +127,17 @@ export async function getPendingActions(): Promise<PendingAction[]> {
       const transaction = db.transaction([STORE_NAME], "readonly");
       const store = transaction.objectStore(STORE_NAME);
 
-      // Option 1 : Utiliser getAll() sans paramètre et filtrer après
+      // Utiliser getAll() sans paramètre et filtrer après
       const request = store.getAll();
 
       request.onsuccess = (event) => {
         const actions = (event.target as IDBRequest).result;
-        const pendingActions = actions.filter((action) => !action.resolved);
+        // Ajouter le type explicite ici
+        const pendingActions = actions.filter(
+          (action: PendingAction) => !action.resolved
+        );
         resolve(pendingActions);
       };
-
-      // Option 2 : Si vous avez modifié votre schéma pour stocker resolved comme 0/1
-      // const index = store.index("resolved");
-      // const request = index.getAll(IDBKeyRange.only(0));
 
       request.onerror = (event) => {
         console.error(
