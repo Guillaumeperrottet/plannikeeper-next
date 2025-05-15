@@ -9,8 +9,7 @@ import { NotificationProvider } from "./components/notification-provider";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Script from "next/script";
-import { NavigationProvider } from "@/app/components/NavigationProvider";
-import { GlobalLoaderProvider } from "@/app/components/GlobalLoader";
+import { LoadingSystemProvider } from "./components/LoadingSystem";
 
 export const metadata = {
   title: {
@@ -91,20 +90,18 @@ export default async function RootLayout({
       </head>
       <body className="bg-background" suppressHydrationWarning>
         {/* Wrapper pour les indicateurs de navigation et de chargement */}
-        <GlobalLoaderProvider>
-          <NavigationProvider>
-            {userWithRole ? (
-              <NotificationProvider userId={userWithRole.id}>
-                <Navbar user={userWithRole} />
-                <div className="pb-16 md:pb-14">{children}</div>
-                <TodoListAgendaWrapper />
-              </NotificationProvider>
-            ) : (
-              <>{children}</>
-            )}
-            <Toaster position="top-center" richColors />
-          </NavigationProvider>
-        </GlobalLoaderProvider>
+        <LoadingSystemProvider>
+          {userWithRole ? (
+            <NotificationProvider userId={userWithRole.id}>
+              <Navbar user={userWithRole} />
+              <div className="pb-16 md:pb-14">{children}</div>
+              <TodoListAgendaWrapper />
+            </NotificationProvider>
+          ) : (
+            <>{children}</>
+          )}
+          <Toaster position="top-center" richColors />
+        </LoadingSystemProvider>
       </body>
     </html>
   );

@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter as useNextRouter } from "next/navigation";
-import { useGlobalLoader } from "@/app/components/GlobalLoader";
-import { useState, useEffect } from "react";
+import { useLoadingSystem } from "@/app/components/LoadingSystem";
+import { useState } from "react";
 
 interface NavigateOptions {
   // Message à afficher pendant le chargement
@@ -38,16 +38,8 @@ const activeNavigations = new Set<string>();
  */
 export function useRouter() {
   const router = useNextRouter();
-  const { showLoader, hideLoader, setInstantLoading } = useGlobalLoader();
+  const { showLoader, hideLoader } = useLoadingSystem();
   const [isNavigating, setIsNavigating] = useState(false);
-
-  // Nettoyer les navigations actives quand le composant est démonté
-  useEffect(() => {
-    return () => {
-      // Ne nettoyez que les navigations initiées par ce composant
-      // Pour une implémentation plus robuste, il faudrait un ID de composant
-    };
-  }, []);
 
   /**
    * Naviguer avec un indicateur de chargement
@@ -58,13 +50,10 @@ export function useRouter() {
   ) => {
     const {
       loadingMessage = "Chargement...",
-      loadingTimeout = 5000,
       onComplete,
       onError,
-      delay = 0,
       hapticFeedback = true,
-      useGlobalLoader: showGlobalLoader = true,
-      instantLoader = true, // Changé à true par défaut pour un affichage immédiat
+      instantLoader = true,
     } = options;
 
     // Éviter les navigations dupliquées
@@ -72,73 +61,43 @@ export function useRouter() {
       return;
     }
 
-    // IMPORTANT: Ajouter immédiatement à la liste des navigations actives
-    // pour éviter les doubles clics rapides
+    // Ajouter à la liste des navigations actives
     activeNavigations.add(url);
     setIsNavigating(true);
 
-    // Ajout d'une classe au body pour le feedback visuel immédiat
+    // Feedback visuel immédiat
     document.body.classList.add("navigation-pending");
 
     try {
-      // Configuration du loader global AVANT toute opération asynchrone
-      if (showGlobalLoader) {
-        // Activer le mode sans délai
-        setInstantLoading(instantLoader);
-
-        // Nous demandons au navigateur de traiter cette opération en priorité
-        window.requestAnimationFrame(() => {
-          // Afficher le loader global
-          showLoader(loadingMessage);
-        });
-      }
+      // Créer un loader avec le nouveau système
+      const loaderId = showLoader({
+        message: loadingMessage,
+        source: "manualNavigation",
+        priority: 15, // Priorité élevée pour les navigations manuelles
+        skipDelay: instantLoader,
+      });
 
       // Feedback haptique en parallèle (ne pas attendre)
       if (hapticFeedback && "vibrate" in navigator) {
         navigator.vibrate([15, 30, 15]);
       }
 
-      // Configurer un timeout de sécurité
-      const timeoutId = setTimeout(() => {
-        if (showGlobalLoader) hideLoader();
-        setIsNavigating(false);
-        activeNavigations.delete(url);
-        document.body.classList.remove("navigation-pending");
-      }, loadingTimeout);
-
-      // Si on a spécifié un délai, on attend
-      if (delay > 0) {
-        await new Promise<void>((resolve) => setTimeout(resolve, delay));
-      }
-
-      // Navigation immédiate
+      // Navigation
       router.push(url);
 
-      // Nettoyer et finaliser, mais permettre une transition fluide
-      clearTimeout(timeoutId);
-
-      // Attente courte pour permettre à la navigation de commencer
-      // et éviter que le loader ne disparaisse trop vite
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // Laissons le loader visible un peu plus longtemps pour éviter un flash
-      // Le loader sera masqué automatiquement par le changement de page
-      // Next.js va remplacer le contenu, il n'est pas nécessaire de masquer le loader manuellement
-
-      // Nettoyage des états après un bref délai
+      // Nettoyage et finalisation après navigation
       setTimeout(() => {
+        hideLoader(loaderId);
         setIsNavigating(false);
         activeNavigations.delete(url);
         document.body.classList.remove("navigation-pending");
-        document.body.style.pointerEvents = "";
 
         if (onComplete) {
           onComplete();
         }
-      }, 200);
+      }, 500);
     } catch (error) {
       // Gestion des erreurs
-      if (showGlobalLoader) hideLoader();
       setIsNavigating(false);
       activeNavigations.delete(url);
       document.body.classList.remove("navigation-pending");
@@ -151,64 +110,21 @@ export function useRouter() {
     }
   };
 
-  // Méthode optimisée pour les actions progressives ou formulaires
-  const navigateWithProgress = async (
-    actionFn: () => Promise<unknown>,
-    url: string,
-    options: NavigateOptions = {}
-  ) => {
-    const {
-      loadingMessage = "Traitement en cours...",
-      hapticFeedback = true,
-      instantLoader = true,
-    } = options;
-
-    // Feedback visuel immédiat
-    document.body.classList.add("navigation-pending");
-
-    // Feedback haptique immédiat (ne pas attendre)
-    if (hapticFeedback && "vibrate" in navigator) {
-      navigator.vibrate(10);
-    }
-
-    try {
-      // Afficher le loader instantané IMMÉDIATEMENT
-      setInstantLoading(instantLoader);
-
-      // Utiliser requestAnimationFrame pour prioriser l'affichage du loader
-      window.requestAnimationFrame(() => {
-        showLoader(loadingMessage);
-      });
-
-      // Exécuter l'action (par exemple: soumission de formulaire)
-      await actionFn();
-
-      // Navigation
-      router.push(url);
-
-      // Nettoyage après un bref délai pour assurer une transition fluide
-      setTimeout(() => {
-        document.body.classList.remove("navigation-pending");
-      }, 200);
-    } catch (error) {
-      hideLoader();
-      document.body.classList.remove("navigation-pending");
-      console.error("Erreur:", error);
-      throw error; // Relancer pour la gestion dans le composant appelant
-    }
-  };
-
-  // Fonction simplifiée pour les retours en arrière - optimisée pour la fluidité
+  // Fonction simplifiée pour les retours en arrière
   const goBack = (fallbackUrl: string = "/dashboard") => {
     // Feedback visuel immédiat
     document.body.classList.add("navigation-pending");
 
-    // Afficher le loader instantanément
-    setInstantLoading(true);
-    showLoader("Retour...");
+    // Créer un loader
+    const loaderId = showLoader({
+      message: "Retour...",
+      source: "backNavigation",
+      priority: 15,
+      skipDelay: true,
+    });
 
     if (window.history.length > 2) {
-      // Retour en arrière avec une courte pause pour permettre l'affichage du loader
+      // Retour en arrière
       setTimeout(() => {
         router.back();
       }, 10);
@@ -218,13 +134,18 @@ export function useRouter() {
         router.push(fallbackUrl);
       }, 10);
     }
+
+    // Masquer le loader après un délai raisonnable
+    setTimeout(() => {
+      hideLoader(loaderId);
+      document.body.classList.remove("navigation-pending");
+    }, 500);
   };
 
   // Retourner le router Next.js original plus nos méthodes personnalisées
   return {
     ...router,
     navigateWithLoading,
-    navigateWithProgress,
     goBack,
     isNavigating,
   };

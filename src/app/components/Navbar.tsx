@@ -6,7 +6,6 @@ import Breadcrumbs from "@/app/components/Breadcrumbs";
 import UserMenu from "@/app/components/ui/UserMenu";
 import NotificationIndicator from "./NotificationIndicator";
 import { useRouter } from "@/lib/router-helper";
-import { useGlobalLoader } from "@/app/components/GlobalLoader";
 import { useCallback } from "react";
 
 interface User {
@@ -27,7 +26,6 @@ const vt323 = VT323({
 export default function Navbar({ user }: { user: User }) {
   const isAdmin = user?.role === "admin" || user?.isAdmin;
   const customRouter = useRouter();
-  const { hideLoader } = useGlobalLoader();
 
   // Fonction optimisée pour la navigation vers le dashboard
   const handleLogoClick = useCallback(
@@ -43,29 +41,19 @@ export default function Navbar({ user }: { user: User }) {
         navigator.vibrate(10);
       }
 
-      // 3. Navigation avec loader global au lieu de showLoaderImmediately
-      // Cela garantit que le loader sera correctement géré pendant la navigation
+      // 3. Navigation avec loader global
       customRouter.navigateWithLoading("/dashboard", {
         loadingMessage: "Chargement du dashboard...",
         instantLoader: true,
         onComplete: () => {
-          // 4. IMPORTANT: Nettoyer la classe active et s'assurer que le loader est masqué
+          // 4. Nettoyer la classe active
           setTimeout(() => {
             element.classList.remove("active-navigation");
-            hideLoader();
-            // 5. S'assurer que le body ne bloque pas les interactions
-            document.body.style.pointerEvents = "";
           }, 100);
-        },
-        onError: () => {
-          // En cas d'erreur, également nettoyer
-          element.classList.remove("active-navigation");
-          hideLoader();
-          document.body.style.pointerEvents = "";
         },
       });
     },
-    [customRouter, hideLoader]
+    [customRouter]
   );
 
   return (

@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import CalendarView from "./CalendarView";
 import PrintButton from "./ui/PrintButton";
-import { useGlobalLoader } from "@/app/components/GlobalLoader";
+import { useLoadingSystem } from "@/app/components/LoadingSystem";
 import { motion, AnimatePresence, useSpring } from "framer-motion";
 import { useRouter as useCustomRouter } from "@/lib/router-helper";
 
@@ -123,8 +123,7 @@ export default function TodoListAgenda() {
   const thisWeekRef = useRef<HTMLDivElement>(null);
   const upcomingRef = useRef<HTMLDivElement>(null);
   const customRouter = useCustomRouter();
-  const { hideLoader } = useGlobalLoader();
-
+  const { hideLoader } = useLoadingSystem();
   // Constantes pour les limites de hauteur
   const MIN_HEIGHT = 48; // Hauteur minimale (fermé)
 
@@ -411,7 +410,7 @@ export default function TodoListAgenda() {
       );
     } catch (error) {
       console.error("Erreur de navigation:", error);
-      hideLoader(); // S'assurer que le loader est caché en cas d'erreur
+      hideLoader("default"); // S'assurer que le loader est caché en cas d'erreur
     }
   };
 
