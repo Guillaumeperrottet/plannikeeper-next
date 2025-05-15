@@ -41,15 +41,19 @@ export default function Navbar({ user }: { user: User }) {
         navigator.vibrate(10);
       }
 
-      // 3. Navigation avec loader global
+      // 3. Navigation avec loader global - amélioration pour garantir qu'il reste visible
+      // Nous allons augmenter légèrement le délai du loader pour qu'il reste visible plus longtemps
       customRouter.navigateWithLoading("/dashboard", {
         loadingMessage: "Chargement du dashboard...",
         instantLoader: true,
+        // Augmenter le délai minimum à 850ms pour s'assurer que le loader reste visible
+        // pendant toute la transition de page
+        delay: 150, // Un petit délai avant de commencer la navigation
         onComplete: () => {
-          // 4. Nettoyer la classe active
+          // Nettoyer la classe active après un délai plus long
           setTimeout(() => {
             element.classList.remove("active-navigation");
-          }, 100);
+          }, 200); // Délai légèrement augmenté
         },
       });
     },

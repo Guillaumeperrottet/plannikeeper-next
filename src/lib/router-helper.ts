@@ -28,6 +28,9 @@ interface NavigateOptions {
 
   // Doit-on activer le loader instantané (sans délai d'animation)
   instantLoader?: boolean;
+
+  // Temps minimum d'affichage du loader (en ms)
+  minLoaderTime?: number;
 }
 
 // État pour suivre les navigations en cours et éviter les doublons
@@ -52,8 +55,11 @@ export function useRouter() {
       loadingMessage = "Chargement...",
       onComplete,
       onError,
+      delay = 0,
       hapticFeedback = true,
       instantLoader = true,
+      // Ajouter un paramètre pour le temps minimum d'affichage du loader
+      minLoaderTime = 850, // valeur par défaut à 850ms
     } = options;
 
     // Éviter les navigations dupliquées
@@ -82,10 +88,22 @@ export function useRouter() {
         navigator.vibrate([15, 30, 15]);
       }
 
+      // Définir le moment de début pour garantir le temps minimum d'affichage
+      const startTime = Date.now();
+
+      // Attendre le délai initial si spécifié
+      if (delay > 0) {
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+
       // Navigation
       router.push(url);
 
-      // Nettoyage et finalisation après navigation
+      // Calculer combien de temps il reste pour atteindre le temps minimum d'affichage
+      const timeElapsed = Date.now() - startTime;
+      const remainingTime = Math.max(0, minLoaderTime - timeElapsed);
+
+      // Nettoyage et finalisation après navigation avec un délai minimum garanti
       setTimeout(() => {
         hideLoader(loaderId);
         setIsNavigating(false);
@@ -95,7 +113,7 @@ export function useRouter() {
         if (onComplete) {
           onComplete();
         }
-      }, 500);
+      }, remainingTime);
     } catch (error) {
       // Gestion des erreurs
       setIsNavigating(false);
