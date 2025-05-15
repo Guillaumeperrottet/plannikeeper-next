@@ -1,50 +1,98 @@
-// src/app/api/…/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 import { checkObjectAccess } from "@/lib/auth-session";
+import { withCacheHeaders, CacheDurations } from "@/lib/cache-config";
 
-// Typage mis à jour : params est une Promise qui résout { id: string }
+// Typage mis à jour : params est une Promise qui résout { objectId: string }
 type RouteParams = {
-  params: Promise<{ id: string }>;
+  params: Promise<{ objectId: string }>;
 };
 
-export async function DELETE(req: NextRequest, { params }: RouteParams) {
+export async function GET(req: NextRequest, { params }: RouteParams) {
   // Récupération de l'ID depuis la promesse
-  const { id: objetId } = await params;
+  const { objectId } = await params;
 
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  // Vérifier que l'utilisateur a un accès admin à cet objet
-  const hasAdminAccess = await checkObjectAccess(user.id, objetId, "admin");
-  if (!hasAdminAccess) {
+  // Vérifier que l'objet existe
+  const object = await prisma.objet.findUnique({
+    where: { id: objectId },
+  });
+
+  if (!object) {
+    return NextResponse.json({ error: "Objet non trouvé" }, { status: 404 });
+  }
+
+  // Vérifier que l'utilisateur a un accès en lecture à cet objet
+  const hasReadAccess = await checkObjectAccess(user.id, objectId, "read");
+  if (!hasReadAccess) {
     return NextResponse.json(
-      { error: "Vous n'avez pas les droits pour supprimer cet objet" },
+      { error: "Vous n'avez pas les droits pour accéder à cet objet" },
       { status: 403 }
     );
   }
 
-  try {
-    // Supprimer les accès à l'objet
-    await prisma.objectAccess.deleteMany({
-      where: { objectId: objetId },
-    });
+  // Récupérer toutes les tâches liées à cet objet
+  const tasks = await prisma.task.findMany({
+    where: {
+      article: {
+        sector: {
+          objectId,
+        },
+      },
+    },
+    include: {
+      article: {
+        select: {
+          id: true,
+          title: true,
+          sector: {
+            select: {
+              id: true,
+              name: true,
+              object: {
+                select: {
+                  id: true,
+                  nom: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      assignedTo: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+    orderBy: [{ realizationDate: "asc" }, { createdAt: "desc" }],
+  });
 
-    // Supprimer l'objet
-    await prisma.objet.delete({
-      where: { id: objetId },
-    });
+  // Valider l'ETag pour optimiser les réponses
+  const tasksETag = `"tasks-${objectId}-${new Date().toISOString().split("T")[0]}"`;
+  const ifNoneMatch = req.headers.get("if-none-match");
 
-    // Plus idiomatique : 204 No Content
-    return new NextResponse(null, { status: 204 });
-  } catch (error) {
-    console.error("Erreur lors de la suppression de l'objet :", error);
-    return NextResponse.json(
-      { error: "Erreur lors de la suppression de l'objet" },
-      { status: 500 }
-    );
+  if (ifNoneMatch === tasksETag) {
+    // Si l'ETag correspond, renvoyer 304 Not Modified
+    return new NextResponse(null, {
+      status: 304,
+      headers: {
+        ETag: tasksETag,
+        "Cache-Control": "max-age=60, stale-while-revalidate=300",
+      },
+    });
   }
+
+  // Sinon, renvoyer les données avec un en-tête ETag
+  const response = NextResponse.json(tasks);
+  response.headers.set("ETag", tasksETag);
+
+  // Les tâches changent fréquemment, utiliser un cache court avec SWR
+  return withCacheHeaders(response, CacheDurations.SWR_QUICK);
 }
