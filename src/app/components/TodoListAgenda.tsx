@@ -632,9 +632,7 @@ export default function TodoListAgenda({
       </>
     ) : (
       <>
-        <h2 className="text-xl font-semibold hidden sm:block">
-          Agenda todo list
-        </h2>
+        <h2 className="text-xl font-semibold hidden sm:block">Agenda</h2>
         <h2 className="text-base font-semibold sm:hidden">Agenda</h2>
       </>
     );
@@ -812,13 +810,12 @@ export default function TodoListAgenda({
                         }`}
                       >
                         <Filter size={14} />
-                        <span className="hidden sm:inline">Filtres</span>
                       </button>
                       {/* Bouton refresh */}
                       {onRefresh && (
                         <button
                           onClick={onRefresh}
-                          className="ml-2 flex items-center justify-center rounded-full p-2 hover:bg-[color:var(--muted)] transition-colors"
+                          className="ml-0 flex items-center justify-center rounded-full p-0 hover:bg-[color:var(--muted)] transition-colors"
                           title="Rafraîchir la liste"
                           aria-label="Rafraîchir la liste"
                           disabled={isRefreshing}
