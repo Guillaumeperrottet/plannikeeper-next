@@ -622,20 +622,6 @@ export default function TodoListAgenda({
   });
 
   // Définir le contenu du titre en fonction de l'état d'expansion
-  const titleContent =
-    isMobile && !isExpanded ? (
-      <>
-        <span className="text-base font-semibold">Agenda</span>
-        <span className="text-xs ml-2 text-muted-foreground">
-          {`${thisWeekTasks.length + upcomingTasks.length} tâches`}
-        </span>
-      </>
-    ) : (
-      <>
-        <h2 className="text-xl font-semibold hidden sm:block">Agenda</h2>
-        <h2 className="text-base font-semibold sm:hidden">Agenda</h2>
-      </>
-    );
 
   // Fonction pour scroller vers une section spécifique
   const scrollToSection = (section: "thisWeek" | "upcoming") => {
@@ -683,12 +669,9 @@ export default function TodoListAgenda({
         data-todo-list-agenda
       >
         {/* Barre de titre adaptative pour mobile/desktop */}
-        <div
-          className="flex justify-between items-center bg-[color:var(--secondary)] text-[color:var(--secondary-foreground)] relative border-b border-[color:var(--border)]"
-          onClick={handleContentClick} // Empêcher la propagation
-        >
-          {/* Partie gauche : sur desktop = contrôles de vue, sur mobile = vide ou icône */}
-          <div className="w-1/4 flex items-center">
+        <div className="flex justify-between items-center bg-[color:var(--secondary)] text-[color:var(--secondary-foreground)] relative border-b border-[color:var(--border)] h-12">
+          {/* Partie gauche */}
+          <div className="w-1/4 h-full flex items-center justify-start">
             {isMobile && isExpanded ? (
               <button
                 onClick={closeAgenda}
@@ -717,15 +700,26 @@ export default function TodoListAgenda({
             )}
           </div>
 
-          {/* Titre centré - position absolute pour un vrai centrage */}
-          <div className="flex-1 flex justify-center items-center relative">
-            <div className="absolute left-1/2 transform -translate-x-1/2">
-              {titleContent}
-            </div>
+          {/* Titre - centré avec position absolute */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            {isMobile && !isExpanded ? (
+              <div className="flex items-center">
+                <span className="text-base font-semibold">Agenda</span>
+                <span className="text-xs ml-2 text-muted-foreground">
+                  {`${thisWeekTasks.length + upcomingTasks.length} tâches`}
+                </span>
+              </div>
+            ) : (
+              <h2
+                className={`text-base sm:text-xl font-semibold ${isMobile ? "" : "hidden sm:block"}`}
+              >
+                {isMobile ? "Agenda" : "Agenda todo list"}
+              </h2>
+            )}
           </div>
 
-          {/* Partie droite : sur desktop = sélecteur d'objet, sur mobile = icône d'expansion */}
-          <div className="flex items-center gap-2 md:gap-4">
+          {/* Partie droite */}
+          <div className="w-1/4 h-full flex items-center justify-end">
             {(!isMobile || (isMobile && showControls)) && (
               <select
                 className="bg-[color:var(--background)] text-[color:var(--foreground)] px-2 md:px-3 py-1 rounded border border-[color:var(--border)] text-sm transition-all active:scale-95"
@@ -830,34 +824,34 @@ export default function TodoListAgenda({
                   )}
                 </div>
 
-                {/* Remplacer l'info de l'objet par le sélecteur d'assignation */}
                 <div className="flex items-center">
                   <div className="relative">
                     <User
-                      className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-[color:var(--muted-foreground)]"
+                      className="absolute left-2 top-1/2 transform -translate-y-1/2 text-[color:var(--muted-foreground)]"
                       size={14}
                     />
                     <select
-                      className="bg-[color:var(--background)] text-[color:var(--foreground)] pl-8 pr-2 py-1.5 rounded border border-[color:var(--border)] text-sm transition-all active:scale-95"
+                      className="bg-[color:var(--background)] text-[color:var(--foreground)] pl-7 pr-1 py-1.5 rounded border border-[color:var(--border)] text-xs sm:text-sm transition-all active:scale-95"
                       value={assigneeFilter}
                       onChange={(e) => setAssigneeFilter(e.target.value)}
                       style={{
                         WebkitAppearance: isMobile ? "none" : undefined,
-                        maxWidth: "160px",
+                        maxWidth: isMobile ? "110px" : "160px",
                       }}
                     >
                       <option value="me">Mes tâches</option>
-                      <option value="all">Toutes les tâches</option>
+                      <option value="all">Toutes</option>
                       {assignableUsers.map((user) => (
                         <option key={user.id} value={user.id}>
-                          {user.name}
+                          {isMobile && user.name.length > 10
+                            ? `${user.name.substring(0, 9)}...`
+                            : user.name}
                         </option>
                       ))}
                     </select>
                   </div>
                 </div>
               </div>
-
               {/* Panneau de filtres conditionnel */}
               <AnimatePresence>
                 {viewMode === ViewMode.LIST && showFiltersPanel && (
