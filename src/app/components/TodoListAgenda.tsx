@@ -797,7 +797,7 @@ export default function TodoListAgenda({
                     }`}
                   >
                     <CalendarIcon size={14} />
-                    <span>Calendrier</span>
+                    <span>Agenda</span>
                   </button>
 
                   {/* Bouton pour afficher/masquer les filtres */}
