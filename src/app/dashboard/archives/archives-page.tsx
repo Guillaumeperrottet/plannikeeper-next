@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   Search,
+  Calendar,
   Archive,
   Building,
   SortAsc,
@@ -14,6 +15,8 @@ import {
   Home,
   ArrowLeft,
   Loader2,
+  Tag,
+  Layers,
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -54,6 +57,20 @@ type Object = {
   nom: string;
 };
 
+type ArticleOption = {
+  id: string;
+  title: string;
+  sectorId: string;
+  sectorName: string;
+  objectId: string;
+  objectName: string;
+};
+
+type AssigneeOption = {
+  id: string;
+  name: string;
+};
+
 export default function ArchivesPage() {
   // États
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -62,10 +79,19 @@ export default function ArchivesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedObject, setSelectedObject] = useState<string | null>(null);
+  const [selectedTaskType, setSelectedTaskType] = useState<string | null>(null);
+  const [selectedArticle, setSelectedArticle] = useState<string | null>(null);
+  const [selectedAssignee, setSelectedAssignee] = useState<string | null>(null);
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
   const [sortBy, setSortBy] = useState<string>("archivedAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  // Métadonnées pour les filtres
+  const [taskTypes, setTaskTypes] = useState<string[]>([]);
+  const [articles, setArticles] = useState<ArticleOption[]>([]);
+  const [assignees, setAssignees] = useState<AssigneeOption[]>([]);
+
   const printRef = useRef<HTMLDivElement>(null);
 
   // Chargement initial des données
@@ -96,6 +122,9 @@ export default function ArchivesPage() {
 
       if (searchQuery) params.append("search", searchQuery);
       if (selectedObject) params.append("objectId", selectedObject);
+      if (selectedTaskType) params.append("taskType", selectedTaskType);
+      if (selectedArticle) params.append("articleId", selectedArticle);
+      if (selectedAssignee) params.append("assigneeId", selectedAssignee);
       if (fromDate) params.append("fromDate", fromDate);
       if (toDate) params.append("toDate", toDate);
       params.append("sortBy", sortBy);
@@ -110,6 +139,13 @@ export default function ArchivesPage() {
 
       const data = await response.json();
       setTasks(data.tasks);
+
+      // Mettre à jour les métadonnées pour les filtres
+      if (data.metadata) {
+        setTaskTypes(data.metadata.taskTypes || []);
+        setArticles(data.metadata.articles || []);
+        setAssignees(data.metadata.assignees || []);
+      }
     } catch (error) {
       console.error("Erreur:", error);
       toast.error("Erreur lors du chargement des tâches archivées");
@@ -117,6 +153,27 @@ export default function ArchivesPage() {
       setLoading(false);
     }
   };
+
+  // Filtres actifs
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (selectedObject) count++;
+    if (selectedTaskType) count++;
+    if (selectedArticle) count++;
+    if (selectedAssignee) count++;
+    if (fromDate) count++;
+    if (toDate) count++;
+    if (searchQuery) count++;
+    return count;
+  }, [
+    selectedObject,
+    selectedTaskType,
+    selectedArticle,
+    selectedAssignee,
+    fromDate,
+    toDate,
+    searchQuery,
+  ]);
 
   // Applique les filtres
   const applyFilters = () => {
@@ -127,6 +184,9 @@ export default function ArchivesPage() {
   const resetFilters = () => {
     setSearchQuery("");
     setSelectedObject(null);
+    setSelectedTaskType(null);
+    setSelectedArticle(null);
+    setSelectedAssignee(null);
     setFromDate("");
     setToDate("");
     setSortBy("archivedAt");
@@ -173,6 +233,8 @@ export default function ArchivesPage() {
       return;
     }
 
+    // Récupérer le contenu à imprimer
+
     // CSS pour l'impression
     const style = `
       <style>
@@ -192,6 +254,35 @@ export default function ArchivesPage() {
       </style>
     `;
 
+    // Construire les filtres pour l'en-tête d'impression
+    const filterDescriptions = [];
+    if (selectedObject) {
+      const objectName =
+        objects.find((obj) => obj.id === selectedObject)?.nom || "Inconnu";
+      filterDescriptions.push(`Objet: ${objectName}`);
+    }
+    if (selectedTaskType) {
+      filterDescriptions.push(`Type: ${selectedTaskType}`);
+    }
+    if (selectedArticle) {
+      const article = articles.find((a) => a.id === selectedArticle);
+      if (article) {
+        filterDescriptions.push(`Article: ${article.title}`);
+      }
+    }
+    if (selectedAssignee) {
+      const assignee = assignees.find((a) => a.id === selectedAssignee);
+      if (assignee) {
+        filterDescriptions.push(`Assigné à: ${assignee.name}`);
+      }
+    }
+    if (fromDate) {
+      filterDescriptions.push(`Du: ${formatDate(fromDate)}`);
+    }
+    if (toDate) {
+      filterDescriptions.push(`Au: ${formatDate(toDate)}`);
+    }
+
     // Construction du document d'impression
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -204,14 +295,14 @@ export default function ArchivesPage() {
           <div class="print-header">
             <h1>Archives de tâches - PlanniKeeper</h1>
             <p>Date d'impression: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</p>
-            ${selectedObject ? `<p>Objet: ${objects.find((obj) => obj.id === selectedObject)?.nom || "Tous"}</p>` : ""}
-            ${fromDate ? `<p>Période: du ${formatDate(fromDate)}${toDate ? ` au ${formatDate(toDate)}` : ""}</p>` : ""}
+            ${filterDescriptions.map((desc) => `<p>${desc}</p>`).join("")}
           </div>
           
           <table>
             <thead>
               <tr>
                 <th>Tâche</th>
+                <th>Type</th>
                 <th>Objet</th>
                 <th>Secteur/Article</th>
                 <th>Date d'archive</th>
@@ -224,6 +315,7 @@ export default function ArchivesPage() {
                   (task) => `
                 <tr>
                   <td>${task.name}</td>
+                  <td>${task.taskType || "Non défini"}</td>
                   <td>${task.article.sector.object.nom}</td>
                   <td>${task.article.sector.name} / ${task.article.title}</td>
                   <td>${formatDate(task.archivedAt)}</td>
@@ -303,13 +395,18 @@ export default function ArchivesPage() {
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className={`p-2 rounded-md ${
-                  showFilters
+                  showFilters || activeFiltersCount > 0
                     ? "bg-[color:var(--primary)] text-[color:var(--primary-foreground)]"
                     : "text-[color:var(--foreground)] hover:bg-[color:var(--muted)]"
                 }`}
                 title="Afficher les filtres"
               >
                 <FilterIcon className="w-4 h-4" />
+                {activeFiltersCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">
+                    {activeFiltersCount}
+                  </span>
+                )}
               </button>
 
               <button
@@ -326,7 +423,7 @@ export default function ArchivesPage() {
             <div className="mt-4 p-4 bg-[color:var(--background)] border border-[color:var(--border)] rounded-md">
               <h3 className="text-sm font-medium mb-3">Filtres avancés</h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {/* Filtre par objet */}
                 <div>
                   <label className="block text-xs font-medium mb-1 text-[color:var(--foreground)]">
@@ -341,6 +438,68 @@ export default function ArchivesPage() {
                     {objects.map((object) => (
                       <option key={object.id} value={object.id}>
                         {object.nom}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Filtre par type de tâche */}
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-[color:var(--foreground)]">
+                    Type de tâche
+                  </label>
+                  <select
+                    value={selectedTaskType || ""}
+                    onChange={(e) =>
+                      setSelectedTaskType(e.target.value || null)
+                    }
+                    className="w-full px-3 py-2 text-sm border border-[color:var(--border)] rounded-md focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)] bg-[color:var(--background)] text-[color:var(--foreground)]"
+                  >
+                    <option value="">Tous les types</option>
+                    {taskTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Filtre par article */}
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-[color:var(--foreground)]">
+                    Article
+                  </label>
+                  <select
+                    value={selectedArticle || ""}
+                    onChange={(e) => setSelectedArticle(e.target.value || null)}
+                    className="w-full px-3 py-2 text-sm border border-[color:var(--border)] rounded-md focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)] bg-[color:var(--background)] text-[color:var(--foreground)]"
+                  >
+                    <option value="">Tous les articles</option>
+                    {articles.map((article) => (
+                      <option key={article.id} value={article.id}>
+                        {article.title} ({article.sectorName})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Filtre par assigné */}
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-[color:var(--foreground)]">
+                    Assigné à
+                  </label>
+                  <select
+                    value={selectedAssignee || ""}
+                    onChange={(e) =>
+                      setSelectedAssignee(e.target.value || null)
+                    }
+                    className="w-full px-3 py-2 text-sm border border-[color:var(--border)] rounded-md focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)] bg-[color:var(--background)] text-[color:var(--foreground)]"
+                  >
+                    <option value="">Tous les assignés</option>
+                    <option value="null">Non assigné</option>
+                    {assignees.map((assignee) => (
+                      <option key={assignee.id} value={assignee.id}>
+                        {assignee.name}
                       </option>
                     ))}
                   </select>
@@ -371,47 +530,45 @@ export default function ArchivesPage() {
                     className="w-full px-3 py-2 text-sm border border-[color:var(--border)] rounded-md focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)] bg-[color:var(--background)] text-[color:var(--foreground)]"
                   />
                 </div>
-
-                {/* Tri */}
-                <div>
-                  <label className="block text-xs font-medium mb-1 text-[color:var(--foreground)]">
-                    Trier par
-                  </label>
-                  <div className="flex gap-2">
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className="flex-1 px-3 py-2 text-sm border border-[color:var(--border)] rounded-md focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)] bg-[color:var(--background)] text-[color:var(--foreground)]"
-                    >
-                      <option value="archivedAt">Date d&apos;archivage</option>
-                      <option value="name">Nom</option>
-                      <option value="realizationDate">
-                        Date d&apos;échéance
-                      </option>
-                    </select>
-                    <button
-                      onClick={() =>
-                        setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                      }
-                      className="px-3 py-2 bg-[color:var(--muted)] text-[color:var(--foreground)] rounded-md hover:bg-[color:var(--muted)]"
-                      title={
-                        sortOrder === "asc"
-                          ? "Ordre décroissant"
-                          : "Ordre croissant"
-                      }
-                    >
-                      {sortOrder === "asc" ? (
-                        <SortAsc className="w-4 h-4" />
-                      ) : (
-                        <SortDesc className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
               </div>
 
-              {/* Bouton de réinitialisation */}
-              <div className="mt-4 flex justify-end">
+              <div className="mt-4 flex justify-between items-center">
+                {/* Tri */}
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-medium text-[color:var(--foreground)]">
+                    Trier par:
+                  </label>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="px-2 py-1 text-xs border border-[color:var(--border)] rounded-md focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)] bg-[color:var(--background)] text-[color:var(--foreground)]"
+                  >
+                    <option value="archivedAt">Date d&apos;archivage</option>
+                    <option value="name">Nom</option>
+                    <option value="realizationDate">
+                      Date d&apos;échéance
+                    </option>
+                  </select>
+                  <button
+                    onClick={() =>
+                      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                    }
+                    className="p-1.5 bg-[color:var(--muted)] text-[color:var(--foreground)] rounded-md hover:bg-[color:var(--muted)]"
+                    title={
+                      sortOrder === "asc"
+                        ? "Ordre décroissant"
+                        : "Ordre croissant"
+                    }
+                  >
+                    {sortOrder === "asc" ? (
+                      <SortAsc className="w-3.5 h-3.5" />
+                    ) : (
+                      <SortDesc className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </div>
+
+                {/* Bouton de réinitialisation */}
                 <button
                   onClick={resetFilters}
                   className="px-3 py-1.5 text-xs bg-[color:var(--muted)] text-[color:var(--foreground)] rounded-md hover:bg-[color:var(--muted)] hover:opacity-80"
@@ -440,8 +597,9 @@ export default function ArchivesPage() {
               Aucune tâche archivée trouvée
             </h3>
             <p className="text-[color:var(--muted-foreground)] mb-6">
-              Les tâches que vous archivez apparaîtront ici pour référence
-              future.
+              {activeFiltersCount > 0
+                ? "Essayez de modifier vos filtres pour voir plus de résultats."
+                : "Les tâches que vous archivez apparaîtront ici pour référence future."}
             </p>
             <Link
               href="/dashboard"
@@ -474,6 +632,9 @@ export default function ArchivesPage() {
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-[color:var(--foreground)] uppercase">
                       Tâche
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-[color:var(--foreground)] uppercase hidden md:table-cell">
+                      Type
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-[color:var(--foreground)] uppercase hidden sm:table-cell">
                       Objet
@@ -511,6 +672,20 @@ export default function ArchivesPage() {
                           )}
                         </div>
                       </td>
+                      <td className="px-4 py-3 text-sm text-[color:var(--foreground)] hidden md:table-cell">
+                        {task.taskType ? (
+                          <div className="flex items-center gap-1.5">
+                            <Tag className="w-3.5 h-3.5 text-[color:var(--muted-foreground)]" />
+                            <span className="truncate max-w-[100px]">
+                              {task.taskType}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-[color:var(--muted-foreground)] italic">
+                            Non défini
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-sm text-[color:var(--foreground)] hidden sm:table-cell">
                         <div className="flex items-center gap-1.5">
                           <Building className="w-3.5 h-3.5 text-[color:var(--muted-foreground)]" />
@@ -520,12 +695,18 @@ export default function ArchivesPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-[color:var(--foreground)] hidden md:table-cell">
-                        <span className="truncate block max-w-[180px]">
-                          {task.article.sector.name} / {task.article.title}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <Layers className="w-3.5 h-3.5 text-[color:var(--muted-foreground)]" />
+                          <span className="truncate max-w-[180px]">
+                            {task.article.sector.name} / {task.article.title}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-[color:var(--foreground)] hidden lg:table-cell">
-                        {formatDate(task.archivedAt)}
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-[color:var(--muted-foreground)]" />
+                          {formatDate(task.archivedAt)}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-[color:var(--foreground)] hidden lg:table-cell">
                         {task.assignedTo ? (
