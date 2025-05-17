@@ -32,6 +32,7 @@ import {
   ArrowDown,
   ArrowUpDown,
   RefreshCcw,
+  Archive,
 } from "lucide-react";
 
 type User = {
@@ -58,6 +59,7 @@ type Task = {
   assignedTo: User | null;
   createdAt: Date;
   updatedAt: Date;
+  archived?: boolean;
 };
 
 // Type pour la direction de tri
@@ -970,6 +972,77 @@ export default function ModernTasksPage({
                                                       </button>
                                                     </li>
                                                   )}
+                                                  {/* Nouvel élément: Option d'archivage pour les tâches terminées */}
+                                                  {status === "completed" &&
+                                                    !task.archived && (
+                                                      <li>
+                                                        <button
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            // Appeler l'API d'archivage
+                                                            fetch(
+                                                              `/api/tasks/${task.id}/archive`,
+                                                              {
+                                                                method: "POST",
+                                                                headers: {
+                                                                  "Content-Type":
+                                                                    "application/json",
+                                                                },
+                                                                body: JSON.stringify(
+                                                                  {
+                                                                    archive:
+                                                                      true,
+                                                                  }
+                                                                ),
+                                                              }
+                                                            )
+                                                              .then(
+                                                                (response) => {
+                                                                  if (
+                                                                    !response.ok
+                                                                  )
+                                                                    throw new Error(
+                                                                      "Erreur lors de l'archivage"
+                                                                    );
+                                                                  return response.json();
+                                                                }
+                                                              )
+                                                              .then(() => {
+                                                                // Mettre à jour l'état local ou recharger les tâches
+                                                                setTasks(
+                                                                  (prev) =>
+                                                                    prev.filter(
+                                                                      (t) =>
+                                                                        t.id !==
+                                                                        task.id
+                                                                    )
+                                                                );
+                                                                toast.success(
+                                                                  "Tâche archivée avec succès"
+                                                                );
+                                                                setTaskMenuOpen(
+                                                                  null
+                                                                );
+                                                              })
+                                                              .catch(
+                                                                (error) => {
+                                                                  console.error(
+                                                                    "Erreur:",
+                                                                    error
+                                                                  );
+                                                                  toast.error(
+                                                                    "Erreur lors de l'archivage de la tâche"
+                                                                  );
+                                                                }
+                                                              );
+                                                          }}
+                                                          className="w-full text-left px-3 py-1 hover:bg-[color:var(--muted)] text-amber-600 flex items-center gap-2"
+                                                        >
+                                                          <Archive className="w-3 h-3" />
+                                                          Archiver
+                                                        </button>
+                                                      </li>
+                                                    )}
                                                   <li>
                                                     <button
                                                       onClick={(e) => {
