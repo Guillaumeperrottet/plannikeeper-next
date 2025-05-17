@@ -6,7 +6,8 @@ import {
   LayoutDashboard,
   CreditCard,
   Users,
-  Lightbulb, // Nouvel import pour l'icône
+  Lightbulb,
+  Archive, // Nouvel import pour l'icône d'archives
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -49,6 +50,11 @@ export default function UserMenu({ user, isAdmin = false }: UserMenuProps) {
       href: "/dashboard",
     },
     {
+      icon: <Archive size={16} />, // Nouvel icône d'archives
+      label: "Archives",
+      href: "/dashboard/archives", // Lien vers la page d'archives
+    },
+    {
       icon: <CreditCard size={16} />,
       label: "Abonnement",
       href: "/profile/subscription",
@@ -58,7 +64,7 @@ export default function UserMenu({ user, isAdmin = false }: UserMenuProps) {
       label: "Mon profil",
       href: "/profile",
     },
-    // Nouvel élément de menu pour les fonctionnalités/bugs
+    // Élément de menu pour les fonctionnalités/bugs
     {
       icon: <Lightbulb size={16} />,
       label: "Proposer une amélioration",

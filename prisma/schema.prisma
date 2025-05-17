@@ -212,6 +212,9 @@ model Task {
   updatedAt             DateTime  @updatedAt
   comments              Comment[]
 
+    archived              Boolean   @default(false)
+  archivedAt            DateTime?
+
   @@map("task")
 }
 
