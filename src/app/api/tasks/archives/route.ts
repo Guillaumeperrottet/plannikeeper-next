@@ -18,6 +18,9 @@ export async function GET(req: NextRequest) {
     const sortBy = searchParams.get("sortBy") || "archivedAt";
     const sortOrder = searchParams.get("sortOrder") || "desc";
     const objectFilter = searchParams.get("objectId") || null;
+    const taskTypeFilter = searchParams.get("taskType") || null;
+    const articleFilter = searchParams.get("articleId") || null;
+    const assigneeFilter = searchParams.get("assigneeId") || null;
     const fromDate = searchParams.get("fromDate")
       ? new Date(searchParams.get("fromDate") as string)
       : null;
@@ -113,6 +116,64 @@ export async function GET(req: NextRequest) {
       ];
     }
 
+    // Filtre par type de tâche
+    if (taskTypeFilter) {
+      const existingConditions = Array.isArray(whereClause.AND)
+        ? whereClause.AND
+        : whereClause.AND
+          ? [whereClause.AND]
+          : [];
+
+      whereClause.AND = [
+        ...existingConditions,
+        {
+          taskType: taskTypeFilter,
+        },
+      ];
+    }
+
+    // Filtre par article
+    if (articleFilter) {
+      const existingConditions = Array.isArray(whereClause.AND)
+        ? whereClause.AND
+        : whereClause.AND
+          ? [whereClause.AND]
+          : [];
+
+      whereClause.AND = [
+        ...existingConditions,
+        {
+          articleId: articleFilter,
+        },
+      ];
+    }
+
+    // Filtre par assigné
+    if (assigneeFilter) {
+      const existingConditions = Array.isArray(whereClause.AND)
+        ? whereClause.AND
+        : whereClause.AND
+          ? [whereClause.AND]
+          : [];
+
+      // Cas spécial pour les tâches non assignées
+      if (assigneeFilter === "null") {
+        whereClause.AND = [
+          ...existingConditions,
+          {
+            assignedToId: null,
+          },
+        ];
+      } else {
+        whereClause.AND = [
+          ...existingConditions,
+          {
+            assignedToId: assigneeFilter,
+          },
+        ];
+      }
+    }
+
     // Filtres de date
     if (fromDate) {
       whereClause.archivedAt = {
@@ -171,9 +232,75 @@ export async function GET(req: NextRequest) {
       },
     });
 
+    // Récupérer les métadonnées pour les filtres
+    // 1. Types de tâches uniques
+    const taskTypes = [
+      ...new Set(
+        archivedTasks
+          .map((task) => task.taskType)
+          .filter((type) => type !== null && type !== "")
+      ),
+    ];
+
+    // 2. Articles uniques
+    const articles = [
+      ...new Set(
+        archivedTasks.map((task) => ({
+          id: task.article.id,
+          title: task.article.title,
+          sectorId: task.article.sector.id,
+          sectorName: task.article.sector.name,
+          objectId: task.article.sector.object.id,
+          objectName: task.article.sector.object.nom,
+        }))
+      ),
+    ].reduce(
+      (unique, item) => {
+        const exists = unique.find((x) => x.id === item.id);
+        if (!exists) {
+          unique.push(item);
+        }
+        return unique;
+      },
+      [] as {
+        id: string;
+        title: string;
+        sectorId: string;
+        sectorName: string;
+        objectId: string;
+        objectName: string;
+      }[]
+    );
+
+    // 3. Assignés uniques
+    const assignees = [
+      ...new Set(
+        archivedTasks
+          .filter((task) => task.assignedTo && task.assignedTo.id)
+          .map((task) => ({
+            id: task.assignedTo!.id,
+            name: task.assignedTo!.name ?? "",
+          }))
+      ),
+    ].reduce(
+      (unique, item) => {
+        const exists = unique.find((x) => x.id === item.id);
+        if (!exists) {
+          unique.push(item);
+        }
+        return unique;
+      },
+      [] as { id: string; name: string }[]
+    );
+
     return NextResponse.json({
       tasks: archivedTasks,
       total: archivedTasks.length,
+      metadata: {
+        taskTypes,
+        articles,
+        assignees,
+      },
     });
   } catch (error) {
     console.error(
