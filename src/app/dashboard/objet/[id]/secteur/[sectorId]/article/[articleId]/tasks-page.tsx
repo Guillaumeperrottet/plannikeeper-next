@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import TaskFormMobileOptimized from "./TaskFormMobileOptimized";
 import AccessControl from "@/app/components/AccessControl";
 import TaskForm from "./task-form";
+import ArchiveCompletedButton from "./ArchiveCompletedButton";
 import {
   Calendar,
   User,
@@ -106,6 +107,12 @@ export default function ModernTasksPage({
     completed: null,
     cancelled: null,
   });
+
+  // Fonction pour archiver ou désarchiver les tâches terminées
+  const handleBulkArchiveCompleted = () => {
+    // Rafraîchir la liste des tâches après l'archivage
+    setTasks((prev) => prev.filter((task) => task.status !== "completed"));
+  };
 
   // Detect mobile view
   useEffect(() => {
@@ -823,6 +830,15 @@ export default function ModernTasksPage({
                               </h3>
                               {/* Bouton de tri par date */}
                               {renderSortButton(status)}
+                              {/* Ajouter le bouton d'archive uniquement pour les tâches terminées */}
+                              {status === "completed" && (
+                                <ArchiveCompletedButton
+                                  completedTasks={taskColumns.completed}
+                                  onArchiveCompleted={
+                                    handleBulkArchiveCompleted
+                                  }
+                                />
+                              )}
                             </div>
                             <span className="text-xs px-1.5 py-0.5 bg-[color:var(--background)] bg-opacity-70 rounded-full">
                               {
