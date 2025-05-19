@@ -3,14 +3,16 @@ import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 import { checkObjectAccess } from "@/lib/auth-session";
 
-// Typage correct pour les paramètres de route
+// La définition correcte des params dans Next.js App Router
 type RouteParams = {
-  params: { objectId: string };
+  params: {
+    objectId: string;
+  };
 };
 
 export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
-    // Récupération de l'ID directement (sans await)
+    // Récupération directe de l'ID de l'objet (sans await)
     const { objectId } = params;
 
     if (!objectId) {
