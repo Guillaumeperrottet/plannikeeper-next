@@ -28,6 +28,8 @@ const NAV_ITEMS = [
   { id: "hero", icon: HomeIcon, label: "Accueil" },
   { id: "features", icon: RocketLaunchIcon, label: "Fonctionnalités" },
   { id: "pricing", icon: CurrencyDollarIcon, label: "Tarifs" },
+  { id: "about", icon: User, label: "A propos", href: "/about" },
+  { id: "contact", icon: User, label: "Nous contacter", href: "/contact" },
 ];
 
 export default function Header() {
@@ -151,22 +153,39 @@ export default function Header() {
               scrolled ? "px-8 py-3" : ""
             }`}
           >
-            {NAV_ITEMS.map(({ id, icon: Icon, label }) => (
-              <button
-                key={id}
-                onClick={() => scrollToSection(id)}
-                className={`p-2 rounded-full transition duration-300 flex items-center gap-2 ${
-                  activeSection === id
-                    ? "bg-[#d9840d] text-white"
-                    : "text-[#62605d] hover:bg-[#e8ebe0]"
-                }`}
-              >
-                <Icon className="h-5 w-5" />
-                <span className={`text-sm ${scrolled ? "block" : "hidden"}`}>
-                  {label}
-                </span>
-              </button>
-            ))}
+            {NAV_ITEMS.map(({ id, icon: Icon, label, href }) =>
+              href ? (
+                <Link
+                  key={id}
+                  href={href}
+                  className={`p-2 rounded-full transition duration-300 flex items-center gap-2 ${
+                    activeSection === id
+                      ? "bg-[#d9840d] text-white"
+                      : "text-[#62605d] hover:bg-[#e8ebe0]"
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span className={`text-sm ${scrolled ? "block" : "hidden"}`}>
+                    {label}
+                  </span>
+                </Link>
+              ) : (
+                <button
+                  key={id}
+                  onClick={() => scrollToSection(id)}
+                  className={`p-2 rounded-full transition duration-300 flex items-center gap-2 ${
+                    activeSection === id
+                      ? "bg-[#d9840d] text-white"
+                      : "text-[#62605d] hover:bg-[#e8ebe0]"
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span className={`text-sm ${scrolled ? "block" : "hidden"}`}>
+                    {label}
+                  </span>
+                </button>
+              )
+            )}
           </div>
         </motion.nav>
 
@@ -264,24 +283,48 @@ export default function Header() {
                     Navigation
                   </h3>
                   <nav className="flex flex-col space-y-3">
-                    {NAV_ITEMS.map(({ id, icon: Icon, label }, index) => (
-                      <motion.button
-                        key={id}
-                        onClick={() => scrollToSection(id)}
-                        className={`w-full p-4 rounded-xl transition duration-300 flex items-center gap-3 ${
-                          activeSection === id
-                            ? "bg-[#d9840d] text-white shadow-md"
-                            : "bg-white text-[#141313] hover:bg-[#e8ebe0] border border-[#beac93]"
-                        }`}
-                        whileTap={{ scale: 0.97 }}
-                        initial={{ opacity: 0, x: 50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.1 * index, duration: 0.3 }}
-                      >
-                        <Icon className="h-5 w-5" />
-                        <span className="text-base font-medium">{label}</span>
-                      </motion.button>
-                    ))}
+                    {NAV_ITEMS.map(({ id, icon: Icon, label, href }, index) =>
+                      href ? (
+                        <motion.div
+                          key={id}
+                          initial={{ opacity: 0, x: 50 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.1 * index, duration: 0.3 }}
+                        >
+                          <Link
+                            href={href}
+                            className={`w-full p-4 rounded-xl transition duration-300 flex items-center gap-3 ${
+                              activeSection === id
+                                ? "bg-[#d9840d] text-white shadow-md"
+                                : "bg-white text-[#141313] hover:bg-[#e8ebe0] border border-[#beac93]"
+                            }`}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            <Icon className="h-5 w-5" />
+                            <span className="text-base font-medium">
+                              {label}
+                            </span>
+                          </Link>
+                        </motion.div>
+                      ) : (
+                        <motion.button
+                          key={id}
+                          onClick={() => scrollToSection(id)}
+                          className={`w-full p-4 rounded-xl transition duration-300 flex items-center gap-3 ${
+                            activeSection === id
+                              ? "bg-[#d9840d] text-white shadow-md"
+                              : "bg-white text-[#141313] hover:bg-[#e8ebe0] border border-[#beac93]"
+                          }`}
+                          whileTap={{ scale: 0.97 }}
+                          initial={{ opacity: 0, x: 50 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.1 * index, duration: 0.3 }}
+                        >
+                          <Icon className="h-5 w-5" />
+                          <span className="text-base font-medium">{label}</span>
+                        </motion.button>
+                      )
+                    )}
                   </nav>
                 </div>
 
