@@ -2,15 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 import { checkObjectAccess } from "@/lib/auth-session";
+import { createDynamicResponse } from "@/lib/cache-config";
 
-// Nous n'utilisons plus de type personnalisé pour les paramètres
+// Définition conforme au pattern utilisé dans vos autres fichiers
 export async function GET(
   req: NextRequest,
-  { params }: { params: { objectId: string } }
+  context: { params: { objectId: string } }
 ) {
   try {
-    // Récupération directe de l'ID de l'objet
-    const { objectId } = params;
+    // Récupération de l'ID de l'objet
+    const { objectId } = context.params;
 
     if (!objectId) {
       return NextResponse.json(
@@ -81,7 +82,8 @@ export async function GET(
       orderBy: [{ realizationDate: "asc" }, { createdAt: "desc" }],
     });
 
-    return NextResponse.json(tasks);
+    // Utiliser le système de cache dynamique
+    return createDynamicResponse(tasks, req);
   } catch (error) {
     console.error("Erreur lors de la récupération des tâches:", error);
     return NextResponse.json(
