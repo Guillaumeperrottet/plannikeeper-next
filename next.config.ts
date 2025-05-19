@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "2mb", // Reduced from 10mb to improve performance
     },
     // Enable optimizations
-    optimizeCss: true, // Enable CSS optimization
+    optimizeCss: false, // Enable CSS optimization
     optimizePackageImports: [
       "lucide-react",
       "@radix-ui/react-dialog",
