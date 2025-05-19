@@ -1,4 +1,4 @@
-const CACHE_VERSION = "1.2.0"; // Augmenter la version à chaque changement important
+const CACHE_VERSION = "1.2.1"; // Augmenter la version à chaque changement important
 const CACHE_NAME = `plannikeeper-cache-v${CACHE_VERSION}`;
 const DATA_CACHE_NAME = `plannikeeper-data-v${CACHE_VERSION}`; // Cache séparé pour les données API
 
