@@ -1,8 +1,8 @@
-// src/app/api/sectors/[sectorId]/articles/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 import { checkSectorAccess } from "@/lib/auth-session";
+import { createListResponse } from "@/lib/cache-config";
 
 // Typage mis à jour : params est une Promise qui résout { sectorId: string }
 type RouteParams = {
@@ -41,5 +41,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     where: { sectorId },
   });
 
-  return NextResponse.json(articles);
+  // Utiliser la fonction de création de réponse pour les listes
+  return createListResponse(articles, req);
 }
