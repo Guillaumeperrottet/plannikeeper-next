@@ -8,7 +8,8 @@ import { Button } from "@/app/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronRight, Check } from "lucide-react";
-import ModernFeatureVideoShowcase from "@/app/components/landing/ModernFeatureVideoShowcase";
+import React from "react";
+import CampingFeatureShowcase from "@/app/components/landing/CampingFeatureShowcase"; // Importez le nouveau composant
 
 const ModernLandingPage = () => {
   // Removed unused activeSection state
@@ -238,6 +239,7 @@ const ModernLandingPage = () => {
           className="absolute left-1/4 bottom-1/4 w-48 md:w-72 h-48 md:h-72 rounded-full bg-gradient-to-br from-[#e8ebe0] to-[#beac93]/30 blur-3xl z-0"
         />
       </section>
+
       {/* Features Section */}
       <section
         id="features"
@@ -511,84 +513,39 @@ const ModernLandingPage = () => {
         </div>
       </section>
 
-      {/* Showcase Section - Nouvelle version avec vidéos */}
+      {/* Showcase Section - Version immersive pour campings */}
       <section
         id="showcase"
         ref={showcaseRef}
-        className="py-16 md:pt-24 pb-32 bg-gradient-to-b from-[#f9f3ec] to-[#f2e8d9] overflow-hidden"
+        className="py-16 md:pt-24 pb-32 overflow-hidden relative"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        {/* Fond naturel adapté aux campings */}
+        <div className="absolute inset-0 -z-20 bg-gradient-to-b from-[#f9f8f4] to-[#e8f1e8] opacity-80" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true, amount: 0.3 }}
-            className="text-center mb-16"
+            className="text-center mb-20"
           >
-            <div className="inline-block bg-[#e8ebe0] px-4 py-1 rounded-full mb-4 border border-[#beac93]">
-              <span className="text-[#62605d] font-medium text-sm">
-                Fonctionnalités en action
+            <div className="inline-block bg-[#e9c46a]/20 px-4 py-1 rounded-full mb-4 border border-[#e9c46a]/30">
+              <span className="text-[#e76f51] font-medium text-sm">
+                L&apos;essentiel de PlanniKeeper
               </span>
             </div>
             <h2 className="text-3xl md:text-5xl font-bold mb-6 text-[#141313]">
-              Voyez PlanniKeeper en mouvement
+              Découvrez les fonctionnalités clés
             </h2>
             <p className="text-lg text-[#62605d] max-w-3xl mx-auto">
-              Explorez notre interface intuitive à travers ces démonstrations
-              vidéo de nos fonctionnalités principales.
+              Notre solution transforme votre gestion quotidienne. Voyez comment
+              PlanniKeeper peut faire la différence.
             </p>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            viewport={{ once: true, amount: 0.3 }}
-          >
-            <ModernFeatureVideoShowcase
-              features={[
-                {
-                  id: "feature-1",
-                  title: "Visualisation interactive des biens",
-                  description:
-                    "Naviguez intuitivement à travers vos propriétés avec notre interface interactive et découvrez comment accéder rapidement à toutes les informations concernant vos biens immobiliers.",
-                  images: [
-                    "/images/features/visualisation-1.png",
-                    "/images/features/visualisation-2.png",
-                    "/images/features/visualisation-3.png",
-                    "/images/features/visualisation-4.png",
-                  ],
-                },
-                {
-                  id: "feature-2",
-                  title: "Gestion des tâches intelligente",
-                  description:
-                    "Créez, assignez et suivez toutes vos tâches de maintenance et de gestion en quelques clics avec notre calendrier interactif.",
-                  images: [
-                    "/images/features/tasks-1.png",
-                    "/images/features/tasks-2.png",
-                    "/images/features/tasks-3.png",
-                  ],
-                },
-                // Ajoutez d'autres fonctionnalités...
-              ]}
-            />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
-            viewport={{ once: true, amount: 0.3 }}
-            className="mt-16 text-center"
-          >
-            <Button
-              className="px-8 py-4 bg-[#d9840d] hover:bg-[#c6780c] text-white text-base"
-              onClick={() => scrollToSection("pricing")}
-            >
-              Découvrir nos offres
-            </Button>
-          </motion.div>
+          {/* Composant de fonctionnalités vidéo immersif pour campings */}
+          <CampingFeatureShowcase />
         </div>
       </section>
 
