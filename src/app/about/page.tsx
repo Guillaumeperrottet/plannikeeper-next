@@ -7,8 +7,9 @@ import {
   User,
   HomeIcon,
   RocketIcon,
-  CurrencyIcon,
+  Info,
 } from "lucide-react";
+import { CurrencyDollarIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import { Button } from "@/app/components/ui/button";
 import Link from "next/link";
@@ -66,8 +67,13 @@ const NAV_ITEMS = [
     label: "Fonctionnalités",
     href: "/#features",
   },
-  { id: "pricing", icon: CurrencyIcon, label: "Tarifs", href: "/#pricing" },
-  { id: "about", icon: User, label: "A propos", href: "/about" },
+  {
+    id: "pricing",
+    icon: CurrencyDollarIcon,
+    label: "Tarifs",
+    href: "/#pricing",
+  },
+  { id: "about", icon: Info, label: "A propos", href: "/about" },
   { id: "contact", icon: User, label: "Nous contacter", href: "/contact" },
 ];
 

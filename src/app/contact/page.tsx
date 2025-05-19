@@ -4,14 +4,18 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send,
+  HomeIcon,
   CheckCircle,
   Mail,
   Phone,
   MapPin,
   Globe,
   ArrowLeft,
+  RocketIcon,
   User,
+  Info,
 } from "lucide-react";
+import { CurrencyDollarIcon } from "@heroicons/react/24/outline";
 import PremiumBurgerButton from "@/app/components/ui/BurgerButton";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
@@ -56,10 +60,20 @@ const fadeInUp = {
 };
 
 const NAV_ITEMS = [
-  { id: "hero", icon: Globe, label: "Accueil", href: "/#hero" },
-  { id: "features", icon: Globe, label: "Fonctionnalités", href: "/#features" },
-  { id: "pricing", icon: Globe, label: "Tarifs", href: "/#pricing" },
-  { id: "about", icon: User, label: "A propos", href: "/about" },
+  { id: "hero", icon: HomeIcon, label: "Accueil", href: "/#hero" },
+  {
+    id: "features",
+    icon: RocketIcon,
+    label: "Fonctionnalités",
+    href: "/#features",
+  },
+  {
+    id: "pricing",
+    icon: CurrencyDollarIcon,
+    label: "Tarifs",
+    href: "/#pricing",
+  },
+  { id: "about", icon: Info, label: "A propos", href: "/about" },
   { id: "contact", icon: User, label: "Nous contacter", href: "/contact" },
 ];
 
