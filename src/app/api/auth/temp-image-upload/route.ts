@@ -1,17 +1,27 @@
-// src/app/api/auth/temp-image-upload/route.ts
+// src/app/api/auth/temp-image-upload/route.ts - Version optimisée
 import { NextRequest, NextResponse } from "next/server";
-import { CloudinaryService } from "@/lib/cloudinary";
 import crypto from "crypto";
+import { Readable } from "stream";
 
-/**
- * Route temporaire pour l'upload d'images de profil pendant l'inscription
- * Cette route ne nécessite pas d'authentification, mais utilise un jeton temporaire
- * pour limiter les abus.
- */
+// Utilisez la version importée correctement de cloudinary
+import { v2 as cloudinary, UploadApiResponse } from "cloudinary";
+
+// Configuration de Cloudinary avec vérification
+if (
+  !cloudinary.config().cloud_name ||
+  !cloudinary.config().api_key ||
+  !cloudinary.config().api_secret
+) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true,
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
-    // Vérifier le rate limiting (optionnel mais recommandé en production)
-
     // Recevoir le fichier depuis le formData
     const formData = await req.formData();
     const file = formData.get("file") as File;
@@ -23,9 +33,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Valider le type de fichier
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
-    if (!allowedTypes.includes(file.type)) {
+    // Valider le type de fichier - utiliser une seule condition
+    const isValidType = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/jpg",
+    ].includes(file.type);
+    if (!isValidType) {
       return NextResponse.json(
         {
           error:
@@ -35,9 +50,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Valider la taille du fichier (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSize) {
+    // Valider la taille du fichier
+    if (file.size > 5 * 1024 * 1024) {
       return NextResponse.json(
         { error: "Le fichier est trop volumineux (max 5MB)" },
         { status: 400 }
@@ -47,28 +61,42 @@ export async function POST(req: NextRequest) {
     // Lire le fichier
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // Générer un ID temporaire unique pour cet utilisateur en cours d'inscription
-    const tempUserId = crypto.randomBytes(16).toString("hex");
+    // Générer un ID temporaire moins coûteux
+    const tempUserId = crypto.randomBytes(8).toString("hex");
 
-    // Upload vers Cloudinary avec un dossier spécial pour les uploads temporaires
-    const uploadResult = await CloudinaryService.uploadFile(buffer, file.name, {
-      folder: `plannikeeper/temp_signup/${tempUserId}`,
-      resourceType: "image",
-      tags: ["profile", "temp_signup"],
-      // Optimiser l'image
-      transformation: {
-        width: 400,
-        height: 400,
-        crop: "fill",
-        gravity: "face",
-        quality: "auto",
-        fetch_format: "auto",
-      },
+    // Préparation de l'upload de manière optimisée
+    const uploadResult = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: `plannikeeper/temp_signup/${tempUserId}`,
+          resource_type: "image",
+          tags: ["profile", "temp_signup"],
+          transformation: {
+            width: 400,
+            height: 400,
+            crop: "fill",
+            gravity: "face",
+            quality: "auto",
+            format: "webp", // Forcer le format webp pour une meilleure performance
+          },
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+
+      const bufferStream = Readable.from(buffer);
+      bufferStream.pipe(uploadStream);
+      bufferStream.pipe(uploadStream);
     });
+
+    // Typer correctement le résultat
+    const result = uploadResult as UploadApiResponse;
 
     return NextResponse.json({
       success: true,
-      imageUrl: uploadResult.secureUrl,
+      imageUrl: result.secure_url,
       tempId: tempUserId,
     });
   } catch (error) {

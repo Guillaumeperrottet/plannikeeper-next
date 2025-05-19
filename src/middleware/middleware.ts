@@ -30,7 +30,6 @@ export function middleware(request: NextRequest) {
     return new NextResponse(null, {
       status: 204,
       headers: {
-
         "Access-Control-Allow-Origin": origin,
         "Access-Control-Allow-Headers":
           "Content-Type, Authorization, X-Requested-With, Cookie",
@@ -38,6 +37,21 @@ export function middleware(request: NextRequest) {
         "Access-Control-Max-Age": "86400",
       },
     });
+  }
+
+  if (request.nextUrl.pathname === "/signup") {
+    const response = NextResponse.next();
+
+    // Ajouter des en-têtes de cache pour les ressources statiques
+    response.headers.set("Cache-Control", "public, max-age=3600");
+
+    // Ajouter des headers pour précharger les ressources critiques
+    response.headers.set(
+      "Link",
+      "</api/auth/temp-image-upload>; rel=preconnect, </api/invitations/validate>; rel=preconnect"
+    );
+
+    return response;
   }
   // Pour les autres requêtes, ajouter les headers CORS à la réponse
   // Pour les autres requêtes
