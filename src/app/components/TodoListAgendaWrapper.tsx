@@ -15,13 +15,17 @@ const DATA_VERSION_KEY = "plannikeeper-data-version";
 export default function TodoListAgendaWrapper() {
   const [selectedObjectId] = useState<string | null>(null);
   const [dataVersion, setDataVersion] = useState<number>(0);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
   // Utiliser le hook useTasks
   const { mutate } = useTasks(selectedObjectId);
 
   // Fonction pour rafraîchir les données silencieusement
   const refreshDataSilently = useCallback(async () => {
-    // console.log("Rafraîchissement silencieux des données de l'agenda");
+    // Éviter les rafraîchissements simultanés
+    if (isRefreshing) return;
+
+    setIsRefreshing(true);
 
     try {
       // Invalider et recharger les données
@@ -35,14 +39,15 @@ export default function TodoListAgendaWrapper() {
       localStorage.setItem(DATA_VERSION_KEY, newVersion.toString());
     } catch (error) {
       console.error("Erreur lors du rafraîchissement des données:", error);
+    } finally {
+      setIsRefreshing(false);
     }
-  }, [dataVersion, mutate]);
+  }, [dataVersion, mutate, isRefreshing]);
 
   // Écouter les événements de visibilité pour rafraîchir les données
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        // console.log("Application visible, rafraîchissement des données");
         refreshDataSilently();
       }
     };
@@ -61,31 +66,6 @@ export default function TodoListAgendaWrapper() {
     }
   }, []);
 
-  // Écouter les messages du service worker
-  useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      const messageHandler = (event: MessageEvent) => {
-        if (event.data && event.data.type) {
-          console.log("Message reçu du Service Worker:", event.data);
-
-          // Si le message concerne les données, rafraîchir
-          if (
-            event.data.type === "data-change" ||
-            event.data.type === "task-change" ||
-            event.data.type === "cache-invalidated"
-          ) {
-            refreshDataSilently();
-          }
-        }
-      };
-
-      navigator.serviceWorker.addEventListener("message", messageHandler);
-      return () => {
-        navigator.serviceWorker.removeEventListener("message", messageHandler);
-      };
-    }
-  }, [refreshDataSilently]);
-
   // Force un rafraîchissement périodique en mode PWA
   useEffect(() => {
     // Définir un type personnalisé pour navigator avec la propriété standalone
@@ -98,24 +78,30 @@ export default function TodoListAgendaWrapper() {
       (window.navigator as NavigatorWithStandalone).standalone === true;
 
     if (isPWA) {
-      // Rafraîchir les données toutes les 2 minutes en mode PWA
+      // Rafraîchir les données toutes les 5 minutes en mode PWA
       const interval = setInterval(
         () => {
           if (document.visibilityState === "visible") {
-            console.log("Rafraîchissement périodique des données (PWA)");
             refreshDataSilently();
           }
         },
-        2 * 60 * 1000
-      ); // 2 minutes
+        5 * 60 * 1000
+      ); // 5 minutes
 
       return () => clearInterval(interval);
     }
   }, [refreshDataSilently]);
 
+  // Handler pour le rafraîchissement manuel
+  const handleRefresh = useCallback(() => {
+    refreshDataSilently();
+  }, [refreshDataSilently]);
+
   return (
     <TodoListAgenda
-      key={`agenda-${dataVersion}`} // Forcer un re-rendu lors des changements
+      key={`agenda-${dataVersion}`}
+      onRefresh={handleRefresh}
+      isRefreshing={isRefreshing}
     />
   );
 }

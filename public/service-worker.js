@@ -158,17 +158,15 @@ async function networkFirstWithBackup(request) {
       const cache = await caches.open(DATA_CACHE_NAME);
       cache.put(request, networkResponse.clone());
 
-      // Si la réponse est une mise à jour de données, notifier les clients
-      if (networkResponse.ok) {
-        notifyClientsOfDataChange(url.pathname);
-      }
+      // Suppression de la notification
+      // Ancienne ligne : if (networkResponse.ok) { notifyClientsOfDataChange(url.pathname); }
     } else if (
       request.method === "POST" ||
       request.method === "PUT" ||
       request.method === "DELETE"
     ) {
-      // Pour les mutations, invalider les caches correspondants
-      invalidateRelatedCaches(url.pathname);
+      // Pour les mutations, invalider les caches correspondants mais sans notification
+      invalidateCachesWithoutNotification(url.pathname);
     }
 
     return networkResponse;
@@ -192,8 +190,8 @@ async function networkFirstWithBackup(request) {
   }
 }
 
-// Invalider les caches liés à une ressource modifiée
-async function invalidateRelatedCaches(pathname) {
+// Invalider les caches liés à une ressource modifiée, mais sans envoyer de notification
+async function invalidateCachesWithoutNotification(pathname) {
   // Extraire le type de ressource du chemin d'accès
   const matches = {
     task: pathname.includes("/tasks/"),
@@ -235,34 +233,8 @@ async function invalidateRelatedCaches(pathname) {
   // Supprimer les entrées de cache
   await Promise.all(keysToDelete.map((key) => cache.delete(key)));
 
-  // Notifier les clients du changement
-  notifyClientsOfDataChange(pathname);
-}
-
-// Notifier tous les clients qu'un changement de données a eu lieu
-async function notifyClientsOfDataChange(pathname) {
-  const clients = await self.clients.matchAll({ type: "window" });
-
-  // Déterminer le type d'événement en fonction du chemin
-  let eventType = "data-change";
-
-  if (pathname.includes("/tasks/")) {
-    eventType = "task-change";
-  } else if (pathname.includes("/articles/")) {
-    eventType = "article-change";
-  } else if (pathname.includes("/objet/")) {
-    eventType = "object-change";
-  } else if (pathname.includes("/sectors/")) {
-    eventType = "sector-change";
-  }
-
-  clients.forEach((client) => {
-    client.postMessage({
-      type: eventType,
-      path: pathname,
-      timestamp: Date.now(),
-    });
-  });
+  // Nous ne notifions plus les clients
+  // Ancienne ligne : notifyClientsOfDataChange(pathname);
 }
 
 // Gérer les messages provenant des clients (par exemple pour forcer un rafraîchissement)
