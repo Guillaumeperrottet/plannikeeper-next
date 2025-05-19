@@ -1,6 +1,6 @@
-const CACHE_VERSION = "1.2.1"; // Augmenter la version à chaque changement important
+const CACHE_VERSION = "1.3.0"; // Augmenté pour forcer la mise à jour
 const CACHE_NAME = `plannikeeper-cache-v${CACHE_VERSION}`;
-const DATA_CACHE_NAME = `plannikeeper-data-v${CACHE_VERSION}`; // Cache séparé pour les données API
+const DATA_CACHE_NAME = `plannikeeper-data-v${CACHE_VERSION}`;
 
 // Ressources à mettre en cache lors de l'installation
 const STATIC_CACHE_URLS = [
@@ -16,26 +16,26 @@ const STATIC_CACHE_URLS = [
 
 // Installation du service worker avec précaching des ressources essentielles
 self.addEventListener("install", (event) => {
-  // console.log("Service Worker: Installation en cours");
-
   event.waitUntil(
     caches
       .open(CACHE_NAME)
       .then((cache) => {
-        // console.log("Service Worker: Mise en cache des ressources statiques");
         return cache.addAll(STATIC_CACHE_URLS);
       })
       .then(() => {
-        // Force l'activation immédiate du service worker
         return self.skipWaiting();
+      })
+      .catch((error) => {
+        console.error(
+          "Erreur lors de l'installation du Service Worker:",
+          error
+        );
       })
   );
 });
 
 // Activation: nettoyage des anciens caches
 self.addEventListener("activate", (event) => {
-  // console.log("Service Worker: Activation en cours");
-
   event.waitUntil(
     caches
       .keys()
@@ -43,7 +43,6 @@ self.addEventListener("activate", (event) => {
         return Promise.all(
           cacheNames
             .filter((cacheName) => {
-              // Supprimer les anciens caches
               return (
                 (cacheName.startsWith("plannikeeper-cache-") &&
                   cacheName !== CACHE_NAME) ||
@@ -61,7 +60,6 @@ self.addEventListener("activate", (event) => {
         );
       })
       .then(() => {
-        // Prendre le contrôle immédiatement des clients
         return self.clients.claim();
       })
   );
@@ -69,16 +67,20 @@ self.addEventListener("activate", (event) => {
 
 // Stratégie de mise en cache: Network First pour les API, Cache First pour les ressources statiques
 self.addEventListener("fetch", (event) => {
-  const url = new URL(event.request.url);
-
-  // Ignorer les requêtes d'extensions Chrome
-  if (url.protocol === "chrome-extension:") {
+  // Ignorer les requêtes non-HTTP/HTTPS (comme chrome-extension:)
+  if (!event.request.url.startsWith("http")) {
     return;
   }
 
-  // Le reste de votre code reste inchangé...
+  const url = new URL(event.request.url);
+
+  // Pour les requêtes API, utiliser Network First, mais sans mise en cache pour les non-GET
   if (url.pathname.startsWith("/api/")) {
-    event.respondWith(networkFirstWithBackup(event.request));
+    // Les requêtes GET sont gérées normalement
+    if (event.request.method === "GET") {
+      event.respondWith(networkFirstWithBackup(event.request));
+    }
+    // Pour les méthodes POST/PUT/DELETE, on passe directement au réseau sans interférer avec la mise en cache
     return;
   }
 
@@ -89,28 +91,87 @@ self.addEventListener("fetch", (event) => {
       url.pathname.startsWith("/_next/static/") ||
       url.pathname.startsWith("/icons/") ||
       url.pathname === "/" ||
-      url.pathname === "/favicon.ico")
+      url.pathname === "/favicon.ico" ||
+      url.pathname === "/manifest.json")
   ) {
     event.respondWith(cacheFirst(event.request));
     return;
   }
 
-  // Pour toute autre requête, utiliser Network First
-  event.respondWith(networkFirst(event.request));
+  // Pour toute autre requête GET, utiliser Network First sans mise en cache
+  if (event.request.method === "GET") {
+    event.respondWith(networkFirstNoCache(event.request));
+  }
+  // Ne pas interférer avec les autres méthodes (POST, PUT, DELETE)
 });
-// Stratégie Cache First avec fallback sur réseau
-async function cacheFirst(request) {
-  const cachedResponse = await caches.match(request);
-  if (cachedResponse) {
-    return cachedResponse;
+
+// Fonction utilitaire pour vérifier si une réponse peut être mise en cache
+function canBeCached(response) {
+  // Ne pas mettre en cache les réponses partielles (206)
+  if (response.status === 206) {
+    return false;
   }
 
-  // Si non trouvé dans le cache, essayer le réseau
+  // Ne pas mettre en cache les réponses d'erreur
+  if (!response.ok) {
+    return false;
+  }
+
+  // Vérifier les en-têtes pour éviter les problèmes potentiels
+  const contentType = response.headers.get("Content-Type");
+
+  // Ne pas mettre en cache les flux vidéo ou audio
+  if (
+    contentType &&
+    (contentType.includes("video/") ||
+      contentType.includes("audio/") ||
+      contentType.includes("application/octet-stream"))
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+// Fonction pour mettre en cache de manière sécurisée
+async function safePut(cache, request, response) {
+  if (!canBeCached(response)) {
+    return false;
+  }
+
   try {
+    await cache.put(request, response.clone());
+    return true;
+  } catch (error) {
+    console.warn(
+      `Impossible de mettre en cache la requête ${request.url}:`,
+      error
+    );
+    return false;
+  }
+}
+
+// Stratégie Cache First avec fallback sur réseau
+async function cacheFirst(request) {
+  try {
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
+    // Si non trouvé dans le cache, essayer le réseau
     const networkResponse = await fetch(request);
-    // Mettre à jour le cache avec la nouvelle réponse
-    const cache = await caches.open(CACHE_NAME);
-    cache.put(request, networkResponse.clone());
+
+    // Mettre à jour le cache avec la nouvelle réponse si c'est possible
+    if (canBeCached(networkResponse)) {
+      const cache = await caches.open(CACHE_NAME);
+      try {
+        await cache.put(request, networkResponse.clone());
+      } catch (error) {
+        console.warn(`Impossible de mettre en cache ${request.url}:`, error);
+      }
+    }
+
     return networkResponse;
   } catch (error) {
     // En cas d'erreur réseau, essayer de retourner une page offline
@@ -123,23 +184,10 @@ async function cacheFirst(request) {
   }
 }
 
-// Stratégie Network First avec stockage en cache
-async function networkFirst(request) {
+// Version de Network First qui ne tente PAS de mettre en cache
+async function networkFirstNoCache(request) {
   try {
-    const networkResponse = await fetch(request);
-
-    // Ne mettre en cache que les requêtes GET
-    if (request.method === "GET") {
-      // Mettre à jour le cache avec la nouvelle réponse
-      const cache = await caches.open(CACHE_NAME);
-      try {
-        await cache.put(request, networkResponse.clone());
-      } catch (cacheError) {
-        console.warn("Impossible de mettre en cache la réponse:", cacheError);
-      }
-    }
-
-    return networkResponse;
+    return await fetch(request);
   } catch (error) {
     // En cas d'erreur réseau, essayer le cache
     const cachedResponse = await caches.match(request);
@@ -157,28 +205,18 @@ async function networkFirst(request) {
   }
 }
 
-// Stratégie spécifique pour les API: Network First, mais avec invalidation automatique
-async function networkFirstWithBackup(request) {
-  const url = new URL(request.url);
+// (networkFirst function removed as it was unused)
 
+// Stratégie spécifique pour les API: Network First, mais sans mise en cache problématique
+async function networkFirstWithBackup(request) {
   try {
     // Essayer d'abord le réseau
     const networkResponse = await fetch(request);
 
-    // Ne mettre en cache que les GET (pas les mutations)
-    if (request.method === "GET") {
+    // Ne mettre en cache que si c'est possible
+    if (canBeCached(networkResponse)) {
       const cache = await caches.open(DATA_CACHE_NAME);
-      cache.put(request, networkResponse.clone());
-
-      // Suppression de la notification
-      // Ancienne ligne : if (networkResponse.ok) { notifyClientsOfDataChange(url.pathname); }
-    } else if (
-      request.method === "POST" ||
-      request.method === "PUT" ||
-      request.method === "DELETE"
-    ) {
-      // Pour les mutations, invalider les caches correspondants mais sans notification
-      invalidateCachesWithoutNotification(url.pathname);
+      await safePut(cache, request, networkResponse);
     }
 
     return networkResponse;
@@ -204,68 +242,95 @@ async function networkFirstWithBackup(request) {
 
 // Invalider les caches liés à une ressource modifiée, mais sans envoyer de notification
 async function invalidateCachesWithoutNotification(pathname) {
-  // Extraire le type de ressource du chemin d'accès
-  const matches = {
-    task: pathname.includes("/tasks/"),
-    article: pathname.includes("/articles/"),
-    object: pathname.includes("/objet/"),
-    sector: pathname.includes("/sectors/"),
-  };
+  try {
+    // Extraire le type de ressource du chemin d'accès
+    const matches = {
+      task: pathname.includes("/tasks/"),
+      article: pathname.includes("/articles/"),
+      object: pathname.includes("/objet/"),
+      sector: pathname.includes("/sectors/"),
+    };
 
-  const cache = await caches.open(DATA_CACHE_NAME);
-  const keys = await cache.keys();
+    const cache = await caches.open(DATA_CACHE_NAME);
+    const keys = await cache.keys();
 
-  // Invalider les caches correspondants
-  const keysToDelete = keys.filter((request) => {
-    const url = new URL(request.url);
+    // Invalider les caches correspondants
+    const keysToDelete = keys.filter((request) => {
+      const url = new URL(request.url);
 
-    // Invalider les listes de tâches si une tâche est modifiée
-    if (matches.task && url.pathname.includes("/api/tasks")) {
-      return true;
+      // Invalider les listes de tâches si une tâche est modifiée
+      if (matches.task && url.pathname.includes("/api/tasks")) {
+        return true;
+      }
+
+      // Invalider les listes d'articles si un article est modifié
+      if (matches.article && url.pathname.includes("/api/articles")) {
+        return true;
+      }
+
+      // Invalider les données d'objet si un objet est modifié
+      if (matches.object && url.pathname.includes("/api/objet")) {
+        return true;
+      }
+
+      // Invalider les données de secteur si un secteur est modifié
+      if (matches.sector && url.pathname.includes("/api/sectors")) {
+        return true;
+      }
+
+      return false;
+    });
+
+    // Supprimer les entrées de cache
+    if (keysToDelete.length > 0) {
+      await Promise.all(keysToDelete.map((key) => cache.delete(key)));
     }
-
-    // Invalider les listes d'articles si un article est modifié
-    if (matches.article && url.pathname.includes("/api/articles")) {
-      return true;
-    }
-
-    // Invalider les données d'objet si un objet est modifié
-    if (matches.object && url.pathname.includes("/api/objet")) {
-      return true;
-    }
-
-    // Invalider les données de secteur si un secteur est modifié
-    if (matches.sector && url.pathname.includes("/api/sectors")) {
-      return true;
-    }
-
-    return false;
-  });
-
-  // Supprimer les entrées de cache
-  await Promise.all(keysToDelete.map((key) => cache.delete(key)));
-
-  // Nous ne notifions plus les clients
-  // Ancienne ligne : notifyClientsOfDataChange(pathname);
+  } catch (error) {
+    console.warn("Erreur lors de l'invalidation des caches:", error);
+  }
 }
 
-// Gérer les messages provenant des clients (par exemple pour forcer un rafraîchissement)
+// Gérer les messages provenant des clients
 self.addEventListener("message", (event) => {
   if (event.data && event.data.action === "skipWaiting") {
     self.skipWaiting();
   }
 
   if (event.data && event.data.action === "clearCache") {
-    clearAllCaches().then(() => {
-      event.ports[0].postMessage({ result: "success" });
-    });
+    clearAllCaches()
+      .then(() => {
+        if (event.ports && event.ports[0]) {
+          event.ports[0].postMessage({ result: "success" });
+        }
+      })
+      .catch((error) => {
+        console.error("Erreur lors du nettoyage des caches:", error);
+        if (event.ports && event.ports[0]) {
+          event.ports[0].postMessage({
+            result: "error",
+            message: error.message,
+          });
+        }
+      });
   }
 
   if (event.data && event.data.action === "invalidateCache") {
     const { pathname } = event.data;
-    invalidateRelatedCaches(pathname).then(() => {
-      event.ports[0].postMessage({ result: "success" });
-    });
+    invalidateCachesWithoutNotification(pathname)
+      .then(() => {
+        if (event.ports && event.ports[0]) {
+          event.ports[0].postMessage({ result: "success" });
+        }
+      })
+      .catch((error) => {
+        console.error("Erreur lors de l'invalidation du cache:", error);
+        if (event.ports && event.ports[0]) {
+          event.ports[0].postMessage({
+            result: "error",
+            message: error.message,
+          });
+        }
+      });
   }
 });
 
