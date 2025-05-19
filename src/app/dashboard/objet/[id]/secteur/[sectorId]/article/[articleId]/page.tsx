@@ -23,6 +23,9 @@ export default async function ArticleDetailPage({
     where: { id: articleId },
     include: {
       tasks: {
+        where: {
+          archived: false, // Filtrer les tâches archivées ici
+        },
         include: { assignedTo: true },
         orderBy: { createdAt: "desc" },
       },

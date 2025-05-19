@@ -19,6 +19,7 @@ import {
   User,
   Save,
   RefreshCcw,
+  Archive,
 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import DocumentsList from "@/app/dashboard/objet/[id]/secteur/[sectorId]/article/[articleId]/documents-list";
@@ -49,6 +50,7 @@ type Task = {
   assignedTo: User | null;
   createdAt: Date;
   updatedAt: Date;
+  archived?: boolean; // Ajout de la propriété archived
   article: {
     id: string;
     title: string;
@@ -383,6 +385,53 @@ export default function ModernTaskDetailPage({
           </div>
         </div>
       </header>
+
+      {/* Bannière pour tâches archivées */}
+      {task.archived && (
+        <div className="bg-amber-50 border-y border-amber-200 py-3">
+          <div className="max-w-4xl mx-auto px-4 flex items-center gap-3">
+            <Archive className="h-5 w-5 text-amber-600" />
+            <div>
+              <p className="text-amber-800 font-medium">Tâche archivée</p>
+              <p className="text-amber-700 text-sm">
+                Cette tâche est archivée et n&apos;apparaît plus dans les listes
+                actives.
+                {task.status === "completed" &&
+                  " Elle a été marquée comme terminée."}
+              </p>
+            </div>
+            <div className="ml-auto">
+              <button
+                onClick={() => {
+                  // Fonction pour désarchiver
+                  fetch(`/api/tasks/${task.id}/archive`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ archive: false }),
+                  })
+                    .then((response) => {
+                      if (!response.ok)
+                        throw new Error("Échec de la mise à jour");
+                      return response.json();
+                    })
+                    .then(() => {
+                      setTask({ ...task, archived: false });
+                      toast.success("Tâche retirée des archives");
+                    })
+                    .catch((error) => {
+                      console.error("Erreur:", error);
+                      toast.error("Erreur lors de la désarchivation");
+                    });
+                }}
+                className="px-3 py-1.5 text-xs rounded-md border border-amber-300 
+                          bg-white text-amber-700 hover:bg-amber-50 transition-colors"
+              >
+                Désarchiver cette tâche
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-4 md:py-6">
         {/* Task title and badges */}

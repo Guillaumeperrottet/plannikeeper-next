@@ -36,7 +36,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     );
   }
 
-  // Récupérer toutes les tâches liées à cet objet
+  // Récupérer toutes les tâches liées à cet objet, en excluant celles archivées
   const tasks = await prisma.task.findMany({
     where: {
       article: {
@@ -44,6 +44,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
           objectId,
         },
       },
+      archived: false, // Exclure les tâches archivées
     },
     include: {
       article: {
