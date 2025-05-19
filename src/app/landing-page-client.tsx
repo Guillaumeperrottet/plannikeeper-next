@@ -258,7 +258,7 @@ const ModernLandingPage = () => {
               </span>
             </div>
             <h2 className="text-3xl md:text-5xl font-bold mb-6 text-[#141313]">
-              Tout ce dont vous avez besoin
+              Finis les fichiers excel et les notes éparpillées !
             </h2>
             <p className="text-lg text-[#62605d] max-w-3xl mx-auto">
               Notre application offre tous les outils nécessaires pour gérer
