@@ -502,12 +502,12 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                   {/* Bouton flottant pour ouvrir la liste */}
                   <button
                     onClick={toggleSidebar}
-                    className="fixed bottom-20 left-4 z-[1000] flex items-center gap-1 bg-primary text-primary-foreground rounded-full shadow-lg px-3 py-3"
+                    className="fixed bottom-20 left-4 z-[9] flex items-center gap-1 bg-primary text-primary-foreground rounded-full shadow-lg px-3 py-3"
                     style={{
                       position: "fixed",
                       bottom: "80px",
                       left: "16px",
-                      zIndex: 1000,
+                      zIndex: 9,
                       backgroundColor: "var(--primary)",
                       color: "white",
                       borderRadius: "9999px",
