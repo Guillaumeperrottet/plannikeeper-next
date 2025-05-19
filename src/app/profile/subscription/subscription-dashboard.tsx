@@ -120,7 +120,7 @@ export default function SubscriptionDashboard({
         );
       default:
         return (
-          <div className="flex items-center text-gray-500">
+          <div className="flex items-center text-[color:var(--muted-foreground)]">
             <AlertCircle className="h-5 w-5 mr-2" />
             <span>{status}</span>
           </div>
@@ -303,11 +303,11 @@ export default function SubscriptionDashboard({
   const CancelModal = () => {
     return (
       <Dialog open={showCancelModal} onOpenChange={setShowCancelModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogTitle>
+        <DialogContent className="bg-[color:var(--card)] text-[color:var(--foreground)] border-[color:var(--border)] sm:max-w-md">
+          <DialogTitle className="text-[color:var(--foreground)]">
             Confirmer l&apos;annulation de l&apos;abonnement
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-[color:var(--muted-foreground)]">
             Êtes-vous sûr de vouloir annuler votre abonnement ? Cette action
             pourrait limiter l&apos;accès à certaines fonctionnalités.
           </DialogDescription>
@@ -324,7 +324,10 @@ export default function SubscriptionDashboard({
                   onChange={() => setCancelOption("end_period")}
                   className="h-4 w-4 text-[color:var(--primary)]"
                 />
-                <label htmlFor="end_period" className="text-sm font-medium">
+                <label
+                  htmlFor="end_period"
+                  className="text-sm font-medium text-[color:var(--foreground)]"
+                >
                   Annuler à la fin de la période de facturation
                   <p className="text-xs text-[color:var(--muted-foreground)]">
                     Votre abonnement restera actif jusqu&apos;au{" "}
@@ -342,7 +345,10 @@ export default function SubscriptionDashboard({
                   onChange={() => setCancelOption("immediate")}
                   className="h-4 w-4 text-[color:var(--primary)]"
                 />
-                <label htmlFor="immediate" className="text-sm font-medium">
+                <label
+                  htmlFor="immediate"
+                  className="text-sm font-medium text-[color:var(--foreground)]"
+                >
                   Annuler immédiatement
                   <p className="text-xs text-[color:var(--muted-foreground)]">
                     Votre abonnement sera annulé immédiatement et vous passerez
@@ -358,6 +364,7 @@ export default function SubscriptionDashboard({
               variant="outline"
               onClick={() => setShowCancelModal(false)}
               disabled={cancelLoading}
+              className="bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)] hover:bg-[color:var(--muted)] hover:text-[color:var(--foreground)] transition-colors touch-target"
             >
               Annuler
             </Button>
@@ -365,6 +372,7 @@ export default function SubscriptionDashboard({
               variant="destructive"
               onClick={handleCancelSubscription}
               disabled={cancelLoading}
+              className="touch-target"
             >
               {cancelLoading ? (
                 <>
@@ -416,28 +424,39 @@ export default function SubscriptionDashboard({
     const isPastDue = subscription.status === "PAST_DUE";
     const isCancelled = subscription.cancelAtPeriodEnd;
 
-    let bgClass = "bg-green-50 border-green-200 text-green-700";
+    // Adaptation des classes pour le mode sombre
+    let bgClass, textClass, borderClass;
     let icon = <CheckCircle className="h-5 w-5" />;
     let message = "Votre abonnement est actif.";
 
     if (isPastDue) {
-      bgClass = "bg-red-50 border-red-200 text-red-700";
+      bgClass = "bg-red-100 dark:bg-red-950/30";
+      borderClass = "border-red-200 dark:border-red-900/50";
+      textClass = "text-red-700 dark:text-red-400";
       icon = <AlertCircle className="h-5 w-5" />;
       message =
         "Problème de paiement détecté. Veuillez mettre à jour vos informations de paiement.";
     } else if (isCancelled) {
-      bgClass = "bg-amber-50 border-amber-200 text-amber-700";
+      bgClass = "bg-amber-100 dark:bg-amber-950/30";
+      borderClass = "border-amber-200 dark:border-amber-900/50";
+      textClass = "text-amber-700 dark:text-amber-400";
       icon = <Info className="h-5 w-5" />;
       message = `Votre abonnement sera annulé le ${formatDate(subscription.currentPeriodEnd)}. Vous passerez ensuite au forfait gratuit.`;
     } else if (isEndingPeriodSoon(subscription.currentPeriodEnd)) {
-      bgClass = "bg-blue-50 border-blue-200 text-blue-700";
+      bgClass = "bg-blue-100 dark:bg-blue-950/30";
+      borderClass = "border-blue-200 dark:border-blue-900/50";
+      textClass = "text-blue-700 dark:text-blue-400";
       icon = <CalendarClock className="h-5 w-5" />;
       message = `Renouvellement prévu dans ${getDaysRemaining(subscription.currentPeriodEnd)} jours.`;
+    } else {
+      bgClass = "bg-green-100 dark:bg-green-950/30";
+      borderClass = "border-green-200 dark:border-green-900/50";
+      textClass = "text-green-700 dark:text-green-400";
     }
 
     return (
       <div
-        className={`p-4 mb-6 rounded-lg border ${bgClass} flex items-start gap-3`}
+        className={`p-4 mb-6 rounded-lg border ${bgClass} ${borderClass} ${textClass} flex items-start gap-3`}
       >
         {icon}
         <div>
@@ -446,7 +465,7 @@ export default function SubscriptionDashboard({
             <Button
               variant="default"
               size="sm"
-              className="mt-2"
+              className="mt-2 touch-target active:scale-95 transition-transform"
               onClick={handleManageSubscription}
             >
               Mettre à jour le paiement
@@ -474,7 +493,9 @@ export default function SubscriptionDashboard({
 
     return (
       <div className="mb-6 p-4 bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg">
-        <h3 className="text-md font-medium mb-3">Période d&apos;abonnement</h3>
+        <h3 className="text-md font-medium mb-3 text-[color:var(--foreground)]">
+          Période d&apos;abonnement
+        </h3>
 
         <div className="space-y-2">
           <div className="flex justify-between text-sm text-[color:var(--muted-foreground)]">
@@ -482,14 +503,17 @@ export default function SubscriptionDashboard({
             <span>{formatDate(subscription.currentPeriodEnd)}</span>
           </div>
 
-          <Progress value={progress} className="h-2" />
+          <Progress
+            value={progress}
+            className="h-2 bg-[color:var(--muted)] [&>div]:bg-[color:var(--primary)]"
+          />
 
           <div className="flex justify-between items-center">
             <span className="text-sm text-[color:var(--muted-foreground)]">
               Progression: {progress}%
             </span>
             <span
-              className={`text-sm font-medium ${daysRemaining <= 7 ? "text-amber-600" : ""}`}
+              className={`text-sm font-medium ${daysRemaining <= 7 ? "text-amber-600 dark:text-amber-500" : "text-[color:var(--foreground)]"}`}
             >
               {daysRemaining} jours restants
             </span>
@@ -509,14 +533,16 @@ export default function SubscriptionDashboard({
 
     return (
       <div className="mb-6 p-4 bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg">
-        <h3 className="text-md font-medium mb-3">Détails de facturation</h3>
+        <h3 className="text-md font-medium mb-3 text-[color:var(--foreground)]">
+          Détails de facturation
+        </h3>
 
         <div className="space-y-3">
           <div className="flex justify-between">
             <span className="text-sm text-[color:var(--muted-foreground)]">
               Prochain paiement
             </span>
-            <span className="text-sm font-medium">
+            <span className="text-sm font-medium text-[color:var(--foreground)]">
               {formatDate(subscription.currentPeriodEnd)}
             </span>
           </div>
@@ -525,13 +551,13 @@ export default function SubscriptionDashboard({
             <span className="text-sm text-[color:var(--muted-foreground)]">
               Montant
             </span>
-            <span className="text-sm font-medium">
+            <span className="text-sm font-medium text-[color:var(--foreground)]">
               {subscription.plan.monthlyPrice}€ / mois
             </span>
           </div>
 
           {subscription.cancelAtPeriodEnd && (
-            <div className="mt-2 p-2 bg-amber-50 border border-amber-100 rounded text-amber-700 text-sm">
+            <div className="mt-2 p-2 bg-amber-100 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded text-amber-700 dark:text-amber-400 text-sm">
               <div className="flex items-center gap-2">
                 <AlertTriangle size={16} />
                 <span>Pas de renouvellement prévu</span>
@@ -545,22 +571,26 @@ export default function SubscriptionDashboard({
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-8">Gestion de l&apos;abonnement</h1>
+      <h1 className="text-3xl font-bold mb-8 text-[color:var(--foreground)]">
+        Gestion de l&apos;abonnement
+      </h1>
 
       {/* Section abonnement actuel */}
       <div className="mb-10">
-        <h2 className="text-xl font-semibold mb-4">Abonnement actuel</h2>
+        <h2 className="text-xl font-semibold mb-4 text-[color:var(--foreground)]">
+          Abonnement actuel
+        </h2>
 
         {subscription && (
           <SubscriptionStatusBanner subscription={subscription} />
         )}
 
-        <Card>
+        <Card className="bg-[color:var(--card)] border-[color:var(--border)] shadow-sm">
           <CardContent className="p-6">
             {subscription ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <h3 className="text-lg font-medium mb-2">
+                  <h3 className="text-lg font-medium mb-2 text-[color:var(--foreground)]">
                     Plan {subscription.plan.name}
                   </h3>
                   <p className="text-sm text-[color:var(--muted-foreground)] mb-4">
@@ -573,21 +603,23 @@ export default function SubscriptionDashboard({
                   {getStatusBadge(subscription.status)}
 
                   {subscription.cancelAtPeriodEnd && (
-                    <div className="mt-2 p-2 bg-amber-50 text-amber-700 rounded-md text-sm">
+                    <div className="mt-2 p-2 bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 rounded-md text-sm">
                       Cet abonnement sera annulé le{" "}
                       {formatDate(subscription.currentPeriodEnd)}
                     </div>
                   )}
 
                   <div className="mt-6">
-                    <h4 className="text-sm font-medium mb-2">
+                    <h4 className="text-sm font-medium mb-2 text-[color:var(--foreground)]">
                       Fonctionnalités incluses:
                     </h4>
                     <ul className="space-y-1">
                       {subscription.plan.features.map((feature, index) => (
                         <li key={index} className="flex items-start">
-                          <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                          <span className="text-sm">{feature}</span>
+                          <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400 mr-2 flex-shrink-0 mt-0.5" />
+                          <span className="text-sm text-[color:var(--foreground)]">
+                            {feature}
+                          </span>
                         </li>
                       ))}
                     </ul>
@@ -611,7 +643,7 @@ export default function SubscriptionDashboard({
                           <Button
                             onClick={handleManageSubscription}
                             disabled={loading === "manage"}
-                            className="w-full"
+                            className="w-full bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:opacity-90 transition-all touch-target active:scale-95"
                           >
                             {loading === "manage" ? (
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -625,7 +657,7 @@ export default function SubscriptionDashboard({
                           <Button
                             onClick={() => setShowCancelModal(true)}
                             variant="outline"
-                            className="w-full text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+                            className="w-full text-red-500 dark:text-red-400 border-red-200 dark:border-red-700/50 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-300 transition-colors touch-target active:scale-95"
                             disabled={
                               loading !== null || subscription.cancelAtPeriodEnd
                             }
@@ -640,7 +672,7 @@ export default function SubscriptionDashboard({
                         <Button
                           onClick={handleRenewFreePlan}
                           disabled={loading === "renew"}
-                          className="w-full"
+                          className="w-full bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)] hover:bg-[color:var(--muted)] transition-colors touch-target active:scale-95"
                           variant="outline"
                         >
                           {loading === "renew" ? (
@@ -654,7 +686,11 @@ export default function SubscriptionDashboard({
 
                       <Button
                         onClick={() => (window.location.href = "/pricing")}
-                        className="w-full"
+                        className={`w-full transition-colors touch-target active:scale-95 ${
+                          isFreePlan
+                            ? "bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:opacity-90"
+                            : "bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)] hover:bg-[color:var(--muted)]"
+                        }`}
                         variant={isFreePlan ? "default" : "outline"}
                       >
                         <ArrowRight className="mr-2 h-4 w-4" />
@@ -669,14 +705,17 @@ export default function SubscriptionDashboard({
             ) : (
               <div className="text-center py-6">
                 <Shield className="h-12 w-12 text-[color:var(--muted-foreground)] mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">
+                <h3 className="text-lg font-medium mb-2 text-[color:var(--foreground)]">
                   Aucun abonnement actif
                 </h3>
                 <p className="text-[color:var(--muted-foreground)] mb-4">
                   Vous n&apos;avez pas d&apos;abonnement actif pour le moment.
                 </p>
                 {isAdmin && (
-                  <Button onClick={() => (window.location.href = "/pricing")}>
+                  <Button
+                    onClick={() => (window.location.href = "/pricing")}
+                    className="bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:opacity-90 transition-colors touch-target active:scale-95"
+                  >
                     Voir les forfaits disponibles
                   </Button>
                 )}
@@ -688,21 +727,25 @@ export default function SubscriptionDashboard({
 
       {/* Nouvelle section avec UsageLimits */}
       <div className="mb-10">
-        <h2 className="text-xl font-semibold mb-4">Utilisation actuelle</h2>
+        <h2 className="text-xl font-semibold mb-4 text-[color:var(--foreground)]">
+          Utilisation actuelle
+        </h2>
         <UsageLimits />
       </div>
 
       {/* Section plans disponibles */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Plans disponibles</h2>
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <h2 className="text-xl font-semibold text-[color:var(--foreground)]">
+            Plans disponibles
+          </h2>
 
           <div className="flex items-center space-x-2 bg-[color:var(--muted)] rounded-lg p-1">
             <button
               onClick={() => setBillingCycle("monthly")}
-              className={`px-3 py-1 text-sm rounded-md transition-colors ${
+              className={`px-3 py-1 text-sm rounded-md transition-colors touch-target ${
                 billingCycle === "monthly"
-                  ? "bg-white text-[color:var(--foreground)] shadow-sm"
+                  ? "bg-[color:var(--card)] text-[color:var(--foreground)] shadow-sm"
                   : "text-[color:var(--muted-foreground)]"
               }`}
             >
@@ -710,9 +753,9 @@ export default function SubscriptionDashboard({
             </button>
             <button
               onClick={() => setBillingCycle("yearly")}
-              className={`px-3 py-1 text-sm rounded-md transition-colors ${
+              className={`px-3 py-1 text-sm rounded-md transition-colors touch-target ${
                 billingCycle === "yearly"
-                  ? "bg-white text-[color:var(--foreground)] shadow-sm"
+                  ? "bg-[color:var(--card)] text-[color:var(--foreground)] shadow-sm"
                   : "text-[color:var(--muted-foreground)]"
               }`}
             >
@@ -725,22 +768,26 @@ export default function SubscriptionDashboard({
           {plans.map((plan) => (
             <Card
               key={plan.id}
-              className={`overflow-hidden transition-all duration-300 ${
+              className={`bg-[color:var(--card)] border-[color:var(--border)] overflow-hidden transition-all duration-300 ${
                 currentPlan?.id === plan.id
                   ? "border-2 border-[color:var(--primary)] shadow-lg shadow-[color:var(--primary)]/10"
-                  : ""
+                  : "shadow-sm"
               }`}
             >
               <CardHeader className="pb-2">
-                <CardTitle>{plan.name}</CardTitle>
+                <CardTitle className="text-[color:var(--foreground)]">
+                  {plan.name}
+                </CardTitle>
               </CardHeader>
               <CardContent className="pb-6">
                 <div className="mb-6">
                   {plan.hasCustomPricing ? (
-                    <div className="text-2xl font-bold">Sur mesure</div>
+                    <div className="text-2xl font-bold text-[color:var(--foreground)]">
+                      Sur mesure
+                    </div>
                   ) : (
                     <div className="flex items-end">
-                      <span className="text-3xl font-bold">
+                      <span className="text-3xl font-bold text-[color:var(--foreground)]">
                         {plan.price === 0
                           ? "Gratuit"
                           : billingCycle === "monthly"
@@ -761,7 +808,7 @@ export default function SubscriptionDashboard({
                 {billingCycle === "yearly" &&
                   plan.yearlyPrice &&
                   plan.monthlyPrice * 12 > plan.yearlyPrice && (
-                    <div className="bg-green-50 text-green-700 text-sm p-2 rounded-md mb-4">
+                    <div className="bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 text-sm p-2 rounded-md mb-4 border border-green-200 dark:border-green-900/50">
                       Économisez{" "}
                       {Math.round(
                         100 -
@@ -774,8 +821,10 @@ export default function SubscriptionDashboard({
                 <ul className="space-y-3 mb-6">
                   {plan.features.map((feature, index) => (
                     <li key={index} className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0" />
-                      <span>{feature}</span>
+                      <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400 mr-2 flex-shrink-0" />
+                      <span className="text-[color:var(--foreground)]">
+                        {feature}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -783,7 +832,11 @@ export default function SubscriptionDashboard({
               <CardFooter>
                 <Button
                   onClick={() => handleSelectPlan(plan)}
-                  className="w-full"
+                  className={`w-full touch-target active:scale-95 transition-transform ${
+                    currentPlan?.id === plan.id
+                      ? "bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)] hover:bg-[color:var(--muted)]"
+                      : "bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:opacity-90"
+                  }`}
                   variant={currentPlan?.id === plan.id ? "outline" : "default"}
                   disabled={
                     loading !== null || !isAdmin || currentPlan?.id === plan.id
@@ -806,7 +859,7 @@ export default function SubscriptionDashboard({
         </div>
 
         {!isAdmin && (
-          <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-md text-amber-700">
+          <div className="mt-4 p-4 bg-amber-100 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-md text-amber-700 dark:text-amber-400">
             Seuls les administrateurs peuvent gérer les abonnements. Contactez
             l&apos;administrateur de votre organisation pour modifier votre
             abonnement.
@@ -816,11 +869,13 @@ export default function SubscriptionDashboard({
 
       {/* Section FAQ */}
       <div className="mt-10">
-        <h2 className="text-xl font-semibold mb-4">Questions fréquentes</h2>
-        <Card>
+        <h2 className="text-xl font-semibold mb-4 text-[color:var(--foreground)]">
+          Questions fréquentes
+        </h2>
+        <Card className="bg-[color:var(--card)] border-[color:var(--border)] shadow-sm">
           <CardContent className="p-6 space-y-4">
             <div>
-              <h3 className="font-medium mb-2">
+              <h3 className="font-medium mb-2 text-[color:var(--foreground)]">
                 Comment fonctionne la facturation ?
               </h3>
               <p className="text-sm text-[color:var(--muted-foreground)]">
@@ -830,7 +885,7 @@ export default function SubscriptionDashboard({
               </p>
             </div>
             <div>
-              <h3 className="font-medium mb-2">
+              <h3 className="font-medium mb-2 text-[color:var(--foreground)]">
                 Puis-je annuler mon abonnement ?
               </h3>
               <p className="text-sm text-[color:var(--muted-foreground)]">
@@ -840,7 +895,7 @@ export default function SubscriptionDashboard({
               </p>
             </div>
             <div>
-              <h3 className="font-medium mb-2">
+              <h3 className="font-medium mb-2 text-[color:var(--foreground)]">
                 Que se passe-t-il si je dépasse les limites de mon forfait ?
               </h3>
               <p className="text-sm text-[color:var(--muted-foreground)]">

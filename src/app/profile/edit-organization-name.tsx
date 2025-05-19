@@ -138,8 +138,8 @@ export default function EditOrganizationName({
   // Afficher la boîte de confirmation
   if (showConfirmation) {
     return (
-      <div className="w-full border rounded p-4 bg-yellow-50">
-        <p className="mb-3 text-amber-700">
+      <div className="w-full border rounded p-4 bg-[color:var(--warning-background)]">
+        <p className="mb-3 text-[color:var(--warning-foreground)]">
           Êtes-vous sûr de vouloir renommer l&apos;organisation de &quot;
           {initialName}&quot; à &quot;{name}&quot; ?
         </p>
@@ -154,7 +154,7 @@ export default function EditOrganizationName({
           <button
             onClick={handleCancel}
             disabled={isLoading}
-            className="px-3 py-1 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 disabled:opacity-50"
+            className="px-3 py-1 bg-[color:var(--muted)] text-[color:var(--foreground)] rounded hover:bg-[color:var(--muted)]/80 disabled:opacity-50"
           >
             Annuler
           </button>
@@ -174,7 +174,7 @@ export default function EditOrganizationName({
           onChange={(e) => setName(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={isLoading}
-          className="w-full border rounded px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          className="w-full border rounded px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-[color:var(--background)] text-[color:var(--foreground)]"
           placeholder="Nom de l'organisation"
         />
         <div className="mt-2 flex gap-2">
@@ -186,7 +186,7 @@ export default function EditOrganizationName({
           </button>
           <button
             onClick={handleCancel}
-            className="px-3 py-1 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+            className="px-3 py-1 bg-[color:var(--muted)] text-[color:var(--foreground)] rounded hover:bg-[color:var(--muted)]/80"
           >
             Annuler
           </button>
@@ -200,8 +200,10 @@ export default function EditOrganizationName({
     <div
       onClick={handleStartEditing}
       className={`w-full border rounded px-3 py-2 ${
-        isAdmin ? "bg-gray-100 hover:bg-gray-200 cursor-pointer" : "bg-gray-50"
-      } flex items-center`}
+        isAdmin
+          ? "bg-[color:var(--muted)] hover:bg-[color:var(--muted)]/80 cursor-pointer"
+          : "bg-[color:var(--muted)]"
+      } flex items-center text-[color:var(--foreground)]`}
     >
       <span>{name}</span>
     </div>

@@ -59,7 +59,9 @@ export function EmailPreferences({ initialEnabled }: EmailPreferencesProps) {
             <MailX className="h-5 w-5 text-[color:var(--muted-foreground)]" />
           )}
           <div>
-            <p className="font-medium">Notifications par email</p>
+            <p className="font-medium text-[color:var(--foreground)]">
+              Notifications par email
+            </p>
             <p className="text-sm text-[color:var(--muted-foreground)]">
               {enabled
                 ? "Vous recevez des récapitulatifs quotidiens par email"
@@ -72,14 +74,20 @@ export function EmailPreferences({ initialEnabled }: EmailPreferencesProps) {
             checked={enabled}
             onCheckedChange={handleToggle}
             disabled={loading}
-            checkedIcon={<Mail className="h-4 w-4 text-blue-800" />}
-            uncheckedIcon={<MailX className="h-4 w-4 text-gray-500" />}
+            checkedIcon={
+              <Mail className="h-4 w-4 text-[color:var(--primary-foreground)]" />
+            }
+            uncheckedIcon={
+              <MailX className="h-4 w-4 text-[color:var(--muted-foreground)]" />
+            }
           />
         </div>
       </div>
 
       <div className="mt-4 p-4 rounded-lg bg-[color:var(--muted)] text-sm">
-        <h3 className="font-medium mb-2">À propos des emails</h3>
+        <h3 className="font-medium mb-2 text-[color:var(--foreground)]">
+          À propos des emails
+        </h3>
         <p className="text-[color:var(--muted-foreground)] mb-2">
           Si activé, vous recevrez chaque matin un récapitulatif des tâches qui
           vous ont été assignées la veille.

@@ -1,4 +1,3 @@
-// src/app/components/UsageLimits.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -58,18 +57,18 @@ export default function UsageLimits() {
 
   if (loading) {
     return (
-      <div className="p-4 border rounded-lg animate-pulse bg-gray-50">
-        <div className="h-6 w-2/3 bg-gray-200 rounded mb-3"></div>
-        <div className="h-4 w-1/2 bg-gray-200 rounded"></div>
+      <div className="p-4 border border-[color:var(--border)] rounded-lg animate-pulse bg-[color:var(--muted)]">
+        <div className="h-6 w-2/3 bg-[color:var(--border)] rounded mb-3"></div>
+        <div className="h-4 w-1/2 bg-[color:var(--border)] rounded"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4 border border-red-200 rounded-lg bg-red-50">
-        <p className="text-red-700">
-          <AlertCircle className="h-5 w-5 inline mr-2" />
+      <div className="p-4 border border-red-200 dark:border-red-900/50 rounded-lg bg-red-100 dark:bg-red-950/30">
+        <p className="text-red-700 dark:text-red-400 flex items-center">
+          <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
           {error}
         </p>
       </div>
@@ -87,32 +86,41 @@ export default function UsageLimits() {
     const isNearLimit = percentUsed >= 80;
     const isAtLimit = percentUsed >= 100;
 
+    // Classes adaptées pour le mode sombre
+    let progressBgClass = "bg-[color:var(--muted)]";
+    let progressIndicatorClass = "bg-[color:var(--primary)]";
+    let textColorClass = "text-[color:var(--foreground)]";
+
+    if (isAtLimit) {
+      progressBgClass = "bg-red-200 dark:bg-red-900/30";
+      progressIndicatorClass = "bg-red-500 dark:bg-red-600";
+      textColorClass = "text-red-600 dark:text-red-400";
+    } else if (isNearLimit) {
+      progressBgClass = "bg-amber-200 dark:bg-amber-900/30";
+      progressIndicatorClass = "bg-amber-500 dark:bg-amber-600";
+      textColorClass = "text-amber-600 dark:text-amber-400";
+    }
+
     return (
       <div className="mb-4">
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center">
             {type === "users" ? (
-              <Users className="h-5 w-5 mr-2 text-blue-500" />
+              <Users className="h-5 w-5 mr-2 text-[color:var(--primary)]" />
             ) : (
-              <Building2 className="h-5 w-5 mr-2 text-green-500" />
+              <Building2 className="h-5 w-5 mr-2 text-[color:var(--primary)]" />
             )}
-            <span className="font-medium">
+            <span className="font-medium text-[color:var(--foreground)]">
               {type === "users" ? "Utilisateurs" : "Objets"}
             </span>
           </div>
           <div className="text-sm">
             {data.unlimited ? (
-              <span className="text-green-500">Illimité</span>
+              <span className="text-green-500 dark:text-green-400">
+                Illimité
+              </span>
             ) : (
-              <span
-                className={
-                  isAtLimit
-                    ? "text-red-500"
-                    : isNearLimit
-                      ? "text-amber-500"
-                      : "text-gray-600"
-                }
-              >
+              <span className={textColorClass}>
                 {data.current} / {data.limit}
               </span>
             )}
@@ -122,27 +130,19 @@ export default function UsageLimits() {
         {!data.unlimited && (
           <Progress
             value={percentUsed > 100 ? 100 : percentUsed}
-            className={`h-2 ${isAtLimit ? "bg-red-200" : isNearLimit ? "bg-amber-200" : "bg-gray-200"}`}
-            style={
-              {
-                "--progress-indicator-color": isAtLimit
-                  ? "var(--red-500, #ef4444)"
-                  : isNearLimit
-                    ? "var(--amber-500, #f59e0b)"
-                    : "var(--blue-500, #3b82f6)",
-              } as React.CSSProperties
-            }
+            className={`h-2 ${progressBgClass} ${progressIndicatorClass}`}
           />
         )}
 
         {(isAtLimit || isNearLimit) && !data.unlimited && (
-          <div
-            className={`text-xs mt-1 ${isAtLimit ? "text-red-500" : "text-amber-500"}`}
-          >
+          <div className={`text-xs mt-1 ${textColorClass}`}>
             {isAtLimit
               ? `Limite ${type === "users" ? "d'utilisateurs" : "d'objets"} atteinte.`
               : `Vous approchez de votre limite ${type === "users" ? "d'utilisateurs" : "d'objets"}.`}{" "}
-            <Link href="/pricing" className="underline">
+            <Link
+              href="/pricing"
+              className="underline text-[color:var(--primary)] hover:opacity-90 transition-opacity"
+            >
               Passer à un forfait supérieur
             </Link>
           </div>
@@ -152,8 +152,10 @@ export default function UsageLimits() {
   };
 
   return (
-    <div className="p-4 border rounded-lg bg-white">
-      <h3 className="text-lg font-medium mb-4">Utilisation</h3>
+    <div className="p-4 border border-[color:var(--border)] rounded-lg bg-[color:var(--card)] shadow-sm">
+      <h3 className="text-lg font-medium mb-4 text-[color:var(--foreground)]">
+        Utilisation
+      </h3>
 
       {renderLimitStatus("users")}
       {renderLimitStatus("objects")}

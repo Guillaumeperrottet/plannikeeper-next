@@ -57,13 +57,20 @@ export default async function ProfileEditPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button asChild variant="outline">
+            <Button
+              asChild
+              variant="outline"
+              className="bg-[color:var(--muted)] text-[color:var(--foreground)] border-[color:var(--border)] hover:bg-[color:var(--muted)]/80"
+            >
               <Link href="/profile">
                 <ArrowLeft size={16} className="mr-2" />
                 Profil
               </Link>
             </Button>
-            <Button asChild>
+            <Button
+              asChild
+              className="bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:bg-[color:var(--primary)]/90"
+            >
               <Link href="/profile/invitations">
                 <PlusCircle size={16} className="mr-2" />
                 Inviter des membres
@@ -77,7 +84,9 @@ export default async function ProfileEditPage() {
         <div className="p-4 sm:p-6 border-b border-[color:var(--border)] bg-[color:var(--muted)]">
           <div className="flex items-center gap-3">
             <Users size={20} className="text-[color:var(--primary)]" />
-            <h2 className="text-lg font-medium">Liste des membres</h2>
+            <h2 className="text-lg font-medium text-[color:var(--foreground)]">
+              Liste des membres
+            </h2>
           </div>
         </div>
 

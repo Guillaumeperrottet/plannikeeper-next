@@ -61,15 +61,27 @@ export default function DocumentsList({
   const getFileIcon = (fileType: string) => {
     if (fileType.startsWith("image/")) {
       return (
-        <Image size={18} className="text-blue-500" aria-label="Image file" />
+        <Image
+          size={18}
+          className="text-[color:var(--info-foreground)]"
+          aria-label="Image file"
+        />
       );
     } else if (fileType === "application/pdf") {
       return (
-        <FileText size={18} className="text-red-500" aria-label="PDF file" />
+        <FileText
+          size={18}
+          className="text-[color:var(--destructive-foreground)]"
+          aria-label="PDF file"
+        />
       );
     } else {
       return (
-        <File size={18} className="text-gray-500" aria-label="Generic file" />
+        <File
+          size={18}
+          className="text-[color:var(--muted-foreground)]"
+          aria-label="Generic file"
+        />
       );
     }
   };
@@ -121,8 +133,8 @@ export default function DocumentsList({
   if (isLoading) {
     return (
       <div className="text-center py-3">
-        <div className="animate-spin w-5 h-5 sm:w-6 sm:h-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-        <p className="text-xs sm:text-sm text-gray-500">
+        <div className="animate-spin w-5 h-5 sm:w-6 sm:h-6 border-2 border-[color:var(--primary)] border-t-transparent rounded-full mx-auto mb-2"></div>
+        <p className="text-xs sm:text-sm text-[color:var(--muted-foreground)]">
           Chargement des documents...
         </p>
       </div>
@@ -131,7 +143,7 @@ export default function DocumentsList({
 
   if (error) {
     return (
-      <div className="text-center py-3 text-red-600 flex items-center justify-center gap-2">
+      <div className="text-center py-3 text-[color:var(--destructive)] flex items-center justify-center gap-2">
         <AlertCircle size={14} />
         <span className="text-xs sm:text-sm">{error}</span>
       </div>
@@ -140,7 +152,7 @@ export default function DocumentsList({
 
   if (!documents || documents.length === 0) {
     return (
-      <div className="text-center py-3 text-gray-500">
+      <div className="text-center py-3 text-[color:var(--muted-foreground)]">
         <p className="text-xs sm:text-sm">
           Aucun document attaché à cette tâche
         </p>
@@ -153,18 +165,18 @@ export default function DocumentsList({
       {documents.map((doc, index) => (
         <div
           key={doc.id}
-          className="flex items-center justify-between p-2 sm:p-3 bg-background rounded-lg border shadow-sm hover:bg-muted/50 transition-colors"
+          className="flex items-center justify-between p-2 sm:p-3 bg-[color:var(--background)] rounded-lg border border-[color:var(--border)] shadow-sm hover:bg-[color:var(--muted)]/50 transition-colors"
         >
           <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
             {getFileIcon(doc.fileType)}
             <div className="flex-1 min-w-0">
               <div
-                className="block text-xs sm:text-sm font-medium hover:underline truncate cursor-pointer"
+                className="block text-xs sm:text-sm font-medium hover:underline truncate cursor-pointer text-[color:var(--foreground)]"
                 onClick={() => openPreview(doc, index)}
               >
                 {doc.name}
               </div>
-              <div className="text-[10px] sm:text-xs text-muted-foreground">
+              <div className="text-[10px] sm:text-xs text-[color:var(--muted-foreground)]">
                 {formatFileSize(doc.fileSize)} •{" "}
                 {new Date(doc.createdAt).toLocaleDateString()}
               </div>
@@ -173,14 +185,14 @@ export default function DocumentsList({
           <div className="flex items-center gap-1 sm:gap-2">
             <button
               onClick={() => openPreview(doc, index)}
-              className="p-1 hover:text-blue-600 transition-colors"
+              className="p-1 hover:text-[color:var(--info-foreground)] transition-colors"
               title="Prévisualiser"
             >
               <Eye size={14} className="sm:w-4 sm:h-4" />
             </button>
             <button
               onClick={() => handleDelete(doc.id)}
-              className="p-1 hover:text-red-600 transition-colors"
+              className="p-1 hover:text-[color:var(--destructive)] transition-colors"
               title="Supprimer"
             >
               <Trash2 size={14} className="sm:w-4 sm:h-4" />

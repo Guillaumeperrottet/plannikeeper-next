@@ -63,20 +63,27 @@ export default async function NotificationsPage() {
           Retour au profil
         </Link>
 
-        <h1 className="text-2xl sm:text-3xl font-bold mb-6">Notifications</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-[color:var(--foreground)]">
+          Notifications
+        </h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
             <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg shadow-sm overflow-hidden">
               <div className="p-4 sm:p-6 border-b border-[color:var(--border)] bg-[color:var(--muted)]">
-                <h2 className="text-lg font-medium">Préférences</h2>
-                <NotificationsList notifications={mappedNotifications} />
+                <h2 className="text-lg font-medium text-[color:var(--foreground)]">
+                  Préférences
+                </h2>
               </div>
               <div className="p-5">
                 <NotificationPreferences
                   initialEnabled={notificationsEnabled}
                 />
-                <EmailPreferences initialEnabled={emailNotificationsEnabled} />
+                <div className="mt-8 pt-8 border-t border-[color:var(--border)]">
+                  <EmailPreferences
+                    initialEnabled={emailNotificationsEnabled}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -84,7 +91,7 @@ export default async function NotificationsPage() {
           <div className="lg:col-span-2">
             <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg shadow-sm overflow-hidden">
               <div className="p-4 sm:p-6 border-b border-[color:var(--border)] bg-[color:var(--muted)]">
-                <h2 className="text-lg font-medium">
+                <h2 className="text-lg font-medium text-[color:var(--foreground)]">
                   Historique des notifications
                 </h2>
               </div>

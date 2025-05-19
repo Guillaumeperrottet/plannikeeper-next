@@ -92,7 +92,7 @@ export default function DocumentUpload({
       <div
         className={`border-2 border-dashed rounded-lg p-3 text-center transition-colors ${
           dragActive
-            ? "border-blue-500 bg-blue-50/20"
+            ? "border-[color:var(--primary)] bg-[color:var(--primary)]/10"
             : "border-[color:var(--border)]"
         }`}
         onDragEnter={handleDrag}

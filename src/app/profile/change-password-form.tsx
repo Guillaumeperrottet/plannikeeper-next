@@ -78,7 +78,7 @@ export default function ChangePasswordForm() {
       <Button
         onClick={() => setIsFormVisible(true)}
         variant="outline"
-        className="mt-2"
+        className="mt-2 text-[color:var(--foreground)] bg-[color:var(--muted)] hover:bg-[color:var(--muted)]/80 border-[color:var(--border)]"
       >
         Modifier mon mot de passe
       </Button>
@@ -86,12 +86,19 @@ export default function ChangePasswordForm() {
   }
 
   return (
-    <div className="mt-4 p-4 border border-border rounded-lg bg-background">
-      <h3 className="text-lg font-medium mb-4">Modifier mon mot de passe</h3>
+    <div className="mt-4 p-4 border border-[color:var(--border)] rounded-lg bg-[color:var(--background)]">
+      <h3 className="text-lg font-medium mb-4 text-[color:var(--foreground)]">
+        Modifier mon mot de passe
+      </h3>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <Label htmlFor="currentPassword">Mot de passe actuel</Label>
+          <Label
+            htmlFor="currentPassword"
+            className="text-[color:var(--foreground)]"
+          >
+            Mot de passe actuel
+          </Label>
           <Input
             id="currentPassword"
             type="password"
@@ -99,12 +106,17 @@ export default function ChangePasswordForm() {
             onChange={(e) => setCurrentPassword(e.target.value)}
             required
             disabled={isLoading}
-            className="mt-1"
+            className="mt-1 bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)]"
           />
         </div>
 
         <div>
-          <Label htmlFor="newPassword">Nouveau mot de passe</Label>
+          <Label
+            htmlFor="newPassword"
+            className="text-[color:var(--foreground)]"
+          >
+            Nouveau mot de passe
+          </Label>
           <Input
             id="newPassword"
             type="password"
@@ -112,16 +124,19 @@ export default function ChangePasswordForm() {
             onChange={(e) => setNewPassword(e.target.value)}
             required
             disabled={isLoading}
-            className="mt-1"
+            className="mt-1 bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)]"
             minLength={8}
           />
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-xs text-[color:var(--muted-foreground)] mt-1">
             Le mot de passe doit contenir au moins 8 caractères
           </p>
         </div>
 
         <div>
-          <Label htmlFor="confirmPassword">
+          <Label
+            htmlFor="confirmPassword"
+            className="text-[color:var(--foreground)]"
+          >
             Confirmer le nouveau mot de passe
           </Label>
           <Input
@@ -131,7 +146,7 @@ export default function ChangePasswordForm() {
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
             disabled={isLoading}
-            className="mt-1"
+            className="mt-1 bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)]"
           />
         </div>
 
@@ -144,10 +159,15 @@ export default function ChangePasswordForm() {
               setIsFormVisible(false);
             }}
             disabled={isLoading}
+            className="border-[color:var(--border)] text-[color:var(--foreground)] bg-[color:var(--muted)] hover:bg-[color:var(--muted)]/80"
           >
             Annuler
           </Button>
-          <Button type="submit" disabled={isLoading}>
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:bg-[color:var(--primary)]/90"
+          >
             {isLoading
               ? "Modification en cours..."
               : "Modifier le mot de passe"}

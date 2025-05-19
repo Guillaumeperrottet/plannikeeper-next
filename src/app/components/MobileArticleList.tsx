@@ -1,5 +1,16 @@
+// src/app/components/MobileArticleList.tsx
+"use client";
+
 import React, { useState, useRef } from "react";
-import { List, X, ExternalLink } from "lucide-react";
+import {
+  List,
+  X,
+  ExternalLink,
+  Search,
+  XCircle,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 type Article = {
@@ -30,7 +41,10 @@ const MobileArticleList: React.FC<MobileArticleListProps> = ({
   hoveredArticleId,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const listRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Feedback haptique pour les interactions
   const triggerHapticFeedback = (intensity = "light") => {
@@ -54,9 +68,52 @@ const MobileArticleList: React.FC<MobileArticleListProps> = ({
     setIsOpen(!isOpen);
   };
 
+  const toggleSortDirection = () => {
+    setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    triggerHapticFeedback("light");
+  };
+
   const handleArticleSelect = (articleId: string) => {
     triggerHapticFeedback("medium");
     onArticleClick(articleId);
+  };
+
+  // Fonction pour filtrer et trier les articles
+  const getFilteredArticles = () => {
+    let filtered = [...articles];
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (article) =>
+          article.title.toLowerCase().includes(term) ||
+          (article.description &&
+            article.description.toLowerCase().includes(term))
+      );
+    }
+
+    // Tri par titre
+    filtered.sort((a, b) => {
+      const titleA = a.title.toLowerCase();
+      const titleB = b.title.toLowerCase();
+
+      if (sortDirection === "asc") {
+        return titleA > titleB ? 1 : -1;
+      } else {
+        return titleA < titleB ? 1 : -1;
+      }
+    });
+
+    return filtered;
+  };
+
+  const filteredArticles = getFilteredArticles();
+
+  const clearSearch = () => {
+    setSearchTerm("");
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
   };
 
   // Animations
@@ -96,17 +153,6 @@ const MobileArticleList: React.FC<MobileArticleListProps> = ({
         onClick={togglePanel}
         className="fixed bottom-20 left-4 z-[1000] flex items-center gap-1 bg-primary text-primary-foreground rounded-full shadow-lg px-3 py-3"
         whileTap={{ scale: 0.95 }}
-        style={{
-          position: "fixed",
-          bottom: "80px",
-          left: "16px",
-          zIndex: 1000,
-          backgroundColor: "var(--primary)",
-          color: "white",
-          borderRadius: "9999px",
-          padding: "12px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-        }}
       >
         {isOpen ? <X size={18} /> : <List size={18} />}
         {!isOpen && (
@@ -127,15 +173,7 @@ const MobileArticleList: React.FC<MobileArticleListProps> = ({
               animate="visible"
               exit="hidden"
               onClick={togglePanel}
-              style={{
-                position: "fixed",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: "rgba(0,0,0,0.5)",
-                zIndex: 990,
-              }}
+              className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm z-40"
             />
 
             {/* Panneau animé */}
@@ -144,83 +182,86 @@ const MobileArticleList: React.FC<MobileArticleListProps> = ({
               initial="hidden"
               animate="visible"
               exit="hidden"
-              style={{
-                position: "fixed",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                backgroundColor: "white",
-                borderTopLeftRadius: "16px",
-                borderTopRightRadius: "16px",
-                boxShadow: "0 -4px 20px rgba(0,0,0,0.2)",
-                zIndex: 995,
-                maxHeight: "80vh",
-                display: "flex",
-                flexDirection: "column",
-              }}
+              className="fixed bottom-0 left-0 right-0 bg-background border-t border-[color:var(--border)] rounded-t-xl shadow-xl z-50 max-h-[80vh] flex flex-col"
             >
               {/* Indicateur de défilement (handle) */}
-              <div
-                style={{
-                  width: "40px",
-                  height: "4px",
-                  backgroundColor: "#ccc",
-                  borderRadius: "4px",
-                  margin: "10px auto 5px",
-                  opacity: 0.6,
-                }}
-              />
+              <div className="w-10 h-1 bg-[color:var(--muted-foreground)]/30 rounded-full mx-auto my-3" />
 
               {/* En-tête du panneau */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "10px 16px",
-                  borderBottom: "1px solid #eee",
-                }}
-              >
-                <h3 style={{ fontWeight: 500, margin: 0 }}>
-                  Articles de &quot;{selectedSectorName}&quot;
-                </h3>
-                <motion.button
+              <div className="flex justify-between items-center px-4 py-3 border-b border-[color:var(--border)]">
+                <div className="flex items-center">
+                  <h3 className="font-medium text-[color:var(--foreground)]">
+                    Articles de &quot;{selectedSectorName}&quot;
+                  </h3>
+                  <button
+                    onClick={toggleSortDirection}
+                    className="ml-2 p-1 rounded hover:bg-[color:var(--muted)]"
+                    title={sortDirection === "asc" ? "Tri A-Z" : "Tri Z-A"}
+                  >
+                    {sortDirection === "asc" ? (
+                      <ArrowUp
+                        size={16}
+                        className="text-[color:var(--muted-foreground)]"
+                      />
+                    ) : (
+                      <ArrowDown
+                        size={16}
+                        className="text-[color:var(--muted-foreground)]"
+                      />
+                    )}
+                  </button>
+                </div>
+                <button
                   onClick={togglePanel}
-                  whileTap={{ scale: 0.9 }}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: "8px",
-                  }}
+                  className="p-2 text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)] hover:bg-[color:var(--muted)] rounded-md"
                 >
-                  <X size={20} />
-                </motion.button>
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Barre de recherche */}
+              <div className="px-4 py-3 border-b border-[color:var(--border)]">
+                <div className="relative">
+                  <Search
+                    size={16}
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[color:var(--muted-foreground)]"
+                  />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Rechercher un article..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full py-2 pl-10 pr-8 border border-[color:var(--border)] rounded-md text-sm bg-transparent text-[color:var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[color:var(--primary)]"
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={clearSearch}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)]"
+                    >
+                      <XCircle size={16} />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Contenu du panneau avec défilement */}
               <div
                 ref={listRef}
+                className="overflow-y-auto overflow-x-hidden flex-1 pb-safe"
                 style={{
-                  overflowY: "auto",
-                  maxHeight: "calc(80vh - 60px)", // Hauteur maximale moins la hauteur de l'en-tête
                   WebkitOverflowScrolling: "touch",
-                  paddingBottom: "env(safe-area-inset-bottom, 16px)",
                 }}
               >
-                {articles.length === 0 ? (
-                  <div
-                    style={{
-                      textAlign: "center",
-                      padding: "40px 20px",
-                      color: "#666",
-                    }}
-                  >
-                    Aucun article disponible pour ce secteur
+                {filteredArticles.length === 0 ? (
+                  <div className="text-center py-10 px-6 text-[color:var(--muted-foreground)]">
+                    {articles.length === 0
+                      ? "Aucun article disponible pour ce secteur"
+                      : "Aucun article ne correspond à votre recherche"}
                   </div>
                 ) : (
-                  <div style={{ padding: "12px 16px" }}>
-                    {articles.map((article, index) => (
+                  <div className="p-4">
+                    {filteredArticles.map((article, index) => (
                       <motion.div
                         key={article.id}
                         custom={index}
@@ -230,60 +271,31 @@ const MobileArticleList: React.FC<MobileArticleListProps> = ({
                         onClick={() => handleArticleSelect(article.id)}
                         onMouseEnter={() => onArticleHover(article.id)}
                         onMouseLeave={() => onArticleHover(null)}
-                        style={{
-                          padding: "16px",
-                          marginBottom: "12px",
-                          borderRadius: "12px",
-                          border: "1px solid #e0e0e0",
-                          backgroundColor:
-                            hoveredArticleId === article.id
-                              ? "rgba(217, 132, 13, 0.1)"
-                              : "white",
-                          cursor: "pointer",
-                          boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-                        }}
+                        className={`p-4 mb-3 rounded-xl border cursor-pointer transition-all duration-200 ${
+                          hoveredArticleId === article.id
+                            ? "bg-[color:var(--primary)]/10 border-[color:var(--primary)]/30"
+                            : "bg-[color:var(--card)] border-[color:var(--border)] hover:bg-[color:var(--muted)]"
+                        }`}
                         whileTap={{ scale: 0.98 }}
                       >
                         <div className="flex justify-between items-start">
-                          <h4
-                            style={{
-                              fontWeight: 500,
-                              marginBottom: "8px",
-                              fontSize: "16px",
-                            }}
-                          >
+                          <h4 className="font-medium text-[color:var(--foreground)] mb-2 pr-5">
                             {article.title}
                           </h4>
                           <ExternalLink
                             size={14}
-                            style={{
-                              color: "var(--muted-foreground)",
-                              marginTop: "4px",
-                            }}
+                            className="text-[color:var(--muted-foreground)] flex-shrink-0 mt-1"
                           />
                         </div>
 
                         {article.description && (
-                          <p
-                            style={{
-                              fontSize: "14px",
-                              color: "var(--muted-foreground)",
-                              lineHeight: 1.4,
-                              display: "-webkit-box",
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: "vertical",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              margin: 0,
-                            }}
-                          >
+                          <p className="text-sm text-[color:var(--muted-foreground)] line-clamp-2">
                             {article.description}
                           </p>
                         )}
                       </motion.div>
                     ))}
-                    {/* Espace supplémentaire en bas */}
-                    <div style={{ height: "20px" }}></div>
+                    <div className="h-8"></div>
                   </div>
                 )}
               </div>
