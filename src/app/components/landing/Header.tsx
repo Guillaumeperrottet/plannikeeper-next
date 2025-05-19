@@ -152,7 +152,7 @@ export default function Header() {
 
         {/* Desktop Navigation - hidden on mobile */}
         <motion.nav
-          className="hidden md:block fixed left-1/2 transform -translate-x-1/2 z-50"
+          className="hidden md:block fixed left-0 right-0 top-4 mx-auto w-fit z-50"
           style={{ scale: navScale }}
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
