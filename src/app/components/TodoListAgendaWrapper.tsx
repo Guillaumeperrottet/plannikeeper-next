@@ -21,7 +21,7 @@ export default function TodoListAgendaWrapper() {
 
   // Fonction pour rafraîchir les données silencieusement
   const refreshDataSilently = useCallback(async () => {
-    console.log("Rafraîchissement silencieux des données de l'agenda");
+    // console.log("Rafraîchissement silencieux des données de l'agenda");
 
     try {
       // Invalider et recharger les données
@@ -42,7 +42,7 @@ export default function TodoListAgendaWrapper() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        console.log("Application visible, rafraîchissement des données");
+        // console.log("Application visible, rafraîchissement des données");
         refreshDataSilently();
       }
     };

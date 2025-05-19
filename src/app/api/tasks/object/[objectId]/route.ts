@@ -1,17 +1,17 @@
+// src/app/api/tasks/object/[objectId]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 import { checkObjectAccess } from "@/lib/auth-session";
 import { createDynamicResponse } from "@/lib/cache-config";
 
-// Définition conforme au pattern utilisé dans vos autres fichiers
 export async function GET(
   req: NextRequest,
-  context: { params: { objectId: string } }
+  { params }: { params: { objectId: string } }
 ) {
   try {
     // Récupération de l'ID de l'objet
-    const { objectId } = context.params;
+    const objectId = params.objectId;
 
     if (!objectId) {
       return NextResponse.json(
