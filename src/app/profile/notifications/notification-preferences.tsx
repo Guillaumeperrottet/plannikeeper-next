@@ -1,4 +1,3 @@
-// src/app/profile/notifications/notification-preferences.tsx
 "use client";
 
 import { useState } from "react";
@@ -61,7 +60,9 @@ export function NotificationPreferences({
             <BellOff className="h-5 w-5 text-[color:var(--muted-foreground)]" />
           )}
           <div>
-            <p className="font-medium">Notifications</p>
+            <p className="font-medium text-[color:var(--foreground)]">
+              Notifications
+            </p>
             <p className="text-sm text-[color:var(--muted-foreground)]">
               {enabled
                 ? "Vous recevez des notifications"
@@ -74,15 +75,21 @@ export function NotificationPreferences({
             checked={enabled}
             onCheckedChange={handleToggle}
             disabled={loading}
-            checkedIcon={<Bell className="h-4 w-4 text-blue-800" />}
-            uncheckedIcon={<BellOff className="h-4 w-4 text-gray-500" />}
+            checkedIcon={
+              <Bell className="h-4 w-4 text-[color:var(--primary-foreground)]" />
+            }
+            uncheckedIcon={
+              <BellOff className="h-4 w-4 text-[color:var(--muted-foreground)]" />
+            }
           />
         </div>
       </div>
 
       <div className="mt-6 space-y-4">
         <div className="p-4 rounded-lg bg-[color:var(--muted)] text-sm">
-          <h3 className="font-medium mb-2">À propos des notifications</h3>
+          <h3 className="font-medium mb-2 text-[color:var(--foreground)]">
+            À propos des notifications
+          </h3>
           <p className="text-[color:var(--muted-foreground)] mb-2">
             Les notifications vous informent des événements importants comme :
           </p>

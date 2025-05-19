@@ -100,7 +100,7 @@ export default function EditName({ initialName }: EditNameProps) {
           onKeyDown={handleKeyDown}
           onBlur={handleClickOutside}
           disabled={isLoading}
-          className="w-full border rounded px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          className="w-full border rounded px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-[color:var(--background)] text-[color:var(--foreground)]"
           placeholder="Entrez votre nom"
         />
         {isLoading && (
@@ -134,7 +134,7 @@ export default function EditName({ initialName }: EditNameProps) {
   return (
     <div
       onClick={handleStartEditing}
-      className="w-full border rounded px-3 py-2 bg-gray-100 hover:bg-gray-200 cursor-pointer flex items-center"
+      className="w-full border rounded px-3 py-2 bg-[color:var(--muted)] hover:bg-[color:var(--muted)]/80 cursor-pointer flex items-center text-[color:var(--foreground)]"
     >
       <span>{name}</span>
     </div>

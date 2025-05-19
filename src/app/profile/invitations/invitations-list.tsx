@@ -12,7 +12,7 @@ type InvitationCode = {
 
 export default function InvitationsList({
   invitationCodes,
-  organizationName
+  organizationName,
 }: {
   invitationCodes: InvitationCode[];
   organizationName: string;
@@ -56,38 +56,57 @@ export default function InvitationsList({
   };
 
   if (invitationCodes.length === 0) {
-    return <p className="text-gray-500">Aucun code d invitation actif.</p>;
+    return (
+      <p className="text-[color:var(--muted-foreground)]">
+        Aucun code d&apos;invitation actif.
+      </p>
+    );
   }
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border">
+      <table className="w-full border border-[color:var(--border)]">
         <thead>
-          <tr className="bg-gray-100">
-            <th className="p-2 text-left">Code</th>
-            <th className="p-2 text-left">Rôle</th>
-            <th className="p-2 text-left">Date d expiration</th>
-            <th className="p-2 text-left">Actions</th>
+          <tr className="bg-[color:var(--muted)]">
+            <th className="p-2 text-left text-[color:var(--foreground)]">
+              Code
+            </th>
+            <th className="p-2 text-left text-[color:var(--foreground)]">
+              Rôle
+            </th>
+            <th className="p-2 text-left text-[color:var(--foreground)]">
+              Date d&apos;expiration
+            </th>
+            <th className="p-2 text-left text-[color:var(--foreground)]">
+              Actions
+            </th>
           </tr>
         </thead>
         <tbody>
           {invitationCodes.map((invite) => (
-            <tr key={invite.id} className="border-t">
-              <td className="p-2 font-mono">{invite.code}</td>
-              <td className="p-2 capitalize">{invite.role}</td>
-              <td className="p-2">
+            <tr
+              key={invite.id}
+              className="border-t border-[color:var(--border)]"
+            >
+              <td className="p-2 font-mono text-[color:var(--foreground)]">
+                {invite.code}
+              </td>
+              <td className="p-2 capitalize text-[color:var(--foreground)]">
+                {invite.role}
+              </td>
+              <td className="p-2 text-[color:var(--foreground)]">
                 {new Date(invite.expiresAt).toLocaleDateString()}
               </td>
               <td className="p-2 flex gap-2">
                 <button
                   onClick={() => copyToClipboard(invite.code, invite.id)}
-                  className="text-blue-600 hover:underline text-sm"
+                  className="text-[color:var(--primary)] hover:underline text-sm"
                 >
                   {copiedCode === invite.id ? "Copié !" : "Copier le lien"}
                 </button>
                 <button
                   onClick={() => revokeInvitation(invite.id)}
-                  className="text-red-600 hover:underline text-sm ml-2"
+                  className="text-[color:var(--destructive)] hover:underline text-sm ml-2"
                 >
                   Révoquer
                 </button>
@@ -97,9 +116,17 @@ export default function InvitationsList({
         </tbody>
       </table>
 
-      <div className="mt-4 p-3 bg-gray-100 rounded-lg">
-        <p className="text-sm text-gray-600">
-          <strong>Comment utiliser:</strong> Partagez le lien d invitation avec la personne que vous souhaitez inviter à rejoindre <strong>{organizationName}</strong>. Le lien expirera à la date indiquée.
+      <div className="mt-4 p-3 bg-[color:var(--muted)] rounded-lg">
+        <p className="text-sm text-[color:var(--muted-foreground)]">
+          <strong className="text-[color:var(--foreground)]">
+            Comment utiliser:
+          </strong>{" "}
+          Partagez le lien d&apos;invitation avec la personne que vous souhaitez
+          inviter à rejoindre{" "}
+          <strong className="text-[color:var(--foreground)]">
+            {organizationName}
+          </strong>
+          . Le lien expirera à la date indiquée.
         </p>
       </div>
     </div>

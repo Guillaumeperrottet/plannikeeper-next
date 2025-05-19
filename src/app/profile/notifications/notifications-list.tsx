@@ -138,6 +138,11 @@ export function NotificationsList({
             size="sm"
             variant={filter === "all" ? "default" : "outline"}
             onClick={() => setFilter("all")}
+            className={
+              filter === "all"
+                ? "bg-[color:var(--primary)] text-[color:var(--primary-foreground)]"
+                : "border-[color:var(--border)] bg-[color:var(--muted)] text-[color:var(--foreground)] hover:bg-[color:var(--muted)]/80"
+            }
           >
             Toutes ({notifications.length})
           </Button>
@@ -145,13 +150,23 @@ export function NotificationsList({
             size="sm"
             variant={filter === "unread" ? "default" : "outline"}
             onClick={() => setFilter("unread")}
+            className={
+              filter === "unread"
+                ? "bg-[color:var(--primary)] text-[color:var(--primary-foreground)]"
+                : "border-[color:var(--border)] bg-[color:var(--muted)] text-[color:var(--foreground)] hover:bg-[color:var(--muted)]/80"
+            }
           >
             Non lues ({unreadCount})
           </Button>
         </div>
 
         {unreadCount > 0 && (
-          <Button size="sm" variant="outline" onClick={markAllAsRead}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={markAllAsRead}
+            className="border-[color:var(--border)] bg-[color:var(--muted)] text-[color:var(--foreground)] hover:bg-[color:var(--muted)]/80"
+          >
             <Check className="mr-1 h-4 w-4" />
             Tout marquer comme lu
           </Button>
@@ -161,7 +176,9 @@ export function NotificationsList({
       {filteredNotifications.length === 0 ? (
         <div className="text-center py-12 text-[color:var(--muted-foreground)]">
           <Bell className="h-12 w-12 mx-auto mb-3 opacity-50" />
-          <p className="text-lg mb-2">Aucune notification</p>
+          <p className="text-lg mb-2 text-[color:var(--foreground)]">
+            Aucune notification
+          </p>
           <p className="text-sm">
             {filter === "unread"
               ? "Vous avez lu toutes vos notifications"

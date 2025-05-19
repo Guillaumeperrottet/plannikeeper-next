@@ -1,3 +1,4 @@
+// src/app/profile/invitations/page.tsx
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
@@ -34,12 +35,14 @@ export default async function InvitationsPage() {
   });
 
   return (
-    <div className="max-w-3xl mx-auto mt-10 p-6 bg-background rounded-lg shadow-md">
+    <div className="max-w-3xl mx-auto mt-10 p-6 bg-[color:var(--background)] rounded-lg shadow-md border border-[color:var(--border)]">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Invitations</h1>
+        <h1 className="text-2xl font-bold text-[color:var(--foreground)]">
+          Invitations
+        </h1>
         <Link
           href="/profile/edit"
-          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition"
+          className="px-4 py-2 bg-[color:var(--muted)] rounded hover:bg-[color:var(--muted)]/80 transition text-[color:var(--foreground)]"
         >
           Retour aux utilisateurs
         </Link>
@@ -51,7 +54,7 @@ export default async function InvitationsPage() {
       />
 
       <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-4">
+        <h2 className="text-xl font-semibold mb-4 text-[color:var(--foreground)]">
           Codes d&apos;invitation actifs
         </h2>
         <InvitationsList

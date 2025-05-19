@@ -68,7 +68,7 @@ export function UserRoleSelector({
         variant={role === "admin" ? "default" : "outline"}
         disabled={isSubmitting || role === "admin"}
         onClick={() => handleRoleChange("admin")}
-        className="flex items-center justify-center gap-2 py-2 relative"
+        className="flex items-center justify-center gap-2 py-2 relative bg-[color:var(--primary)] text-[color:var(--primary-foreground)] border-[color:var(--border)]"
       >
         {isSubmitting && role !== "admin" ? (
           <Loader2 size={16} className="animate-spin" />
@@ -88,7 +88,7 @@ export function UserRoleSelector({
         variant={role === "member" ? "default" : "outline"}
         disabled={isSubmitting || role === "member"}
         onClick={() => handleRoleChange("member")}
-        className="flex items-center justify-center gap-2 py-2 relative"
+        className="flex items-center justify-center gap-2 py-2 relative border-[color:var(--border)] text-[color:var(--foreground)]"
       >
         {isSubmitting && role !== "member" ? (
           <Loader2 size={16} className="animate-spin" />
