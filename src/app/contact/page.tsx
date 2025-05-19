@@ -2,16 +2,8 @@
 
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import {
-  Send,
-  CheckCircle,
-  Mail,
-  Phone,
-  MapPin,
-  Globe,
-  ArrowRight,
-} from "lucide-react";
-import Image from "next/image";
+import { Send, CheckCircle, Mail, Phone, MapPin, Globe } from "lucide-react";
+// import Image from "next/image";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
@@ -53,61 +45,61 @@ const fadeInUp = {
   },
 };
 
-// Carte de client fidèle (témoignage)
-interface ClientCardProps {
-  logo: string;
-  company: string;
-  name: string;
-  role: string;
-  quote: string;
-  delay: number;
-}
+// // Carte de client fidèle (témoignage)
+// interface ClientCardProps {
+//   logo: string;
+//   company: string;
+//   name: string;
+//   role: string;
+//   quote: string;
+//   delay: number;
+// }
 
-const ClientCard = ({
-  logo,
-  company,
-  name,
-  role,
-  quote,
-  delay,
-}: ClientCardProps) => (
-  <motion.div
-    initial="hidden"
-    whileInView="visible"
-    viewport={{ once: true, amount: 0.3 }}
-    variants={{
-      hidden: { opacity: 0, y: 20 },
-      visible: {
-        opacity: 1,
-        y: 0,
-        transition: {
-          duration: 0.6,
-          delay: delay,
-          ease: "easeOut",
-        },
-      },
-    }}
-    className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 hover:border-[color:var(--primary)] transition-all duration-300"
-  >
-    <div className="flex items-center mb-4">
-      <div className="w-12 h-12 relative mr-4 flex-shrink-0">
-        <Image
-          src={logo}
-          alt={`${company} logo`}
-          fill
-          className="object-contain"
-        />
-      </div>
-      <div>
-        <h3 className="font-semibold text-gray-900">{company}</h3>
-        <p className="text-sm text-gray-500">
-          {name}, {role}
-        </p>
-      </div>
-    </div>
-    <p className="text-gray-700 italic">&quot;{quote}&quot;</p>
-  </motion.div>
-);
+// const ClientCard = ({
+//   logo,
+//   company,
+//   name,
+//   role,
+//   quote,
+//   delay,
+// }: ClientCardProps) => (
+//   <motion.div
+//     initial="hidden"
+//     whileInView="visible"
+//     viewport={{ once: true, amount: 0.3 }}
+//     variants={{
+//       hidden: { opacity: 0, y: 20 },
+//       visible: {
+//         opacity: 1,
+//         y: 0,
+//         transition: {
+//           duration: 0.6,
+//           delay: delay,
+//           ease: "easeOut",
+//         },
+//       },
+//     }}
+//     className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 hover:border-[color:var(--primary)] transition-all duration-300"
+//   >
+//     <div className="flex items-center mb-4">
+//       <div className="w-12 h-12 relative mr-4 flex-shrink-0">
+//         <Image
+//           src={logo}
+//           alt={`${company} logo`}
+//           fill
+//           className="object-contain"
+//         />
+//       </div>
+//       <div>
+//         <h3 className="font-semibold text-gray-900">{company}</h3>
+//         <p className="text-sm text-gray-500">
+//           {name}, {role}
+//         </p>
+//       </div>
+//     </div>
+//     <p className="text-gray-700 italic">&quot;{quote}&quot;</p>
+//   </motion.div>
+// );
 
 export default function ContactPage() {
   const [formState, setFormState] = useState({
@@ -513,7 +505,7 @@ export default function ContactPage() {
         </div>
       </section>
 
-      {/* Section témoignages clients */}
+      {/* Section témoignages clients
       <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <motion.div
           initial="hidden"
@@ -589,7 +581,7 @@ export default function ContactPage() {
             <ArrowRight className="ml-2 h-4 w-4" />
           </a>
         </motion.div>
-      </section>
+      </section> */}
 
       {/* Section FAQ */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
@@ -616,11 +608,6 @@ export default function ContactPage() {
                 "Comment PlanniKeeper peut-il s'adapter à mon entreprise ?",
               answer:
                 "PlanniKeeper propose différentes formules adaptées à tous types d'entreprises, de la startup au grand groupe. Notre solution est entièrement personnalisable pour répondre à vos besoins spécifiques.",
-            },
-            {
-              question: "Quelle est la durée de la période d'essai ?",
-              answer:
-                "Nous proposons une période d'essai gratuite de 14 jours, sans engagement. Vous pouvez tester toutes les fonctionnalités de la plateforme avant de vous abonner.",
             },
             {
               question: "Proposez-vous des formations pour mon équipe ?",
@@ -678,46 +665,7 @@ export default function ContactPage() {
             },
           }}
           className="mt-12 text-center"
-        >
-          <p className="text-gray-600 mb-4">
-            Vous ne trouvez pas la réponse à votre question ?
-          </p>
-          <Button className="bg-[color:var(--primary)] hover:bg-[color:var(--primary)]/90">
-            Voir la FAQ complète
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </motion.div>
-      </section>
-
-      {/* Section appel à l'action */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-[#d9840d]/10 to-[#e36002]/10 border-t border-[#d9840d]/20">
-        <div className="max-w-5xl mx-auto text-center">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
-            variants={fadeInUp}
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-              Prêt à transformer votre gestion immobilière ?
-            </h2>
-            <p className="text-lg text-gray-700 mb-8 max-w-3xl mx-auto">
-              Rejoignez les entreprises qui font confiance à PlanniKeeper pour
-              optimiser leur gestion immobilière.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button className="py-3 px-6 bg-[color:var(--primary)] hover:bg-[color:var(--primary)]/90 text-white">
-                Commencer gratuitement
-              </Button>
-              <Button
-                variant="outline"
-                className="py-3 px-6 border-[color:var(--primary)] text-[color:var(--primary)]"
-              >
-                Réserver une démo
-              </Button>
-            </div>
-          </motion.div>
-        </div>
+        ></motion.div>
       </section>
     </div>
   );

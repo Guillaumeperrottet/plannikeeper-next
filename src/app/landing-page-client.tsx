@@ -9,10 +9,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChevronRight, Check } from "lucide-react";
 import React from "react";
-import CampingFeatureShowcase from "@/app/components/landing/CampingFeatureShowcase"; // Importez le nouveau composant
+import CampingFeatureShowcase from "@/app/components/landing/CampingFeatureShowcase";
 
 const ModernLandingPage = () => {
-  // Removed unused activeSection state
   const heroRef = useRef(null);
   const featuresRef = useRef(null);
   const showcaseRef = useRef(null);
@@ -608,12 +607,14 @@ const ModernLandingPage = () => {
             <p className="text-lg text-[#62605d] mb-6">
               Vous avez d&apos;autres questions ? Contactez-nous directement.
             </p>
-            <Button
-              variant="outline"
-              className="px-8 py-4 border-[#beac93] text-[#141313] hover:bg-[#e8ebe0] text-base"
-            >
-              Contacter le support
-            </Button>
+            <Link href="/contact">
+              <Button
+                variant="outline"
+                className="px-8 py-4 border-[#beac93] text-[#141313] hover:bg-[#e8ebe0] text-base"
+              >
+                Contacter nous
+              </Button>
+            </Link>
           </motion.div>
         </div>
       </section>
@@ -637,12 +638,6 @@ const ModernLandingPage = () => {
                   <ChevronRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-              <Button
-                variant="outline"
-                className="px-8 py-4 border-white text-white hover:bg-white/10 text-base"
-              >
-                Voir une démo
-              </Button>
             </div>
           </div>
         </div>
@@ -661,7 +656,8 @@ const ModernLandingPage = () => {
                 professionnelle. Simplifiez vos opérations et optimisez votre
                 temps.
               </p>
-              <div className="flex space-x-4">
+              {/* logo instagram etc à décommenter si besoin... */}
+              {/* <div className="flex space-x-4">
                 <a href="#" className="text-gray-400 hover:text-[#d9840d]">
                   <svg
                     className="w-6 h-6"
@@ -700,7 +696,7 @@ const ModernLandingPage = () => {
                     ></path>
                   </svg>
                 </a>
-              </div>
+              </div> */}
             </div>
 
             <div>
@@ -722,16 +718,16 @@ const ModernLandingPage = () => {
                     Tarifs
                   </a>
                 </li>
-                <li>
+                {/* <li>
                   <a href="#" className="text-gray-400 hover:text-[#d9840d]">
                     Témoignages
                   </a>
-                </li>
-                <li>
+                </li> */}
+                {/* <li>
                   <a href="#" className="text-gray-400 hover:text-[#d9840d]">
                     Mises à jour
                   </a>
-                </li>
+                </li> */}
               </ul>
             </div>
 
@@ -744,11 +740,14 @@ const ModernLandingPage = () => {
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-gray-400 hover:text-[#d9840d]">
+                  <a
+                    href="/contact"
+                    className="text-gray-400 hover:text-[#d9840d]"
+                  >
                     Contact
                   </a>
                 </li>
-                <li>
+                {/* <li>
                   <a href="#" className="text-gray-400 hover:text-[#d9840d]">
                     Careers
                   </a>
@@ -757,7 +756,7 @@ const ModernLandingPage = () => {
                   <a href="#" className="text-gray-400 hover:text-[#d9840d]">
                     Blog
                   </a>
-                </li>
+                </li> */}
               </ul>
             </div>
           </div>
