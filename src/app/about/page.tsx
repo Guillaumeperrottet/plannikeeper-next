@@ -456,6 +456,266 @@ export default function AboutPage() {
         </motion.div>
       </section>
 
+      {/* Section Pour les Geeks */}
+      <motion.section
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={fadeInUp}
+        className="py-20 bg-gradient-to-b from-[#f5f3ef] to-[#f9f8f4]"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true, amount: 0.3 }}
+            className="text-center mb-16"
+          >
+            <div className="inline-block bg-[#e36002]/10 px-4 py-1 rounded-full mb-4 border border-[#e36002]/20">
+              <span className="text-[#e36002] font-medium text-sm">
+                Pour les geeks
+              </span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold mb-6 text-gray-900">
+              Notre stack technique
+            </h2>
+            <p className="text-lg text-[#62605d] max-w-3xl mx-auto">
+              PlanniKeeper est bâti sur des technologies modernes et robustes,
+              garantissant performance, sécurité et évolutivité.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            {/* Colonne 1: Stack Technique */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              viewport={{ once: true, amount: 0.3 }}
+              className="bg-white p-8 rounded-xl shadow-lg border border-gray-200"
+            >
+              <h3 className="text-2xl font-bold mb-6 text-[#141313]">
+                Stack Technique
+              </h3>
+
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-lg font-semibold mb-3 text-[#d9840d]">
+                    Frontend
+                  </h4>
+                  <ul className="space-y-2">
+                    <li className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-[#d9840d] rounded-full"></div>
+                      <span>Next.js 15 (React 19)</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-[#d9840d] rounded-full"></div>
+                      <span>TypeScript pour une robustesse accrue</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-[#d9840d] rounded-full"></div>
+                      <span>TailwindCSS pour l&apos;interface utilisateur</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-[#d9840d] rounded-full"></div>
+                      <span>Framer Motion pour les animations fluides</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className="text-lg font-semibold mb-3 text-[#d9840d]">
+                    Backend
+                  </h4>
+                  <ul className="space-y-2">
+                    <li className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-[#d9840d] rounded-full"></div>
+                      <span>API Routes Next.js</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-[#d9840d] rounded-full"></div>
+                      <span>Base de données PostgreSQL</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-[#d9840d] rounded-full"></div>
+                      <span>Prisma ORM pour la manipulation des données</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-[#d9840d] rounded-full"></div>
+                      <span>
+                        Better-Auth pour l&apos;authentification sécurisée
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className="text-lg font-semibold mb-3 text-[#d9840d]">
+                    Intégrations
+                  </h4>
+                  <ul className="space-y-2">
+                    <li className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-[#d9840d] rounded-full"></div>
+                      <span>Stripe pour les paiements sécurisés</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-[#d9840d] rounded-full"></div>
+                      <span>Cloudinary pour la gestion des médias</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-[#d9840d] rounded-full"></div>
+                      <span>
+                        Vercel pour l&apos;hébergement et le déploiement
+                      </span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-[#d9840d] rounded-full"></div>
+                      <span>Resend pour les communications par email</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Colonne 2: Sécurité et Performance */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              viewport={{ once: true, amount: 0.3 }}
+              className="bg-white p-8 rounded-xl shadow-lg border border-gray-200"
+            >
+              <h3 className="text-2xl font-bold mb-6 text-[#141313]">
+                Sécurité & Performance
+              </h3>
+
+              <div className="space-y-8">
+                <div>
+                  <h4 className="text-lg font-semibold mb-3 text-[#d9840d]">
+                    Protection des données
+                  </h4>
+                  <p className="text-gray-600 mb-4">
+                    Votre sécurité est notre priorité. PlanniKeeper implémente
+                    plusieurs niveaux de protection :
+                  </p>
+                  <ul className="space-y-2">
+                    <li className="flex items-start gap-2">
+                      <div className="w-2 h-2 bg-[#d9840d] rounded-full mt-2"></div>
+                      <span>
+                        Chiffrement des données sensibles en base de données
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="w-2 h-2 bg-[#d9840d] rounded-full mt-2"></div>
+                      <span>
+                        Connexions HTTPS sécurisées sur toute la plateforme
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="w-2 h-2 bg-[#d9840d] rounded-full mt-2"></div>
+                      <span>
+                        Authentification sécurisée avec protection contre les
+                        attaques de force brute
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="w-2 h-2 bg-[#d9840d] rounded-full mt-2"></div>
+                      <span>
+                        Système de permissions granulaires pour contrôler
+                        l&apos;accès aux ressources
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className="text-lg font-semibold mb-3 text-[#d9840d]">
+                    Optimisations de performance
+                  </h4>
+                  <p className="text-gray-600 mb-4">
+                    Une application rapide et fluide, même avec de grandes
+                    quantités de données :
+                  </p>
+                  <ul className="space-y-2">
+                    <li className="flex items-start gap-2">
+                      <div className="w-2 h-2 bg-[#d9840d] rounded-full mt-2"></div>
+                      <span>Architecture moderne basée sur les composants</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="w-2 h-2 bg-[#d9840d] rounded-full mt-2"></div>
+                      <span>Mise en cache intelligente des requêtes API</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="w-2 h-2 bg-[#d9840d] rounded-full mt-2"></div>
+                      <span>
+                        Application Progressive Web App (PWA) fonctionnant
+                        hors-ligne
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="w-2 h-2 bg-[#d9840d] rounded-full mt-2"></div>
+                      <span>
+                        Optimisation des images et des assets pour un chargement
+                        rapide
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className="text-lg font-semibold mb-3 text-[#d9840d]">
+                    Évolutivité
+                  </h4>
+                  <p className="text-gray-600 mb-4">
+                    PlanniKeeper est conçu pour évoluer avec vos besoins :
+                  </p>
+                  <ul className="space-y-2">
+                    <li className="flex items-start gap-2">
+                      <div className="w-2 h-2 bg-[#d9840d] rounded-full mt-2"></div>
+                      <span>
+                        Infrastructure serverless qui s&apos;adapte
+                        automatiquement à la charge
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="w-2 h-2 bg-[#d9840d] rounded-full mt-2"></div>
+                      <span>
+                        Base de données relationnelle optimisée pour les
+                        performances
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="w-2 h-2 bg-[#d9840d] rounded-full mt-2"></div>
+                      <span>
+                        Architecture modulaire facilitant l&apos;ajout de
+                        nouvelles fonctionnalités
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Citation tech */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            viewport={{ once: true, amount: 0.3 }}
+            className="mt-16 text-center"
+          >
+            <div className="inline-block bg-[#d9840d]/5 px-8 py-4 rounded-full border border-[#d9840d]/20">
+              <span className="text-xl font-medium text-[#d9840d] italic">
+                &quot;La technologie est au service de l&apos;expérience
+                utilisateur, pas l&apos;inverse.&quot;
+              </span>
+            </div>
+          </motion.div>
+        </div>
+      </motion.section>
+
       {/* Appel à l'action */}
       <section className="py-16 bg-[color:var(--primary)]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
