@@ -3,16 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 import { checkObjectAccess } from "@/lib/auth-session";
 
-// La définition correcte des params dans Next.js App Router
-type RouteParams = {
-  params: {
-    objectId: string;
-  };
-};
-
-export async function GET(req: NextRequest, { params }: RouteParams) {
+// Nous n'utilisons plus de type personnalisé pour les paramètres
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { objectId: string } }
+) {
   try {
-    // Récupération directe de l'ID de l'objet (sans await)
+    // Récupération directe de l'ID de l'objet
     const { objectId } = params;
 
     if (!objectId) {
