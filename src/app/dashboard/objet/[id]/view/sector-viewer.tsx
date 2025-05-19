@@ -141,6 +141,31 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
     }
   }, [sidebarOpen, isMobile]);
 
+  //  bloquer le défilement lorsque la barre latérale est ouverte
+  useEffect(() => {
+    if (sidebarOpen && !isMobile) {
+      // Sauvegarder la position actuelle de défilement
+      const scrollY = window.scrollY;
+
+      // Bloquer le défilement en fixant le body avec la position actuelle
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = "100%";
+      document.body.style.overflowY = "scroll"; // Maintient la barre de défilement pour éviter le déplacement de la mise en page
+
+      // Restaurer le défilement lorsque la barre latérale se ferme
+      return () => {
+        document.body.style.position = "";
+        document.body.style.top = "";
+        document.body.style.width = "";
+        document.body.style.overflowY = "";
+
+        // Restaurer la position de défilement
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [sidebarOpen, isMobile]);
+
   const fetchArticles = async (sectorId: string) => {
     try {
       setIsLoading(true);
@@ -739,6 +764,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 transition={{ duration: 0.2 }}
                 className="fixed inset-0 bg-black/30 z-20"
                 onClick={toggleSidebar}
+                style={{ top: 0, bottom: 0 }} // Assurez-vous qu'il couvre toute la page
               />
 
               {/* Panneau latéral */}
@@ -747,15 +773,18 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 initial="hidden"
                 animate="visible"
                 exit="exit"
-                className="fixed top-0 right-0 h-full w-[300px] bg-white shadow-lg z-30 flex flex-col"
+                className="fixed right-0 h-full w-[300px] bg-white shadow-lg z-30 flex flex-col"
                 style={{
-                  top: "64px", // Hauteur approximative du header
-                  height: "calc(100vh - 64px)",
+                  top: 0, // Commencer depuis le haut de la page
+                  height: "100vh", // Hauteur pleine page
                   borderLeft: "1px solid #eee",
                 }}
               >
                 {/* En-tête de la barre latérale avec options de tri */}
-                <div className="flex justify-between items-center p-3 border-b">
+                <div
+                  className="flex justify-between items-center p-3 border-b"
+                  style={{ marginTop: "64px" }}
+                >
                   <div className="flex items-center">
                     <h3 className="font-medium truncate max-w-[200px]">
                       Articles ({filteredArticles.length})
