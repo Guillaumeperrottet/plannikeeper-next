@@ -16,13 +16,13 @@ const STATIC_CACHE_URLS = [
 
 // Installation du service worker avec précaching des ressources essentielles
 self.addEventListener("install", (event) => {
-  console.log("Service Worker: Installation en cours");
+  // console.log("Service Worker: Installation en cours");
 
   event.waitUntil(
     caches
       .open(CACHE_NAME)
       .then((cache) => {
-        console.log("Service Worker: Mise en cache des ressources statiques");
+        // console.log("Service Worker: Mise en cache des ressources statiques");
         return cache.addAll(STATIC_CACHE_URLS);
       })
       .then(() => {

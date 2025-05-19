@@ -1,4 +1,3 @@
-// src/app/service-worker.tsx
 "use client";
 
 import { useEffect } from "react";
@@ -13,10 +12,7 @@ export default function ServiceWorkerRegistration() {
         navigator.serviceWorker
           .register("/service-worker.js")
           .then((registration) => {
-            console.log(
-              "Service Worker enregistré avec succès:",
-              registration.scope
-            );
+            console.log(registration.scope);
 
             // Vérifier les mises à jour du service worker
             registration.onupdatefound = () => {
