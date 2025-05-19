@@ -83,7 +83,6 @@ export function middleware(request: NextRequest) {
 
     return response;
   }
-
   // Pour les autres requêtes
   const response = NextResponse.next();
 

@@ -196,6 +196,7 @@ export function useTasks(objectId: string | null) {
       dedupingInterval: 5000, // Réduire l'intervalle de déduplication
       onSuccess: (data) => persistCache(`tasks_${objectId}`, data),
       fallbackData: getPersistedCache(`tasks_${objectId}`, 60000), // Cache plus court (1 minute)
+
     }
   );
 

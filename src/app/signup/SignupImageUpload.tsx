@@ -1,62 +1,59 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, memo, useEffect } from "react";
 import { toast } from "sonner";
-import Image from "next/image";
 import { Camera, X } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
+
+// Utilisez next/dynamic pour l'image
+import dynamic from "next/dynamic";
+const Image = dynamic(() => import("next/image"), {
+  loading: () => (
+    <div className="w-24 h-24 rounded-full bg-gray-200 animate-pulse"></div>
+  ),
+});
 
 interface SignupImageUploadProps {
   onImageSelect: (file: File | null) => void;
 }
 
-export default function SignupImageUpload({
-  onImageSelect,
-}: SignupImageUploadProps) {
+function SignupImageUpload({ onImageSelect }: SignupImageUploadProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [showControls, setShowControls] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Détecter si l'appareil est mobile (simplifié pour le signup)
-  useState(() => {
-    if (typeof window !== "undefined") {
-      setIsMobile(
-        /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
-          (!!navigator.maxTouchPoints && navigator.maxTouchPoints > 2)
-      );
-    }
-  });
+  // Déplacer la détection mobile dans useEffect pour éviter l'hydration mismatch
+  useEffect(() => {
+    setIsMobile(
+      /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+        (!!navigator.maxTouchPoints && navigator.maxTouchPoints > 2)
+    );
+  }, []);
 
-  // Fonction pour ouvrir le sélecteur de fichier
-  const handleAvatarClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
+  // Fonction optimisée pour ouvrir le sélecteur de fichier
+  const handleAvatarClick = () => {
     if (fileInputRef.current) {
       if (isMobile) {
         fileInputRef.current.removeAttribute("capture");
       }
-      setTimeout(() => {
-        fileInputRef.current?.click();
-      }, 10);
+      fileInputRef.current.click();
     }
   };
 
-  // Gestion de la sélection d'une image
+  // Version optimisée pour la sélection de fichier
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validation du type de fichier
-    if (!file.type.startsWith("image/")) {
-      toast.error("Veuillez sélectionner une image valide");
-      return;
-    }
-
-    // Validation de la taille (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("L'image ne doit pas dépasser 5MB");
+    // Utiliser un seul if avec conditions combinées pour réduire le branching
+    if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) {
+      toast.error(
+        !file.type.startsWith("image/")
+          ? "Veuillez sélectionner une image valide"
+          : "L'image ne doit pas dépasser 5MB"
+      );
+      e.target.value = "";
       return;
     }
 
@@ -66,28 +63,22 @@ export default function SignupImageUpload({
     setShowControls(true);
     onImageSelect(file);
 
-    // Nettoyage de l'input pour permettre de sélectionner à nouveau le même fichier
+    // Nettoyage
     e.target.value = "";
   };
 
-  // Fonction pour annuler la sélection
+  // Fonction optimisée pour annuler la sélection
   const handleCancel = () => {
     if (previewImage) {
       URL.revokeObjectURL(previewImage);
-      setPreviewImage(null);
     }
+    setPreviewImage(null);
     setShowControls(false);
     onImageSelect(null);
   };
 
-  // Détermine les initiales pour l'avatar par défaut
-  const getInitials = () => {
-    return "?";
-  };
-
   return (
     <div className="flex flex-col items-center mb-4">
-      {/* Input file caché */}
       <input
         type="file"
         ref={fileInputRef}
@@ -98,7 +89,6 @@ export default function SignupImageUpload({
         aria-hidden="true"
       />
 
-      {/* Avatar avec image ou initiales */}
       <div className="relative group">
         <button
           type="button"
@@ -114,10 +104,9 @@ export default function SignupImageUpload({
               className="object-cover"
             />
           ) : (
-            <span>{getInitials()}</span>
+            <span>?</span>
           )}
 
-          {/* Overlay intégré dans le bouton */}
           {!showControls && (
             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 group-hover:bg-opacity-40 rounded-full transition-all duration-300">
               <div className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -128,7 +117,6 @@ export default function SignupImageUpload({
         </button>
       </div>
 
-      {/* Boutons de contrôle uniquement quand une image est sélectionnée */}
       {showControls && (
         <div className="mt-2 flex space-x-2">
           <Button
@@ -150,3 +138,6 @@ export default function SignupImageUpload({
     </div>
   );
 }
+
+// Mémoriser le composant pour éviter les rendus inutiles
+export default memo(SignupImageUpload);

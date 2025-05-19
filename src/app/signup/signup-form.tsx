@@ -1,50 +1,68 @@
+// src/app/signup/signup-form.tsx - Version optimisée
 "use client";
 
-import { FormEvent, useEffect, useState, useRef } from "react";
+import {
+  FormEvent,
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+  memo,
+} from "react";
 import { authClient } from "@/lib/auth-client";
 import { useSearchParams } from "next/navigation";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { Button } from "@/app/components/ui/button";
-import { cn } from "@/lib/utils";
 import Link from "next/link";
-import SignupImageUpload from "./SignupImageUpload";
+import dynamic from "next/dynamic";
 import { toast } from "sonner";
 
-export default function SignUpForm() {
+// Chargement différé du composant lourd SignupImageUpload
+const SignupImageUpload = dynamic(() => import("./SignupImageUpload"), {
+  loading: () => (
+    <div className="h-24 w-24 rounded-full bg-gray-200 mx-auto mb-4"></div>
+  ),
+  ssr: false, // Désactiver le SSR pour ce composant
+});
+
+// Fonction utilitaire déplacée hors du composant pour éviter les recréations
+const getPlanDisplayName = (planType: string) => {
+  const planNames = {
+    PERSONAL: "Particulier",
+    PROFESSIONAL: "Indépendant",
+    ENTERPRISE: "Entreprise",
+    FREE: "Gratuit",
+  };
+  return planNames[planType as keyof typeof planNames] || planType;
+};
+
+function SignUpForm() {
   const searchParams = useSearchParams();
   const inviteCode = searchParams.get("code");
   const [isInvite, setIsInvite] = useState(false);
   const [organizationName, setOrganizationName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const planType = searchParams.get("plan") || "FREE";
-
-  // Déterminer si le plan est payant
   const isPaidPlan = planType !== "FREE";
 
-  // Fonction pour obtenir le nom d'affichage du plan
-  const getPlanDisplayName = (planType: string) => {
-    switch (planType) {
-      case "PERSONAL":
-        return "Particulier";
-      case "PROFESSIONAL":
-        return "Indépendant";
-      case "ENTERPRISE":
-        return "Entreprise";
-      case "FREE":
-        return "Gratuit";
-      default:
-        return planType;
-    }
-  };
+  // Utiliser useCallback pour la fonction de sélection d'image
+  const handleImageSelect = useCallback((file: File | null) => {
+    setSelectedFile(file);
+  }, []);
 
+  // Charger les données d'invitation une seule fois au montage
   useEffect(() => {
+    let mounted = true;
+
     if (inviteCode) {
       fetch(`/api/invitations/validate?code=${inviteCode}`)
         .then((res) => res.json())
         .then((data) => {
+          if (!mounted) return;
           if (data.valid) {
             setIsInvite(true);
             setOrganizationName(data.organizationName);
@@ -54,103 +72,96 @@ export default function SignUpForm() {
           console.error("Erreur de validation du code:", err);
         });
     }
+
+    return () => {
+      mounted = false;
+    };
   }, [inviteCode]);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  // Optimiser la fonction de soumission avec useCallback
+  const handleSubmit = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
 
-    const formData = new FormData(event.currentTarget);
+      if (isSubmitting) return;
+      setIsSubmitting(true);
+      setError(null);
 
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-    const name = formData.get("name") as string;
+      const formData = new FormData(event.currentTarget);
+      const email = formData.get("email") as string;
+      const password = formData.get("password") as string;
+      const name = formData.get("name") as string;
 
-    const submitButton = event.currentTarget.querySelector(
-      'button[type="submit"]'
-    ) as HTMLButtonElement;
+      try {
+        let imageUrl: string | undefined = undefined;
 
-    try {
-      submitButton.disabled = true;
-      submitButton.textContent = "Inscription en cours...";
+        // Upload d'image seulement si nécessaire
+        if (selectedFile) {
+          const imageFormData = new FormData();
+          imageFormData.append("file", selectedFile);
 
-      let imageUrl: string | undefined = undefined;
-
-      // Si un fichier d'image est sélectionné, l'uploader d'abord
-      if (selectedFile) {
-        const imageFormData = new FormData();
-        imageFormData.append("file", selectedFile);
-
-        try {
-          // Simuler une notification de téléchargement
           const toastId = toast.loading("Téléchargement de l'image...");
 
-          // Uploader l'image vers la route temporaire spéciale pour l'inscription
-          const uploadResponse = await fetch("/api/auth/temp-image-upload", {
-            method: "POST",
-            body: imageFormData,
-          });
+          try {
+            const uploadResponse = await fetch("/api/auth/temp-image-upload", {
+              method: "POST",
+              body: imageFormData,
+            });
 
-          if (!uploadResponse.ok) {
-            throw new Error("Erreur lors de l'upload de l'image");
-          }
-
-          const uploadData = await uploadResponse.json();
-          imageUrl = uploadData.imageUrl;
-
-          toast.success("Image téléchargée avec succès", { id: toastId });
-        } catch (uploadError) {
-          console.error("Erreur upload:", uploadError);
-          toast.error(
-            "Impossible de télécharger l'image. L'inscription continuera sans image de profil."
-          );
-          // Continuer l'inscription sans image
-        }
-      }
-
-      // Inscription avec ou sans image
-      await authClient.signUp.email(
-        {
-          email,
-          password,
-          name,
-          image: imageUrl,
-          callbackURL: inviteCode
-            ? `/join/${inviteCode}?plan=${planType}`
-            : `/subscribe-redirect?plan=${planType}`,
-        },
-        {
-          onSuccess: () => {
-            // Redirection
-            window.location.href = inviteCode
-              ? `/join/${inviteCode}?plan=${planType}`
-              : `/subscribe-redirect?plan=${planType}`;
-          },
-          onError: (ctx) => {
-            console.error("Erreur complète:", ctx.error);
-            let errorMessage = "Une erreur est survenue lors de l'inscription.";
-            if (ctx.error && ctx.error.message) {
-              errorMessage = ctx.error.message;
+            if (uploadResponse.ok) {
+              const uploadData = await uploadResponse.json();
+              imageUrl = uploadData.imageUrl;
+              toast.success("Image téléchargée avec succès", { id: toastId });
+            } else {
+              throw new Error("Erreur lors de l'upload de l'image");
             }
-            setError(errorMessage);
-            submitButton.disabled = false;
-            submitButton.textContent = "S'inscrire";
-          },
+          } catch {
+            toast.error(
+              "Impossible de télécharger l'image. L'inscription continuera sans image.",
+              { id: toastId }
+            );
+          }
         }
-      );
-    } catch (err) {
-      console.error("Erreur d'inscription:", err);
-      setError("Une erreur inattendue est survenue");
-      submitButton.disabled = false;
-      submitButton.textContent = "S'inscrire";
-    }
-  }
+
+        // Inscription
+        await authClient.signUp.email(
+          {
+            email,
+            password,
+            name,
+            image: imageUrl,
+            callbackURL: inviteCode
+              ? `/join/${inviteCode}?plan=${planType}`
+              : `/subscribe-redirect?plan=${planType}`,
+          },
+          {
+            onSuccess: () => {
+              window.location.href = inviteCode
+                ? `/join/${inviteCode}?plan=${planType}`
+                : `/subscribe-redirect?plan=${planType}`;
+            },
+            onError: (ctx) => {
+              let errorMessage =
+                "Une erreur est survenue lors de l'inscription.";
+              if (ctx.error?.message) {
+                errorMessage = ctx.error.message;
+              }
+              setError(errorMessage);
+              setIsSubmitting(false);
+            },
+          }
+        );
+      } catch (err) {
+        console.error("Erreur d'inscription:", err);
+        setError("Une erreur inattendue est survenue");
+        setIsSubmitting(false);
+      }
+    },
+    [inviteCode, planType, selectedFile, isSubmitting]
+  );
 
   return (
-    <div
-      className={cn(
-        "max-w-md mx-auto my-10 p-6 bg-background rounded-lg shadow-md"
-      )}
-    >
+    <div className="max-w-md mx-auto my-10 p-6 bg-background rounded-lg shadow-md">
       <h2 className="text-2xl font-bold text-center mb-6">Inscription</h2>
 
       {isInvite && (
@@ -161,9 +172,12 @@ export default function SignUpForm() {
         </div>
       )}
 
-      {/* Message indiquant le plan sélectionné */}
       <div
-        className={`mb-6 p-4 ${isPaidPlan ? "bg-amber-50 border border-amber-200" : "bg-green-50 border border-green-200"} rounded-md`}
+        className={`mb-6 p-4 ${
+          isPaidPlan
+            ? "bg-amber-50 border border-amber-200"
+            : "bg-green-50 border border-green-200"
+        } rounded-md`}
       >
         <p className={isPaidPlan ? "text-amber-700" : "text-green-700"}>
           Vous avez sélectionné le plan{" "}
@@ -190,8 +204,7 @@ export default function SignUpForm() {
         onSubmit={handleSubmit}
         className="flex flex-col gap-4"
       >
-        {/* Nouveau composant d'upload d'image */}
-        <SignupImageUpload onImageSelect={setSelectedFile} />
+        <SignupImageUpload onImageSelect={handleImageSelect} />
 
         <div>
           <Label htmlFor="name">Nom complet</Label>
@@ -201,6 +214,7 @@ export default function SignUpForm() {
             type="text"
             required
             placeholder="Entrez votre nom complet"
+            autoComplete="name"
           />
         </div>
         <div>
@@ -211,6 +225,7 @@ export default function SignUpForm() {
             type="email"
             required
             placeholder="Entrez votre email"
+            autoComplete="email"
           />
         </div>
         <div>
@@ -222,12 +237,15 @@ export default function SignUpForm() {
             required
             placeholder="Créez un mot de passe (min. 8 caractères)"
             minLength={8}
+            autoComplete="new-password"
           />
         </div>
-        <Button type="submit" className="w-full">
-          {isPaidPlan
-            ? "S'inscrire et continuer vers le paiement"
-            : "S'inscrire"}
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting
+            ? "Inscription en cours..."
+            : isPaidPlan
+              ? "S'inscrire et continuer vers le paiement"
+              : "S'inscrire"}
         </Button>
       </form>
 
@@ -240,3 +258,6 @@ export default function SignUpForm() {
     </div>
   );
 }
+
+// Mémoriser le composant pour éviter les rendus inutiles
+export default memo(SignUpForm);

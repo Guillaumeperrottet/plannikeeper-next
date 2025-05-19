@@ -226,9 +226,11 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
       },
     },
   });
+
   if (!task) {
     return NextResponse.json({ error: "Tâche non trouvée" }, { status: 404 });
   }
+
   const hasWriteAccess = await checkTaskAccess(user.id, taskId, "write");
   if (!hasWriteAccess) {
     return NextResponse.json(
@@ -237,6 +239,19 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     );
   }
 
+  // Stocker l'ID de l'objet pour les invalidations de cache
+  const objectId = task.article.sector.object.id;
+
   await prisma.task.delete({ where: { id: taskId } });
-  return new NextResponse(null, { status: 204 });
+
+  // Inclure des métadonnées sur les données à rafraichir
+  // Ces informations seront utilisées côté client
+  const responseData = {
+    success: true,
+    deletedTaskId: taskId,
+    objectId: objectId,
+    refreshKeys: [`tasks_${objectId}`, "agenda_tasks"],
+  };
+
+  return NextResponse.json(responseData, { status: 200 });
 }

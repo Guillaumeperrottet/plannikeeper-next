@@ -1,9 +1,10 @@
-// next.config.ts
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
     domains: ["res.cloudinary.com"],
+    formats: ["image/avif", "image/webp"], // Formats modernes
+    minimumCacheTTL: 86400, // 1 jour de cache
   },
   experimental: {
     serverActions: {

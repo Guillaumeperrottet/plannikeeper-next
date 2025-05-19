@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import TaskFormMobileOptimized from "./TaskFormMobileOptimized";
 import AccessControl from "@/app/components/AccessControl";
 import TaskForm from "./task-form";
+import ArchiveCompletedButton from "./ArchiveCompletedButton";
 import {
   Calendar,
   User,
@@ -32,6 +33,7 @@ import {
   ArrowDown,
   ArrowUpDown,
   RefreshCcw,
+  Archive,
 } from "lucide-react";
 
 type User = {
@@ -58,6 +60,7 @@ type Task = {
   assignedTo: User | null;
   createdAt: Date;
   updatedAt: Date;
+  archived?: boolean;
 };
 
 // Type pour la direction de tri
@@ -104,6 +107,12 @@ export default function ModernTasksPage({
     completed: null,
     cancelled: null,
   });
+
+  // Fonction pour archiver ou désarchiver les tâches terminées
+  const handleBulkArchiveCompleted = () => {
+    // Rafraîchir la liste des tâches après l'archivage
+    setTasks((prev) => prev.filter((task) => task.status !== "completed"));
+  };
 
   // Detect mobile view
   useEffect(() => {
@@ -821,6 +830,15 @@ export default function ModernTasksPage({
                               </h3>
                               {/* Bouton de tri par date */}
                               {renderSortButton(status)}
+                              {/* Ajouter le bouton d'archive uniquement pour les tâches terminées */}
+                              {status === "completed" && (
+                                <ArchiveCompletedButton
+                                  completedTasks={taskColumns.completed}
+                                  onArchiveCompleted={
+                                    handleBulkArchiveCompleted
+                                  }
+                                />
+                              )}
                             </div>
                             <span className="text-xs px-1.5 py-0.5 bg-[color:var(--background)] bg-opacity-70 rounded-full">
                               {
@@ -970,6 +988,77 @@ export default function ModernTasksPage({
                                                       </button>
                                                     </li>
                                                   )}
+                                                  {/* Nouvel élément: Option d'archivage pour les tâches terminées */}
+                                                  {status === "completed" &&
+                                                    !task.archived && (
+                                                      <li>
+                                                        <button
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            // Appeler l'API d'archivage
+                                                            fetch(
+                                                              `/api/tasks/${task.id}/archive`,
+                                                              {
+                                                                method: "POST",
+                                                                headers: {
+                                                                  "Content-Type":
+                                                                    "application/json",
+                                                                },
+                                                                body: JSON.stringify(
+                                                                  {
+                                                                    archive:
+                                                                      true,
+                                                                  }
+                                                                ),
+                                                              }
+                                                            )
+                                                              .then(
+                                                                (response) => {
+                                                                  if (
+                                                                    !response.ok
+                                                                  )
+                                                                    throw new Error(
+                                                                      "Erreur lors de l'archivage"
+                                                                    );
+                                                                  return response.json();
+                                                                }
+                                                              )
+                                                              .then(() => {
+                                                                // Mettre à jour l'état local ou recharger les tâches
+                                                                setTasks(
+                                                                  (prev) =>
+                                                                    prev.filter(
+                                                                      (t) =>
+                                                                        t.id !==
+                                                                        task.id
+                                                                    )
+                                                                );
+                                                                toast.success(
+                                                                  "Tâche archivée avec succès"
+                                                                );
+                                                                setTaskMenuOpen(
+                                                                  null
+                                                                );
+                                                              })
+                                                              .catch(
+                                                                (error) => {
+                                                                  console.error(
+                                                                    "Erreur:",
+                                                                    error
+                                                                  );
+                                                                  toast.error(
+                                                                    "Erreur lors de l'archivage de la tâche"
+                                                                  );
+                                                                }
+                                                              );
+                                                          }}
+                                                          className="w-full text-left px-3 py-1 hover:bg-[color:var(--muted)] text-amber-600 flex items-center gap-2"
+                                                        >
+                                                          <Archive className="w-3 h-3" />
+                                                          Archiver
+                                                        </button>
+                                                      </li>
+                                                    )}
                                                   <li>
                                                     <button
                                                       onClick={(e) => {
