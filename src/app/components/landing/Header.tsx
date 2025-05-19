@@ -42,14 +42,38 @@ export default function Header() {
   const navScale = useTransform(scrollY, [0, 100], [1, 1.1]);
 
   // Effet pour le verrouillage du scroll quand le menu est ouvert
+  // Effet pour la gestion du scroll lors de l'ouverture du menu mobile
   useEffect(() => {
     if (mobileMenuOpen) {
-      document.body.style.overflow = "hidden";
+      // Sauvegarde la position de défilement actuelle
+      const scrollY = window.scrollY;
+
+      // Appliquer des styles pour empêcher le défilement mais préserver la position
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = "100%";
+      document.body.style.overflowY = "scroll"; // Évite le saut dû à la disparition de la barre de défilement
     } else {
-      document.body.style.overflow = "";
+      // Récupérer la position de défilement
+      const scrollY = parseInt(document.body.style.top || "0") * -1;
+
+      // Réinitialiser les styles
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      document.body.style.overflowY = "";
+
+      // Restaurer la position de défilement
+      window.scrollTo(0, scrollY);
     }
+
+    // Nettoyage en cas de démontage du composant
     return () => {
-      document.body.style.overflow = "";
+      // S'assurer que le scroll est restauré si le composant est démonté
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      document.body.style.overflowY = "";
     };
   }, [mobileMenuOpen]);
 
@@ -194,6 +218,8 @@ export default function Header() {
               transition={{ duration: 0.3 }}
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
               onClick={() => setMobileMenuOpen(false)}
+              onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
             />
             <motion.div
               initial={{ opacity: 0, x: "100%" }}
@@ -209,6 +235,10 @@ export default function Header() {
                 maxHeight: "100vh",
                 overflowY: "auto",
               }}
+              // Empêcher la propagation pour que le clic sur le menu ne ferme pas le menu
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
             >
               {/* En-tête du menu */}
               <div className="p-6 border-b border-[#beac93] flex items-center justify-between">
