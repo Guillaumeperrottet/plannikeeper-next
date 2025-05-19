@@ -1,29 +1,33 @@
-// src/app/api/objet/[id]/route.ts - Optimized for performance
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 import { checkObjectAccess } from "@/lib/auth-session";
+import { withCacheHeaders, CacheDurations } from "@/lib/cache-config";
 
-// Import types
+// Typage mis à jour : params est une Promise qui résout { objectId: string }
 type RouteParams = {
-  params: Promise<{ id: string }>;
+  params: Promise<{ objectId: string }>;
 };
 
-// Improved caching constants
-const CACHE_MAX_AGE = 60; // 60 seconds
-const CACHE_STALE_WHILE_REVALIDATE = 300; // 5 minutes
-
 export async function GET(req: NextRequest, { params }: RouteParams) {
-  // Get ID from promise more efficiently
-  const { id: objectId } = await params;
+  // Récupération de l'ID depuis la promesse
+  const { objectId } = await params;
 
-  // Get user from session (implement caching if this is called frequently)
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  // Check access rights (consider caching this result)
+  // Vérifier que l'objet existe
+  const object = await prisma.objet.findUnique({
+    where: { id: objectId },
+  });
+
+  if (!object) {
+    return NextResponse.json({ error: "Objet non trouvé" }, { status: 404 });
+  }
+
+  // Vérifier que l'utilisateur a un accès en lecture à cet objet
   const hasReadAccess = await checkObjectAccess(user.id, objectId, "read");
   if (!hasReadAccess) {
     return NextResponse.json(
@@ -32,92 +36,63 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     );
   }
 
-  // Smart ETag handling
-  const requestETag = req.headers.get("if-none-match");
-  const today = new Date().toISOString().split("T")[0];
-  const etag = `"tasks-${objectId}-${today}"`;
-
-  // If ETag matches, return 304 Not Modified immediately
-  if (requestETag === etag) {
-    return new NextResponse(null, {
-      status: 304,
-      headers: {
-        ETag: etag,
-        "Cache-Control": `max-age=${CACHE_MAX_AGE}, stale-while-revalidate=${CACHE_STALE_WHILE_REVALIDATE}`,
-        Vary: "Authorization",
-      },
-    });
-  }
-
-  try {
-    // Efficient DB query - only fetch what's needed
-    const tasks = await prisma.task.findMany({
-      where: {
-        article: {
-          sector: {
-            objectId,
-          },
+  // Récupérer toutes les tâches liées à cet objet
+  const tasks = await prisma.task.findMany({
+    where: {
+      article: {
+        sector: {
+          objectId,
         },
-        // Only fetch non-archived tasks for better performance
-        archived: false,
       },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        status: true,
-        realizationDate: true,
-        taskType: true,
-        color: true,
-        recurring: true,
-        period: true,
-        createdAt: true,
-        article: {
-          select: {
-            id: true,
-            title: true,
-            sector: {
-              select: {
-                id: true,
-                name: true,
-                object: {
-                  select: {
-                    id: true,
-                    nom: true,
-                  },
+    },
+    include: {
+      article: {
+        select: {
+          id: true,
+          title: true,
+          sector: {
+            select: {
+              id: true,
+              name: true,
+              object: {
+                select: {
+                  id: true,
+                  nom: true,
                 },
               },
             },
           },
         },
-        assignedTo: {
-          select: {
-            id: true,
-            name: true,
-          },
+      },
+      assignedTo: {
+        select: {
+          id: true,
+          name: true,
         },
       },
-      orderBy: [{ realizationDate: "asc" }, { createdAt: "desc" }],
+    },
+    orderBy: [{ realizationDate: "asc" }, { createdAt: "desc" }],
+  });
+
+  // Valider l'ETag pour optimiser les réponses
+  const tasksETag = `"tasks-${objectId}-${new Date().toISOString().split("T")[0]}"`;
+  const ifNoneMatch = req.headers.get("if-none-match");
+
+  if (ifNoneMatch === tasksETag) {
+    // Si l'ETag correspond, renvoyer 304 Not Modified
+    return new NextResponse(null, {
+      status: 304,
+      headers: {
+        ETag: tasksETag,
+        "Cache-Control": "max-age=60, stale-while-revalidate=300",
+      },
     });
-
-    // Create response with proper headers
-    const response = NextResponse.json(tasks);
-
-    // Add cache headers
-    response.headers.set("ETag", etag);
-    response.headers.set(
-      "Cache-Control",
-      `max-age=${CACHE_MAX_AGE}, stale-while-revalidate=${CACHE_STALE_WHILE_REVALIDATE}`
-    );
-    response.headers.set("Vary", "Authorization");
-
-    // Return response that respects browser cache
-    return response;
-  } catch (error) {
-    console.error(`Error fetching tasks for object ${objectId}:`, error);
-    return NextResponse.json(
-      { error: "Une erreur est survenue lors de la récupération des tâches" },
-      { status: 500 }
-    );
   }
+
+  // Sinon, renvoyer les données avec un en-tête ETag
+  const response = NextResponse.json(tasks);
+  response.headers.set("ETag", tasksETag);
+
+  // Les tâches changent fréquemment, utiliser un cache court avec SWR
+  return withCacheHeaders(response, CacheDurations.SWR_QUICK);
 }
