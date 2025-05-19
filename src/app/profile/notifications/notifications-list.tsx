@@ -1,4 +1,3 @@
-// src/app/profile/notifications/notifications-list.tsx
 "use client";
 
 import { useState } from "react";

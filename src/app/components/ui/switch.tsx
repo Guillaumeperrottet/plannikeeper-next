@@ -1,4 +1,3 @@
-// Create a new file: src/app/components/ui/switch.tsx
 "use client";
 
 import React from "react";
