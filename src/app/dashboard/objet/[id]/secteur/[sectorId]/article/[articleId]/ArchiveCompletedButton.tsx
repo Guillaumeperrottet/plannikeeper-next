@@ -1,4 +1,3 @@
-// src/app/dashboard/objet/[id]/secteur/[sectorId]/article/[articleId]/ArchiveCompletedButton.tsx
 "use client";
 
 import { useState } from "react";
@@ -69,7 +68,7 @@ export default function ArchiveCompletedButton({
   return (
     <button
       onClick={handleArchiveCompleted}
-      className="ml-1 p-1 rounded-full hover:bg-emerald-100 hover:text-emerald-700 text-emerald-600 transition-colors"
+      className="ml-1 p-1 rounded-full hover:bg-[color:var(--accent)] hover:text-[color:var(--accent-foreground)] text-[color:var(--primary)] transition-colors"
       title="Archiver toutes les tâches terminées"
       disabled={loading || completedTasks.length === 0}
     >

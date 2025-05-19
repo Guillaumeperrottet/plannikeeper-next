@@ -1,4 +1,5 @@
-// src/app/components/ArticleList.tsx (avec barre de recherche corrigée)
+"use client";
+
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   List,
@@ -72,8 +73,6 @@ const ArticleList: React.FC<ArticleListProps> = ({
   const [filteredArticles, setFilteredArticles] = useState<Article[]>(articles);
   const listRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-
-  // État pour gérer l'icône de tri
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   // Fonction pour appliquer les filtres et le tri
@@ -232,13 +231,8 @@ const ArticleList: React.FC<ArticleListProps> = ({
       {/* Bouton pour ouvrir la liste */}
       <motion.button
         onClick={togglePanel}
-        className={`${isMobile ? "fixed bottom-20 left-4" : "relative ml-2"} z-[50] flex items-center gap-1 bg-primary text-primary-foreground rounded-lg shadow-md px-3 py-2`}
+        className={`${isMobile ? "fixed bottom-20 left-4" : "relative ml-2"} z-[50] flex items-center gap-1 bg-[color:var(--primary)] text-[color:var(--primary-foreground)] rounded-lg shadow-md px-3 py-2`}
         whileTap={{ scale: 0.95 }}
-        style={{
-          backgroundColor: "var(--primary)",
-          color: "white",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-        }}
       >
         {isOpen ? (
           <X size={18} />
@@ -262,15 +256,7 @@ const ArticleList: React.FC<ArticleListProps> = ({
                 animate="visible"
                 exit="hidden"
                 onClick={togglePanel}
-                style={{
-                  position: "fixed",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: "rgba(0,0,0,0.5)",
-                  zIndex: 990,
-                }}
+                className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm z-40"
               />
             )}
 
@@ -280,63 +266,28 @@ const ArticleList: React.FC<ArticleListProps> = ({
               initial="hidden"
               animate="visible"
               exit="hidden"
+              className={`fixed z-50 bg-[color:var(--card)] border-[color:var(--border)] shadow-lg ${
+                isMobile
+                  ? "inset-x-0 bottom-0 rounded-t-xl border-t mobile-panel"
+                  : "top-0 left-0 bottom-0 w-80 border-r"
+              }`}
               style={{
-                position: "fixed",
-                zIndex: 995,
-                backgroundColor: "white",
-                boxShadow: "0 -4px 20px rgba(0,0,0,0.2)",
                 maxHeight: isMobile ? "80vh" : "100vh",
-                display: "flex",
-                flexDirection: "column",
-                ...(isMobile
-                  ? {
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      borderTopLeftRadius: "16px",
-                      borderTopRightRadius: "16px",
-                    }
-                  : {
-                      top: 0,
-                      left: 0,
-                      bottom: 0,
-                      width: "320px",
-                      borderRightRadius: "16px",
-                    }),
               }}
             >
               {/* Indicateur de défilement (handle) - uniquement sur mobile */}
-              {isMobile && (
-                <div
-                  style={{
-                    width: "40px",
-                    height: "4px",
-                    backgroundColor: "#ccc",
-                    borderRadius: "4px",
-                    margin: "10px auto 5px",
-                    opacity: 0.6,
-                  }}
-                />
-              )}
+              {isMobile && <div className="mobile-panel-handle" />}
 
               {/* En-tête du panneau */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "10px 16px",
-                  borderBottom: "1px solid #eee",
-                }}
-              >
+              <div className="flex justify-between items-center p-4 border-b border-[color:var(--border)]">
                 <div className="flex items-center">
-                  <h3 style={{ fontWeight: 500, margin: 0 }}>
+                  <h3 className="text-[color:var(--foreground)] font-medium">
                     Articles de &quot;{selectedSectorName}&quot;
                   </h3>
                   {/* Bouton de tri */}
                   <button
                     onClick={toggleSortDirection}
-                    className="ml-2 p-1 rounded hover:bg-gray-100"
+                    className="ml-2 p-1 rounded hover:bg-[color:var(--muted)] transition-colors"
                     title={
                       sortDirection === "asc"
                         ? "Tri croissant"
@@ -344,9 +295,15 @@ const ArticleList: React.FC<ArticleListProps> = ({
                     }
                   >
                     {sortDirection === "asc" ? (
-                      <ArrowUp size={16} className="text-gray-500" />
+                      <ArrowUp
+                        size={16}
+                        className="text-[color:var(--muted-foreground)]"
+                      />
                     ) : (
-                      <ArrowDown size={16} className="text-gray-500" />
+                      <ArrowDown
+                        size={16}
+                        className="text-[color:var(--muted-foreground)]"
+                      />
                     )}
                   </button>
                 </div>
@@ -354,12 +311,16 @@ const ArticleList: React.FC<ArticleListProps> = ({
                   <motion.button
                     onClick={toggleFilters}
                     whileTap={{ scale: 0.9 }}
-                    className={`relative p-2 ${showFilters ? "bg-blue-100 text-blue-700" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"} rounded-md transition-colors`}
+                    className={`relative p-2 rounded-md transition-colors ${
+                      showFilters
+                        ? "bg-[color:var(--primary)]/20 text-[color:var(--primary)]"
+                        : "text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)] hover:bg-[color:var(--muted)]"
+                    }`}
                     aria-label="Filtres"
                   >
                     <Filter size={18} />
                     {getFilterCount() > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                      <span className="absolute -top-1 -right-1 bg-[color:var(--primary)] text-[color:var(--primary-foreground)] text-xs rounded-full w-4 h-4 flex items-center justify-center">
                         {getFilterCount()}
                       </span>
                     )}
@@ -367,7 +328,7 @@ const ArticleList: React.FC<ArticleListProps> = ({
                   <motion.button
                     onClick={togglePanel}
                     whileTap={{ scale: 0.9 }}
-                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md"
+                    className="p-2 text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)] hover:bg-[color:var(--muted)] rounded-md transition-colors"
                   >
                     <X size={18} />
                   </motion.button>
@@ -382,14 +343,14 @@ const ArticleList: React.FC<ArticleListProps> = ({
                     initial="hidden"
                     animate="visible"
                     exit="hidden"
-                    className="border-b border-gray-200 overflow-hidden"
+                    className="border-b border-[color:var(--border)] overflow-hidden bg-[color:var(--card)]"
                   >
                     <div className="p-4">
-                      {/* Recherche - CORRECTION ICI */}
+                      {/* Recherche */}
                       <div className="relative w-full">
                         <Search
                           size={16}
-                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[color:var(--muted-foreground)]"
                         />
                         <input
                           ref={searchInputRef}
@@ -397,12 +358,12 @@ const ArticleList: React.FC<ArticleListProps> = ({
                           placeholder="Rechercher..."
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
-                          className="w-full py-2 pl-10 pr-8 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                          className="w-full py-2 pl-10 pr-8 border border-[color:var(--border)] rounded-md text-sm bg-[color:var(--background)] text-[color:var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)] placeholder:text-[color:var(--muted-foreground)]"
                         />
                         {searchTerm && (
                           <button
                             onClick={() => setSearchTerm("")}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)] transition-colors"
                           >
                             <XCircle size={16} />
                           </button>
@@ -413,7 +374,7 @@ const ArticleList: React.FC<ArticleListProps> = ({
                       <div className="flex justify-end mt-2">
                         <button
                           onClick={clearFilters}
-                          className="text-xs font-medium text-gray-500 hover:text-gray-700 py-1.5 px-3 rounded hover:bg-gray-100"
+                          className="text-xs font-medium text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)] py-1.5 px-3 rounded hover:bg-[color:var(--muted)] transition-colors"
                         >
                           Réinitialiser les filtres
                         </button>
@@ -426,32 +387,25 @@ const ArticleList: React.FC<ArticleListProps> = ({
               {/* Contenu du panneau avec défilement */}
               <div
                 ref={listRef}
+                className="overflow-y-auto mobile-scroll-container bg-[color:var(--card)]"
                 style={{
-                  overflowY: "auto",
                   // Ajustement de la hauteur maximale pour s'adapter au panneau de filtres
-                  maxHeight: isMobile
+                  height: isMobile
                     ? `calc(80vh - ${showFilters ? "130px" : "60px"})`
                     : `calc(100vh - ${showFilters ? "130px" : "60px"})`,
-                  WebkitOverflowScrolling: "touch",
                   paddingBottom: isMobile
                     ? "env(safe-area-inset-bottom, 16px)"
                     : 0,
                 }}
               >
                 {filteredArticles.length === 0 ? (
-                  <div
-                    style={{
-                      textAlign: "center",
-                      padding: "40px 20px",
-                      color: "#666",
-                    }}
-                  >
+                  <div className="text-center py-10 px-4 text-[color:var(--muted-foreground)]">
                     {articles.length === 0
                       ? "Aucun article disponible pour ce secteur"
                       : "Aucun article ne correspond à vos critères"}
                   </div>
                 ) : (
-                  <div style={{ padding: "12px 16px" }}>
+                  <div className="p-4">
                     {filteredArticles.map((article, index) => (
                       <motion.div
                         key={article.id}
@@ -462,85 +416,48 @@ const ArticleList: React.FC<ArticleListProps> = ({
                         onClick={() => handleArticleSelect(article.id)}
                         onMouseEnter={() => onArticleHover(article.id)}
                         onMouseLeave={() => onArticleHover(null)}
-                        style={{
-                          padding: "16px",
-                          marginBottom: "12px",
-                          borderRadius: "12px",
-                          border: "1px solid #e0e0e0",
-                          backgroundColor:
-                            hoveredArticleId === article.id
-                              ? "rgba(217, 132, 13, 0.1)"
-                              : "white",
-                          cursor: "pointer",
-                          boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-                        }}
+                        className={`p-4 mb-3 rounded-lg border shadow-sm transition-all duration-200 article-list-item ${
+                          hoveredArticleId === article.id
+                            ? "bg-[color:var(--primary)]/10 border-[color:var(--primary)]/30 dark:bg-[color:var(--primary)]/20"
+                            : "bg-[color:var(--background)] border-[color:var(--border)] hover:bg-[color:var(--muted)]"
+                        } cursor-pointer`}
                         whileTap={{ scale: 0.98 }}
                       >
                         <div className="flex justify-between items-start">
-                          <h4
-                            style={{
-                              fontWeight: 500,
-                              marginBottom: "8px",
-                              fontSize: "16px",
-                            }}
-                          >
+                          <h4 className="font-medium text-[color:var(--foreground)] mb-2 text-base">
                             {article.title}
                           </h4>
                           <ExternalLink
                             size={14}
-                            style={{
-                              color: "var(--muted-foreground)",
-                              marginTop: "4px",
-                            }}
+                            className="text-[color:var(--muted-foreground)] mt-1 flex-shrink-0 ml-2"
                           />
                         </div>
 
                         {article.description && (
-                          <p
-                            style={{
-                              fontSize: "14px",
-                              color: "var(--muted-foreground)",
-                              lineHeight: 1.4,
-                              display: "-webkit-box",
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: "vertical",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              margin: 0,
-                            }}
-                          >
+                          <p className="text-sm text-[color:var(--muted-foreground)] line-clamp-2">
                             {article.description}
                           </p>
                         )}
                       </motion.div>
                     ))}
-                    {/* Espace supplémentaire en bas */}
-                    <div style={{ height: "20px" }}></div>
                   </div>
                 )}
               </div>
 
-              {/* Boutons de navigation - uniquement sur desktop */}
+              {/* Navigation sur desktop */}
               {!isMobile && filteredArticles.length > 0 && (
-                <div
-                  style={{
-                    borderTop: "1px solid #eee",
-                    padding: "12px",
-                    display: "flex",
-                    justifyContent: "space-between",
-                  }}
-                >
+                <div className="border-t border-[color:var(--border)] p-3 flex justify-between items-center bg-[color:var(--card)]">
                   <button
-                    className="p-2 rounded-full bg-gray-100 hover:bg-gray-200"
+                    className="p-2 rounded-full bg-[color:var(--muted)] hover:bg-[color:var(--accent)] text-[color:var(--foreground)] transition-colors"
                     aria-label="Articles précédents"
                   >
                     <ChevronLeft size={18} />
                   </button>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-[color:var(--muted-foreground)]">
                     Page 1 de 1
                   </span>
                   <button
-                    className="p-2 rounded-full bg-gray-100 hover:bg-gray-200"
+                    className="p-2 rounded-full bg-[color:var(--muted)] hover:bg-[color:var(--accent)] text-[color:var(--foreground)] transition-colors"
                     aria-label="Articles suivants"
                   >
                     <ChevronRight size={18} />

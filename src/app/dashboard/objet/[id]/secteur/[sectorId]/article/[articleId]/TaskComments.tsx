@@ -78,7 +78,9 @@ export default function TaskComments({ taskId }: TaskCommentsProps) {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <MessageCircle size={18} className="text-[color:var(--primary)]" />
-        <h3 className="text-lg font-semibold">Discussion</h3>
+        <h3 className="text-lg font-semibold text-[color:var(--foreground)]">
+          Discussion
+        </h3>
       </div>
 
       {/* Formulaire pour nouveau commentaire */}
@@ -132,7 +134,9 @@ export default function TaskComments({ taskId }: TaskCommentsProps) {
               )}
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium">{comment.user.name}</span>
+                  <span className="font-medium text-[color:var(--foreground)]">
+                    {comment.user.name}
+                  </span>
                   <span className="text-xs text-[color:var(--muted-foreground)]">
                     {formatDistanceToNow(new Date(comment.createdAt), {
                       addSuffix: true,
@@ -140,7 +144,9 @@ export default function TaskComments({ taskId }: TaskCommentsProps) {
                     })}
                   </span>
                 </div>
-                <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
+                <p className="text-sm whitespace-pre-wrap text-[color:var(--foreground)]">
+                  {comment.content}
+                </p>
               </div>
             </div>
           ))}
