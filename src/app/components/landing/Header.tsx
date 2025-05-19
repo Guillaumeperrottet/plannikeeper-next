@@ -5,7 +5,7 @@ import {
   RocketLaunchIcon,
   CurrencyDollarIcon,
 } from "@heroicons/react/24/outline";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   motion,
   useScroll,
@@ -35,41 +35,41 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { scrollY } = useScroll();
+  const scrollPositionRef = useRef(0);
 
   // Transform values for the sidebar elements that will fade out
   const sideOpacity = useTransform(scrollY, [0, 100], [1, 0]);
   const sideScale = useTransform(scrollY, [0, 100], [1, 0.8]);
   const navScale = useTransform(scrollY, [0, 100], [1, 1.1]);
 
-  // Effet pour le verrouillage du scroll quand le menu est ouvert
   // Effet pour la gestion du scroll lors de l'ouverture du menu mobile
   useEffect(() => {
     if (mobileMenuOpen) {
       // Sauvegarde la position de défilement actuelle
-      const scrollY = window.scrollY;
+      scrollPositionRef.current = window.scrollY;
 
-      // Appliquer des styles pour empêcher le défilement mais préserver la position
+      // Appliquer des styles pour empêcher le défilement de façon synchrone
       document.body.style.position = "fixed";
-      document.body.style.top = `-${scrollY}px`;
+      document.body.style.top = `-${scrollPositionRef.current}px`;
       document.body.style.width = "100%";
-      document.body.style.overflowY = "scroll"; // Évite le saut dû à la disparition de la barre de défilement
+      document.body.style.overflowY = "scroll";
     } else {
-      // Récupérer la position de défilement
-      const scrollY = parseInt(document.body.style.top || "0") * -1;
-
       // Réinitialiser les styles
       document.body.style.position = "";
       document.body.style.top = "";
       document.body.style.width = "";
       document.body.style.overflowY = "";
 
-      // Restaurer la position de défilement
-      window.scrollTo(0, scrollY);
+      // Restaurer la position immédiatement après le rendu
+      window.requestAnimationFrame(() => {
+        window.scrollTo({
+          top: scrollPositionRef.current,
+          behavior: "instant",
+        });
+      });
     }
 
-    // Nettoyage en cas de démontage du composant
     return () => {
-      // S'assurer que le scroll est restauré si le composant est démonté
       document.body.style.position = "";
       document.body.style.top = "";
       document.body.style.width = "";
@@ -207,10 +207,11 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Menu Overlay - can be used for both mobile and desktop */}
+      {/* Menu Overlay avec des animations synchronisées */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
+            {/* Fond sombre animé - Synchronisé avec le menu latéral */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -221,6 +222,8 @@ export default function Header() {
               onMouseDown={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
             />
+
+            {/* Menu latéral avec animation améliorée */}
             <motion.div
               initial={{ opacity: 0, x: "100%" }}
               animate={{ opacity: 1, x: 0 }}
@@ -235,7 +238,6 @@ export default function Header() {
                 maxHeight: "100vh",
                 overflowY: "auto",
               }}
-              // Empêcher la propagation pour que le clic sur le menu ne ferme pas le menu
               onClick={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
