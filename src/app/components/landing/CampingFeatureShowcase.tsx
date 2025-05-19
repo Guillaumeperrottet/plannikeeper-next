@@ -237,8 +237,8 @@ const CampingFeatureShowcase = () => {
     <div className="w-full max-w-7xl mx-auto px-4 py-8">
       {/* Première fonctionnalité - Texte à gauche, vidéo à droite */}
       <SimpleVideoFeature
-        title="Visualisation interactive du camping"
-        description="Permet de naviguer virtuellement dans votre camping. Visualisez tous vos emplacements, animations et équipements en quelques clics."
+        title="Visualisation interactive"
+        description="Permet de naviguer virtuellement dans votre camping, hôtel, appartement. Visualisez tous vos emplacements, animations et équipements en quelques clics. Et ce, même sur mobile !"
         videoSrc="/videos/feature-camping-map.mp4"
         poster="/images/features/camping-map-poster.jpg"
       />
@@ -255,7 +255,7 @@ const CampingFeatureShowcase = () => {
       {/* Troisième fonctionnalité - Texte à gauche, vidéo à droite */}
       <SimpleVideoFeature
         title="Communication facilitée"
-        description="ASsignez des tâches à vos équipes, soyez notifié, garder un historique, et imprimer vos tâches pour les distribuer à vos équipes."
+        description="Assignez des tâches à vos équipes, soyez notifié, garder un historique, et imprimer vos tâches en un clic."
         videoSrc="/videos/feature-communication.mp4"
         poster="/images/features/communication-poster.jpg"
       />
