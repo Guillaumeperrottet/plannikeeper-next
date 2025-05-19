@@ -13,10 +13,10 @@ export default function ServiceWorkerRegistration() {
           const registration =
             await navigator.serviceWorker.register("/service-worker.js");
 
-          // console.log(
-          //   "Service Worker enregistré avec succès:",
-          //   registration.scope
-          // );
+          console.log(
+            "Service Worker enregistré avec succès:",
+            registration.scope
+          );
 
           // Gérer les mises à jour
           registration.onupdatefound = () => {

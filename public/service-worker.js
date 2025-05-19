@@ -1,3 +1,24 @@
+// Fonction utilitaire pour vérifier si une requête est cachable
+function isCachableRequest(request) {
+  try {
+    const url = new URL(request.url);
+
+    // Vérifier la méthode (seulement GET)
+    if (request.method !== "GET") return false;
+
+    // Vérifier le schéma (seulement HTTP/HTTPS)
+    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
+
+    // Vérifier les URL spécifiques à exclure
+    if (request.url.includes("chrome-extension")) return false;
+
+    return true;
+  } catch (error) {
+    console.error("Erreur lors de la vérification de la requête:", error);
+    return false; // En cas d'erreur, ne pas mettre en cache
+  }
+}
+
 const CACHE_VERSION = "1.1.0"; // Augmenter la version à chaque changement important
 const CACHE_NAME = `plannikeeper-cache-v${CACHE_VERSION}`;
 const DATA_CACHE_NAME = `plannikeeper-data-v${CACHE_VERSION}`; // Cache séparé pour les données API
@@ -69,6 +90,12 @@ self.addEventListener("activate", (event) => {
 
 // Stratégie de mise en cache: Network First pour les API, Cache First pour les ressources statiques
 self.addEventListener("fetch", (event) => {
+  // Vérifier si la requête est cachable
+  if (!isCachableRequest(event.request)) {
+    // Laisser le navigateur gérer cette requête normalement
+    return;
+  }
+
   const url = new URL(event.request.url);
 
   // Pour les requêtes API, utiliser Network First, Store in Cache
@@ -97,6 +124,11 @@ self.addEventListener("fetch", (event) => {
 
 // Stratégie Cache First avec fallback sur réseau
 async function cacheFirst(request) {
+  // Vérifier à nouveau si la requête est cachable
+  if (!isCachableRequest(request)) {
+    return fetch(request);
+  }
+
   const cachedResponse = await caches.match(request);
   if (cachedResponse) {
     return cachedResponse;
@@ -105,9 +137,16 @@ async function cacheFirst(request) {
   // Si non trouvé dans le cache, essayer le réseau
   try {
     const networkResponse = await fetch(request);
-    // Mettre à jour le cache avec la nouvelle réponse
-    const cache = await caches.open(CACHE_NAME);
-    cache.put(request, networkResponse.clone());
+    // Vérifier si la réponse est valide pour la mise en cache
+    if (
+      networkResponse &&
+      networkResponse.status === 200 &&
+      networkResponse.type === "basic"
+    ) {
+      // Mettre à jour le cache avec la nouvelle réponse
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request, networkResponse.clone());
+    }
     return networkResponse;
   } catch (error) {
     // En cas d'erreur réseau, essayer de retourner une page offline
@@ -122,11 +161,23 @@ async function cacheFirst(request) {
 
 // Stratégie Network First avec stockage en cache
 async function networkFirst(request) {
+  // Vérifier à nouveau si la requête est cachable
+  if (!isCachableRequest(request)) {
+    return fetch(request);
+  }
+
   try {
     const networkResponse = await fetch(request);
-    // Mettre à jour le cache avec la nouvelle réponse
-    const cache = await caches.open(CACHE_NAME);
-    cache.put(request, networkResponse.clone());
+    // Vérifier si la réponse est valide pour la mise en cache
+    if (
+      networkResponse &&
+      networkResponse.status === 200 &&
+      networkResponse.type === "basic"
+    ) {
+      // Mettre à jour le cache avec la nouvelle réponse
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request, networkResponse.clone());
+    }
     return networkResponse;
   } catch (error) {
     // En cas d'erreur réseau, essayer le cache
@@ -147,14 +198,15 @@ async function networkFirst(request) {
 
 // Stratégie spécifique pour les API: Network First, mais avec invalidation automatique
 async function networkFirstWithBackup(request) {
+  // Vérifier à nouveau si la requête est cachable
   const url = new URL(request.url);
 
   try {
     // Essayer d'abord le réseau
     const networkResponse = await fetch(request);
 
-    // Ne mettre en cache que les GET (pas les mutations)
-    if (request.method === "GET") {
+    // Ne mettre en cache que les GET (pas les mutations) et seulement si c'est cachable
+    if (request.method === "GET" && isCachableRequest(request)) {
       const cache = await caches.open(DATA_CACHE_NAME);
       cache.put(request, networkResponse.clone());
 
