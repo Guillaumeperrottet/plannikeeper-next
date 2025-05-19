@@ -1,11 +1,10 @@
-const CACHE_VERSION = "1.1.0"; // Augmenter la version à chaque changement important
+const CACHE_VERSION = "1.1.1"; // Augmenté pour forcer l'actualisation
 const CACHE_NAME = `plannikeeper-cache-v${CACHE_VERSION}`;
-const DATA_CACHE_NAME = `plannikeeper-data-v${CACHE_VERSION}`; // Cache séparé pour les données API
+const DATA_CACHE_NAME = `plannikeeper-data-v${CACHE_VERSION}`;
 
 // Ressources à mettre en cache lors de l'installation
 const STATIC_CACHE_URLS = [
   "/",
-  "/dashboard",
   "/offline",
   "/images/logo.png",
   "/manifest.json",
@@ -14,28 +13,37 @@ const STATIC_CACHE_URLS = [
   "/icons/icon-512x512.png",
 ];
 
-// Installation du service worker avec précaching des ressources essentielles
+// Installation du service worker avec gestion d'erreur améliorée
 self.addEventListener("install", (event) => {
-  // console.log("Service Worker: Installation en cours");
-
   event.waitUntil(
     caches
       .open(CACHE_NAME)
       .then((cache) => {
-        // console.log("Service Worker: Mise en cache des ressources statiques");
-        return cache.addAll(STATIC_CACHE_URLS);
+        // Mise en cache individuelle pour mieux gérer les erreurs
+        return Promise.allSettled(
+          STATIC_CACHE_URLS.map((url) =>
+            cache
+              .add(url)
+              .catch((err) =>
+                console.warn(`Impossible de mettre en cache: ${url}`, err)
+              )
+          )
+        );
       })
       .then(() => {
-        // Force l'activation immédiate du service worker
         return self.skipWaiting();
+      })
+      .catch((error) => {
+        console.error(
+          "Erreur lors de l'installation du service worker:",
+          error
+        );
       })
   );
 });
 
 // Activation: nettoyage des anciens caches
 self.addEventListener("activate", (event) => {
-  console.log("Service Worker: Activation en cours");
-
   event.waitUntil(
     caches
       .keys()
@@ -43,7 +51,6 @@ self.addEventListener("activate", (event) => {
         return Promise.all(
           cacheNames
             .filter((cacheName) => {
-              // Supprimer les anciens caches
               return (
                 (cacheName.startsWith("plannikeeper-cache-") &&
                   cacheName !== CACHE_NAME) ||
@@ -61,62 +68,85 @@ self.addEventListener("activate", (event) => {
         );
       })
       .then(() => {
-        // Prendre le contrôle immédiatement des clients
         return self.clients.claim();
+      })
+      .catch((error) => {
+        console.error("Erreur lors de l'activation du service worker:", error);
       })
   );
 });
 
-// Stratégie de mise en cache: Network First pour les API, Cache First pour les ressources statiques
+// UN SEUL gestionnaire fetch avec gestion d'erreur améliorée
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  // Pour les requêtes API, utiliser Network First, Store in Cache
-  if (url.pathname.startsWith("/api/")) {
-    // Stratégie spécifique pour les API
-    event.respondWith(networkFirstWithBackup(event.request));
-    return;
-  }
-
-  // Pour les ressources statiques, utiliser Cache First
+  // Éviter de traiter les requêtes de navigateur non nécessaires
   if (
-    event.request.method === "GET" &&
-    (url.pathname.startsWith("/images/") ||
-      url.pathname.startsWith("/_next/static/") ||
-      url.pathname.startsWith("/icons/") ||
-      url.pathname === "/" ||
-      url.pathname === "/favicon.ico")
+    event.request.cache === "only-if-cached" &&
+    event.request.mode !== "same-origin"
   ) {
-    event.respondWith(cacheFirst(event.request));
     return;
   }
 
-  // Pour toute autre requête, utiliser Network First
-  event.respondWith(networkFirst(event.request));
+  try {
+    // Pour les requêtes API, utiliser Network First, Store in Cache
+    if (url.pathname.startsWith("/api/")) {
+      event.respondWith(networkFirstWithBackup(event.request));
+      return;
+    }
+
+    // Pour les ressources statiques, utiliser Cache First
+    if (
+      event.request.method === "GET" &&
+      (url.pathname.startsWith("/images/") ||
+        url.pathname.startsWith("/_next/static/") ||
+        url.pathname.startsWith("/icons/") ||
+        url.pathname.match(/\.(css|js|png|jpg|jpeg|svg|webp|woff2)$/) ||
+        url.pathname === "/" ||
+        url.pathname === "/favicon.ico")
+    ) {
+      event.respondWith(cacheFirst(event.request));
+      return;
+    }
+
+    // Pour toute autre requête, utiliser Network First
+    event.respondWith(networkFirst(event.request));
+  } catch (error) {
+    console.error("Erreur dans le gestionnaire fetch:", error);
+  }
 });
 
 // Stratégie Cache First avec fallback sur réseau
 async function cacheFirst(request) {
-  const cachedResponse = await caches.match(request);
-  if (cachedResponse) {
-    return cachedResponse;
-  }
-
-  // Si non trouvé dans le cache, essayer le réseau
   try {
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
+    // Si non trouvé dans le cache, essayer le réseau
     const networkResponse = await fetch(request);
     // Mettre à jour le cache avec la nouvelle réponse
     const cache = await caches.open(CACHE_NAME);
     cache.put(request, networkResponse.clone());
     return networkResponse;
   } catch (error) {
+    console.warn(`Erreur dans cacheFirst pour ${request.url}:`, error);
+
     // En cas d'erreur réseau, essayer de retourner une page offline
     if (request.mode === "navigate") {
       const cache = await caches.open(CACHE_NAME);
-      return cache.match("/offline");
+      const offlineResponse = await cache.match("/offline");
+      if (offlineResponse) {
+        return offlineResponse;
+      }
     }
 
-    throw error;
+    // Si tout échoue, renvoyer une réponse d'erreur
+    return new Response("Erreur réseau, contenu non disponible", {
+      status: 503,
+      headers: { "Content-Type": "text/plain" },
+    });
   }
 }
 
@@ -265,23 +295,54 @@ async function notifyClientsOfDataChange(pathname) {
   });
 }
 
-// Gérer les messages provenant des clients (par exemple pour forcer un rafraîchissement)
+// Gestion des messages avec promesses correctement résolues
 self.addEventListener("message", (event) => {
   if (event.data && event.data.action === "skipWaiting") {
     self.skipWaiting();
+    return;
   }
 
   if (event.data && event.data.action === "clearCache") {
-    clearAllCaches().then(() => {
-      event.ports[0].postMessage({ result: "success" });
-    });
+    event.waitUntil(
+      clearAllCaches()
+        .then(() => {
+          if (event.ports && event.ports[0]) {
+            event.ports[0].postMessage({ result: "success" });
+          }
+        })
+        .catch((error) => {
+          console.error("Erreur lors du nettoyage du cache:", error);
+          if (event.ports && event.ports[0]) {
+            event.ports[0].postMessage({
+              result: "error",
+              error: error.message,
+            });
+          }
+        })
+    );
+    return;
   }
 
   if (event.data && event.data.action === "invalidateCache") {
     const { pathname } = event.data;
-    invalidateRelatedCaches(pathname).then(() => {
-      event.ports[0].postMessage({ result: "success" });
-    });
+    event.waitUntil(
+      invalidateRelatedCaches(pathname)
+        .then(() => {
+          if (event.ports && event.ports[0]) {
+            event.ports[0].postMessage({ result: "success" });
+          }
+        })
+        .catch((error) => {
+          console.error("Erreur lors de l'invalidation du cache:", error);
+          if (event.ports && event.ports[0]) {
+            event.ports[0].postMessage({
+              result: "error",
+              error: error.message,
+            });
+          }
+        })
+    );
+    return;
   }
 });
 
