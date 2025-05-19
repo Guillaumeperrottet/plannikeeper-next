@@ -12,5 +12,15 @@ module.exports = {
       },
     },
   },
+  webpack: (config) => {
+    // Optimisations webpack personnalisées
+    config.optimization.splitChunks = {
+      chunks: "all",
+      maxInitialRequests: 25,
+      minSize: 20000,
+    };
+
+    return config;
+  },
   plugins: [],
 };

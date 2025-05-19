@@ -359,3 +359,30 @@ async function syncPendingActions() {
   console.log("Synchronisation des actions en attente");
   // Voir lib/offline-sync.ts pour l'implémentation
 }
+
+// Stratégie de cache améliorée dans public/sw.js
+self.addEventListener("fetch", function (event) {
+  // Stratégie cache-first pour les assets statiques
+  if (event.request.url.match(/\.(css|js|png|jpg|jpeg|svg|webp|woff2)$/)) {
+    event.respondWith(
+      caches.match(event.request).then(function (response) {
+        return (
+          response ||
+          fetch(event.request).then(function (fetchResponse) {
+            return caches.open("plannikeeper-static-v1").then(function (cache) {
+              cache.put(event.request, fetchResponse.clone());
+              return fetchResponse;
+            });
+          })
+        );
+      })
+    );
+  } else {
+    // Stratégie network-first pour les API
+    event.respondWith(
+      fetch(event.request).catch(function () {
+        return caches.match(event.request);
+      })
+    );
+  }
+});
