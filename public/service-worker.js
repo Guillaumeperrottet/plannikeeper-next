@@ -1,4 +1,4 @@
-const CACHE_VERSION = "1.1.0"; // Augmenter la version à chaque changement important
+const CACHE_VERSION = "1.2.0"; // Augmenter la version à chaque changement important
 const CACHE_NAME = `plannikeeper-cache-v${CACHE_VERSION}`;
 const DATA_CACHE_NAME = `plannikeeper-data-v${CACHE_VERSION}`; // Cache séparé pour les données API
 
@@ -71,9 +71,13 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  // Pour les requêtes API, utiliser Network First, Store in Cache
+  // Ignorer les requêtes d'extensions Chrome
+  if (url.protocol === "chrome-extension:") {
+    return;
+  }
+
+  // Le reste de votre code reste inchangé...
   if (url.pathname.startsWith("/api/")) {
-    // Stratégie spécifique pour les API
     event.respondWith(networkFirstWithBackup(event.request));
     return;
   }
@@ -94,7 +98,6 @@ self.addEventListener("fetch", (event) => {
   // Pour toute autre requête, utiliser Network First
   event.respondWith(networkFirst(event.request));
 });
-
 // Stratégie Cache First avec fallback sur réseau
 async function cacheFirst(request) {
   const cachedResponse = await caches.match(request);
@@ -124,9 +127,18 @@ async function cacheFirst(request) {
 async function networkFirst(request) {
   try {
     const networkResponse = await fetch(request);
-    // Mettre à jour le cache avec la nouvelle réponse
-    const cache = await caches.open(CACHE_NAME);
-    cache.put(request, networkResponse.clone());
+
+    // Ne mettre en cache que les requêtes GET
+    if (request.method === "GET") {
+      // Mettre à jour le cache avec la nouvelle réponse
+      const cache = await caches.open(CACHE_NAME);
+      try {
+        await cache.put(request, networkResponse.clone());
+      } catch (cacheError) {
+        console.warn("Impossible de mettre en cache la réponse:", cacheError);
+      }
+    }
+
     return networkResponse;
   } catch (error) {
     // En cas d'erreur réseau, essayer le cache
