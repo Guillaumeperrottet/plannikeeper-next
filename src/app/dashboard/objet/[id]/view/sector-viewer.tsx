@@ -271,22 +271,6 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
     };
   }, [isFullscreen]);
 
-  // Effet pour ajuster la taille de l'image lorsque la barre latérale est ouverte/fermée
-  useEffect(() => {
-    if (mainContainerRef.current) {
-      // Réinitialiser les propriétés
-      mainContainerRef.current.style.transition = "all 0.3s ease-in-out";
-
-      // Ajuster la largeur en fonction de l'état de la barre latérale
-      if (sidebarOpen && !isMobile) {
-        mainContainerRef.current.style.marginRight = "300px"; // Largeur de la barre latérale
-        mainContainerRef.current.style.transition = "all 0.3s ease-in-out";
-      } else {
-        mainContainerRef.current.style.marginRight = "0";
-      }
-    }
-  }, [sidebarOpen, isMobile]);
-
   // Variables pour la navigation d'articles
   const articleListVariants = {
     hidden: { x: "100%", opacity: 0 },
@@ -746,114 +730,127 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
         {/* Barre latérale d'articles pour desktop avec barre de recherche - position fixe à droite */}
         <AnimatePresence>
           {sidebarOpen && !isMobile && selectedSector && (
-            <motion.div
-              variants={articleListVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              className="fixed top-0 right-0 h-full w-[300px] bg-white shadow-lg z-30 flex flex-col"
-              style={{
-                top: "64px", // Hauteur approximative du header
-                height: "calc(100vh - 64px)",
-                borderLeft: "1px solid #eee",
-              }}
-            >
-              {/* En-tête de la barre latérale avec options de tri */}
-              <div className="flex justify-between items-center p-3 border-b">
-                <div className="flex items-center">
-                  <h3 className="font-medium truncate max-w-[200px]">
-                    Articles ({filteredArticles.length})
-                  </h3>
+            <>
+              {/* Overlay semi-transparent pour cliquer en dehors */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed inset-0 bg-black/30 z-20"
+                onClick={toggleSidebar}
+              />
+
+              {/* Panneau latéral */}
+              <motion.div
+                variants={articleListVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="fixed top-0 right-0 h-full w-[300px] bg-white shadow-lg z-30 flex flex-col"
+                style={{
+                  top: "64px", // Hauteur approximative du header
+                  height: "calc(100vh - 64px)",
+                  borderLeft: "1px solid #eee",
+                }}
+              >
+                {/* En-tête de la barre latérale avec options de tri */}
+                <div className="flex justify-between items-center p-3 border-b">
+                  <div className="flex items-center">
+                    <h3 className="font-medium truncate max-w-[200px]">
+                      Articles ({filteredArticles.length})
+                    </h3>
+                    <button
+                      onClick={toggleSortDirection}
+                      className="ml-2 p-1 rounded hover:bg-gray-100"
+                      title={sortDirection === "asc" ? "Tri A-Z" : "Tri Z-A"}
+                    >
+                      {sortDirection === "asc" ? (
+                        <ArrowUp size={16} className="text-gray-500" />
+                      ) : (
+                        <ArrowDown size={16} className="text-gray-500" />
+                      )}
+                    </button>
+                  </div>
                   <button
-                    onClick={toggleSortDirection}
-                    className="ml-2 p-1 rounded hover:bg-gray-100"
-                    title={sortDirection === "asc" ? "Tri A-Z" : "Tri Z-A"}
+                    onClick={toggleSidebar}
+                    className="p-1 hover:bg-gray-100 rounded-full"
                   >
-                    {sortDirection === "asc" ? (
-                      <ArrowUp size={16} className="text-gray-500" />
-                    ) : (
-                      <ArrowDown size={16} className="text-gray-500" />
-                    )}
+                    <X size={18} />
                   </button>
                 </div>
-                <button
-                  onClick={toggleSidebar}
-                  className="p-1 hover:bg-gray-100 rounded-full"
-                >
-                  <X size={18} />
-                </button>
-              </div>
 
-              {/* Barre de recherche */}
-              <motion.div
-                variants={searchBarVariants}
-                initial="visible"
-                animate="visible"
-                className="border-b border-gray-200 p-3"
-              >
-                <div className="relative">
-                  <Search
-                    size={16}
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                  />
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    placeholder="Rechercher un article..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full py-2 pl-10 pr-8 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                  {searchTerm && (
-                    <button
-                      onClick={clearSearch}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      <XCircle size={16} />
-                    </button>
+                {/* Barre de recherche */}
+                <motion.div
+                  variants={searchBarVariants}
+                  initial="visible"
+                  animate="visible"
+                  className="border-b border-gray-200 p-3"
+                >
+                  <div className="relative">
+                    <Search
+                      size={16}
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    />
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      placeholder="Rechercher un article..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full py-2 pl-10 pr-8 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                    {searchTerm && (
+                      <button
+                        onClick={clearSearch}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <XCircle size={16} />
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+
+                {/* Liste des articles filtrée */}
+                <div className="flex-1 overflow-y-auto p-3">
+                  {filteredArticles.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      {articles.length === 0
+                        ? "Aucun article disponible pour ce secteur"
+                        : "Aucun article ne correspond à votre recherche"}
+                    </div>
+                  ) : (
+                    filteredArticles.map((article) => (
+                      <div
+                        key={article.id}
+                        className={`mb-3 p-4 border rounded-lg cursor-pointer transition-colors ${
+                          hoveredArticleId === article.id ||
+                          selectedArticleId === article.id
+                            ? "bg-amber-50 border-amber-200"
+                            : "hover:bg-gray-50"
+                        }`}
+                        onClick={() => handleArticleClick(article.id)}
+                        onMouseEnter={() => handleArticleHover(article.id)}
+                        onMouseLeave={() => handleArticleHover(null)}
+                      >
+                        <div className="flex justify-between items-start">
+                          <h4 className="font-medium mb-1">{article.title}</h4>
+                          <ExternalLink
+                            size={14}
+                            className="text-gray-400 mt-1"
+                          />
+                        </div>
+                        {article.description && (
+                          <p className="text-sm text-gray-500 line-clamp-2">
+                            {article.description}
+                          </p>
+                        )}
+                      </div>
+                    ))
                   )}
                 </div>
               </motion.div>
-
-              {/* Liste des articles filtrée */}
-              <div className="flex-1 overflow-y-auto p-3">
-                {filteredArticles.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    {articles.length === 0
-                      ? "Aucun article disponible pour ce secteur"
-                      : "Aucun article ne correspond à votre recherche"}
-                  </div>
-                ) : (
-                  filteredArticles.map((article) => (
-                    <div
-                      key={article.id}
-                      className={`mb-3 p-4 border rounded-lg cursor-pointer transition-colors ${
-                        hoveredArticleId === article.id ||
-                        selectedArticleId === article.id
-                          ? "bg-amber-50 border-amber-200"
-                          : "hover:bg-gray-50"
-                      }`}
-                      onClick={() => handleArticleClick(article.id)}
-                      onMouseEnter={() => handleArticleHover(article.id)}
-                      onMouseLeave={() => handleArticleHover(null)}
-                    >
-                      <div className="flex justify-between items-start">
-                        <h4 className="font-medium mb-1">{article.title}</h4>
-                        <ExternalLink
-                          size={14}
-                          className="text-gray-400 mt-1"
-                        />
-                      </div>
-                      {article.description && (
-                        <p className="text-sm text-gray-500 line-clamp-2">
-                          {article.description}
-                        </p>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            </motion.div>
+            </>
           )}
         </AnimatePresence>
       </div>
