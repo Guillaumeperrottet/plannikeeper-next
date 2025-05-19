@@ -62,7 +62,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     period,
     endDate,
     executantComment,
-    recurrenceReminderDate, // Peut être null ou une date explicite
+    recurrenceReminderDate,
   } = await req.json();
 
   if (!name?.trim()) {
@@ -151,7 +151,23 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     },
   });
 
-  return NextResponse.json(updatedTask);
+  // Stocker l'ID de l'objet et du secteur pour les invalidations de cache
+  const objectId = task.article.sector.object.id;
+  const sectorId = task.article.sector.id;
+
+  // Ajouter des headers spécifiques pour indiquer quels caches doivent être invalidés
+  const response = NextResponse.json(updatedTask);
+  response.headers.set("X-Invalidate-Cache", `tasks_${objectId}`);
+  response.headers.set(
+    "X-Invalidate-Cache-Keys",
+    JSON.stringify([
+      `tasks_${objectId}`,
+      `article_tasks_${task.article.id}`,
+      `sector_tasks_${sectorId}`,
+    ])
+  );
+
+  return response;
 }
 
 export async function PATCH(req: NextRequest, { params }: RouteParams) {

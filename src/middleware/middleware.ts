@@ -1,3 +1,4 @@
+// src/middleware/middleware.ts (mise à jour)
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -31,6 +32,7 @@ export function middleware(request: NextRequest) {
       status: 204,
       headers: {
         "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
         "Access-Control-Allow-Headers":
           "Content-Type, Authorization, X-Requested-With, Cookie",
         "Access-Control-Allow-Credentials": "true",
@@ -39,11 +41,39 @@ export function middleware(request: NextRequest) {
     });
   }
 
-  if (request.nextUrl.pathname === "/signup") {
+  // Optimisation du cache pour les ressources statiques
+  if (
+    pathname.match(/\.(js|css|woff2|png|jpg|jpeg|gif|ico|svg)$/) ||
+    pathname.startsWith("/_next/static/")
+  ) {
     const response = NextResponse.next();
 
     // Ajouter des en-têtes de cache pour les ressources statiques
-    response.headers.set("Cache-Control", "public, max-age=3600");
+    // 1 an pour les assets versionnés, 1 jour pour les non-versionnés
+    if (pathname.includes("/_next/static/")) {
+      response.headers.set(
+        "Cache-Control",
+        "public, max-age=31536000, immutable"
+      );
+    } else {
+      response.headers.set(
+        "Cache-Control",
+        "public, max-age=86400, stale-while-revalidate=604800"
+      );
+    }
+
+    return response;
+  }
+
+  // Configuration de cache pour les pages du site vitrine
+  if (pathname === "/signup" || pathname === "/signin" || pathname === "/") {
+    const response = NextResponse.next();
+
+    // Ajouter des en-têtes de cache pour les ressources statiques
+    response.headers.set(
+      "Cache-Control",
+      "public, max-age=3600, stale-while-revalidate=86400"
+    );
 
     // Ajouter des headers pour précharger les ressources critiques
     response.headers.set(
@@ -53,7 +83,6 @@ export function middleware(request: NextRequest) {
 
     return response;
   }
-  // Pour les autres requêtes, ajouter les headers CORS à la réponse
   // Pour les autres requêtes
   const response = NextResponse.next();
 
@@ -71,9 +100,10 @@ export function middleware(request: NextRequest) {
     "Access-Control-Allow-Headers",
     "Content-Type, Authorization, X-Requested-With, Cookie"
   );
+
   return response;
 }
 
 export const config = {
-  matcher: ["/api/:path*"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)", "/api/:path*"],
 };

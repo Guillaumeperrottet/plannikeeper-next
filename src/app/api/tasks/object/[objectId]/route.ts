@@ -1,8 +1,8 @@
-// src/app/api/tasks/object/[objectId]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 import { checkObjectAccess } from "@/lib/auth-session";
+import { createDynamicResponse } from "@/lib/cache-config";
 
 // Typage mis à jour : params est une Promise qui résout { objectId: string }
 type RouteParams = {
@@ -74,5 +74,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     orderBy: [{ realizationDate: "asc" }, { createdAt: "desc" }],
   });
 
-  return NextResponse.json(tasks);
+  // Les tâches changent plus fréquemment, utiliser SWR_QUICK au lieu de SWR_STANDARD
+  return createDynamicResponse(tasks, req);
 }

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
-import { withCacheHeaders, CacheDurations } from "@/lib/cache-config";
+import { createListResponse } from "@/lib/cache-config";
 
-export async function GET() {
+export async function GET(request: Request) {
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
@@ -44,9 +44,8 @@ export async function GET() {
       },
     });
 
-    // Utilisation du cache: les données changent peu fréquemment
-    const response = NextResponse.json(objects);
-    return withCacheHeaders(response, CacheDurations.SHORT);
+    // Utiliser la nouvelle fonction de mise en cache pour les listes
+    return createListResponse(objects, request);
   }
 
   // Sinon, uniquement retourner les objets auxquels l'utilisateur a accès
@@ -77,7 +76,6 @@ export async function GET() {
     },
   });
 
-  // Utilisation du cache: les données changent peu fréquemment
-  const response = NextResponse.json(objects);
-  return withCacheHeaders(response, CacheDurations.SHORT);
+  // Utiliser la nouvelle fonction de mise en cache pour les listes
+  return createListResponse(objects, request);
 }
