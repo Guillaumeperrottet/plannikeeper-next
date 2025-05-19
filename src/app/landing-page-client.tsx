@@ -180,7 +180,7 @@ const ModernLandingPage = () => {
                 <div className="absolute top-0 right-0 w-full h-full bg-[#d9840d]/10 rounded-2xl transform rotate-3"></div>
                 <div className="absolute top-4 right-4 w-full h-full overflow-hidden rounded-2xl border-2 border-[#beac93] shadow-xl bg-white">
                   <Image
-                    src="/images/plannikeeper-hero.png"
+                    src="/images/hero.png"
                     alt="PlanniKeeper Dashboard"
                     fill
                     className="object-cover"

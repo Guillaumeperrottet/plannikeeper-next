@@ -91,25 +91,23 @@ export default function AboutPage() {
             className="order-2 lg:order-1"
           >
             <h2 className="text-3xl font-bold mb-6 text-gray-900">
-              La genèse de PlanniKeeper
+              Pourquoi PlanniKeeper
             </h2>
             <p className="text-gray-600 mb-6">
-              PlanniKeeper est né d&apos;un besoin concret. En tant que
-              responsable de la gestion de trois campings et un hôtel, j&apos;ai
-              rapidement constaté que les outils existants ne répondaient pas
-              aux défis spécifiques de ces établissements : gestion des
-              réservations, planification de la maintenance, suivi des tâches,
-              centralisation des documents...
+              PlanniKeeper est né d&apos;un besoin concret. Pour la maintenance
+              de trois campings et d&apos;un hôtel, nous avons rapidement
+              constaté que les outils existants ne répondaient pas aux défis
+              spécifiques de ces établissements : planification de la
+              maintenance, suivi des tâches, centralisation des documents...
             </p>
             <p className="text-gray-600 mb-6">
               Passionné par la technologie et l&apos;optimisation des processus,
               j&apos;ai décidé de créer ma propre solution. PlanniKeeper a
-              d&apos;abord été développé pour mon usage personnel, avec
-              l&apos;objectif de simplifier mon quotidien et celui de mes
-              équipes sur le terrain. C&apos;est en voyant les résultats
-              concrets - gain de temps, réduction des erreurs, meilleure
-              communication - que j&apos;ai réalisé que cette solution pourrait
-              aider d&apos;autres professionnels du secteur.
+              d&apos;abord été développé pour notre usage personnel, avec
+              l&apos;objectif de simplifier notre quotidien. C&apos;est en
+              voyant les résultats concrets - gain de temps, réduction des
+              erreurs, meilleure communication - que j&apos;ai réalisé que cette
+              solution pourrait aider d&apos;autres professionnels du secteur.
             </p>
             <div className="flex gap-4 mt-8">
               <Link href="/contact">
