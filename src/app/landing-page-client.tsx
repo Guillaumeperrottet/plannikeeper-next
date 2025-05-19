@@ -18,10 +18,6 @@ const ModernLandingPage = () => {
   const pricingRef = useRef(null);
   const faqRef = useRef(null);
 
-  const scrollToSection = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-  };
-
   const features = [
     {
       title: "Visualisation interactive",
@@ -162,13 +158,15 @@ const ModernLandingPage = () => {
                     <ChevronRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
-                <Button
-                  variant="outline"
-                  className="w-full sm:w-auto px-6 py-6 text-base border-[#beac93] text-[#141313] hover:bg-[#e8ebe0]"
-                  onClick={() => scrollToSection("pricing")}
-                >
-                  Voir les formules
-                </Button>
+                <Link href="/about">
+                  {" "}
+                  <Button
+                    variant="outline"
+                    className="w-full sm:w-auto px-6 py-6 text-base border-[#beac93] text-[#141313] hover:bg-[#e8ebe0]"
+                  >
+                    A propos de nous
+                  </Button>
+                </Link>
               </motion.div>
             </motion.div>
 
@@ -735,7 +733,10 @@ const ModernLandingPage = () => {
               <h3 className="text-lg font-semibold mb-4">Entreprise</h3>
               <ul className="space-y-2">
                 <li>
-                  <a href="#" className="text-gray-400 hover:text-[#d9840d]">
+                  <a
+                    href="/about"
+                    className="text-gray-400 hover:text-[#d9840d]"
+                  >
                     À propos
                   </a>
                 </li>
