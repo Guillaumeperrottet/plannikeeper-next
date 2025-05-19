@@ -16,7 +16,7 @@ import { buttonVariants } from "@/app/components/ui/button";
 import { VT323 } from "next/font/google";
 import Link from "next/link";
 import PremiumBurgerButton from "@/app/components/ui/BurgerButton";
-import { User } from "lucide-react";
+import { User, Info } from "lucide-react";
 
 const vt323 = VT323({
   subsets: ["latin"],
@@ -28,7 +28,7 @@ const NAV_ITEMS = [
   { id: "hero", icon: HomeIcon, label: "Accueil" },
   { id: "features", icon: RocketLaunchIcon, label: "Fonctionnalités" },
   { id: "pricing", icon: CurrencyDollarIcon, label: "Tarifs" },
-  { id: "about", icon: User, label: "A propos", href: "/about" },
+  { id: "about", icon: Info, label: "A propos", href: "/about" },
   { id: "contact", icon: User, label: "Nous contacter", href: "/contact" },
 ];
 
