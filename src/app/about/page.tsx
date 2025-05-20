@@ -385,8 +385,10 @@ export default function AboutPage() {
                 <Image
                   src={founder.image}
                   alt={founder.name}
-                  fill
-                  className="object-cover"
+                  width={128}
+                  height={128}
+                  className="object-cover rounded-full"
+                  placeholder="blur"
                 />
               </div>
               <h3 className="text-2xl font-semibold mb-2 text-gray-900">
