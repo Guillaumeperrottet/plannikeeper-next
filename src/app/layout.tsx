@@ -63,7 +63,6 @@ export default async function RootLayout({
   return (
     <html lang="fr" data-user-id={user?.id || ""}>
       <head>
-        {/* Manifest conservé pour fonctionnalités PWA de base, mais sans cache */}
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#d9840d" />
         <meta name="robots" content="index, follow" />

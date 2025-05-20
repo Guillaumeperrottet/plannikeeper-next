@@ -95,7 +95,7 @@ body[data-agenda-expanded="true"] {
 }
 
 /* Gestion des safe areas et du mode PWA */
-@media (display-mode: standalone) {
+@media (display-mode: browser) {
   body {
     overscroll-behavior: contain;
     padding-bottom: env(safe-area-inset-bottom, 16px);
