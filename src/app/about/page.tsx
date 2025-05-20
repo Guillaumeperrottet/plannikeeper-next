@@ -347,7 +347,9 @@ export default function AboutPage() {
                   alt="Les campings et hôtels qui utilisent PlanniKeeper"
                   fill
                   className="object-cover"
-                  priority
+                  priority={false}
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  placeholder="blur"
                 />
               </div>
             </div>
