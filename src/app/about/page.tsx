@@ -52,7 +52,7 @@ const milestones = [
       "Création d'une première version fonctionnelle adaptée spécifiquement aux besoins des établissements d'hébergement touristique.",
   },
   {
-    year: "202",
+    year: "2025",
     title: "Lancement officiel",
     description:
       "Après des tests approfondis en conditions réelles, PlanniKeeper est proposé à d'autres professionnels du secteur.",
