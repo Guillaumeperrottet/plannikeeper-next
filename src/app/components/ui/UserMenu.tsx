@@ -7,7 +7,7 @@ import {
   CreditCard,
   Users,
   Lightbulb,
-  Archive, // Nouvel import pour l'icône d'archives
+  Archive,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -50,9 +50,9 @@ export default function UserMenu({ user, isAdmin = false }: UserMenuProps) {
       href: "/dashboard",
     },
     {
-      icon: <Archive size={16} />, // Nouvel icône d'archives
+      icon: <Archive size={16} />,
       label: "Archives",
-      href: "/dashboard/archives", // Lien vers la page d'archives
+      href: "/dashboard/archives",
     },
     {
       icon: <CreditCard size={16} />,
@@ -64,7 +64,6 @@ export default function UserMenu({ user, isAdmin = false }: UserMenuProps) {
       label: "Mon profil",
       href: "/profile",
     },
-    // Élément de menu pour les fonctionnalités/bugs
     {
       icon: <Lightbulb size={16} />,
       label: "Proposer une amélioration",
@@ -113,7 +112,7 @@ export default function UserMenu({ user, isAdmin = false }: UserMenuProps) {
           )}
         </div>
         <div className="hidden md:block text-left">
-          <p className="text-sm font-medium leading-none">
+          <p className="text-sm font-medium leading-none text-[color:var(--foreground)]">
             {user.name || "Utilisateur"}
           </p>
           <p className="text-xs text-[color:var(--muted-foreground)] truncate max-w-[120px]">
@@ -122,7 +121,7 @@ export default function UserMenu({ user, isAdmin = false }: UserMenuProps) {
         </div>
         <ChevronDown
           size={16}
-          className={`transition-transform duration-200 ${
+          className={`transition-transform duration-200 text-[color:var(--foreground)] ${
             isOpen ? "rotate-180" : ""
           }`}
         />
@@ -138,7 +137,7 @@ export default function UserMenu({ user, isAdmin = false }: UserMenuProps) {
             className="absolute right-0 mt-2 w-56 rounded-md shadow-lg z-50 overflow-hidden bg-[color:var(--card)] border border-[color:var(--border)]"
           >
             <div className="p-3 border-b border-[color:var(--border)]">
-              <p className="text-sm font-medium">
+              <p className="text-sm font-medium text-[color:var(--foreground)]">
                 {user.name || "Utilisateur"}
               </p>
               <p className="text-xs text-[color:var(--muted-foreground)] truncate">
@@ -153,8 +152,10 @@ export default function UserMenu({ user, isAdmin = false }: UserMenuProps) {
                   className="flex items-center gap-2 px-4 py-2 text-sm text-[color:var(--foreground)] hover:bg-[color:var(--accent)] transition-colors duration-150"
                   onClick={() => setIsOpen(false)}
                 >
-                  {item.icon}
-                  {item.label}
+                  <span className="text-[color:var(--foreground)]">
+                    {item.icon}
+                  </span>
+                  <span>{item.label}</span>
                 </Link>
               ))}
             </div>

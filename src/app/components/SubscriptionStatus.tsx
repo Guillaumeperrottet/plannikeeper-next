@@ -1,4 +1,3 @@
-// src/app/components/SubscriptionStatus.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -68,21 +67,21 @@ export default function SubscriptionStatus() {
     switch (subscription.status) {
       case "ACTIVE":
         return (
-          <div className="flex items-center text-green-500">
+          <div className="flex items-center text-green-500 dark:text-green-400">
             <CheckCircle className="h-5 w-5 mr-2" />
             <span>Abonnement actif</span>
           </div>
         );
       case "PAST_DUE":
         return (
-          <div className="flex items-center text-amber-500">
+          <div className="flex items-center text-amber-500 dark:text-amber-400">
             <AlertCircle className="h-5 w-5 mr-2" />
             <span>Paiement en retard</span>
           </div>
         );
       case "CANCELED":
         return (
-          <div className="flex items-center text-gray-500">
+          <div className="flex items-center text-[color:var(--muted-foreground)]">
             <AlertCircle className="h-5 w-5 mr-2" />
             <span>Abonnement annulé</span>
           </div>
@@ -94,18 +93,18 @@ export default function SubscriptionStatus() {
 
   if (loading) {
     return (
-      <div className="p-4 border rounded-lg animate-pulse bg-gray-50">
-        <div className="h-6 w-2/3 bg-gray-200 rounded mb-3"></div>
-        <div className="h-4 w-1/2 bg-gray-200 rounded"></div>
+      <div className="p-4 border border-[color:var(--border)] rounded-lg animate-pulse bg-[color:var(--muted)]">
+        <div className="h-6 w-2/3 bg-[color:var(--border)] rounded mb-3"></div>
+        <div className="h-4 w-1/2 bg-[color:var(--border)] rounded"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4 border border-red-200 rounded-lg bg-red-50">
-        <p className="text-red-700">
-          <AlertCircle className="h-5 w-5 inline mr-2" />
+      <div className="p-4 border border-red-200 dark:border-red-900/50 rounded-lg bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400">
+        <p className="flex items-center">
+          <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
           {error}
         </p>
       </div>
@@ -115,9 +114,9 @@ export default function SubscriptionStatus() {
   // Si aucun plan, on affiche un message d'erreur
   if (!plan) {
     return (
-      <div className="p-4 border border-amber-200 rounded-lg bg-amber-50">
-        <p className="text-amber-700">
-          <AlertCircle className="h-5 w-5 inline mr-2" />
+      <div className="p-4 border border-amber-200 dark:border-amber-900/50 rounded-lg bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400">
+        <p className="flex items-center">
+          <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
           Impossible de récupérer les informations de votre plan
         </p>
       </div>
@@ -125,14 +124,14 @@ export default function SubscriptionStatus() {
   }
 
   return (
-    <div className="p-4 border rounded-lg bg-white">
+    <div className="p-4 border border-[color:var(--border)] rounded-lg bg-[color:var(--card)] shadow-sm">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div>
-          <h3 className="text-lg font-medium flex items-center">
-            <CreditCard className="h-5 w-5 mr-2 text-blue-500" />
+          <h3 className="text-lg font-medium flex items-center text-[color:var(--foreground)]">
+            <CreditCard className="h-5 w-5 mr-2 text-[color:var(--primary)]" />
             Plan {plan.name}
           </h3>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-[color:var(--muted-foreground)] mt-1">
             {plan.hasCustomPricing
               ? "Prix personnalisé"
               : plan.price === 0
@@ -143,7 +142,7 @@ export default function SubscriptionStatus() {
             <div className="mt-2">
               {getStatusMessage()}
               {subscription.currentPeriodEnd && (
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-[color:var(--muted-foreground)] mt-1">
                   {subscription.cancelAtPeriodEnd
                     ? `Se termine le ${formatDate(
                         subscription.currentPeriodEnd
@@ -159,12 +158,21 @@ export default function SubscriptionStatus() {
 
         <div className="flex gap-2">
           {plan.name === "FREE" && (
-            <Button onClick={handleUpgrade}>Passer au premium</Button>
+            <Button
+              onClick={handleUpgrade}
+              className="bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:opacity-90 transition-colors touch-target active:scale-95"
+            >
+              Passer au premium
+            </Button>
           )}
           {subscription &&
             subscription.status === "ACTIVE" &&
             plan.name !== "FREE" && (
-              <Button onClick={() => router.push("/pricing")} variant="outline">
+              <Button
+                onClick={() => router.push("/pricing")}
+                variant="outline"
+                className="bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)] hover:bg-[color:var(--muted)] transition-colors touch-target active:scale-95"
+              >
                 Gérer l&apos;abonnement
               </Button>
             )}

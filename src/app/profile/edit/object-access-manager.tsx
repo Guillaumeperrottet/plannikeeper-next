@@ -211,7 +211,7 @@ export function ObjectAccessManager({
             placeholder="Rechercher un objet..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 py-2"
+            className="pl-10 py-2 bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)]"
           />
           {searchQuery && (
             <button
@@ -235,7 +235,7 @@ export function ObjectAccessManager({
                 size="sm"
                 onClick={resetChanges}
                 disabled={isSaving}
-                className="gap-2"
+                className="gap-2 border-[color:var(--border)] bg-[color:var(--muted)] hover:bg-[color:var(--muted)]/80 text-[color:var(--foreground)]"
               >
                 <X size={16} />
                 <span>Annuler</span>
@@ -244,7 +244,7 @@ export function ObjectAccessManager({
                 onClick={saveAllAccess}
                 disabled={isSaving}
                 size="sm"
-                className="gap-2"
+                className="gap-2 bg-[color:var(--primary)] text-[color:var(--primary-foreground)]"
               >
                 {isSaving ? (
                   <>
@@ -302,7 +302,9 @@ export function ObjectAccessManager({
                     key={object.id}
                     className="border-b border-[color:var(--border)] hover:bg-[color:var(--muted)]"
                   >
-                    <td className="py-3 px-4">{object.nom}</td>
+                    <td className="py-3 px-4 text-[color:var(--foreground)]">
+                      {object.nom}
+                    </td>
                     <td className="py-3 px-4 text-[color:var(--muted-foreground)]">
                       {object.adresse}
                     </td>
@@ -315,7 +317,7 @@ export function ObjectAccessManager({
                         onChange={(e) =>
                           handleAccessChange(object.id, e.target.value)
                         }
-                        className="w-full py-1.5 px-3 border border-[color:var(--border)] rounded bg-[color:var(--background)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)] disabled:opacity-50"
+                        className="w-full py-1.5 px-3 border border-[color:var(--border)] rounded bg-[color:var(--background)] text-[color:var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)] disabled:opacity-50"
                         disabled={isSaving}
                       >
                         {ACCESS_LEVELS.map((level) => (
@@ -346,7 +348,9 @@ export function ObjectAccessManager({
                 key={object.id}
                 className="border border-[color:var(--border)] rounded-lg p-4 bg-[color:var(--card)]"
               >
-                <h3 className="font-medium mb-2">{object.nom}</h3>
+                <h3 className="font-medium mb-2 text-[color:var(--foreground)]">
+                  {object.nom}
+                </h3>
                 <div className="text-sm text-[color:var(--muted-foreground)] mb-1">
                   {object.adresse}
                 </div>
@@ -355,7 +359,7 @@ export function ObjectAccessManager({
                 </div>
 
                 <div className="mt-3">
-                  <label className="block text-sm font-medium mb-1.5">
+                  <label className="block text-sm font-medium mb-1.5 text-[color:var(--foreground)]">
                     Niveau d&apos;accès
                   </label>
                   <div className="grid grid-cols-2 gap-2">
@@ -378,7 +382,9 @@ export function ObjectAccessManager({
                           }`}
                         >
                           <Icon size={16} className={level.color} />
-                          <span className="text-sm">{level.label}</span>
+                          <span className="text-sm text-[color:var(--foreground)]">
+                            {level.label}
+                          </span>
                         </button>
                       );
                     })}
@@ -392,14 +398,18 @@ export function ObjectAccessManager({
 
       {/* Légende des niveaux d'accès */}
       <div className="bg-[color:var(--muted)] p-4 rounded-lg border border-[color:var(--border)]">
-        <h3 className="text-sm font-medium mb-3">Niveaux d&apos;accès</h3>
+        <h3 className="text-sm font-medium mb-3 text-[color:var(--foreground)]">
+          Niveaux d&apos;accès
+        </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
           {ACCESS_LEVELS.map((level) => {
             const Icon = level.icon;
             return (
               <div key={level.value} className="flex items-center gap-2">
                 <Icon size={16} className={level.color} />
-                <span className="text-sm">{level.label}:</span>
+                <span className="text-sm text-[color:var(--foreground)]">
+                  {level.label}:
+                </span>
                 <span className="text-sm text-[color:var(--muted-foreground)]">
                   {level.value === "none" && "Aucun accès à l'objet"}
                   {level.value === "read" && "Peut voir l'objet et ses tâches"}
@@ -417,7 +427,11 @@ export function ObjectAccessManager({
       {/* Bouton pour sauvegarder les changements (bottom) */}
       {hasChanges && (
         <div className="mt-6 flex justify-end">
-          <Button onClick={saveAllAccess} disabled={isSaving} className="gap-2">
+          <Button
+            onClick={saveAllAccess}
+            disabled={isSaving}
+            className="gap-2 bg-[color:var(--primary)] text-[color:var(--primary-foreground)]"
+          >
             {isSaving ? (
               <>
                 <Loader2 size={16} className="animate-spin" />

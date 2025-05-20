@@ -69,7 +69,7 @@ export function UsersTable({ users }: { users: User[] }) {
     return (
       <ChevronDown
         size={16}
-        className={`ml-1 transition-transform ${
+        className={`ml-1 transition-transform text-[color:var(--foreground)] ${
           sortDirection === "desc" ? "rotate-180" : ""
         }`}
       />
@@ -88,7 +88,7 @@ export function UsersTable({ users }: { users: User[] }) {
           placeholder="Rechercher un utilisateur..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 py-2"
+          className="pl-10 py-2 bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)]"
         />
         {searchQuery && (
           <button
@@ -174,7 +174,7 @@ export function UsersTable({ users }: { users: User[] }) {
                       )}
                     </div>
                   </td>
-                  <td className="p-3 font-medium">
+                  <td className="p-3 font-medium text-[color:var(--foreground)]">
                     {user.name}
                     {user.isCurrentUser && (
                       <span className="ml-2 text-xs bg-[color:var(--muted)] text-[color:var(--muted-foreground)] px-2 py-0.5 rounded-full">
@@ -205,7 +205,7 @@ export function UsersTable({ users }: { users: User[] }) {
                       asChild
                       variant="outline"
                       size="sm"
-                      className="gap-1"
+                      className="gap-1 border-[color:var(--border)] bg-[color:var(--muted)] hover:bg-[color:var(--muted)]/80 text-[color:var(--foreground)]"
                     >
                       <Link href={`/profile/edit/${user.id}`}>
                         <Edit size={14} />
@@ -250,7 +250,9 @@ export function UsersTable({ users }: { users: User[] }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center">
-                    <h3 className="font-medium truncate">{user.name}</h3>
+                    <h3 className="font-medium truncate text-[color:var(--foreground)]">
+                      {user.name}
+                    </h3>
                     {user.isCurrentUser && (
                       <span className="ml-2 text-xs bg-[color:var(--muted)] text-[color:var(--muted-foreground)] px-2 py-0.5 rounded-full whitespace-nowrap">
                         Vous
@@ -281,7 +283,7 @@ export function UsersTable({ users }: { users: User[] }) {
                   asChild
                   variant="outline"
                   size="sm"
-                  className="gap-1"
+                  className="gap-1 border-[color:var(--border)] bg-[color:var(--muted)] hover:bg-[color:var(--muted)]/80 text-[color:var(--foreground)]"
                   onClick={() => router.push(`/profile/edit/${user.id}`)}
                 >
                   <Link href={`/profile/edit/${user.id}`}>

@@ -24,14 +24,14 @@ export default async function ProfilePage() {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Main content */}
       <main className="flex-1 p-4 sm:p-6 md:p-10 bg-background">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-8 text-[color:var(--foreground)]">
           Mon profil
         </h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
           {/* Carte Infos personnelles - Déplacée en premier pour mobile */}
-          <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-sm flex flex-col gap-3 sm:gap-4 order-1 lg:order-2">
-            <h2 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3">
+          <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg p-4 sm:p-6 shadow-sm flex flex-col gap-3 sm:gap-4 order-1 lg:order-2">
+            <h2 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 text-[color:var(--foreground)]">
               Informations personnelles
             </h2>
             <div className="flex flex-col items-center gap-6 mb-4">
@@ -43,28 +43,28 @@ export default async function ProfilePage() {
             <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
               <div className="flex-1 w-full text-center sm:text-left">
                 <div className="mb-3">
-                  <label className="block font-semibold mb-1 text-foreground">
+                  <label className="block font-semibold mb-1 text-[color:var(--foreground)]">
                     Nom
                   </label>
                   <EditName initialName={user.name ?? ""} />
-                  <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+                  <p className="mt-1 text-xs sm:text-sm text-[color:var(--muted-foreground)]">
                     Cliquez sur le nom pour le modifier
                   </p>
                 </div>
                 <div>
-                  <label className="block font-semibold mb-1 text-foreground">
+                  <label className="block font-semibold mb-1 text-[color:var(--foreground)]">
                     Email
                   </label>
                   <input
                     type="email"
                     value={user.email ?? ""}
                     disabled
-                    className="w-full border border-border rounded px-3 py-2 bg-muted text-muted-foreground text-sm"
+                    className="w-full border border-[color:var(--border)] rounded px-3 py-2 bg-[color:var(--muted)] text-[color:var(--muted-foreground)] text-sm"
                   />
                 </div>
 
-                <div className="mt-4 border-t border-border pt-4">
-                  <label className="block font-semibold mb-1 text-foreground">
+                <div className="mt-4 border-t border-[color:var(--border)] pt-4">
+                  <label className="block font-semibold mb-1 text-[color:var(--foreground)]">
                     Sécurité
                   </label>
                   <ChangePasswordForm />
@@ -75,9 +75,9 @@ export default async function ProfilePage() {
 
           {/* Carte Organisation */}
           {orgUser?.organization && (
-            <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-sm flex flex-col gap-3 sm:gap-4 order-2 lg:order-1">
+            <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg p-4 sm:p-6 shadow-sm flex flex-col gap-3 sm:gap-4 order-2 lg:order-1">
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-lg sm:text-xl font-semibold">
+                <h2 className="text-lg sm:text-xl font-semibold text-[color:var(--foreground)]">
                   Organisation
                 </h2>
                 {isAdmin && (
@@ -87,7 +87,7 @@ export default async function ProfilePage() {
                 )}
               </div>
               <div>
-                <label className="block font-semibold mb-1 text-foreground">
+                <label className="block font-semibold mb-1 text-[color:var(--foreground)]">
                   Nom de l&apos;organisation
                 </label>
                 <EditOrganizationName
@@ -96,13 +96,13 @@ export default async function ProfilePage() {
                   isAdmin={isAdmin}
                 />
                 {isAdmin && (
-                  <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+                  <p className="mt-1 text-xs sm:text-sm text-[color:var(--muted-foreground)]">
                     En tant qu&apos;administrateur, vous pouvez modifier le nom
                     de l&apos;organisation
                   </p>
                 )}
               </div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
+              <div className="text-xs sm:text-sm text-[color:var(--muted-foreground)]">
                 <span className="font-medium">Votre rôle : </span>
                 <span className="capitalize">{orgUser.role}</span>
               </div>

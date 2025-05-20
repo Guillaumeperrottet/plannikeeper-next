@@ -1,21 +1,27 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Send,
+  HomeIcon,
   CheckCircle,
   Mail,
   Phone,
   MapPin,
   Globe,
-  ArrowRight,
+  ArrowLeft,
+  RocketIcon,
+  User,
+  Info,
 } from "lucide-react";
-import Image from "next/image";
+import { CurrencyDollarIcon } from "@heroicons/react/24/outline";
+import PremiumBurgerButton from "@/app/components/ui/BurgerButton";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { toast } from "sonner";
+import Link from "next/link";
 
 // Données pour les bureaux
 const offices = [
@@ -53,61 +59,23 @@ const fadeInUp = {
   },
 };
 
-// Carte de client fidèle (témoignage)
-interface ClientCardProps {
-  logo: string;
-  company: string;
-  name: string;
-  role: string;
-  quote: string;
-  delay: number;
-}
-
-const ClientCard = ({
-  logo,
-  company,
-  name,
-  role,
-  quote,
-  delay,
-}: ClientCardProps) => (
-  <motion.div
-    initial="hidden"
-    whileInView="visible"
-    viewport={{ once: true, amount: 0.3 }}
-    variants={{
-      hidden: { opacity: 0, y: 20 },
-      visible: {
-        opacity: 1,
-        y: 0,
-        transition: {
-          duration: 0.6,
-          delay: delay,
-          ease: "easeOut",
-        },
-      },
-    }}
-    className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 hover:border-[color:var(--primary)] transition-all duration-300"
-  >
-    <div className="flex items-center mb-4">
-      <div className="w-12 h-12 relative mr-4 flex-shrink-0">
-        <Image
-          src={logo}
-          alt={`${company} logo`}
-          fill
-          className="object-contain"
-        />
-      </div>
-      <div>
-        <h3 className="font-semibold text-gray-900">{company}</h3>
-        <p className="text-sm text-gray-500">
-          {name}, {role}
-        </p>
-      </div>
-    </div>
-    <p className="text-gray-700 italic">&quot;{quote}&quot;</p>
-  </motion.div>
-);
+const NAV_ITEMS = [
+  { id: "hero", icon: HomeIcon, label: "Accueil", href: "/#hero" },
+  {
+    id: "features",
+    icon: RocketIcon,
+    label: "Fonctionnalités",
+    href: "/#features",
+  },
+  {
+    id: "pricing",
+    icon: CurrencyDollarIcon,
+    label: "Tarifs",
+    href: "/#pricing",
+  },
+  { id: "about", icon: Info, label: "A propos", href: "/about" },
+  { id: "contact", icon: User, label: "Nous contacter", href: "/contact" },
+];
 
 export default function ContactPage() {
   const [formState, setFormState] = useState({
@@ -120,6 +88,7 @@ export default function ContactPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   const handleChange = (
@@ -158,8 +127,203 @@ export default function ContactPage() {
     }, 1500);
   };
 
+  const triggerHapticFeedback = () => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate(10);
+    }
+  };
+
+  const toggleMobileMenu = () => {
+    triggerHapticFeedback();
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#f9f3ec] to-[#f5f3ef]">
+      {/* Flèche de retour en haut à gauche */}
+      <Link
+        href="/"
+        className="fixed top-6 left-6 z-50 flex items-center gap-2 bg-white/80 hover:bg-white shadow-md rounded-full p-2 transition-colors border border-gray-200"
+      >
+        <ArrowLeft className="w-5 h-5 text-[color:var(--primary)]" />
+        <span className="sr-only">Retour</span>
+      </Link>
+      {/* Burger menu en haut à droite */}
+      <div className="fixed top-6 right-6 z-50">
+        <PremiumBurgerButton
+          isOpen={mobileMenuOpen}
+          onClick={toggleMobileMenu}
+          variant="primary"
+        />
+      </div>
+      {/* Menu Overlay avec des animations synchronisées */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <>
+            {/* Fond sombre animé - Synchronisé avec le menu latéral */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+              onClick={() => setMobileMenuOpen(false)}
+              onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+            />
+            {/* Menu latéral avec animation améliorée */}
+            <motion.div
+              initial={{ opacity: 0, x: "100%" }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="fixed inset-y-0 right-0 w-full sm:w-96 max-w-sm bg-[#f9f3ec] z-50 shadow-xl sm:rounded-l-3xl border-l border-[#beac93] flex flex-col overflow-y-auto"
+              style={{ maxHeight: "100vh", overflowY: "auto" }}
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+            >
+              {/* En-tête du menu */}
+              <div className="p-6 border-b border-[#beac93] flex items-center justify-between">
+                <div className="text-2xl font-bold text-[#141313]">
+                  plannikeeper
+                </div>
+                <PremiumBurgerButton
+                  isOpen={true}
+                  onClick={toggleMobileMenu}
+                  variant="light"
+                />
+              </div>
+              {/* Contenu du menu */}
+              <div className="flex-1 overflow-y-auto py-6 px-6">
+                <div className="mb-8">
+                  <h3 className="text-sm font-medium text-[#62605d] mb-3 uppercase tracking-wider">
+                    Navigation
+                  </h3>
+                  <nav className="flex flex-col space-y-3">
+                    {NAV_ITEMS.map(({ id, icon: Icon, label, href }, index) => (
+                      <motion.div
+                        key={id}
+                        initial={{ opacity: 0, x: 50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.1 * index, duration: 0.3 }}
+                      >
+                        <Link
+                          href={href}
+                          className={`w-full p-4 rounded-xl transition duration-300 flex items-center gap-3 ${
+                            false
+                              ? "bg-[#d9840d] text-white shadow-md"
+                              : "bg-white text-[#141313] hover:bg-[#e8ebe0] border border-[#beac93]"
+                          }`}
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <Icon className="h-5 w-5" />
+                          <span className="text-base font-medium">{label}</span>
+                        </Link>
+                      </motion.div>
+                    ))}
+                  </nav>
+                </div>
+                <div className="mb-8">
+                  <h3 className="text-sm font-medium text-[#62605d] mb-3 uppercase tracking-wider">
+                    Votre compte
+                  </h3>
+                  <nav className="flex flex-col space-y-3">
+                    <motion.div
+                      initial={{ opacity: 0, x: 50 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.5, duration: 0.3 }}
+                    >
+                      <Link
+                        href="/dashboard"
+                        className="w-full p-4 rounded-xl transition duration-300 flex items-center gap-3 bg-white text-[#141313] hover:bg-[#e8ebe0] border border-[#beac93]"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <User className="h-5 w-5" />
+                        <span className="text-base font-medium">
+                          Se connecter
+                        </span>
+                      </Link>
+                    </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, x: 50 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.6, duration: 0.3 }}
+                    >
+                      <Link
+                        href="/signup"
+                        className="w-full p-4 rounded-xl transition duration-300 flex items-center gap-3 bg-white text-[#141313] hover:bg-[#e8ebe0] border border-[#beac93]"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-5 w-5"
+                        >
+                          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                          <circle cx="9" cy="7" r="4" />
+                          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
+                        <span className="text-base font-medium">
+                          Créer un compte
+                        </span>
+                      </Link>
+                    </motion.div>
+                  </nav>
+                </div>
+              </div>
+              <div className="p-6 border-t border-[#beac93]">
+                <Link
+                  href="/signup?plan=FREE"
+                  className="w-full justify-center flex items-center gap-2 bg-[#d9840d] hover:bg-[#c6780c] text-white px-4 py-3 rounded-xl font-medium transition-colors shadow-md"
+                  onClick={() => {
+                    triggerHapticFeedback();
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  Commencer gratuitement
+                  <motion.svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    animate={{ x: [0, 5, 0] }}
+                    transition={{
+                      repeat: Infinity,
+                      repeatType: "loop",
+                      duration: 1.5,
+                      repeatDelay: 2,
+                    }}
+                  >
+                    <path d="M5 12h14" />
+                    <path d="m12 5 7 7-7 7" />
+                  </motion.svg>
+                </Link>
+                <motion.p
+                  className="text-center text-[#62605d] text-sm mt-4"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  Simplifiez la gestion de vos projets immobiliers
+                </motion.p>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Hero section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <motion.div
@@ -513,84 +677,6 @@ export default function ContactPage() {
         </div>
       </section>
 
-      {/* Section témoignages clients */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.3 }}
-          variants={fadeInUp}
-          className="text-center mb-12"
-        >
-          <div className="inline-block bg-blue-50 px-4 py-1 rounded-full mb-4 border border-blue-200">
-            <span className="text-blue-700 font-medium text-sm">
-              Ils nous font confiance
-            </span>
-          </div>
-          <h2 className="text-3xl font-bold mb-6 text-gray-900">
-            Des entreprises de renom qui utilisent PlanniKeeper
-          </h2>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            Rejoignez les entreprises qui ont transformé leur gestion
-            immobilière grâce à notre solution.
-          </p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <ClientCard
-            logo="/images/swiss-logo-1.svg"
-            company="Hôtels Suisse Premium"
-            name="Marie Dubois"
-            role="Directrice des Opérations"
-            quote="PlanniKeeper nous a permis de centraliser la gestion de nos 12 hôtels en Suisse et de gagner un temps précieux."
-            delay={0.1}
-          />
-          <ClientCard
-            logo="/images/swiss-logo-2.svg"
-            company="Immobilier Léman SA"
-            name="Thomas Weber"
-            role="CEO"
-            quote="L'interface intuitive et les fonctionnalités avancées de PlanniKeeper ont révolutionné notre approche de la gestion de biens."
-            delay={0.2}
-          />
-          <ClientCard
-            logo="/images/swiss-logo-3.svg"
-            company="Montreux Resorts"
-            name="Sophie Blanc"
-            role="Directrice Technique"
-            quote="Le support client de PlanniKeeper est exceptionnel. Ils ont su s'adapter à nos besoins spécifiques."
-            delay={0.3}
-          />
-        </div>
-
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.3 }}
-          variants={{
-            hidden: { opacity: 0, y: 20 },
-            visible: {
-              opacity: 1,
-              y: 0,
-              transition: {
-                duration: 0.6,
-                delay: 0.4,
-                ease: "easeOut",
-              },
-            },
-          }}
-          className="flex justify-center mt-12"
-        >
-          <a
-            href="/testimonials"
-            className="inline-flex items-center text-[color:var(--primary)] font-medium hover:underline"
-          >
-            Voir tous nos témoignages
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </a>
-        </motion.div>
-      </section>
-
       {/* Section FAQ */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
         <motion.div
@@ -616,11 +702,6 @@ export default function ContactPage() {
                 "Comment PlanniKeeper peut-il s'adapter à mon entreprise ?",
               answer:
                 "PlanniKeeper propose différentes formules adaptées à tous types d'entreprises, de la startup au grand groupe. Notre solution est entièrement personnalisable pour répondre à vos besoins spécifiques.",
-            },
-            {
-              question: "Quelle est la durée de la période d'essai ?",
-              answer:
-                "Nous proposons une période d'essai gratuite de 14 jours, sans engagement. Vous pouvez tester toutes les fonctionnalités de la plateforme avant de vous abonner.",
             },
             {
               question: "Proposez-vous des formations pour mon équipe ?",
@@ -678,46 +759,7 @@ export default function ContactPage() {
             },
           }}
           className="mt-12 text-center"
-        >
-          <p className="text-gray-600 mb-4">
-            Vous ne trouvez pas la réponse à votre question ?
-          </p>
-          <Button className="bg-[color:var(--primary)] hover:bg-[color:var(--primary)]/90">
-            Voir la FAQ complète
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </motion.div>
-      </section>
-
-      {/* Section appel à l'action */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-[#d9840d]/10 to-[#e36002]/10 border-t border-[#d9840d]/20">
-        <div className="max-w-5xl mx-auto text-center">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
-            variants={fadeInUp}
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-              Prêt à transformer votre gestion immobilière ?
-            </h2>
-            <p className="text-lg text-gray-700 mb-8 max-w-3xl mx-auto">
-              Rejoignez les entreprises qui font confiance à PlanniKeeper pour
-              optimiser leur gestion immobilière.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button className="py-3 px-6 bg-[color:var(--primary)] hover:bg-[color:var(--primary)]/90 text-white">
-                Commencer gratuitement
-              </Button>
-              <Button
-                variant="outline"
-                className="py-3 px-6 border-[color:var(--primary)] text-[color:var(--primary)]"
-              >
-                Réserver une démo
-              </Button>
-            </div>
-          </motion.div>
-        </div>
+        ></motion.div>
       </section>
     </div>
   );

@@ -91,7 +91,7 @@ export default async function EditUserPage({
             )}
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[color:var(--foreground)]">
               {userToEdit.name || "Utilisateur sans nom"}
               {isCurrentUser && (
                 <span className="ml-2 text-sm bg-[color:var(--muted)] text-[color:var(--muted-foreground)] px-2 py-0.5 rounded-full">
@@ -105,7 +105,11 @@ export default async function EditUserPage({
           </div>
         </div>
 
-        <Button asChild variant="outline">
+        <Button
+          asChild
+          variant="outline"
+          className="border-[color:var(--border)] bg-[color:var(--muted)] text-[color:var(--foreground)] hover:bg-[color:var(--muted)]/80"
+        >
           <Link href="/profile/edit">
             <ArrowLeft size={16} className="mr-2" />
             Liste des utilisateurs
@@ -119,13 +123,15 @@ export default async function EditUserPage({
             <div className="p-4 sm:p-6 border-b border-[color:var(--border)] bg-[color:var(--muted)]">
               <div className="flex items-center gap-3">
                 <Shield size={20} className="text-[color:var(--primary)]" />
-                <h2 className="text-lg font-medium">Rôle utilisateur</h2>
+                <h2 className="text-lg font-medium text-[color:var(--foreground)]">
+                  Rôle utilisateur
+                </h2>
               </div>
             </div>
 
             <div className="p-5">
               <div className="mb-3">
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-medium mb-2 text-[color:var(--foreground)]">
                   Rôle dans l&apos;organisation
                 </label>
                 <UserRoleSelector
@@ -170,7 +176,9 @@ export default async function EditUserPage({
             <div className="p-4 sm:p-6 border-b border-[color:var(--border)] bg-[color:var(--muted)]">
               <div className="flex items-center gap-3">
                 <UserIcon size={20} className="text-[color:var(--primary)]" />
-                <h2 className="text-lg font-medium">Accès aux objets</h2>
+                <h2 className="text-lg font-medium text-[color:var(--foreground)]">
+                  Accès aux objets
+                </h2>
               </div>
             </div>
 

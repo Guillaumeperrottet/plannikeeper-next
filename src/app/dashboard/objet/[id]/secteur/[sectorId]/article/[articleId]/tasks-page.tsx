@@ -82,7 +82,9 @@ export default function ModernTasksPage({
   objetId: string;
   sectorId: string;
 }) {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [tasks, setTasks] = useState<Task[]>(
+    initialTasks.filter((task) => !task.archived)
+  );
   const [filteredTasks, setFilteredTasks] = useState<Task[]>(initialTasks);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
@@ -196,6 +198,8 @@ export default function ModernTasksPage({
   // Apply filters to tasks
   useEffect(() => {
     let result = [...tasks];
+
+    result = result.filter((task) => !task.archived);
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -486,6 +490,7 @@ export default function ModernTasksPage({
           body: JSON.stringify({
             ...updatedTask,
             articleId,
+            archived: false, // s'assurer que toutes les nouvelles tâches ne sont pas archivées
           }),
         });
 

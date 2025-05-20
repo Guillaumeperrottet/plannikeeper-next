@@ -19,6 +19,7 @@ import {
   User,
   Save,
   RefreshCcw,
+  Archive,
 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import DocumentsList from "@/app/dashboard/objet/[id]/secteur/[sectorId]/article/[articleId]/documents-list";
@@ -49,6 +50,7 @@ type Task = {
   assignedTo: User | null;
   createdAt: Date;
   updatedAt: Date;
+  archived?: boolean;
   article: {
     id: string;
     title: string;
@@ -108,31 +110,42 @@ export default function ModernTaskDetailPage({
         return {
           label: "À faire",
           icon: <Clock className="h-4 w-4" />,
-          color: "bg-amber-50 text-amber-700 border-amber-200",
+          color:
+            "bg-[color:var(--warning-background)] text-[color:var(--warning-foreground)] border-[color:var(--warning-border)]",
         };
       case "in_progress":
         return {
           label: "En cours",
-          icon: <Clock className="h-4 w-4 text-blue-500" />,
-          color: "bg-blue-50 text-blue-700 border-blue-200",
+          icon: (
+            <Clock className="h-4 w-4 text-[color:var(--info-foreground)]" />
+          ),
+          color:
+            "bg-[color:var(--info-background)] text-[color:var(--info-foreground)] border-[color:var(--info-border)]",
         };
       case "completed":
         return {
           label: "Terminée",
-          icon: <CheckCircle2 className="h-4 w-4 text-green-500" />,
-          color: "bg-emerald-50 text-emerald-700 border-emerald-200",
+          icon: (
+            <CheckCircle2 className="h-4 w-4 text-[color:var(--success-foreground)]" />
+          ),
+          color:
+            "bg-[color:var(--success-background)] text-[color:var(--success-foreground)] border-[color:var(--success-border)]",
         };
       case "cancelled":
         return {
           label: "Annulée",
-          icon: <X className="h-4 w-4 text-red-500" />,
-          color: "bg-red-50 text-red-700 border-red-200",
+          icon: (
+            <X className="h-4 w-4 text-[color:var(--destructive-foreground)]" />
+          ),
+          color:
+            "bg-[color:var(--destructive-background)] text-[color:var(--destructive-foreground)] border-[color:var(--destructive-border)]",
         };
       default:
         return {
           label: status,
           icon: <AlertCircle className="h-4 w-4" />,
-          color: "bg-gray-100 text-gray-700 border-gray-300",
+          color:
+            "bg-[color:var(--muted)] text-[color:var(--muted-foreground)] border-[color:var(--border)]",
         };
     }
   };
@@ -235,13 +248,13 @@ export default function ModernTaskDetailPage({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-[color:var(--background)] flex flex-col">
       {/* Fixed header with actions */}
-      <header className="sticky top-0 z-10 bg-white border-b shadow-sm">
+      <header className="sticky top-0 z-10 bg-[color:var(--card)] border-b border-[color:var(--border)] shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link
             href={`/dashboard/objet/${objetId}/secteur/${sectorId}/article/${articleId}`}
-            className="flex items-center gap-2 text-gray-700 hover:text-gray-900"
+            className="flex items-center gap-2 text-[color:var(--foreground)] hover:text-[color:var(--foreground)]/90"
           >
             <ArrowLeft size={20} />
             <span className="hidden sm:inline font-medium">Retour</span>
@@ -272,7 +285,7 @@ export default function ModernTaskDetailPage({
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -5 }}
-                        className="absolute right-0 mt-1 w-40 bg-white rounded-md shadow-lg z-10 border overflow-hidden"
+                        className="absolute right-0 mt-1 w-40 bg-[color:var(--card)] rounded-md shadow-lg z-10 border border-[color:var(--border)] overflow-hidden"
                       >
                         {[
                           "pending",
@@ -283,9 +296,9 @@ export default function ModernTaskDetailPage({
                           <button
                             key={status}
                             onClick={() => handleStatusChange(status)}
-                            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-1.5 ${
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-[color:var(--muted)] flex items-center gap-1.5 ${
                               task.status === status
-                                ? "font-medium bg-gray-50"
+                                ? "font-medium bg-[color:var(--muted)]"
                                 : ""
                             }`}
                             disabled={isLoading}
@@ -303,7 +316,7 @@ export default function ModernTaskDetailPage({
                 <div className="relative sm:hidden">
                   <button
                     onClick={() => setShowActionMenu(!showActionMenu)}
-                    className="p-2 rounded-full hover:bg-gray-100"
+                    className="p-2 rounded-full hover:bg-[color:var(--muted)]"
                     aria-label="Plus d'options"
                   >
                     <MoreVertical size={20} />
@@ -315,14 +328,14 @@ export default function ModernTaskDetailPage({
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -5 }}
-                        className="absolute right-0 mt-1 w-40 bg-white rounded-md shadow-lg z-10 border overflow-hidden"
+                        className="absolute right-0 mt-1 w-40 bg-[color:var(--card)] rounded-md shadow-lg z-10 border border-[color:var(--border)] overflow-hidden"
                       >
                         <button
                           onClick={() => {
                             setIsEditing(true);
                             setShowActionMenu(false);
                           }}
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-1.5"
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-[color:var(--muted)] flex items-center gap-1.5 text-[color:var(--foreground)]"
                         >
                           <Edit size={16} />
                           <span>Modifier</span>
@@ -332,7 +345,7 @@ export default function ModernTaskDetailPage({
                             handleDelete();
                             setShowActionMenu(false);
                           }}
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-red-600 flex items-center gap-1.5"
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-[color:var(--destructive-background)] text-[color:var(--destructive-foreground)] flex items-center gap-1.5"
                         >
                           <Trash2 size={16} />
                           <span>Supprimer</span>
@@ -356,7 +369,7 @@ export default function ModernTaskDetailPage({
                     variant="outline"
                     size="sm"
                     onClick={handleDelete}
-                    className="text-red-600 border-red-200 hover:bg-red-50"
+                    className="text-[color:var(--destructive-foreground)] border-[color:var(--destructive-border)] hover:bg-[color:var(--destructive-background)]"
                   >
                     <Trash2 size={16} className="mr-1" />
                     Supprimer
@@ -384,13 +397,62 @@ export default function ModernTaskDetailPage({
         </div>
       </header>
 
+      {/* Bannière pour tâches archivées */}
+      {task.archived && (
+        <div className="bg-[color:var(--warning-background)] border-y border-[color:var(--warning-border)] py-3">
+          <div className="max-w-4xl mx-auto px-4 flex items-center gap-3">
+            <Archive className="h-5 w-5 text-[color:var(--warning-foreground)]" />
+            <div>
+              <p className="text-[color:var(--warning-foreground)] font-medium">
+                Tâche archivée
+              </p>
+              <p className="text-[color:var(--warning-foreground)]/90 text-sm">
+                Cette tâche est archivée et n&apos;apparaît plus dans les listes
+                actives.
+                {task.status === "completed" &&
+                  " Elle a été marquée comme terminée."}
+              </p>
+            </div>
+            <div className="ml-auto">
+              <button
+                onClick={() => {
+                  // Fonction pour désarchiver
+                  fetch(`/api/tasks/${task.id}/archive`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ archive: false }),
+                  })
+                    .then((response) => {
+                      if (!response.ok)
+                        throw new Error("Échec de la mise à jour");
+                      return response.json();
+                    })
+                    .then(() => {
+                      setTask({ ...task, archived: false });
+                      toast.success("Tâche retirée des archives");
+                    })
+                    .catch((error) => {
+                      console.error("Erreur:", error);
+                      toast.error("Erreur lors de la désarchivation");
+                    });
+                }}
+                className="px-3 py-1.5 text-xs rounded-md border border-[color:var(--warning-border)]
+                          bg-[color:var(--card)] text-[color:var(--warning-foreground)] hover:bg-[color:var(--warning-background)]/80 transition-colors"
+              >
+                Désarchiver cette tâche
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-4 md:py-6">
         {/* Task title and badges */}
         <div className="mb-6">
           <div className="flex items-start gap-3 mb-2">
             <div
               className="w-3 h-3 rounded-full flex-shrink-0 mt-2"
-              style={{ backgroundColor: task.color || "#6366f1" }}
+              style={{ backgroundColor: task.color || "var(--primary)" }}
             />
             {isEditing ? (
               <input
@@ -399,21 +461,23 @@ export default function ModernTaskDetailPage({
                 onChange={(e) =>
                   setEditedTask({ ...editedTask, name: e.target.value })
                 }
-                className="text-xl sm:text-2xl font-bold w-full bg-transparent border-b border-gray-300 focus:border-blue-500 focus:ring-0 outline-none px-0"
+                className="text-xl sm:text-2xl font-bold w-full bg-transparent border-b border-[color:var(--border)] focus:border-[color:var(--ring)] focus:ring-0 outline-none px-0 text-[color:var(--foreground)]"
               />
             ) : (
-              <h1 className="text-xl sm:text-2xl font-bold">{task.name}</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-[color:var(--foreground)]">
+                {task.name}
+              </h1>
             )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2 ml-6">
             {task.taskType && (
-              <span className="px-2 py-0.5 text-xs sm:text-sm rounded-full bg-gray-100 text-gray-700">
+              <span className="px-2 py-0.5 text-xs sm:text-sm rounded-full bg-[color:var(--muted)] text-[color:var(--muted-foreground)]">
                 {task.taskType}
               </span>
             )}
             {task.recurring && (
-              <span className="px-2 py-0.5 text-xs sm:text-sm rounded-full bg-blue-50 text-blue-700 flex items-center gap-1">
+              <span className="px-2 py-0.5 text-xs sm:text-sm rounded-full bg-[color:var(--info-background)] text-[color:var(--info-foreground)] flex items-center gap-1">
                 <RefreshCcw size={12} />
                 <span>{getPeriodLabel(task.period)}</span>
               </span>
@@ -422,14 +486,14 @@ export default function ModernTaskDetailPage({
         </div>
 
         {/* Tab navigation for mobile */}
-        <div className="mb-6 border-b sm:hidden">
+        <div className="mb-6 border-b border-[color:var(--border)] sm:hidden">
           <div className="flex">
             <button
               onClick={() => setActiveTab("details")}
               className={`flex-1 py-2 px-1 text-sm font-medium ${
                 activeTab === "details"
-                  ? "text-blue-600 border-b-2 border-blue-600"
-                  : "text-gray-500"
+                  ? "text-[color:var(--primary)] border-b-2 border-[color:var(--primary)]"
+                  : "text-[color:var(--muted-foreground)]"
               }`}
             >
               Détails
@@ -438,8 +502,8 @@ export default function ModernTaskDetailPage({
               onClick={() => setActiveTab("documents")}
               className={`flex-1 py-2 px-1 text-sm font-medium ${
                 activeTab === "documents"
-                  ? "text-blue-600 border-b-2 border-blue-600"
-                  : "text-gray-500"
+                  ? "text-[color:var(--primary)] border-b-2 border-[color:var(--primary)]"
+                  : "text-[color:var(--muted-foreground)]"
               }`}
             >
               Documents
@@ -448,8 +512,8 @@ export default function ModernTaskDetailPage({
               onClick={() => setActiveTab("comments")}
               className={`flex-1 py-2 px-1 text-sm font-medium ${
                 activeTab === "comments"
-                  ? "text-blue-600 border-b-2 border-blue-600"
-                  : "text-gray-500"
+                  ? "text-[color:var(--primary)] border-b-2 border-[color:var(--primary)]"
+                  : "text-[color:var(--muted-foreground)]"
               }`}
             >
               Commentaires
@@ -476,19 +540,19 @@ export default function ModernTaskDetailPage({
                           recurring: e.target.checked,
                         })
                       }
-                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      className="w-4 h-4 text-[color:var(--primary)] rounded focus:ring-[color:var(--ring)]"
                     />
                     <label
                       htmlFor="recurring-edit"
-                      className="ml-2 text-sm font-medium"
+                      className="ml-2 text-sm font-medium text-[color:var(--foreground)]"
                     >
                       Tâche récurrente
                     </label>
                   </div>
                   {editedTask.recurring && (
-                    <div className="ml-6 mt-2 space-y-3 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                    <div className="ml-6 mt-2 space-y-3 bg-[color:var(--info-background)] p-3 rounded-lg border border-[color:var(--info-border)]">
                       <div>
-                        <label className="block text-sm font-medium mb-1">
+                        <label className="block text-sm font-medium mb-1 text-[color:var(--info-foreground)]">
                           Périodicité
                         </label>
                         <select
@@ -499,7 +563,7 @@ export default function ModernTaskDetailPage({
                               period: e.target.value,
                             })
                           }
-                          className="w-full p-2 border rounded-md text-sm"
+                          className="w-full p-2 border border-[color:var(--border)] rounded-md text-sm bg-[color:var(--card)] text-[color:var(--foreground)]"
                         >
                           <option value="daily">Quotidienne</option>
                           <option value="weekly">Hebdomadaire</option>
@@ -507,12 +571,12 @@ export default function ModernTaskDetailPage({
                           <option value="quarterly">Trimestrielle</option>
                           <option value="yearly">Annuelle</option>
                         </select>
-                        <p className="text-xs text-blue-600 mt-1">
+                        <p className="text-xs text-[color:var(--info-foreground)] mt-1">
                           Définit à quelle fréquence la tâche doit se répéter.
                         </p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">
+                        <label className="block text-sm font-medium mb-1 text-[color:var(--info-foreground)]">
                           Date de fin (optionnelle)
                         </label>
                         <input
@@ -536,9 +600,9 @@ export default function ModernTaskDetailPage({
                                 : null,
                             })
                           }
-                          className="w-full p-2 border rounded-md text-sm"
+                          className="w-full p-2 border border-[color:var(--border)] rounded-md text-sm bg-[color:var(--card)] text-[color:var(--foreground)]"
                         />
-                        <p className="text-xs text-blue-600 mt-1">
+                        <p className="text-xs text-[color:var(--info-foreground)] mt-1">
                           Si définie, la tâche ne sera plus recréée après cette
                           date. Si non définie, la tâche se répétera
                           indéfiniment.
@@ -546,7 +610,7 @@ export default function ModernTaskDetailPage({
                       </div>
                       {(editedTask.period === "quarterly" ||
                         editedTask.period === "yearly") && (
-                        <div className="border-t border-blue-200 pt-3">
+                        <div className="border-t border-[color:var(--info-border)] pt-3">
                           <div className="flex items-start">
                             <input
                               type="checkbox"
@@ -577,16 +641,16 @@ export default function ModernTaskDetailPage({
                                   });
                                 }
                               }}
-                              className="w-4 h-4 mt-1 text-blue-600 rounded focus:ring-blue-500"
+                              className="w-4 h-4 mt-1 text-[color:var(--primary)] rounded focus:ring-[color:var(--ring)]"
                             />
                             <div className="ml-2">
                               <label
                                 htmlFor="reminder-notification"
-                                className="text-sm font-medium"
+                                className="text-sm font-medium text-[color:var(--info-foreground)]"
                               >
                                 Activer la notification anticipée
                               </label>
-                              <p className="text-xs text-blue-600">
+                              <p className="text-xs text-[color:var(--info-foreground)]">
                                 Envoi d&apos;une notification 10 jours avant
                                 l&apos;échéance (recommandé pour les tâches peu
                                 fréquentes)
@@ -600,8 +664,8 @@ export default function ModernTaskDetailPage({
                 </div>
               )}
               {/* Description */}
-              <div className="bg-white rounded-lg border shadow-sm p-4">
-                <h2 className="text-lg font-medium mb-3 flex items-center gap-1.5">
+              <div className="bg-[color:var(--card)] rounded-lg border border-[color:var(--border)] shadow-sm p-4">
+                <h2 className="text-lg font-medium mb-3 flex items-center gap-1.5 text-[color:var(--foreground)]">
                   Description
                 </h2>
                 {isEditing ? (
@@ -613,13 +677,13 @@ export default function ModernTaskDetailPage({
                         description: e.target.value,
                       })
                     }
-                    className="w-full p-2 border rounded-md min-h-[100px] text-sm"
+                    className="w-full p-2 border border-[color:var(--border)] rounded-md min-h-[100px] text-sm bg-[color:var(--card)] text-[color:var(--foreground)]"
                     placeholder="Ajouter une description..."
                   />
                 ) : (
-                  <div className="text-sm text-gray-700 whitespace-pre-wrap">
+                  <div className="text-sm text-[color:var(--foreground)] whitespace-pre-wrap">
                     {task.description || (
-                      <span className="text-gray-400 italic">
+                      <span className="text-[color:var(--muted-foreground)] italic">
                         Aucune description
                       </span>
                     )}
@@ -628,18 +692,18 @@ export default function ModernTaskDetailPage({
               </div>
               {/* Bloc affichage récurrence (après la description) */}
               {task.recurring && (
-                <div className="bg-white rounded-lg border shadow-sm p-4 mt-4">
-                  <h2 className="text-lg font-medium mb-3 flex items-center gap-1.5">
-                    <RefreshCcw className="h-5 w-5 text-blue-500" />
+                <div className="bg-[color:var(--card)] rounded-lg border border-[color:var(--border)] shadow-sm p-4 mt-4">
+                  <h2 className="text-lg font-medium mb-3 flex items-center gap-1.5 text-[color:var(--foreground)]">
+                    <RefreshCcw className="h-5 w-5 text-[color:var(--info-foreground)]" />
                     Récurrence
                   </h2>
-                  <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
+                  <div className="bg-[color:var(--info-background)] rounded-lg p-3 border border-[color:var(--info-border)]">
                     <div className="flex flex-col space-y-3">
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-700">
+                        <span className="text-sm text-[color:var(--info-foreground)]/90">
                           Type de récurrence:
                         </span>
-                        <span className="text-sm font-medium">
+                        <span className="text-sm font-medium text-[color:var(--info-foreground)]">
                           {task.period === "daily" && "Quotidienne"}
                           {task.period === "weekly" && "Hebdomadaire"}
                           {task.period === "monthly" && "Mensuelle"}
@@ -649,29 +713,29 @@ export default function ModernTaskDetailPage({
                       </div>
                       {task.realizationDate && (
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-700">
+                          <span className="text-sm text-[color:var(--info-foreground)]/90">
                             Prochaine échéance:
                           </span>
-                          <span className="text-sm font-medium">
+                          <span className="text-sm font-medium text-[color:var(--info-foreground)]">
                             {formatDate(task.realizationDate)}
                           </span>
                         </div>
                       )}
                       {task.endDate ? (
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-700">
+                          <span className="text-sm text-[color:var(--info-foreground)]/90">
                             Date de fin de récurrence:
                           </span>
-                          <span className="text-sm font-medium">
+                          <span className="text-sm font-medium text-[color:var(--info-foreground)]">
                             {formatDate(task.endDate)}
                           </span>
                         </div>
                       ) : (
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-700">
+                          <span className="text-sm text-[color:var(--info-foreground)]/90">
                             Date de fin de récurrence:
                           </span>
-                          <span className="text-sm font-medium text-gray-500">
+                          <span className="text-sm font-medium text-[color:var(--info-foreground)]/70">
                             Non définie (répétition sans fin)
                           </span>
                         </div>
@@ -681,19 +745,19 @@ export default function ModernTaskDetailPage({
                         <>
                           {task.recurrenceReminderDate ? (
                             <div className="flex justify-between">
-                              <span className="text-sm text-blue-600">
+                              <span className="text-sm text-[color:var(--info-foreground)]">
                                 Date de notification anticipée:
                               </span>
-                              <span className="text-sm font-medium text-blue-600">
+                              <span className="text-sm font-medium text-[color:var(--info-foreground)]">
                                 {formatDate(task.recurrenceReminderDate)}
                               </span>
                             </div>
                           ) : (
                             <div className="flex justify-between">
-                              <span className="text-sm text-gray-700">
+                              <span className="text-sm text-[color:var(--info-foreground)]/90">
                                 Notification anticipée:
                               </span>
-                              <span className="text-sm font-medium text-gray-500">
+                              <span className="text-sm font-medium text-[color:var(--info-foreground)]/70">
                                 Non activée
                               </span>
                             </div>
@@ -703,9 +767,9 @@ export default function ModernTaskDetailPage({
                     </div>
                   </div>
                   {/* Explication du fonctionnement des tâches récurrentes */}
-                  <div className="mt-4 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                  <div className="mt-4 text-sm text-[color:var(--muted-foreground)] bg-[color:var(--muted)]/30 p-3 rounded-lg border border-[color:var(--border)]">
                     <p className="flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4 text-blue-500" />
+                      <AlertCircle className="h-4 w-4 text-[color:var(--info-foreground)]" />
                       <span>
                         Cette tâche se répète automatiquement. Une fois
                         terminée, une nouvelle instance sera créée pour la
@@ -713,7 +777,7 @@ export default function ModernTaskDetailPage({
                       </span>
                     </p>
                     {task.status === "completed" && (
-                      <p className="mt-2 text-blue-600 flex items-center gap-2">
+                      <p className="mt-2 text-[color:var(--success-foreground)] flex items-center gap-2">
                         <CheckCircle2 className="h-4 w-4" />
                         <span>
                           Lorsque vous marquez cette tâche comme terminée, une
@@ -727,8 +791,8 @@ export default function ModernTaskDetailPage({
               )}
               {/* Execution comment (if exists) */}
               {(task.executantComment || isEditing) && (
-                <div className="bg-white rounded-lg border shadow-sm p-4">
-                  <h2 className="text-lg font-medium mb-3">
+                <div className="bg-[color:var(--card)] rounded-lg border border-[color:var(--border)] shadow-sm p-4">
+                  <h2 className="text-lg font-medium mb-3 text-[color:var(--foreground)]">
                     Commentaire d&apos;exécution
                   </h2>
                   {isEditing ? (
@@ -740,11 +804,11 @@ export default function ModernTaskDetailPage({
                           executantComment: e.target.value,
                         })
                       }
-                      className="w-full p-2 border rounded-md min-h-[80px] text-sm"
+                      className="w-full p-2 border border-[color:var(--border)] rounded-md min-h-[80px] text-sm bg-[color:var(--card)] text-[color:var(--foreground)]"
                       placeholder="Commentaire sur l'exécution..."
                     />
                   ) : (
-                    <div className="text-sm text-gray-700 border-l-4 border-blue-500 pl-3 py-2 bg-blue-50 rounded-r-md whitespace-pre-wrap">
+                    <div className="text-sm text-[color:var(--foreground)] border-l-4 border-[color:var(--info-border)] pl-3 py-2 bg-[color:var(--info-background)] rounded-r-md whitespace-pre-wrap">
                       {task.executantComment}
                     </div>
                   )}
@@ -756,17 +820,17 @@ export default function ModernTaskDetailPage({
           {/* Metadata sidebar on desktop / conditional tab content on mobile */}
           {(activeTab === "details" || !isMobile) && (
             <div className="md:col-span-1">
-              <div className="bg-white rounded-lg border shadow-sm p-4">
-                <h3 className="font-medium text-gray-500 text-sm mb-4">
+              <div className="bg-[color:var(--card)] rounded-lg border border-[color:var(--border)] shadow-sm p-4">
+                <h3 className="font-medium text-[color:var(--muted-foreground)] text-sm mb-4">
                   DÉTAILS
                 </h3>
 
                 <div className="space-y-4">
                   {/* Due date */}
                   <div className="flex items-start gap-2">
-                    <Calendar className="w-5 h-5 text-gray-500 mt-0.5" />
+                    <Calendar className="w-5 h-5 text-[color:var(--muted-foreground)] mt-0.5" />
                     <div>
-                      <div className="text-xs text-gray-500 mb-1">
+                      <div className="text-xs text-[color:var(--muted-foreground)] mb-1">
                         Date d&apos;échéance
                       </div>
                       {isEditing ? (
@@ -793,10 +857,10 @@ export default function ModernTaskDetailPage({
                                 : null,
                             })
                           }
-                          className="w-full p-1 border rounded text-sm"
+                          className="w-full p-1 border border-[color:var(--border)] rounded text-sm bg-[color:var(--card)] text-[color:var(--foreground)]"
                         />
                       ) : (
-                        <div className="text-sm font-medium">
+                        <div className="text-sm font-medium text-[color:var(--foreground)]">
                           {formatDate(task.realizationDate)}
                         </div>
                       )}
@@ -805,9 +869,9 @@ export default function ModernTaskDetailPage({
 
                   {/* Assignee */}
                   <div className="flex items-start gap-2">
-                    <User className="w-5 h-5 text-gray-500 mt-0.5" />
+                    <User className="w-5 h-5 text-[color:var(--muted-foreground)] mt-0.5" />
                     <div>
-                      <div className="text-xs text-gray-500 mb-1">
+                      <div className="text-xs text-[color:var(--muted-foreground)] mb-1">
                         Assigné à
                       </div>
                       {isEditing ? (
@@ -819,7 +883,7 @@ export default function ModernTaskDetailPage({
                               assignedToId: e.target.value || null,
                             })
                           }
-                          className="w-full p-1 border rounded text-sm"
+                          className="w-full p-1 border border-[color:var(--border)] rounded text-sm bg-[color:var(--card)] text-[color:var(--foreground)]"
                         >
                           <option value="">Non assigné</option>
                           {users.map((user) => (
@@ -829,7 +893,7 @@ export default function ModernTaskDetailPage({
                           ))}
                         </select>
                       ) : (
-                        <div className="text-sm font-medium">
+                        <div className="text-sm font-medium text-[color:var(--foreground)]">
                           {task.assignedTo?.name || "Non assigné"}
                         </div>
                       )}
@@ -837,8 +901,8 @@ export default function ModernTaskDetailPage({
                   </div>
 
                   {/* Created/Updated dates */}
-                  <div className="pt-3 border-t border-gray-100">
-                    <div className="flex justify-between text-xs text-gray-500">
+                  <div className="pt-3 border-t border-[color:var(--border)]">
+                    <div className="flex justify-between text-xs text-[color:var(--muted-foreground)]">
                       <span>Créée le: {formatDate(task.createdAt)}</span>
                       <span>Modifiée le: {formatDate(task.updatedAt)}</span>
                     </div>
@@ -851,14 +915,14 @@ export default function ModernTaskDetailPage({
           {/* Documents tab content - conditionally visible based on active tab */}
           {(activeTab === "documents" || !isMobile) && (
             <div className={`${isMobile ? "" : "md:col-span-3"} space-y-6`}>
-              <div className="bg-white rounded-lg border shadow-sm p-4">
-                <h2 className="text-lg font-medium mb-4 flex items-center gap-1.5">
-                  <Paperclip className="h-5 w-5 text-gray-500" />
+              <div className="bg-[color:var(--card)] rounded-lg border border-[color:var(--border)] shadow-sm p-4">
+                <h2 className="text-lg font-medium mb-4 flex items-center gap-1.5 text-[color:var(--foreground)]">
+                  <Paperclip className="h-5 w-5 text-[color:var(--muted-foreground)]" />
                   Documents
                 </h2>
                 <DocumentsList taskId={task.id} onDocumentsChange={() => {}} />
-                <div className="mt-4 border-t pt-4">
-                  <h3 className="text-sm font-medium mb-2">
+                <div className="mt-4 border-t border-[color:var(--border)] pt-4">
+                  <h3 className="text-sm font-medium mb-2 text-[color:var(--foreground)]">
                     Ajouter un document
                   </h3>
                   <DocumentUpload taskId={task.id} onUploadSuccess={() => {}} />
@@ -870,7 +934,7 @@ export default function ModernTaskDetailPage({
           {/* Comments tab content - conditionally visible based on active tab */}
           {(activeTab === "comments" || !isMobile) && (
             <div className={`${isMobile ? "" : "md:col-span-3"} space-y-6`}>
-              <div className="bg-white rounded-lg border shadow-sm p-4">
+              <div className="bg-[color:var(--card)] rounded-lg border border-[color:var(--border)] shadow-sm p-4">
                 <TaskComments taskId={task.id} />
               </div>
             </div>

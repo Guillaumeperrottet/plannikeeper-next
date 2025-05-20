@@ -54,7 +54,22 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       },
     });
 
-    return NextResponse.json(updatedTask);
+    // Ajouter des informations pour l'invalidation du cache
+    const response = NextResponse.json(updatedTask);
+    response.headers.set(
+      "X-Invalidate-Cache",
+      `tasks_${task.article.sector.object.id}`
+    );
+    response.headers.set(
+      "X-Invalidate-Cache-Keys",
+      JSON.stringify([
+        `tasks_${task.article.sector.object.id}`,
+        `article_tasks_${task.article.id}`,
+        `sector_tasks_${task.article.sector.id}`,
+      ])
+    );
+
+    return response;
   } catch (error) {
     console.error("Erreur lors de l'archivage de la tâche:", error);
     return NextResponse.json(

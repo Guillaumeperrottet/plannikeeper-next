@@ -58,7 +58,7 @@ export default function ArchiveButton({
   return (
     <button
       onClick={toggleArchive}
-      className={`flex items-center gap-1 text-gray-600 hover:text-amber-600 ${className}`}
+      className={`flex items-center gap-1 text-[color:var(--muted-foreground)] hover:text-[color:var(--primary)] ${className}`}
       title={isArchived ? "Désarchiver" : "Archiver"}
       disabled={loading}
     >
