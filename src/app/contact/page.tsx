@@ -701,12 +701,12 @@ export default function ContactPage() {
               question:
                 "Comment PlanniKeeper peut-il s'adapter à mon entreprise ?",
               answer:
-                "PlanniKeeper propose différentes formules adaptées à tous types d'entreprises, de la startup au grand groupe. Notre solution est entièrement personnalisable pour répondre à vos besoins spécifiques.",
+                "PlanniKeeper propose différentes formules adaptées à tous types d'entreprises, du privé au grand groupe. Notre solution est entièrement personnalisable pour répondre à vos besoins spécifiques.",
             },
             {
               question: "Proposez-vous des formations pour mon équipe ?",
               answer:
-                "Oui, nous proposons des sessions de formation personnalisées pour votre équipe. Nos experts vous accompagnent tout au long de la prise en main de la plateforme.",
+                "Oui, nous proposons des sessions de formation personnalisées pour votre équipe si besoin. Nous voulons nous assurer que vous tirez le meilleur parti de notre plateforme. Tout en sachant que la prise en main est intuitive et rapide.",
             },
             {
               question:

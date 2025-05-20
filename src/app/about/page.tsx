@@ -658,10 +658,7 @@ export default function AboutPage() {
                     </li>
                     <li className="flex items-start gap-2">
                       <div className="w-2 h-2 bg-[#d9840d] rounded-full mt-2"></div>
-                      <span>
-                        Application Progressive Web App (PWA) fonctionnant
-                        hors-ligne
-                      </span>
+                      <span>Application Progressive Web App (PWA)</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <div className="w-2 h-2 bg-[#d9840d] rounded-full mt-2"></div>
