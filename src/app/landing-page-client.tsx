@@ -313,6 +313,43 @@ const ModernLandingPage = () => {
           </motion.div>
         </div>
       </section>
+
+      {/* Showcase Section - Version immersive pour campings */}
+      <section
+        id="showcase"
+        ref={showcaseRef}
+        className="py-16 md:pt-24 pb-32 overflow-hidden relative"
+      >
+        {/* Fond naturel adapté aux campings */}
+        <div className="absolute inset-0 -z-20 bg-gradient-to-b from-[#f9f8f4] to-[#e8f1e8] opacity-80" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true, amount: 0.3 }}
+            className="text-center mb-20"
+          >
+            <div className="inline-block bg-[#e9c46a]/20 px-4 py-1 rounded-full mb-4 border border-[#e9c46a]/30">
+              <span className="text-[#e76f51] font-medium text-sm">
+                L&apos;essentiel de PlanniKeeper
+              </span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold mb-6 text-[#141313]">
+              Découvrez les fonctionnalités clés
+            </h2>
+            <p className="text-lg text-[#62605d] max-w-3xl mx-auto">
+              Notre solution transforme votre gestion quotidienne. Voyez comment
+              PlanniKeeper peut faire la différence.
+            </p>
+          </motion.div>
+
+          {/* Composant de fonctionnalités vidéo immersif pour campings */}
+          <CampingFeatureShowcase />
+        </div>
+      </section>
+
       {/* For Whom Section */}
       <section className="py-16 md:py-24 bg-[#f9f3ec] text-[#141313] overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -507,42 +544,6 @@ const ModernLandingPage = () => {
               </span>
             </div>
           </motion.div>
-        </div>
-      </section>
-
-      {/* Showcase Section - Version immersive pour campings */}
-      <section
-        id="showcase"
-        ref={showcaseRef}
-        className="py-16 md:pt-24 pb-32 overflow-hidden relative"
-      >
-        {/* Fond naturel adapté aux campings */}
-        <div className="absolute inset-0 -z-20 bg-gradient-to-b from-[#f9f8f4] to-[#e8f1e8] opacity-80" />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true, amount: 0.3 }}
-            className="text-center mb-20"
-          >
-            <div className="inline-block bg-[#e9c46a]/20 px-4 py-1 rounded-full mb-4 border border-[#e9c46a]/30">
-              <span className="text-[#e76f51] font-medium text-sm">
-                L&apos;essentiel de PlanniKeeper
-              </span>
-            </div>
-            <h2 className="text-3xl md:text-5xl font-bold mb-6 text-[#141313]">
-              Découvrez les fonctionnalités clés
-            </h2>
-            <p className="text-lg text-[#62605d] max-w-3xl mx-auto">
-              Notre solution transforme votre gestion quotidienne. Voyez comment
-              PlanniKeeper peut faire la différence.
-            </p>
-          </motion.div>
-
-          {/* Composant de fonctionnalités vidéo immersif pour campings */}
-          <CampingFeatureShowcase />
         </div>
       </section>
 
