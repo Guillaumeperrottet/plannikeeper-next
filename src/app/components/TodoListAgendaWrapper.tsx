@@ -90,6 +90,18 @@ export default function TodoListAgendaWrapper() {
 
       return () => clearInterval(interval);
     }
+
+    // Ajouter un rafraîchissement périodique même en mode non-PWA mais moins fréquent
+    const interval = setInterval(
+      () => {
+        if (document.visibilityState === "visible") {
+          refreshDataSilently();
+        }
+      },
+      10 * 60 * 1000
+    ); // 10 minutes
+
+    return () => clearInterval(interval);
   }, [refreshDataSilently]);
 
   // Handler pour le rafraîchissement manuel

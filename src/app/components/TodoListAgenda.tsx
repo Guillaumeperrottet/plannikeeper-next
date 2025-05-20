@@ -14,11 +14,14 @@ import {
   User,
   RefreshCcw,
 } from "lucide-react";
-import CalendarView from "./CalendarView";
+import dynamic from "next/dynamic";
 import PrintButton from "./ui/PrintButton";
 import { useLoadingSystem } from "@/app/components/LoadingSystem";
 import { motion, AnimatePresence, useSpring } from "framer-motion";
 import { useRouter as useCustomRouter } from "@/lib/router-helper";
+
+// Import dynamique de CalendarView pour permettre un rafraîchissement efficace
+const CalendarView = dynamic(() => import("./CalendarView"), { ssr: false });
 
 type Task = {
   id: string;
@@ -120,6 +123,7 @@ export default function TodoListAgenda({
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showFiltersPanel, setShowFiltersPanel] = useState<boolean>(false);
+  const [refreshKey, setRefreshKey] = useState<number>(0); // Clé pour forcer le rafraîchissement
 
   // Nouveau state pour le filtre par article
   const [articleFilter, setArticleFilter] = useState<string>("all");
@@ -428,6 +432,9 @@ export default function TodoListAgenda({
             }
           });
           setAssignableUsers(Array.from(usersMap.values()));
+
+          // Incrémenter refreshKey pour forcer la mise à jour du composant CalendarView
+          setRefreshKey((prev) => prev + 1);
         }
       } catch (error) {
         console.error("Erreur lors de la récupération des tâches :", error);
@@ -552,6 +559,15 @@ export default function TodoListAgenda({
     e.stopPropagation();
   };
 
+  // Handler personnalisé pour le rafraîchissement manuel
+  const handleManualRefresh = () => {
+    if (onRefresh) {
+      onRefresh();
+      // Incrémenter également la clé de rafraîchissement pour CalendarView
+      setRefreshKey((prev) => prev + 1);
+    }
+  };
+
   // Fonction pour déterminer si une tâche correspond aux filtres
   const taskMatchesFilters = (task: Task): boolean => {
     // Filtrer par texte de recherche
@@ -620,8 +636,6 @@ export default function TodoListAgenda({
     if (taskDate <= thisWeekEnd) thisWeekTasks.push(task);
     else upcomingTasks.push(task);
   });
-
-  // Définir le contenu du titre en fonction de l'état d'expansion
 
   // Fonction pour scroller vers une section spécifique
   const scrollToSection = (section: "thisWeek" | "upcoming") => {
@@ -805,22 +819,23 @@ export default function TodoListAgenda({
                       >
                         <Filter size={14} />
                       </button>
-                      {/* Bouton refresh */}
-                      {onRefresh && (
-                        <button
-                          onClick={onRefresh}
-                          className="ml-0 flex items-center justify-center rounded-full p-0 hover:bg-[color:var(--muted)] transition-colors"
-                          title="Rafraîchir la liste"
-                          aria-label="Rafraîchir la liste"
-                          disabled={isRefreshing}
-                        >
-                          <RefreshCcw
-                            size={18}
-                            className={`text-[color:var(--foreground)] ${isRefreshing ? "animate-spin" : ""}`}
-                          />
-                        </button>
-                      )}
                     </>
+                  )}
+
+                  {/* Bouton refresh visible pour tous les modes */}
+                  {onRefresh && (
+                    <button
+                      onClick={handleManualRefresh}
+                      className="ml-0 flex items-center justify-center rounded-full p-1.5 bg-[color:var(--background)] hover:bg-[color:var(--muted)] transition-colors"
+                      title="Rafraîchir les données"
+                      aria-label="Rafraîchir les données"
+                      disabled={isRefreshing}
+                    >
+                      <RefreshCcw
+                        size={16}
+                        className={`text-[color:var(--foreground)] ${isRefreshing ? "animate-spin" : ""}`}
+                      />
+                    </button>
                   )}
                 </div>
 
@@ -953,7 +968,11 @@ export default function TodoListAgenda({
               <p>Chargement des tâches...</p>
             </div>
           ) : viewMode === ViewMode.CALENDAR ? (
-            <CalendarView tasks={tasks} navigateToTask={navigateToTask} />
+            <CalendarView
+              tasks={tasks}
+              navigateToTask={navigateToTask}
+              refreshKey={refreshKey} // Passer la clé de rafraîchissement
+            />
           ) : (
             <div
               className={`grid grid-cols-1 ${isMobile ? "" : "md:grid-cols-2"} gap-4 p-4`}

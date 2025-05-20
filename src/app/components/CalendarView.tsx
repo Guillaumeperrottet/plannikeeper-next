@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronLeft, ChevronRight, CalendarIcon, X } from "lucide-react";
 
@@ -40,11 +38,13 @@ type Task = {
 interface CalendarViewProps {
   tasks: Task[];
   navigateToTask: (task: Task) => Promise<void>;
+  refreshKey?: number; // Ajout d'une nouvelle prop pour forcer le rafraîchissement
 }
 
 export default function CalendarView({
   tasks,
   navigateToTask,
+  refreshKey = 0, // Valeur par défaut
 }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [calendarDays, setCalendarDays] = useState<Array<Date | null>>([]);
@@ -214,7 +214,7 @@ export default function CalendarView({
     setCalendarDays(calendarDaysArray);
   }, [currentDate]);
 
-  // Organize tasks by day
+  // Organize tasks by day - Réagit aussi au changement de refreshKey
   useEffect(() => {
     const taskMap: Record<string, Task[]> = {};
 
@@ -229,7 +229,7 @@ export default function CalendarView({
     });
 
     setTasksByDay(taskMap);
-  }, [tasks]);
+  }, [tasks, refreshKey]); // Ajout de refreshKey comme dépendance
 
   // Persistance de l'état du calendrier
   useEffect(() => {
