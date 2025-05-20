@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
   // Server action size increase when needed
   experimental: {
     serverActions: {
-      bodySizeLimit: "2mb", // Reduced from 10mb to improve performance
+      bodySizeLimit: "20mb", // Reduced from 10mb to improve performance
     },
     // Enable optimizations
     optimizeCss: false, // Enable CSS optimization

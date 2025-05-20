@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { Upload, X, File, Paperclip, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/app/components/ui/button";
+import imageCompression from "browser-image-compression"; // Importez la bibliothèque
 
 interface DocumentUploadProps {
   taskId: string;
@@ -19,10 +20,54 @@ export default function DocumentUpload({
   const [dragActive, setDragActive] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // État pour afficher la progression de la compression
+  const [isCompressing, setIsCompressing] = useState(false);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Fonction pour comprimer l'image avant de la définir
+  const processFile = async (imageFile: File) => {
+    // Si ce n'est pas une image, on la conserve telle quelle
+    if (!imageFile.type.startsWith("image/")) {
+      setFile(imageFile);
+      return;
+    }
+
+    try {
+      setIsCompressing(true);
+      toast.info("Compression de l'image en cours...");
+
+      const options = {
+        maxSizeMB: 1, // Limiter à 1MB
+        maxWidthOrHeight: 1920, // Limiter la dimension max
+        useWebWorker: true,
+        fileType: imageFile.type, // Conserver le type de fichier original
+      };
+
+      const compressedFile = await imageCompression(imageFile, options);
+
+      // Log pour le développement
+      console.log("Taille originale:", imageFile.size / 1024 / 1024, "MB");
+      console.log(
+        "Taille après compression:",
+        compressedFile.size / 1024 / 1024,
+        "MB"
+      );
+
+      setFile(compressedFile);
+      toast.success("Image compressée avec succès");
+    } catch (error) {
+      console.error("Erreur lors de la compression:", error);
+      toast.error(
+        "Impossible de compresser l'image, utilisation de l'original"
+      );
+      setFile(imageFile);
+    } finally {
+      setIsCompressing(false);
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
-      setFile(e.target.files[0]);
+      await processFile(e.target.files[0]);
     }
   };
 
@@ -36,12 +81,12 @@ export default function DocumentUpload({
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
     if (e.dataTransfer.files?.[0]) {
-      setFile(e.dataTransfer.files[0]);
+      await processFile(e.dataTransfer.files[0]);
     }
   };
 
@@ -65,8 +110,8 @@ export default function DocumentUpload({
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Erreur lors du téléchargement");
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || "Erreur lors du téléchargement");
       }
 
       clearInterval(progressInterval);
@@ -127,6 +172,7 @@ export default function DocumentUpload({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               className="px-3 py-1 text-xs text-[color:var(--primary)] rounded hover:bg-[color:var(--muted)]"
+              disabled={isCompressing}
             >
               Sélectionnez un fichier
             </button>
@@ -138,11 +184,20 @@ export default function DocumentUpload({
               accept=".pdf,image/*"
             />
             <p className="text-xs text-[color:var(--muted-foreground)] mt-1">
-              PDF, JPG, PNG, GIF (max. 10MB)
+              PDF, JPG, PNG, GIF (compression auto des images)
             </p>
           </div>
         )}
       </div>
+
+      {isCompressing && (
+        <div className="w-full bg-[color:var(--muted)] rounded-full h-1.5">
+          <div
+            className="bg-[color:var(--primary)] h-1.5 rounded-full transition-all animate-pulse"
+            style={{ width: "60%" }}
+          />
+        </div>
+      )}
 
       {file && (
         <>
@@ -157,7 +212,7 @@ export default function DocumentUpload({
 
           <Button
             onClick={handleUpload}
-            disabled={isUploading}
+            disabled={isUploading || isCompressing}
             className="w-full text-xs py-1.5"
             size="sm"
           >

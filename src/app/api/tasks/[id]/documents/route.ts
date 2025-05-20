@@ -165,10 +165,10 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         { status: 400 }
       );
     }
-    const maxSize = 10 * 1024 * 1024;
+    const maxSize = 20 * 1024 * 1024; // max 20MB
     if (file.size > maxSize) {
       return NextResponse.json(
-        { error: "Le fichier est trop volumineux (max 10MB)" },
+        { error: "Le fichier est trop volumineux (max 20MB)" },
         { status: 400 }
       );
     }
