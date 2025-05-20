@@ -117,9 +117,29 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     const formData = await req.formData();
     const file = formData.get("file") as File;
 
+    // Ajout de logs pour debug
+    console.log("file:", file);
+    if (file) {
+      console.log("file.name:", file.name);
+      console.log("file.type:", file.type);
+      console.log("file.size:", file.size);
+    }
+
     if (!file) {
       return NextResponse.json(
         { error: "Aucun fichier fourni" },
+        { status: 400 }
+      );
+    }
+
+    // Vérification du nom de fichier
+    if (
+      !file.name ||
+      typeof file.name !== "string" ||
+      file.name.trim() === ""
+    ) {
+      return NextResponse.json(
+        { error: "Nom de fichier invalide ou manquant" },
         { status: 400 }
       );
     }
@@ -132,11 +152,15 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       "image/gif",
       "image/webp",
     ];
-    if (!allowedTypes.includes(file.type)) {
+    if (
+      !file.type ||
+      typeof file.type !== "string" ||
+      !allowedTypes.includes(file.type)
+    ) {
       return NextResponse.json(
         {
           error:
-            "Type de fichier non pris en charge. Veuillez télécharger un PDF ou une image.",
+            "Type de fichier non pris en charge ou manquant. Veuillez télécharger un PDF ou une image (jpeg, png, gif, webp).",
         },
         { status: 400 }
       );
