@@ -89,7 +89,6 @@ export function calculateNextOccurrence(
  * @returns true si la tâche doit être renouvelée, false sinon
  */
 export function shouldRenewTask(task: {
-  status: string;
   recurring: boolean;
   realizationDate: Date | null;
   endDate: Date | null;
@@ -99,23 +98,20 @@ export function shouldRenewTask(task: {
     return false;
   }
 
-  // Si la tâche est terminée ou annulée
-  if (task.status === "completed" || task.status === "cancelled") {
-    // Vérifier si la date d'échéance est passée
-    const now = new Date();
-    const realizationDate = new Date(task.realizationDate);
+  // Vérifier si la date d'échéance est passée, indépendamment du statut
+  const now = new Date();
+  const realizationDate = new Date(task.realizationDate);
 
-    // Si la date d'échéance est passée
-    if (realizationDate < now) {
-      // Si une date de fin est définie, vérifier si elle est dépassée
-      if (task.endDate) {
-        const endDate = new Date(task.endDate);
-        return now < endDate;
-      }
-
-      // Sans date de fin, continuer indéfiniment
-      return true;
+  // Si la date d'échéance est passée
+  if (realizationDate < now) {
+    // Si une date de fin est définie, vérifier si elle est dépassée
+    if (task.endDate) {
+      const endDate = new Date(task.endDate);
+      return now < endDate;
     }
+
+    // Sans date de fin, continuer indéfiniment
+    return true;
   }
 
   return false;

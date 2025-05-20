@@ -1,4 +1,3 @@
-// src/app/api/cron/renew-recurring-tasks/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { calculateNextOccurrence, calculateReminderDate } from "@/lib/utils";
@@ -9,12 +8,11 @@ export async function GET() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Trouver toutes les tâches récurrentes terminées ou annulées
-    // dont la date de réalisation est passée
+    // Trouver toutes les tâches récurrentes dont la date d'échéance est passée,
+    // quel que soit leur statut
     const tasksToRenew = await prisma.task.findMany({
       where: {
         recurring: true,
-        status: { in: ["completed", "cancelled"] },
         realizationDate: {
           lt: today,
         },
@@ -22,6 +20,7 @@ export async function GET() {
           { endDate: null }, // Sans date de fin (récurrence infinie)
           { endDate: { gte: today } }, // Date de fin non dépassée
         ],
+        // On ne filtre plus sur le statut ici
       },
       include: {
         article: {
@@ -74,6 +73,17 @@ export async function GET() {
             endDate: task.endDate,
             recurrenceReminderDate: reminderDate,
             articleId: task.articleId,
+            executantComment: task.executantComment,
+          },
+        });
+
+        // Mettre à jour la tâche originale en la marquant comme complétée ou archivée
+        // selon vos préférences
+        await prisma.task.update({
+          where: { id: task.id },
+          data: {
+            archived: true, // Optionnel: archiver l'ancienne tâche
+            archivedAt: new Date(),
           },
         });
 
@@ -82,6 +92,7 @@ export async function GET() {
             id: task.id,
             name: task.name,
             realizationDate: task.realizationDate,
+            status: task.status,
           },
           new: {
             id: newTask.id,
