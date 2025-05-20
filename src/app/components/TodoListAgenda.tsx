@@ -1,3 +1,4 @@
+// src/app/components/TodoListAgenda.tsx - Modifié pour supporter le drag and drop
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -97,14 +98,21 @@ enum ViewMode {
   CALENDAR = "calendar",
 }
 
-// Ajout des props pour le refresh
+// Props étendues pour supporter le drag and drop
 interface TodoListAgendaProps {
   onRefresh?: () => void;
   isRefreshing?: boolean;
   refreshKey?: number;
+  updateTaskDate?: (taskId: string, newDate: Date) => Promise<void>; // Nouvelle prop
+  isMobile?: boolean; // Prop pour détecter si on est sur mobile
 }
 
-export default function TodoListAgenda({ onRefresh }: TodoListAgendaProps) {
+export default function TodoListAgenda({
+  onRefresh,
+  refreshKey = 0,
+  updateTaskDate,
+  isMobile = false, // Par défaut, supposer qu'on n'est pas sur mobile
+}: TodoListAgendaProps) {
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [agendaHeight, setAgendaHeight] = useState<number>(48); // Hauteur en px
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -113,14 +121,16 @@ export default function TodoListAgenda({ onRefresh }: TodoListAgendaProps) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.LIST);
   const [maxHeight, setMaxHeight] = useState<number>(600); // valeur par défaut
-  const [isMobile, setIsMobile] = useState(false);
   const [isPWA, setIsPWA] = useState(false);
   const [interactionLocked, setInteractionLocked] = useState(false);
   const [showControls, setShowControls] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showFiltersPanel, setShowFiltersPanel] = useState<boolean>(false);
-  const [refreshKey, setRefreshKey] = useState<number>(0); // Clé pour forcer le rafraîchissement
+  const [isRefreshingLocal, setIsRefreshingLocal] = useState(false);
+
+  // État pour afficher un petit message d'information sur le drag and drop
+  const [showDragHint, setShowDragHint] = useState(false);
 
   // Nouveau state pour le filtre par article
   const [articleFilter, setArticleFilter] = useState<string>("all");
@@ -148,7 +158,6 @@ export default function TodoListAgenda({ onRefresh }: TodoListAgendaProps) {
   const upcomingRef = useRef<HTMLDivElement>(null);
   const customRouter = useCustomRouter();
   const { showLoader, hideLoader, hideAllLoaders } = useLoadingSystem();
-  const [isRefreshingLocal, setIsRefreshingLocal] = useState(false);
   // Constantes pour les limites de hauteur
   const MIN_HEIGHT = 48; // Hauteur minimale (fermé)
 
@@ -157,7 +166,6 @@ export default function TodoListAgenda({ onRefresh }: TodoListAgendaProps) {
     // Vérifier si nous sommes sur mobile
     const checkMobile = () => {
       const isMobileView = window.innerWidth < 768;
-      setIsMobile(isMobileView);
 
       // Ajuster la hauteur maximale en fonction de la taille de l'écran
       // Pour les grands écrans on utilise 85% de la hauteur de la fenêtre
@@ -215,25 +223,6 @@ export default function TodoListAgenda({ onRefresh }: TodoListAgendaProps) {
       setShowFiltersPanel(false);
     }
   }, [isExpanded]);
-
-  // // Gérer le scroll de la page
-  // useEffect(() => {
-  //   // Fonction pour gérer le scroll et ajuster l'agenda
-  //   const handleScroll = () => {
-  //     const scrollTop = window.scrollY || document.documentElement.scrollTop;
-  //     const isScrollDown = scrollTop > lastScrollTop;
-
-  //     setLastScrollTop(scrollTop);
-  //     // Si on scroll vers le bas et que l'agenda est affiché, on le réduit
-  //     if (isScrollDown && isExpanded) {
-  //       setAgendaHeight(MIN_HEIGHT);
-  //       setIsExpanded(false);
-  //     }
-  //   };
-
-  //   window.addEventListener("scroll", handleScroll, { passive: true });
-  //   return () => window.removeEventListener("scroll", handleScroll);
-  // }, [lastScrollTop, isExpanded]);
 
   // Appliquer des ajustements pour PWA sur mobile
   useEffect(() => {
@@ -356,7 +345,17 @@ export default function TodoListAgenda({ onRefresh }: TodoListAgendaProps) {
   // Sauvegarder la préférence de vue dans localStorage quand elle change
   useEffect(() => {
     localStorage.setItem("plannikeeper-view-mode", viewMode);
-  }, [viewMode]);
+
+    // Si on passe en mode Calendrier et qu'on est en desktop, afficher l'indice de drag and drop
+    if (viewMode === ViewMode.CALENDAR && !isMobile && updateTaskDate) {
+      setShowDragHint(true);
+      const timer = setTimeout(() => {
+        setShowDragHint(false);
+      }, 5000); // Afficher pendant 5 secondes
+
+      return () => clearTimeout(timer);
+    }
+  }, [viewMode, isMobile, updateTaskDate]);
 
   // Récupération des objets
   useEffect(() => {
@@ -434,9 +433,6 @@ export default function TodoListAgenda({ onRefresh }: TodoListAgendaProps) {
             }
           });
           setAssignableUsers(Array.from(usersMap.values()));
-
-          // Incrémenter refreshKey pour forcer la mise à jour du composant CalendarView
-          setRefreshKey((prev) => prev + 1);
         }
       } catch (error) {
         console.error("Erreur lors de la récupération des tâches :", error);
@@ -445,7 +441,7 @@ export default function TodoListAgenda({ onRefresh }: TodoListAgendaProps) {
       }
     };
     fetchTasks();
-  }, [selectedObjectId, currentUserId]);
+  }, [selectedObjectId, currentUserId, refreshKey]); // Ajout de refreshKey pour forcer le rechargement
 
   // Met à jour l'état de navigation lors de la navigation vers une tâche
   const navigateToTask = async (task: Task): Promise<void> => {
@@ -579,9 +575,6 @@ export default function TodoListAgenda({ onRefresh }: TodoListAgendaProps) {
     try {
       // Appeler la fonction de rafraîchissement (qui retourne une Promise)
       await onRefresh();
-
-      // Incrémenter la clé pour forcer le rafraîchissement du calendrier
-      setRefreshKey((prev) => prev + 1);
 
       // Ajouter un petit délai pour que l'utilisateur puisse voir que l'action a été effectuée
       await new Promise((resolve) => setTimeout(resolve, 300));
@@ -981,6 +974,24 @@ export default function TodoListAgenda({ onRefresh }: TodoListAgendaProps) {
                   </button>
                 </div>
               )}
+
+              {/* Message informatif sur le drag and drop (uniquement sur desktop en mode calendrier) */}
+              {showDragHint &&
+                viewMode === ViewMode.CALENDAR &&
+                !isMobile &&
+                updateTaskDate && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 0.85, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    className="bg-[color:var(--background)] text-[color:var(--muted-foreground)] text-xs px-3 py-1.5 rounded-md shadow-sm border border-[color:var(--border)] border-opacity-30 mt-1 mx-auto max-w-max"
+                  >
+                    <span className="text-[color:var(--primary)] font-medium">
+                      Astuce :
+                    </span>{" "}
+                    Glissez les tâches pour changer leur date.
+                  </motion.div>
+                )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -990,7 +1001,7 @@ export default function TodoListAgenda({ onRefresh }: TodoListAgendaProps) {
           ref={contentRef}
           className="overflow-y-auto agenda-content"
           style={{
-            height: `calc(100% - ${isExpanded && showControls ? (viewMode === ViewMode.LIST ? "110px" : "96px") : "48px"})`,
+            height: `calc(100% - ${isExpanded && showControls ? (viewMode === ViewMode.LIST ? "110px" : showDragHint ? "140px" : "96px") : "48px"})`,
           }}
           onClick={handleContentClick} // Empêcher la propagation
         >
@@ -1004,6 +1015,8 @@ export default function TodoListAgenda({ onRefresh }: TodoListAgendaProps) {
               tasks={filteredTasks}
               navigateToTask={navigateToTask}
               refreshKey={refreshKey} // Passer la clé de rafraîchissement
+              updateTaskDate={updateTaskDate} // Passer la fonction de mise à jour
+              isMobile={isMobile} // Passer l'état mobile pour désactiver le drag sur mobile
             />
           ) : (
             <div
