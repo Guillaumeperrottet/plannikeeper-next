@@ -59,9 +59,9 @@ export default function CalendarView({
 
   // Helper to format date as YYYY-MM-DD for use as keys
   const formatDateKey = (date: Date): string => {
-    return date.toISOString().split("T")[0];
+    // Utiliser la date locale plutôt que UTC
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   };
-
   // Gestion du clic sur une tâche avec état de chargement
   const handleTaskClick = async (task: Task) => {
     triggerHapticFeedback(); // Conserver le retour haptique
@@ -220,7 +220,7 @@ export default function CalendarView({
 
     tasks.forEach((task) => {
       if (task.realizationDate) {
-        const dateKey = formatDateKey(new Date(task.realizationDate));
+        const dateKey = formatDateKey(task.realizationDate);
         if (!taskMap[dateKey]) {
           taskMap[dateKey] = [];
         }

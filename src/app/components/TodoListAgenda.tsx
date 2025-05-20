@@ -379,6 +379,14 @@ export default function TodoListAgenda({
     fetchObjects();
   }, []);
 
+  const normalizeDate = (dateString: string | null): Date | null => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    // Fixer l'heure à midi pour éviter les problèmes de changement de jour
+    date.setHours(12, 0, 0, 0);
+    return date;
+  };
+
   // Récupération des tâches quand l'objet sélectionné change
   useEffect(() => {
     const fetchTasks = async (): Promise<void> => {
@@ -391,13 +399,9 @@ export default function TodoListAgenda({
           // Convert string dates to Date objects and add missing properties
           const tasksWithDateObjects: Task[] = data.map((task: RawTask) => ({
             ...task,
-            realizationDate: task.realizationDate
-              ? new Date(task.realizationDate)
-              : null,
-            recurrenceReminderDate: task.recurrenceReminderDate
-              ? new Date(task.recurrenceReminderDate)
-              : null,
-            endDate: task.endDate ? new Date(task.endDate) : null,
+            realizationDate: normalizeDate(task.realizationDate),
+            recurrenceReminderDate: normalizeDate(task.recurrenceReminderDate),
+            endDate: normalizeDate(task.endDate),
             createdAt: new Date(task.createdAt),
             updatedAt: new Date(task.updatedAt),
             assignedToId: task.assignedToId || null,
