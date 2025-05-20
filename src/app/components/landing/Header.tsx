@@ -133,7 +133,7 @@ export default function Header() {
           style={{ opacity: sideOpacity, scale: sideScale }}
           className={`text-3xl md:text-5xl font-bold ${vt323.className} text-black`}
         >
-          plannikeeper
+          PlanniKeeper
         </motion.div>
 
         {/* Center Navigation - Desktop Only */}
