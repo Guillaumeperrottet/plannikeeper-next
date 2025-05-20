@@ -101,12 +101,10 @@ enum ViewMode {
 interface TodoListAgendaProps {
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  refreshKey?: number;
 }
 
-export default function TodoListAgenda({
-  onRefresh,
-  isRefreshing,
-}: TodoListAgendaProps) {
+export default function TodoListAgenda({ onRefresh }: TodoListAgendaProps) {
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [agendaHeight, setAgendaHeight] = useState<number>(48); // Hauteur en px
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -117,7 +115,6 @@ export default function TodoListAgenda({
   const [maxHeight, setMaxHeight] = useState<number>(600); // valeur par défaut
   const [isMobile, setIsMobile] = useState(false);
   const [isPWA, setIsPWA] = useState(false);
-  const [lastScrollTop, setLastScrollTop] = useState(0);
   const [interactionLocked, setInteractionLocked] = useState(false);
   const [showControls, setShowControls] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -151,6 +148,7 @@ export default function TodoListAgenda({
   const upcomingRef = useRef<HTMLDivElement>(null);
   const customRouter = useCustomRouter();
   const { showLoader, hideLoader, hideAllLoaders } = useLoadingSystem();
+  const [isRefreshingLocal, setIsRefreshingLocal] = useState(false);
   // Constantes pour les limites de hauteur
   const MIN_HEIGHT = 48; // Hauteur minimale (fermé)
 
@@ -218,24 +216,24 @@ export default function TodoListAgenda({
     }
   }, [isExpanded]);
 
-  // Gérer le scroll de la page
-  useEffect(() => {
-    // Fonction pour gérer le scroll et ajuster l'agenda
-    const handleScroll = () => {
-      const scrollTop = window.scrollY || document.documentElement.scrollTop;
-      const isScrollDown = scrollTop > lastScrollTop;
+  // // Gérer le scroll de la page
+  // useEffect(() => {
+  //   // Fonction pour gérer le scroll et ajuster l'agenda
+  //   const handleScroll = () => {
+  //     const scrollTop = window.scrollY || document.documentElement.scrollTop;
+  //     const isScrollDown = scrollTop > lastScrollTop;
 
-      setLastScrollTop(scrollTop);
-      // Si on scroll vers le bas et que l'agenda est affiché, on le réduit
-      if (isScrollDown && isExpanded) {
-        setAgendaHeight(MIN_HEIGHT);
-        setIsExpanded(false);
-      }
-    };
+  //     setLastScrollTop(scrollTop);
+  //     // Si on scroll vers le bas et que l'agenda est affiché, on le réduit
+  //     if (isScrollDown && isExpanded) {
+  //       setAgendaHeight(MIN_HEIGHT);
+  //       setIsExpanded(false);
+  //     }
+  //   };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollTop, isExpanded]);
+  //   window.addEventListener("scroll", handleScroll, { passive: true });
+  //   return () => window.removeEventListener("scroll", handleScroll);
+  // }, [lastScrollTop, isExpanded]);
 
   // Appliquer des ajustements pour PWA sur mobile
   useEffect(() => {
@@ -564,11 +562,35 @@ export default function TodoListAgenda({
   };
 
   // Handler personnalisé pour le rafraîchissement manuel
-  const handleManualRefresh = () => {
-    if (onRefresh) {
-      onRefresh();
-      // Incrémenter également la clé de rafraîchissement pour CalendarView
+  const handleManualRefresh = async () => {
+    // Éviter le double-rafraîchissement
+    if (!onRefresh || isRefreshingLocal) return;
+
+    setIsRefreshingLocal(true);
+
+    // Créer un loader avec votre système
+    const loaderId = showLoader({
+      message: "Rafraîchissement de l'agenda...",
+      source: "agendaRefresh",
+      priority: 10,
+      skipDelay: true, // Pour une réponse immédiate
+    });
+
+    try {
+      // Appeler la fonction de rafraîchissement (qui retourne une Promise)
+      await onRefresh();
+
+      // Incrémenter la clé pour forcer le rafraîchissement du calendrier
       setRefreshKey((prev) => prev + 1);
+
+      // Ajouter un petit délai pour que l'utilisateur puisse voir que l'action a été effectuée
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    } catch (error) {
+      console.error("Erreur lors du rafraîchissement des données:", error);
+    } finally {
+      // Nettoyer
+      hideLoader(loaderId);
+      setIsRefreshingLocal(false);
     }
   };
 
@@ -830,14 +852,20 @@ export default function TodoListAgenda({
                   {onRefresh && (
                     <button
                       onClick={handleManualRefresh}
-                      className="ml-0 flex items-center justify-center rounded-full p-1.5 bg-[color:var(--background)] hover:bg-[color:var(--muted)] transition-colors"
+                      className={`ml-0 flex items-center justify-center rounded-full p-1.5 
+    ${
+      isRefreshingLocal
+        ? "bg-[color:var(--muted-foreground)] bg-opacity-10"
+        : "bg-[color:var(--background)] hover:bg-[color:var(--muted)]"
+    } 
+    transition-colors`}
                       title="Rafraîchir les données"
                       aria-label="Rafraîchir les données"
-                      disabled={isRefreshing}
+                      disabled={isRefreshingLocal}
                     >
                       <RefreshCcw
                         size={16}
-                        className={`text-[color:var(--foreground)] ${isRefreshing ? "animate-spin" : ""}`}
+                        className={`text-[color:var(--foreground)] ${isRefreshingLocal ? "animate-spin" : ""}`}
                       />
                     </button>
                   )}

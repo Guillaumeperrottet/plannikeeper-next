@@ -23,7 +23,7 @@ export default function TodoListAgendaWrapper() {
   // Fonction pour rafraîchir les données silencieusement
   const refreshDataSilently = useCallback(async () => {
     // Éviter les rafraîchissements simultanés
-    if (isRefreshing) return;
+    if (isRefreshing) return Promise.resolve();
 
     setIsRefreshing(true);
 
@@ -37,8 +37,11 @@ export default function TodoListAgendaWrapper() {
 
       // Stocker la nouvelle version dans localStorage
       localStorage.setItem(DATA_VERSION_KEY, newVersion.toString());
+
+      return Promise.resolve(); // Résoudre la promesse en cas de succès
     } catch (error) {
       console.error("Erreur lors du rafraîchissement des données:", error);
+      return Promise.reject(error); // Rejeter la promesse en cas d'erreur
     } finally {
       setIsRefreshing(false);
     }
@@ -111,9 +114,9 @@ export default function TodoListAgendaWrapper() {
 
   return (
     <TodoListAgenda
-      key={`agenda-${dataVersion}`}
       onRefresh={handleRefresh}
       isRefreshing={isRefreshing}
+      refreshKey={dataVersion}
     />
   );
 }
