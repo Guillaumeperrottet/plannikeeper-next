@@ -1,4 +1,3 @@
-// src/app/layout.tsx (mise à jour)
 import { Toaster } from "sonner";
 import Navbar from "./components/Navbar";
 import { getUser } from "../lib/auth-session";
@@ -10,7 +9,6 @@ import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Script from "next/script";
 import { LoadingSystemProvider } from "./components/LoadingSystem";
-import ServiceWorkerRegistration from "./service-worker";
 
 export const metadata = {
   title: {
@@ -65,6 +63,7 @@ export default async function RootLayout({
   return (
     <html lang="fr" data-user-id={user?.id || ""}>
       <head>
+        {/* Manifest conservé pour fonctionnalités PWA de base, mais sans cache */}
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#d9840d" />
         <meta name="robots" content="index, follow" />
@@ -88,7 +87,7 @@ export default async function RootLayout({
         </Script>
         <Analytics />
         <SpeedInsights />
-        <ServiceWorkerRegistration />
+        {/* ServiceWorkerRegistration retiré pour désactiver le cache */}
       </head>
       <body className="bg-background" suppressHydrationWarning>
         {/* Wrapper pour les indicateurs de navigation et de chargement */}

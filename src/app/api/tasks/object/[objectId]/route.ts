@@ -74,5 +74,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     orderBy: [{ realizationDate: "asc" }, { createdAt: "desc" }],
   });
 
+  // Retourner directement les données sans aucune logique de cache
   return NextResponse.json(tasks);
 }

@@ -1,8 +1,8 @@
+// src/app/api/objet/[id]/route.ts (version simplifiée)
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 import { checkObjectAccess } from "@/lib/auth-session";
-import { withCacheHeaders, CacheDurations } from "@/lib/cache-config";
 
 // Typage mis à jour : params est une Promise qui résout { objectId: string }
 type RouteParams = {
@@ -75,25 +75,5 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     orderBy: [{ realizationDate: "asc" }, { createdAt: "desc" }],
   });
 
-  // Valider l'ETag pour optimiser les réponses
-  const tasksETag = `"tasks-${objectId}-${new Date().toISOString().split("T")[0]}"`;
-  const ifNoneMatch = req.headers.get("if-none-match");
-
-  if (ifNoneMatch === tasksETag) {
-    // Si l'ETag correspond, renvoyer 304 Not Modified
-    return new NextResponse(null, {
-      status: 304,
-      headers: {
-        ETag: tasksETag,
-        "Cache-Control": "max-age=60, stale-while-revalidate=300",
-      },
-    });
-  }
-
-  // Sinon, renvoyer les données avec un en-tête ETag
-  const response = NextResponse.json(tasks);
-  response.headers.set("ETag", tasksETag);
-
-  // Les tâches changent fréquemment, utiliser un cache court avec SWR
-  return withCacheHeaders(response, CacheDurations.SWR_QUICK);
+  return NextResponse.json(tasks);
 }

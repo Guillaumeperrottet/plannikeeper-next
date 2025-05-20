@@ -1,9 +1,9 @@
+// src/app/api/objet/route.ts (simplifié)
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
-import { createListResponse } from "@/lib/cache-config";
 
-export async function GET(request: Request) {
+export async function GET() {
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
@@ -44,8 +44,8 @@ export async function GET(request: Request) {
       },
     });
 
-    // Utiliser la nouvelle fonction de mise en cache pour les listes
-    return createListResponse(objects, request);
+    // Retourner simplement les données
+    return NextResponse.json(objects);
   }
 
   // Sinon, uniquement retourner les objets auxquels l'utilisateur a accès
@@ -76,6 +76,6 @@ export async function GET(request: Request) {
     },
   });
 
-  // Utiliser la nouvelle fonction de mise en cache pour les listes
-  return createListResponse(objects, request);
+  // Retourner simplement les données
+  return NextResponse.json(objects);
 }
