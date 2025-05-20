@@ -3,7 +3,7 @@
   "short_name": "PlanniKeeper",
   "description": "Gestion immobilière simplifiée",
   "start_url": "/dashboard",
-  "display": "standalone",
+  "display": "browser",
   "background_color": "#f9f3ec",
   "theme_color": "#d9840d",
   "orientation": "portrait-primary",
