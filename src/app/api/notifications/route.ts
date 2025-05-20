@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
-import { createUserSpecificResponse } from "@/lib/cache-config";
 
 export async function GET(req: NextRequest) {
   const user = await getUser();
@@ -35,14 +34,11 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // Utiliser la fonction de création de réponse pour les données spécifiques à l'utilisateur
-    return createUserSpecificResponse(
-      {
-        notifications,
-        unreadCount,
-      },
-      req
-    );
+    // Retourner directement les données
+    return NextResponse.json({
+      notifications,
+      unreadCount,
+    });
   } catch (error) {
     console.error("Error fetching notifications:", error);
     return NextResponse.json(

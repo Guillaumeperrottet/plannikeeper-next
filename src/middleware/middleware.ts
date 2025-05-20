@@ -1,4 +1,3 @@
-// src/middleware/middleware.ts (mise à jour)
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -41,49 +40,7 @@ export function middleware(request: NextRequest) {
     });
   }
 
-  // Optimisation du cache pour les ressources statiques
-  if (
-    pathname.match(/\.(js|css|woff2|png|jpg|jpeg|gif|ico|svg)$/) ||
-    pathname.startsWith("/_next/static/")
-  ) {
-    const response = NextResponse.next();
-
-    // Ajouter des en-têtes de cache pour les ressources statiques
-    // 1 an pour les assets versionnés, 1 jour pour les non-versionnés
-    if (pathname.includes("/_next/static/")) {
-      response.headers.set(
-        "Cache-Control",
-        "public, max-age=31536000, immutable"
-      );
-    } else {
-      response.headers.set(
-        "Cache-Control",
-        "public, max-age=86400, stale-while-revalidate=604800"
-      );
-    }
-
-    return response;
-  }
-
-  // Configuration de cache pour les pages du site vitrine
-  if (pathname === "/signup" || pathname === "/signin" || pathname === "/") {
-    const response = NextResponse.next();
-
-    // Ajouter des en-têtes de cache pour les ressources statiques
-    response.headers.set(
-      "Cache-Control",
-      "public, max-age=3600, stale-while-revalidate=86400"
-    );
-
-    // Ajouter des headers pour précharger les ressources critiques
-    response.headers.set(
-      "Link",
-      "</api/auth/temp-image-upload>; rel=preconnect, </api/invitations/validate>; rel=preconnect"
-    );
-
-    return response;
-  }
-  // Pour les autres requêtes
+  // Configuration de base pour toutes les requêtes
   const response = NextResponse.next();
 
   // Définir les en-têtes CORS appropriés
