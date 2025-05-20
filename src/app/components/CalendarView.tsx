@@ -1,6 +1,9 @@
+// src/app/components/CalendarView.tsx - Version modifiée avec drag and drop
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronLeft, ChevronRight, CalendarIcon, X } from "lucide-react";
+// import { motion, AnimatePresence, useSpring } from "framer-motion";
 
+// Type Task existant
 type Task = {
   id: string;
   name: string;
@@ -38,13 +41,17 @@ type Task = {
 interface CalendarViewProps {
   tasks: Task[];
   navigateToTask: (task: Task) => Promise<void>;
-  refreshKey?: number; // Ajout d'une nouvelle prop pour forcer le rafraîchissement
+  refreshKey?: number;
+  updateTaskDate?: (taskId: string, newDate: Date) => Promise<void>; // Nouvelle prop pour la mise à jour des dates
+  isMobile?: boolean; // Prop pour détecter si on est sur mobile
 }
 
 export default function CalendarView({
   tasks,
   navigateToTask,
-  refreshKey = 0, // Valeur par défaut
+  refreshKey = 0,
+  updateTaskDate,
+  isMobile = false, // Par défaut, on suppose qu'on n'est pas sur mobile
 }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [calendarDays, setCalendarDays] = useState<Array<Date | null>>([]);
@@ -52,18 +59,27 @@ export default function CalendarView({
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [selectedDayTasks, setSelectedDayTasks] = useState<Task[]>([]);
   const dialogRef = useRef<HTMLDivElement>(null);
-  const [swipeStart, setSwipeStart] = useState<{ x: number; y: number } | null>(
-    null
-  );
-  const [isSwiping, setIsSwiping] = useState(false);
+
+  // État pour le drag and drop
+  const [draggedTask, setDraggedTask] = useState<Task | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOverDate, setDragOverDate] = useState<Date | null>(null);
+  const [isUpdatingTask, setIsUpdatingTask] = useState(false);
 
   // Helper to format date as YYYY-MM-DD for use as keys
   const formatDateKey = (date: Date): string => {
-    // Utiliser la date locale plutôt que UTC
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
   };
+
   // Gestion du clic sur une tâche avec état de chargement
-  const handleTaskClick = async (task: Task) => {
+  const handleTaskClick = async (task: Task, e?: React.MouseEvent) => {
+    // Si on est en train de faire un drag, ne pas naviguer vers la tâche
+    if (isDragging) {
+      e?.preventDefault();
+      e?.stopPropagation();
+      return;
+    }
+
     triggerHapticFeedback(); // Conserver le retour haptique
     try {
       await navigateToTask(task);
@@ -108,68 +124,60 @@ export default function CalendarView({
     });
   };
 
-  // Gestion des interactions tactiles (swipe)
+  // Organize tasks by day - Réagit aussi au changement de refreshKey
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    const taskMap: Record<string, Task[]> = {};
 
-    const handleTouchStart = (e: TouchEvent) => {
-      if (e.touches && e.touches[0]) {
-        setSwipeStart({
-          x: e.touches[0].clientX,
-          y: e.touches[0].clientY,
-        });
-        setIsSwiping(false);
-      }
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (!swipeStart || !e.touches[0]) return;
-
-      const touchX = e.touches[0].clientX;
-      const touchY = e.touches[0].clientY;
-
-      // Calculer la distance du swipe
-      const deltaX = swipeStart.x - touchX;
-      const deltaY = swipeStart.y - touchY;
-
-      // Détecter si le swipe est plus horizontal que vertical et assez long
-      const isHorizontalSwipe =
-        Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50;
-
-      if (isHorizontalSwipe && !isSwiping) {
-        setIsSwiping(true);
-
-        if (deltaX > 0) {
-          // Swipe vers la gauche - mois suivant
-          goToNextMonth();
-          triggerHapticFeedback();
-        } else {
-          // Swipe vers la droite - mois précédent
-          goToPreviousMonth();
-          triggerHapticFeedback();
+    tasks.forEach((task) => {
+      if (task.realizationDate) {
+        const dateKey = formatDateKey(task.realizationDate);
+        if (!taskMap[dateKey]) {
+          taskMap[dateKey] = [];
         }
+        taskMap[dateKey].push(task);
+      }
+    });
+
+    setTasksByDay(taskMap);
+  }, [tasks, refreshKey]);
+
+  // Persistance de l'état du calendrier
+  useEffect(() => {
+    // Sauvegarder le mois affiché
+    localStorage.setItem(
+      "plannikeeper-calendar-month",
+      currentDate.toISOString()
+    );
+
+    // Revenir à la page précédente lors du clic sur Escape
+    const handleEscapeKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && selectedDay) {
+        closeDialog();
       }
     };
 
-    const handleTouchEnd = () => {
-      setSwipeStart(null);
-      setIsSwiping(false);
-    };
+    window.addEventListener("keydown", handleEscapeKey);
 
-    // Ajout des écouteurs d'événements tactiles
-    document.addEventListener("touchstart", handleTouchStart, {
-      passive: true,
-    });
-    document.addEventListener("touchmove", handleTouchMove, { passive: true });
-    document.addEventListener("touchend", handleTouchEnd, { passive: true });
-
-    // Nettoyage des écouteurs
     return () => {
-      document.removeEventListener("touchstart", handleTouchStart);
-      document.removeEventListener("touchmove", handleTouchMove);
-      document.removeEventListener("touchend", handleTouchEnd);
+      window.removeEventListener("keydown", handleEscapeKey);
     };
-  }, [swipeStart, isSwiping]);
+  }, [currentDate, selectedDay]);
+
+  // Charger le mois sauvegardé au démarrage
+  useEffect(() => {
+    const savedMonth = localStorage.getItem("plannikeeper-calendar-month");
+    if (savedMonth) {
+      try {
+        const date = new Date(savedMonth);
+        // Vérifier que la date est valide
+        if (!isNaN(date.getTime())) {
+          setCurrentDate(date);
+        }
+      } catch (e) {
+        console.error("Erreur lors du chargement du mois sauvegardé", e);
+      }
+    }
+  }, []);
 
   // Generate calendar days for current month view
   useEffect(() => {
@@ -213,61 +221,6 @@ export default function CalendarView({
 
     setCalendarDays(calendarDaysArray);
   }, [currentDate]);
-
-  // Organize tasks by day - Réagit aussi au changement de refreshKey
-  useEffect(() => {
-    const taskMap: Record<string, Task[]> = {};
-
-    tasks.forEach((task) => {
-      if (task.realizationDate) {
-        const dateKey = formatDateKey(task.realizationDate);
-        if (!taskMap[dateKey]) {
-          taskMap[dateKey] = [];
-        }
-        taskMap[dateKey].push(task);
-      }
-    });
-
-    setTasksByDay(taskMap);
-  }, [tasks, refreshKey]); // Ajout de refreshKey comme dépendance
-
-  // Persistance de l'état du calendrier
-  useEffect(() => {
-    // Sauvegarder le mois affiché
-    localStorage.setItem(
-      "plannikeeper-calendar-month",
-      currentDate.toISOString()
-    );
-
-    // Revenir à la page précédente lors du clic sur Escape
-    const handleEscapeKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && selectedDay) {
-        closeDialog();
-      }
-    };
-
-    window.addEventListener("keydown", handleEscapeKey);
-
-    return () => {
-      window.removeEventListener("keydown", handleEscapeKey);
-    };
-  }, [currentDate, selectedDay]);
-
-  // Charger le mois sauvegardé au démarrage
-  useEffect(() => {
-    const savedMonth = localStorage.getItem("plannikeeper-calendar-month");
-    if (savedMonth) {
-      try {
-        const date = new Date(savedMonth);
-        // Vérifier que la date est valide
-        if (!isNaN(date.getTime())) {
-          setCurrentDate(date);
-        }
-      } catch (e) {
-        console.error("Erreur lors du chargement du mois sauvegardé", e);
-      }
-    }
-  }, []);
 
   // Navigate to previous month
   const goToPreviousMonth = useCallback(() => {
@@ -334,90 +287,112 @@ export default function CalendarView({
   // Days of week header
   const daysOfWeek = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
-  // Effet pour détection tactile et animation de transition du mois
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      // Ajouter une classe d'animation au changement de mois
-      const calendarGrid = document.querySelector(".calendar-grid");
-      if (calendarGrid) {
-        calendarGrid.classList.add("month-transition");
-        const timer = setTimeout(() => {
-          calendarGrid.classList.remove("month-transition");
-        }, 300);
-        return () => clearTimeout(timer);
-      }
+  // Nouvelles fonctions pour le drag and drop
+
+  // Commencer le drag d'une tâche (desktop uniquement)
+  const handleDragStart = (e: React.DragEvent, task: Task) => {
+    if (isMobile || !updateTaskDate) return; // Ne pas activer sur mobile ou si updateTaskDate n'est pas fourni
+
+    // Définir l'état du drag et les données
+    setDraggedTask(task);
+    setIsDragging(true);
+
+    // Configurer les données du drag pour le transfert
+    e.dataTransfer.setData("text/plain", task.id);
+    e.dataTransfer.effectAllowed = "move";
+
+    // Style visuel pendant le drag
+    const dragImage = document.createElement("div");
+    dragImage.className = `p-2 rounded shadow-lg ${getStatusColor(task.status)}`;
+    dragImage.textContent = task.name;
+    document.body.appendChild(dragImage);
+    e.dataTransfer.setDragImage(dragImage, 0, 0);
+
+    // Nettoyer l'élément après utilisation
+    setTimeout(() => {
+      document.body.removeChild(dragImage);
+    }, 0);
+  };
+
+  // Quand le drag se termine
+  const handleDragEnd = () => {
+    // Nettoyer l'état du drag
+    setIsDragging(false);
+    setDraggedTask(null);
+    setDragOverDate(null);
+  };
+
+  // Quand on survole une cellule du calendrier
+  const handleDragOver = (e: React.DragEvent, date: Date) => {
+    if (isMobile || !updateTaskDate || !isCurrentMonth(date)) return; // Ne traiter que pour les jours du mois courant sur desktop
+
+    e.preventDefault(); // Nécessaire pour autoriser le drop
+    setDragOverDate(date);
+  };
+
+  // Quand on quitte une cellule du calendrier
+  const handleDragLeave = () => {
+    setDragOverDate(null);
+  };
+
+  // Quand on dépose une tâche sur une date
+  const handleDrop = async (e: React.DragEvent, date: Date) => {
+    if (isMobile || !updateTaskDate || !isCurrentMonth(date) || !draggedTask)
+      return;
+
+    e.preventDefault();
+
+    // Ne rien faire si on dépose sur la même date
+    if (
+      draggedTask.realizationDate &&
+      formatDateKey(draggedTask.realizationDate) === formatDateKey(date)
+    ) {
+      handleDragEnd();
+      return;
     }
-  }, [currentDate]);
+
+    try {
+      setIsUpdatingTask(true);
+      // Appeler la fonction de mise à jour fournie par le parent
+      await updateTaskDate(draggedTask.id, date);
+      setIsUpdatingTask(false);
+
+      // Feedback visuel/haptique de succès
+      triggerHapticFeedback();
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour de la date:", error);
+      setIsUpdatingTask(false);
+    } finally {
+      // Nettoyer l'état du drag
+      handleDragEnd();
+    }
+  };
 
   return (
     <div className="flex flex-col h-full overflow-hidden calendar-container">
-      {/* Style spécifique pour les interactions mobiles */}
+      {/* Styles personnalisés pour le drag and drop */}
       <style jsx global>{`
-        .calendar-container {
-          touch-action: manipulation;
-          user-select: none;
+        /* Style de la cellule quand on survole avec une tâche */
+        .drag-over {
+          background-color: var(--primary);
+          opacity: 0.2;
+          transition: all 0.2s ease;
         }
 
-        .month-transition {
-          animation: fadeTransition 0.3s ease-in-out;
+        /* Style spécial pour les éléments draggables sur desktop */
+        .draggable-task {
+          cursor: grab;
         }
 
-        @keyframes fadeTransition {
-          0% {
-            opacity: 0.5;
-            transform: scale(0.98);
-          }
-          100% {
-            opacity: 1;
-            transform: scale(1);
-          }
+        .draggable-task:active {
+          cursor: grabbing;
         }
 
-        .calendar-day {
-          position: relative;
-          transition:
-            transform 0.15s ease-out,
-            background-color 0.2s;
-        }
-
-        .calendar-day:active {
+        /* Indicateur visuel que le drag est en cours */
+        .is-dragging {
+          opacity: 0.6;
           transform: scale(0.95);
-        }
-
-        .calendar-controls button {
-          transition: transform 0.15s ease-out;
-        }
-
-        .calendar-controls button:active {
-          transform: scale(0.9);
-        }
-
-        .dialog-overlay {
-          backdrop-filter: blur(3px);
-          transition:
-            backdrop-filter 0.3s,
-            background-color 0.3s;
-        }
-
-        .dialog-content {
-          transition:
-            transform 0.3s,
-            opacity 0.3s;
-          transform-origin: bottom center;
-        }
-
-        @media (max-width: 640px) {
-          .calendar-header {
-            padding: 8px 4px;
-          }
-
-          .day-label {
-            font-size: 0.7rem;
-          }
-
-          .calendar-day {
-            min-height: 60px;
-          }
+          box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
       `}</style>
 
@@ -480,22 +455,23 @@ export default function CalendarView({
             const hasTask = dayTasks.length > 0;
             const isCurrentDay = isToday(date);
             const inCurrentMonth = isCurrentMonth(date);
+            const isDragOver =
+              dragOverDate && formatDateKey(dragOverDate) === dateKey;
 
             return (
               <div
                 key={index}
-                className={`border border-[color:var(--border)] p-1 transition-all duration-200 relative calendar-day ${
-                  !inCurrentMonth ? "bg-[color:var(--muted)] opacity-50" : ""
-                } ${
-                  isCurrentDay ? "bg-[color:var(--primary)] bg-opacity-10" : ""
-                }
-                ${
-                  hasTask && inCurrentMonth
-                    ? "hover:bg-[color:var(--muted)] hover:shadow-inner"
-                    : ""
-                }
-                ${inCurrentMonth ? "cursor-pointer" : ""}`}
+                className={`border border-[color:var(--border)] p-1 transition-all duration-200 relative calendar-day 
+                ${!inCurrentMonth ? "bg-[color:var(--muted)] opacity-50" : ""}
+                ${isCurrentDay ? "bg-[color:var(--primary)] bg-opacity-10" : ""}
+                ${hasTask && inCurrentMonth ? "hover:bg-[color:var(--muted)] hover:shadow-inner" : ""}
+                ${inCurrentMonth ? "cursor-pointer" : ""}
+                ${isDragOver ? "drag-over" : ""}`}
                 onClick={() => handleDateClick(date)}
+                // Handlers pour le drag and drop (uniquement sur desktop)
+                onDragOver={(e) => !isMobile && handleDragOver(e, date)}
+                onDragLeave={() => !isMobile && handleDragLeave()}
+                onDrop={(e) => !isMobile && handleDrop(e, date)}
               >
                 <div className="flex flex-col h-full">
                   <div className="flex justify-between items-center">
@@ -533,11 +509,17 @@ export default function CalendarView({
                             key={task.id}
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleTaskClick(task);
+                              handleTaskClick(task, e);
                             }}
-                            className={`px-1 py-0.5 text-xs rounded truncate cursor-pointer ${getStatusColor(
-                              task.status
-                            )}`}
+                            className={`px-1 py-0.5 text-xs rounded truncate ${getStatusColor(task.status)} 
+                            ${!isMobile && updateTaskDate ? "draggable-task" : ""}
+                            ${draggedTask?.id === task.id ? "is-dragging" : ""}`}
+                            // Attributs pour le drag and drop (uniquement sur desktop)
+                            draggable={!isMobile && !!updateTaskDate}
+                            onDragStart={(e) =>
+                              !isMobile && handleDragStart(e, task)
+                            }
+                            onDragEnd={() => !isMobile && handleDragEnd()}
                           >
                             {task.name}
                           </div>
@@ -625,6 +607,16 @@ export default function CalendarView({
                 Fermer
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay de chargement pour les mises à jour de tâches */}
+      {isUpdatingTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-[color:var(--background)] rounded-lg shadow-lg p-4 flex items-center">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[color:var(--primary)] mr-3"></div>
+            <span>Mise à jour de la tâche...</span>
           </div>
         </div>
       )}

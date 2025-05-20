@@ -1,8 +1,10 @@
+// src/app/components/TodoListAgendaWrapper.tsx - Modifié avec la fonction de mise à jour de tâches
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useTasks } from "@/hooks/useData";
+import { useTaskUpdates } from "@/hooks/useTaskUpdates"; // Nouveau hook
 
 // Import dynamique du composant TodoListAgenda
 const TodoListAgenda = dynamic(() => import("./TodoListAgenda"), {
@@ -16,14 +18,38 @@ export default function TodoListAgendaWrapper() {
   const [selectedObjectId] = useState<string | null>(null);
   const [dataVersion, setDataVersion] = useState<number>(0);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [isMobile, setIsMobile] = useState(false); // État pour détecter si on est sur mobile
 
   // Utiliser le hook useTasks
   const { mutate } = useTasks(selectedObjectId);
 
+  // Utiliser le nouveau hook pour les mises à jour de tâches
+  const { updateTaskDate, isUpdating } = useTaskUpdates({
+    onSuccess: () => {
+      // Rafraîchir les données après une mise à jour réussie
+      refreshDataSilently();
+    },
+  });
+
+  // Détection du mode mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      const isMobileView = window.innerWidth < 768;
+      setIsMobile(isMobileView);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => {
+      window.removeEventListener("resize", checkMobile);
+    };
+  }, []);
+
   // Fonction pour rafraîchir les données silencieusement
   const refreshDataSilently = useCallback(async () => {
     // Éviter les rafraîchissements simultanés
-    if (isRefreshing) return Promise.resolve();
+    if (isRefreshing || isUpdating) return Promise.resolve();
 
     setIsRefreshing(true);
 
@@ -45,7 +71,7 @@ export default function TodoListAgendaWrapper() {
     } finally {
       setIsRefreshing(false);
     }
-  }, [dataVersion, mutate, isRefreshing]);
+  }, [dataVersion, mutate, isRefreshing, isUpdating]);
 
   // Écouter les événements de visibilité pour rafraîchir les données
   useEffect(() => {
@@ -112,11 +138,22 @@ export default function TodoListAgendaWrapper() {
     refreshDataSilently();
   }, [refreshDataSilently]);
 
+  // Handler pour mettre à jour la date d'une tâche (utilisé pour le drag and drop)
+  const handleUpdateTaskDate = useCallback(
+    async (taskId: string, newDate: Date): Promise<void> => {
+      if (isMobile) return; // Ne pas autoriser sur mobile
+      await updateTaskDate(taskId, newDate);
+    },
+    [updateTaskDate, isMobile]
+  );
+
   return (
     <TodoListAgenda
       onRefresh={handleRefresh}
-      isRefreshing={isRefreshing}
+      isRefreshing={isRefreshing || isUpdating}
       refreshKey={dataVersion}
+      updateTaskDate={handleUpdateTaskDate} // Passer la fonction de mise à jour de tâches
+      isMobile={isMobile} // Passer l'état mobile pour désactiver le drag sur mobile
     />
   );
 }
