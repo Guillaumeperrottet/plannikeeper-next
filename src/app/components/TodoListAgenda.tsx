@@ -969,7 +969,7 @@ export default function TodoListAgenda({
             </div>
           ) : viewMode === ViewMode.CALENDAR ? (
             <CalendarView
-              tasks={tasks}
+              tasks={filteredTasks}
               navigateToTask={navigateToTask}
               refreshKey={refreshKey} // Passer la clé de rafraîchissement
             />
