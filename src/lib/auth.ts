@@ -129,7 +129,7 @@ export const auth = betterAuth({
       sameSite: isDev ? "lax" : "none",
       secure: !isDev, // Important: false en dev, true en prod
       domain: isDev ? "localhost" : undefined,
-      maxAge: 60 * 60 * 24 * 30, // 30 jours
+      maxAge: 60 * 60 * 4, // Modifié: 4 heures au lieu de 30 jours
       httpOnly: true,
       path: "/",
     },
@@ -142,7 +142,7 @@ export const auth = betterAuth({
           secure: !isDev, // CRITIQUE: false en dev
           path: "/",
           domain: isDev ? "localhost" : undefined,
-          maxAge: 60 * 60 * 24 * 30,
+          maxAge: 60 * 60 * 4, // Modifié: 4 heures au lieu de 30 jours
           httpOnly: true,
         },
       },

@@ -9,6 +9,8 @@ import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Script from "next/script";
 import { LoadingSystemProvider } from "./components/LoadingSystem";
+import { SessionManager } from "./components/SessionManager";
+import { InactivityManager } from "./components/InactivityManager";
 
 export const metadata = {
   title: {
@@ -93,6 +95,9 @@ export default async function RootLayout({
         <LoadingSystemProvider>
           {userWithRole ? (
             <NotificationProvider userId={userWithRole.id}>
+              {/* Gestionnaires de session pour déconnexion après fermeture et inactivité */}
+              <SessionManager />
+              <InactivityManager />
               <Navbar user={userWithRole} />
               <div className="pb-16 md:pb-14">{children}</div>
               <TodoListAgendaWrapper />
