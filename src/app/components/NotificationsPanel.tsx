@@ -18,6 +18,7 @@ type Notification = {
     objectName?: string;
     taskName?: string;
     assignerName?: string;
+    taskId?: number;
   };
   task?: {
     id: number;
@@ -186,23 +187,38 @@ export default function NotificationsPanel({
   }, [refreshUnreadCount, onNotificationsRead]);
 
   // handleNotificationClick avec useCallback
+  // Modification à apporter dans src/app/components/NotificationsPanel.tsx
+  // Localisez la fonction handleNotificationClick et vérifiez qu'elle ressemble à ceci:
+
   const handleNotificationClick = useCallback(
     (notification: Notification) => {
+      // Marquer comme lu si nécessaire
       if (!notification.read) {
         markAsRead(notification.id);
       }
 
-      if (notification.task) {
-        const taskLink =
-          `/dashboard/objet/${notification.task.article.sector.object.id}` +
-          `/secteur/${notification.task.article.sector.id}` +
-          `/article/${notification.task.article.id}` +
-          `/task/${notification.task.id}`;
+      // Le chemin de base vers l'article
+      const baseLink = notification.link;
 
+      // Vérifier si nous avons l'ID de tâche dans les données
+      if (
+        notification.data &&
+        typeof notification.data === "object" &&
+        "taskId" in notification.data
+      ) {
+        const taskId = notification.data?.taskId;
+        const taskLink = `${baseLink}/task/${taskId}`;
+
+        console.log("Navigating to task:", taskLink);
+
+        // Utiliser router.push pour la navigation
         router.push(taskLink);
         onClose();
-      } else if (notification.link) {
-        router.push(notification.link);
+      }
+      // Sinon, utiliser le lien existant
+      else if (baseLink) {
+        console.log("Navigating to link:", baseLink);
+        router.push(baseLink);
         onClose();
       }
     },

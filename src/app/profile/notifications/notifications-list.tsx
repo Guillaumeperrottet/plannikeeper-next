@@ -96,9 +96,11 @@ export function NotificationsList({
       markAsRead(notification.id);
     }
 
-    // Rediriger vers la tâche si disponible, sinon utiliser le lien standard
+    // Le chemin de base vers l'article
+    const baseLink = notification.link;
+
+    // Utiliser le lien task s'il est disponible
     if (notification.task) {
-      // Construire le lien vers la tâche en utilisant les informations disponibles
       const taskLink =
         `/dashboard/objet/${notification.task.article.sector.object.id}` +
         `/secteur/${notification.task.article.sector.id}` +
@@ -106,8 +108,11 @@ export function NotificationsList({
         `/task/${notification.task.id}`;
 
       router.push(taskLink);
-    } else if (notification.link) {
-      router.push(notification.link);
+    }
+    // Sinon, utiliser le lien existant
+    else if (baseLink) {
+      console.log("Navigating to link:", baseLink);
+      router.push(baseLink);
     }
   };
 
