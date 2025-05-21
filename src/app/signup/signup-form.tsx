@@ -1,4 +1,4 @@
-// src/app/signup/signup-form.tsx - Version optimisée
+// src/app/signup/signup-form.tsx - Version optimisée et modernisée
 "use client";
 
 import {
@@ -17,6 +17,7 @@ import { Button } from "@/app/components/ui/button";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
+import { User, Mail, Lock, Home, ArrowRight, CheckCircle } from "lucide-react";
 
 // Chargement différé du composant lourd SignupImageUpload
 const SignupImageUpload = dynamic(() => import("./SignupImageUpload"), {
@@ -161,99 +162,231 @@ function SignUpForm() {
   );
 
   return (
-    <div className="max-w-md mx-auto my-10 p-6 bg-background rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold text-center mb-6">Inscription</h2>
+    <div className="w-full">
+      <div className="absolute top-4 right-4">
+        <Link
+          href="/"
+          className="text-[#62605d] hover:text-[#d9840d] transition-colors"
+        >
+          <Home size={20} />
+        </Link>
+      </div>
+
+      <h2 className="text-2xl font-bold text-center mb-6 text-[#141313]">
+        Inscription
+      </h2>
 
       {isInvite && (
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
-          <p className="text-blue-700">
-            Vous avez été invité à rejoindre <strong>{organizationName}</strong>
-          </p>
+        <div className="mb-6 p-5 bg-[#e0f2fe] border border-[#7dd3fc] rounded-xl shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="text-[#0284c7] mt-0.5">
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <p className="text-[#0284c7] flex-1">
+              Vous avez été invité à rejoindre{" "}
+              <strong className="font-semibold">{organizationName}</strong>
+            </p>
+          </div>
         </div>
       )}
 
       <div
-        className={`mb-6 p-4 ${
+        className={`mb-6 p-5 rounded-xl shadow-sm ${
           isPaidPlan
-            ? "bg-amber-50 border border-amber-200"
-            : "bg-green-50 border border-green-200"
-        } rounded-md`}
+            ? "bg-[#ffedd5] border border-[#fcd34d]"
+            : "bg-[#dcfce7] border border-[#86efac]"
+        }`}
       >
-        <p className={isPaidPlan ? "text-amber-700" : "text-green-700"}>
-          Vous avez sélectionné le plan{" "}
-          <strong>{getPlanDisplayName(planType)}</strong>.
-          {isPaidPlan
-            ? " Après votre inscription, vous serez redirigé vers la page de paiement."
-            : " Votre compte sera activé immédiatement."}
-        </p>
-        <p className="mt-2 text-sm">
-          <Link href="/pricing" className="underline underline-offset-2">
-            Voir tous les plans disponibles
-          </Link>
-        </p>
+        <div className="flex items-start gap-3">
+          <div className={isPaidPlan ? "text-[#f59e0b]" : "text-[#16a34a]"}>
+            <CheckCircle className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <p
+              className={
+                isPaidPlan
+                  ? "text-[#f59e0b] font-medium"
+                  : "text-[#16a34a] font-medium"
+              }
+            >
+              Vous avez sélectionné le plan{" "}
+              <strong className="font-semibold">
+                {getPlanDisplayName(planType)}
+              </strong>
+            </p>
+            <p
+              className={`mt-1 text-sm ${isPaidPlan ? "text-[#f59e0b]/90" : "text-[#16a34a]/90"}`}
+            >
+              {isPaidPlan
+                ? "Après votre inscription, vous serez redirigé vers la page de paiement."
+                : "Votre compte sera activé immédiatement."}
+            </p>
+            <p className="mt-3 text-sm">
+              <Link
+                href="/pricing"
+                className="underline underline-offset-4 hover:text-[#d9840d] transition-colors"
+              >
+                Voir tous les plans disponibles
+              </Link>
+            </p>
+          </div>
+        </div>
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-md text-red-700">
-          {error}
+        <div className="mb-6 p-4 rounded-xl bg-[#fee2e2] border border-[#fca5a5] shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="text-[#b91c1c] mt-0.5">
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <p className="text-[#b91c1c] flex-1 font-medium text-sm">{error}</p>
+          </div>
         </div>
       )}
 
       <form
         ref={formRef}
         onSubmit={handleSubmit}
-        className="flex flex-col gap-4"
+        className="flex flex-col gap-5"
       >
         <SignupImageUpload onImageSelect={handleImageSelect} />
 
-        <div>
-          <Label htmlFor="name">Nom complet</Label>
-          <Input
-            id="name"
-            name="name"
-            type="text"
-            required
-            placeholder="Entrez votre nom complet"
-            autoComplete="name"
-          />
+        <div className="space-y-2">
+          <Label htmlFor="name" className="text-sm font-medium text-[#141313]">
+            Nom complet
+          </Label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+              <User className="h-4 w-4 text-[#62605d]" />
+            </div>
+            <Input
+              id="name"
+              name="name"
+              type="text"
+              required
+              placeholder="Entrez votre nom complet"
+              autoComplete="name"
+              className="pl-10 bg-white border-[#beac93] focus:border-[#d9840d] rounded-lg shadow-sm hover:border-[#d9840d]/70 transition-colors"
+            />
+          </div>
         </div>
-        <div>
-          <Label htmlFor="email">Adresse email</Label>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            required
-            placeholder="Entrez votre email"
-            autoComplete="email"
-          />
+
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-sm font-medium text-[#141313]">
+            Adresse email
+          </Label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+              <Mail className="h-4 w-4 text-[#62605d]" />
+            </div>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              required
+              placeholder="Entrez votre email"
+              autoComplete="email"
+              className="pl-10 bg-white border-[#beac93] focus:border-[#d9840d] rounded-lg shadow-sm hover:border-[#d9840d]/70 transition-colors"
+            />
+          </div>
         </div>
-        <div>
-          <Label htmlFor="password">Mot de passe</Label>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            required
-            placeholder="Créez un mot de passe (min. 8 caractères)"
-            minLength={8}
-            autoComplete="new-password"
-          />
+
+        <div className="space-y-2">
+          <Label
+            htmlFor="password"
+            className="text-sm font-medium text-[#141313]"
+          >
+            Mot de passe
+          </Label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+              <Lock className="h-4 w-4 text-[#62605d]" />
+            </div>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              required
+              placeholder="Créez un mot de passe (min. 8 caractères)"
+              minLength={8}
+              autoComplete="new-password"
+              className="pl-10 bg-white border-[#beac93] focus:border-[#d9840d] rounded-lg shadow-sm hover:border-[#d9840d]/70 transition-colors"
+            />
+          </div>
         </div>
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting
-            ? "Inscription en cours..."
-            : isPaidPlan
-              ? "S'inscrire et continuer vers le paiement"
-              : "S'inscrire"}
+
+        <Button
+          type="submit"
+          className="w-full py-6 mt-2 bg-gradient-to-r from-[#d9840d] to-[#e36002] hover:from-[#c6780c] hover:to-[#d9840d] transition-all duration-300 transform hover:scale-[1.02] font-medium shadow-md text-white rounded-lg"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            "Inscription en cours..."
+          ) : (
+            <>
+              {isPaidPlan
+                ? "S'inscrire et continuer vers le paiement"
+                : "S'inscrire"}
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </>
+          )}
         </Button>
+
+        <div className="mt-2 text-center">
+          <p className="text-sm text-[#62605d]">
+            Vous avez déjà un compte?{" "}
+            <Link
+              href="/signin"
+              className="text-[#d9840d] hover:text-[#c6780c] hover:underline underline-offset-4 font-medium transition-colors"
+            >
+              Connectez-vous
+            </Link>
+          </p>
+        </div>
       </form>
 
-      <div className="mt-4 text-center text-sm">
-        Vous avez déjà un compte?{" "}
-        <Link href="/signin" className="underline underline-offset-2">
-          Connectez-vous
-        </Link>
+      <div className="mt-8 pt-6 border-t border-[#beac93]/30">
+        <p className="text-xs text-center text-[#62605d]">
+          En vous inscrivant, vous acceptez nos{" "}
+          <a
+            href="#"
+            className="underline underline-offset-4 hover:text-[#d9840d] transition-colors"
+          >
+            Conditions d&apos;utilisation
+          </a>{" "}
+          et notre{" "}
+          <a
+            href="#"
+            className="underline underline-offset-4 hover:text-[#d9840d] transition-colors"
+          >
+            Politique de confidentialité
+          </a>
+          .
+        </p>
       </div>
     </div>
   );

@@ -78,7 +78,7 @@ function SignupImageUpload({ onImageSelect }: SignupImageUploadProps) {
   };
 
   return (
-    <div className="flex flex-col items-center mb-4">
+    <div className="flex flex-col items-center mb-6">
       <input
         type="file"
         ref={fileInputRef}
@@ -90,10 +90,11 @@ function SignupImageUpload({ onImageSelect }: SignupImageUploadProps) {
       />
 
       <div className="relative group">
+        <div className="absolute -inset-1.5 bg-gradient-to-br from-[#d9840d]/20 to-[#e36002]/20 rounded-full opacity-0 group-hover:opacity-100 blur-sm transition-all duration-300"></div>
         <button
           type="button"
           onClick={handleAvatarClick}
-          className="w-24 h-24 rounded-full overflow-hidden bg-[color:var(--muted)] flex items-center justify-center text-2xl text-[color:var(--muted-foreground)] font-bold border-2 border-[color:var(--border)] group-hover:border-[color:var(--primary)] cursor-pointer relative p-0 m-0"
+          className="w-24 h-24 rounded-full overflow-hidden bg-[#f5f3ef] flex items-center justify-center text-2xl text-[#62605d] font-bold border-2 border-[#beac93] group-hover:border-[#d9840d] cursor-pointer relative p-0 m-0 shadow-md transition-all duration-300"
           style={{ appearance: "none" }}
         >
           {previewImage ? (
@@ -109,32 +110,33 @@ function SignupImageUpload({ onImageSelect }: SignupImageUploadProps) {
 
           {!showControls && (
             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 group-hover:bg-opacity-40 rounded-full transition-all duration-300">
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                <Camera className="h-6 w-6 text-white" />
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center">
+                <Camera className="h-6 w-6 text-white mb-1" />
+                <span className="text-white text-xs font-normal">Ajouter</span>
               </div>
             </div>
           )}
         </button>
       </div>
 
-      {showControls && (
-        <div className="mt-2 flex space-x-2">
+      {showControls ? (
+        <div className="mt-3 flex space-x-2">
           <Button
             size="sm"
             variant="outline"
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 border-[#beac93] hover:bg-[#e8ebe0] hover:text-[#d9840d] transition-colors rounded-full px-4"
             onClick={handleCancel}
             type="button"
           >
             <X size={14} />
-            <span>Annuler</span>
+            <span>Supprimer</span>
           </Button>
         </div>
+      ) : (
+        <p className="mt-3 text-sm text-[#62605d]">
+          Ajouter une photo de profil (optionnel)
+        </p>
       )}
-
-      <p className="mt-2 text-xs text-[color:var(--muted-foreground)]">
-        Ajouter une photo de profil (optionnel)
-      </p>
     </div>
   );
 }
