@@ -755,7 +755,7 @@ export default function TodoListAgenda({
           <div className="w-1/4 h-full flex items-center justify-end">
             {(!isMobile || (isMobile && showControls)) && (
               <select
-                className="bg-[color:var(--background)] text-[color:var(--foreground)] px-2 md:px-3 py-1 rounded border border-[color:var(--border)] text-sm transition-all active:scale-95"
+                className="bg-[color:var(--background)] text-[color:var(--foreground)] px-2 md:px-3 py-1 rounded border border-[color:var(--border)] text-sm transition-all active:scale-95 md:mr-8"
                 value={selectedObjectId}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                   setSelectedObjectId(e.target.value)
