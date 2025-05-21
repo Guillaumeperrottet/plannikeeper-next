@@ -40,6 +40,45 @@ function getResend(): Resend {
 }
 
 export const EmailService = {
+  // Méthode générique pour envoyer des emails
+  async sendEmail({
+    to,
+    subject,
+    html,
+    from = process.env.RESEND_FROM_EMAIL ||
+      "PlanniKeeper <notifications@plannikeeper.ch>",
+    replyTo = process.env.RESEND_REPLY_TO_EMAIL,
+  }: {
+    to: string;
+    subject: string;
+    html: string;
+    from?: string;
+    replyTo?: string;
+  }) {
+    try {
+      const { data, error } = await getResend().emails.send({
+        from,
+        to: [to],
+        subject,
+        html,
+        replyTo,
+        headers: {
+          "List-Unsubscribe": `<${process.env.NEXT_PUBLIC_APP_URL}/unsubscribe?email=${encodeURIComponent(to)}>`,
+        },
+      });
+
+      if (error) {
+        console.error("Erreur lors de l'envoi de l'email:", error);
+        return { success: false, error };
+      }
+
+      return { success: true, data };
+    } catch (error) {
+      console.error("Erreur dans le service d'email:", error);
+      return { success: false, error };
+    }
+  },
+
   async sendWelcomeEmail(user: User, organizationName: string) {
     try {
       const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`;
