@@ -331,7 +331,7 @@ function SignUpForm() {
               name="password"
               type="password"
               required
-              placeholder="Créez un mot de passe (min. 8 caractères)"
+              placeholder="Mot de passe (min. 8 caractères)"
               minLength={8}
               autoComplete="new-password"
               className="pl-10 bg-white border-[#beac93] focus:border-[#d9840d] rounded-lg shadow-sm hover:border-[#d9840d]/70 transition-colors"
