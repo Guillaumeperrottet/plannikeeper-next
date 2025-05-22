@@ -1,4 +1,4 @@
-// src/app/admin/subscription-limits-management.tsx - Version corrigée
+// src/app/admin/subscription-limits-management.tsx - Version améliorée
 "use client";
 
 import { useState, useEffect } from "react";
@@ -34,6 +34,7 @@ import {
   Layers,
   FileText,
   ListTodo,
+  User,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PLAN_DETAILS } from "@/lib/stripe-client"; // Import sécurisé
@@ -51,6 +52,7 @@ interface OrganizationLimits {
   tasks: LimitInfo;
   subscriptionId?: string;
   createdAt: string;
+  createdBy?: string;
 }
 
 interface LimitInfo {
@@ -112,7 +114,8 @@ export function SubscriptionLimitsManagement() {
     return (
       org.name.toLowerCase().includes(searchLower) ||
       org.planName.toLowerCase().includes(searchLower) ||
-      org.status.toLowerCase().includes(searchLower)
+      org.status.toLowerCase().includes(searchLower) ||
+      (org.createdBy && org.createdBy.toLowerCase().includes(searchLower))
     );
   });
 
@@ -360,6 +363,7 @@ export function SubscriptionLimitsManagement() {
                   <TableRow>
                     <TableHead>Organisation</TableHead>
                     <TableHead>Plan</TableHead>
+                    <TableHead>Créateur</TableHead>
                     <TableHead>Utilisateurs</TableHead>
                     <TableHead>Objets</TableHead>
                     <TableHead>Secteurs</TableHead>
@@ -373,7 +377,7 @@ export function SubscriptionLimitsManagement() {
                   {filteredOrganizations.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={9}
+                        colSpan={10}
                         className="text-center py-8 text-muted-foreground"
                       >
                         Aucune organisation trouvée
@@ -396,7 +400,7 @@ export function SubscriptionLimitsManagement() {
                               {org.planName}
                             </span>
                             <select
-                              className="w-full text-xs border rounded p-1"
+                              className="w-32 text-xs border rounded p-1"
                               value={org.planName}
                               onChange={(e) =>
                                 changePlan(org.id, e.target.value)
@@ -412,6 +416,14 @@ export function SubscriptionLimitsManagement() {
                                 </option>
                               ))}
                             </select>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <User className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm">
+                              {org.createdBy || "N/A"}
+                            </span>
                           </div>
                         </TableCell>
                         <LimitCell
