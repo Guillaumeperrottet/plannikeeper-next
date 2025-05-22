@@ -10,14 +10,12 @@ import {
 import { UsersManagement } from "@/app/admin/users-management";
 import { SubscriptionsManagement } from "@/app/admin/subscriptions-management";
 import { OrganizationsManagement } from "@/app/admin/organizations-management";
-import { SystemSettings } from "@/app/admin/system-settings";
 import { SubscriptionLimitsManagement } from "@/app/admin/subscription-limits-management";
 import { CompleteUserCreation } from "@/app/admin/complete-user-creation";
 import Link from "next/link";
 import { Button } from "@/app/components/ui/button";
 import {
   ArrowLeft,
-  Settings,
   Users,
   Building,
   CreditCard,
@@ -123,7 +121,7 @@ export function AdminDashboard({ user }: { user: User }) {
         onValueChange={setActiveTab}
         className="w-full"
       >
-        <TabsList className="grid grid-cols-6 mb-8">
+        <TabsList className="grid grid-cols-5 mb-8">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             <span>Vue d&apos;ensemble</span>
@@ -149,10 +147,6 @@ export function AdminDashboard({ user }: { user: User }) {
           <TabsTrigger value="limits" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             <span>Limites</span>
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            <span>Paramètres</span>
           </TabsTrigger>
         </TabsList>
 
@@ -375,7 +369,7 @@ export function AdminDashboard({ user }: { user: User }) {
           {/* Actions rapides */}
           <div className="bg-card p-6 rounded-lg border">
             <h3 className="text-lg font-semibold mb-4">Actions rapides</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Button
                 variant="outline"
                 onClick={() => setActiveTab("users")}
@@ -399,18 +393,6 @@ export function AdminDashboard({ user }: { user: User }) {
                   Modifier les quotas d&apos;abonnement
                 </span>
               </Button>
-
-              <Button
-                variant="outline"
-                onClick={() => setActiveTab("settings")}
-                className="h-auto p-4 flex flex-col items-start"
-              >
-                <Settings className="h-6 w-6 mb-2 text-gray-500" />
-                <span className="font-medium">Configuration système</span>
-                <span className="text-sm text-muted-foreground">
-                  Variables d&apos;environnement et APIs
-                </span>
-              </Button>
             </div>
           </div>
         </TabsContent>
@@ -429,10 +411,6 @@ export function AdminDashboard({ user }: { user: User }) {
 
         <TabsContent value="limits" className="mt-6">
           <SubscriptionLimitsManagement />
-        </TabsContent>
-
-        <TabsContent value="settings" className="mt-6">
-          <SystemSettings />
         </TabsContent>
       </Tabs>
     </div>
