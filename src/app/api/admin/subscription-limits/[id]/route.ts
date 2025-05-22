@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { superAdminGuard } from "@/lib/super-admin";
+import { updateCustomLimits } from "@/lib/subscription-limits";
 
 type RouteParams = {
   params: Promise<{ id: string }>;
@@ -18,12 +19,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     const { id: orgId } = await params;
-    const { customLimits } = await request.json();
+    const { customLimits, planChange } = await request.json();
 
     // Vérifier que l'organisation existe
     const organization = await prisma.organization.findUnique({
       where: { id: orgId },
-      include: { subscription: true },
+      include: { subscription: { include: { plan: true } } },
     });
 
     if (!organization) {
@@ -33,47 +34,42 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Si aucun abonnement n'existe, créer un plan personnalisé
-    if (!organization.subscription) {
-      // Créer ou récupérer un plan personnalisé
-      let customPlan = await prisma.plan.findFirst({
-        where: { name: "CUSTOM" },
+    // Si on change de plan (pas juste les limites)
+    if (planChange && planChange.newPlanName) {
+      const newPlan = await prisma.plan.findUnique({
+        where: { name: planChange.newPlanName },
       });
 
-      if (!customPlan) {
-        customPlan = await prisma.plan.create({
+      if (!newPlan) {
+        return NextResponse.json({ error: "Plan non trouvé" }, { status: 404 });
+      }
+
+      // Mettre à jour l'abonnement
+      if (organization.subscription) {
+        await prisma.subscription.update({
+          where: { id: organization.subscription.id },
           data: {
-            name: "CUSTOM",
-            price: 0,
-            monthlyPrice: 0,
-            maxUsers: customLimits.maxUsers,
-            maxObjects: customLimits.maxObjects,
-            hasCustomPricing: true,
-            features: ["Limites personnalisées"],
+            planId: newPlan.id,
+            status: planChange.status || "ACTIVE",
+          },
+        });
+      } else {
+        // Créer un nouvel abonnement
+        await prisma.subscription.create({
+          data: {
+            organizationId: orgId,
+            planId: newPlan.id,
+            status: "ACTIVE",
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
           },
         });
       }
+    }
 
-      // Créer l'abonnement avec le plan personnalisé
-      await prisma.subscription.create({
-        data: {
-          organizationId: orgId,
-          planId: customPlan.id,
-          status: "ACTIVE",
-          currentPeriodStart: new Date(),
-          currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 an
-        },
-      });
-    } else {
-      // Mettre à jour le plan existant avec les nouvelles limites
-      await prisma.plan.update({
-        where: { id: organization.subscription.planId },
-        data: {
-          maxUsers: customLimits.maxUsers,
-          maxObjects: customLimits.maxObjects,
-          // Note: pour le stockage, vous pourriez vouloir ajouter un champ maxStorage au modèle Plan
-        },
-      });
+    // Si on modifie les limites personnalisées
+    if (customLimits) {
+      await updateCustomLimits(orgId, customLimits);
     }
 
     return NextResponse.json({
@@ -82,6 +78,79 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     });
   } catch (error) {
     console.error("Erreur lors de la mise à jour des limites:", error);
+    return NextResponse.json(
+      { error: "Erreur interne du serveur" },
+      { status: 500 }
+    );
+  }
+}
+
+// src/app/api/admin/subscription-limits/[id]/quick-adjust/route.ts - Version améliorée
+export async function POST(request: NextRequest, { params }: RouteParams) {
+  try {
+    const user = await getUser();
+    if (!user || !(await superAdminGuard(user.id))) {
+      return NextResponse.json(
+        { error: "Accès non autorisé" },
+        { status: 403 }
+      );
+    }
+
+    const { id: orgId } = await params;
+    const { type, adjustment, setValue } = await request.json();
+
+    // Vérifier que l'organisation existe
+    const organization = await prisma.organization.findUnique({
+      where: { id: orgId },
+      include: {
+        subscription: {
+          include: { plan: true },
+        },
+      },
+    });
+
+    if (!organization) {
+      return NextResponse.json(
+        { error: "Organisation non trouvée" },
+        { status: 404 }
+      );
+    }
+
+    // Préparer les limites personnalisées
+    const customLimits: Record<string, number | null> = {};
+
+    if (setValue !== undefined) {
+      // Définir une valeur absolue
+      customLimits[`max${type.charAt(0).toUpperCase() + type.slice(1)}`] =
+        setValue;
+    } else if (adjustment !== undefined) {
+      // Ajuster la valeur actuelle
+      const currentLimit = organization.subscription?.plan
+        ? organization.subscription.plan[
+            `max${type.charAt(0).toUpperCase() + type.slice(1)}` as keyof typeof organization.subscription.plan
+          ]
+        : 1;
+
+      const newValue = Math.max(
+        0,
+        ((currentLimit as number) || 1) + adjustment
+      );
+      customLimits[`max${type.charAt(0).toUpperCase() + type.slice(1)}`] =
+        newValue;
+    }
+
+    // Appliquer les changements
+    await updateCustomLimits(orgId, customLimits);
+
+    return NextResponse.json({
+      success: true,
+      message:
+        setValue !== undefined
+          ? `Limite ${type} définie à ${setValue}`
+          : `Limite ${type} ajustée de ${adjustment}`,
+    });
+  } catch (error) {
+    console.error("Erreur lors de l'ajustement rapide:", error);
     return NextResponse.json(
       { error: "Erreur interne du serveur" },
       { status: 500 }

@@ -1,4 +1,4 @@
-// src/app/admin/subscription-limits-management.tsx
+// src/app/admin/subscription-limits-management.tsx - Version améliorée
 "use client";
 
 import { useState, useEffect } from "react";
@@ -20,7 +20,6 @@ import {
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import {
-  Edit,
   Search,
   RefreshCw,
   Users,
@@ -30,37 +29,44 @@ import {
   CheckCircle,
   XCircle,
   Plus,
+  Minus,
+  Settings,
+  Layers,
+  FileText,
+  ListTodo,
 } from "lucide-react";
 import { toast } from "sonner";
+import { PLAN_DETAILS } from "@/lib/stripe";
 
 interface OrganizationLimits {
   id: string;
   name: string;
   planName: string;
   status: string;
-  users: {
-    current: number;
-    limit: number | null;
-    unlimited: boolean;
-  };
-  objects: {
-    current: number;
-    limit: number | null;
-    unlimited: boolean;
-  };
-  storage: {
-    current: number; // en MB
-    limit: number | null; // en MB
-    unlimited: boolean;
-  };
+  users: LimitInfo;
+  objects: LimitInfo;
+  storage: LimitInfo;
+  sectors: LimitInfo;
+  articles: LimitInfo;
+  tasks: LimitInfo;
   subscriptionId?: string;
   createdAt: string;
+}
+
+interface LimitInfo {
+  current: number;
+  limit: number | null;
+  unlimited: boolean;
+  percentage?: number;
 }
 
 interface CustomLimits {
   maxUsers: number | null;
   maxObjects: number | null;
-  maxStorage: number | null; // en MB
+  maxStorage: number | null;
+  maxSectors: number | null;
+  maxArticles: number | null;
+  maxTasks: number | null;
 }
 
 export function SubscriptionLimitsManagement() {
@@ -75,9 +81,11 @@ export function SubscriptionLimitsManagement() {
     maxUsers: null,
     maxObjects: null,
     maxStorage: null,
+    maxSectors: null,
+    maxArticles: null,
+    maxTasks: null,
   });
 
-  // Charger les organisations avec leurs limites
   useEffect(() => {
     fetchOrganizationsLimits();
   }, []);
@@ -99,7 +107,6 @@ export function SubscriptionLimitsManagement() {
     }
   };
 
-  // Filtrer les organisations
   const filteredOrganizations = organizations.filter((org) => {
     const searchLower = searchQuery.toLowerCase();
     return (
@@ -109,18 +116,19 @@ export function SubscriptionLimitsManagement() {
     );
   });
 
-  // Fonction pour éditer les limites d'une organisation
   const handleEditLimits = (org: OrganizationLimits) => {
     setSelectedOrg(org);
     setCustomLimits({
       maxUsers: org.users.limit,
       maxObjects: org.objects.limit,
       maxStorage: org.storage.limit,
+      maxSectors: org.sectors.limit,
+      maxArticles: org.articles.limit,
+      maxTasks: org.tasks.limit,
     });
     setIsEditing(true);
   };
 
-  // Fonction pour sauvegarder les nouvelles limites
   const handleSaveLimits = async () => {
     if (!selectedOrg) return;
 
@@ -143,7 +151,6 @@ export function SubscriptionLimitsManagement() {
         throw new Error("Erreur lors de la mise à jour des limites");
       }
 
-      // Recharger les données
       await fetchOrganizationsLimits();
       setIsEditing(false);
       setSelectedOrg(null);
@@ -154,11 +161,11 @@ export function SubscriptionLimitsManagement() {
     }
   };
 
-  // Fonction pour augmenter rapidement une limite
-  const quickIncrease = async (
+  const quickAdjust = async (
     orgId: string,
-    type: "users" | "objects" | "storage",
-    amount: number
+    type: string,
+    adjustment?: number,
+    setValue?: number
   ) => {
     try {
       const response = await fetch(
@@ -170,7 +177,8 @@ export function SubscriptionLimitsManagement() {
           },
           body: JSON.stringify({
             type,
-            adjustment: amount,
+            adjustment,
+            setValue,
           }),
         }
       );
@@ -180,14 +188,44 @@ export function SubscriptionLimitsManagement() {
       }
 
       await fetchOrganizationsLimits();
-      toast.success(`Limite ${type} augmentée de ${amount}`);
+      const action =
+        setValue !== undefined
+          ? `définie à ${setValue}`
+          : `ajustée de ${adjustment}`;
+      toast.success(`Limite ${type} ${action}`);
     } catch (error) {
       console.error("Erreur:", error);
       toast.error("Erreur lors de l'ajustement des limites");
     }
   };
 
-  // Fonction pour obtenir la couleur du statut
+  const changePlan = async (orgId: string, newPlanName: string) => {
+    try {
+      const response = await fetch(`/api/admin/subscription-limits/${orgId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          planChange: {
+            newPlanName,
+            status: "ACTIVE",
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Erreur lors du changement de plan");
+      }
+
+      await fetchOrganizationsLimits();
+      toast.success(`Plan changé vers ${newPlanName}`);
+    } catch (error) {
+      console.error("Erreur:", error);
+      toast.error("Erreur lors du changement de plan");
+    }
+  };
+
   const getStatusColor = (
     current: number,
     limit: number | null,
@@ -195,14 +233,12 @@ export function SubscriptionLimitsManagement() {
   ) => {
     if (unlimited) return "text-green-600";
     if (!limit) return "text-gray-500";
-
     const percentage = (current / limit) * 100;
     if (percentage >= 90) return "text-red-600";
     if (percentage >= 75) return "text-orange-500";
     return "text-green-600";
   };
 
-  // Fonction pour obtenir l'icône de statut
   const getStatusIcon = (
     current: number,
     limit: number | null,
@@ -210,7 +246,6 @@ export function SubscriptionLimitsManagement() {
   ) => {
     if (unlimited) return <CheckCircle className="h-4 w-4 text-green-600" />;
     if (!limit) return <XCircle className="h-4 w-4 text-gray-500" />;
-
     const percentage = (current / limit) * 100;
     if (percentage >= 90)
       return <AlertTriangle className="h-4 w-4 text-red-600" />;
@@ -219,13 +254,68 @@ export function SubscriptionLimitsManagement() {
     return <CheckCircle className="h-4 w-4 text-green-600" />;
   };
 
-  // Formater la taille de stockage
   const formatStorage = (sizeInMB: number) => {
     if (sizeInMB >= 1024) {
       return `${(sizeInMB / 1024).toFixed(1)} GB`;
     }
     return `${sizeInMB} MB`;
   };
+
+  const LimitCell = ({
+    org,
+    limitInfo,
+    type,
+    icon: Icon,
+    color,
+    formatValue = (v: number) => v.toString(),
+  }: {
+    org: OrganizationLimits;
+    limitInfo: LimitInfo;
+    type: string;
+    icon: React.ComponentType<{ className?: string }>;
+    color: string;
+    formatValue?: (value: number) => string;
+  }) => (
+    <TableCell>
+      <div className="flex items-center space-x-2">
+        <Icon className={`h-4 w-4 ${color}`} />
+        <span
+          className={getStatusColor(
+            limitInfo.current,
+            limitInfo.limit,
+            limitInfo.unlimited
+          )}
+        >
+          {formatValue(limitInfo.current)}/
+          {limitInfo.unlimited
+            ? "∞"
+            : limitInfo.limit
+              ? formatValue(limitInfo.limit)
+              : "0"}
+        </span>
+        {getStatusIcon(limitInfo.current, limitInfo.limit, limitInfo.unlimited)}
+      </div>
+      <div className="flex space-x-1 mt-1">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => quickAdjust(org.id, type, -1)}
+          className="h-6 w-6 p-0"
+          disabled={limitInfo.unlimited}
+        >
+          <Minus className="h-3 w-3" />
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => quickAdjust(org.id, type, 1)}
+          className="h-6 w-6 p-0"
+        >
+          <Plus className="h-3 w-3" />
+        </Button>
+      </div>
+    </TableCell>
+  );
 
   return (
     <div className="space-y-6">
@@ -264,7 +354,7 @@ export function SubscriptionLimitsManagement() {
               <RefreshCw className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="border rounded-md">
+            <div className="border rounded-md overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -272,8 +362,10 @@ export function SubscriptionLimitsManagement() {
                     <TableHead>Plan</TableHead>
                     <TableHead>Utilisateurs</TableHead>
                     <TableHead>Objets</TableHead>
+                    <TableHead>Secteurs</TableHead>
+                    <TableHead>Articles</TableHead>
+                    <TableHead>Tâches</TableHead>
                     <TableHead>Stockage</TableHead>
-                    <TableHead>Statut</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -281,7 +373,7 @@ export function SubscriptionLimitsManagement() {
                   {filteredOrganizations.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={7}
+                        colSpan={9}
                         className="text-center py-8 text-muted-foreground"
                       >
                         Aucune organisation trouvée
@@ -299,127 +391,80 @@ export function SubscriptionLimitsManagement() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-600">
-                            {org.planName}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Users className="h-4 w-4 text-blue-500" />
-                            <span
-                              className={getStatusColor(
-                                org.users.current,
-                                org.users.limit,
-                                org.users.unlimited
-                              )}
-                            >
-                              {org.users.current}/
-                              {org.users.unlimited ? "∞" : org.users.limit}
+                          <div className="space-y-1">
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-600">
+                              {org.planName}
                             </span>
-                            {getStatusIcon(
-                              org.users.current,
-                              org.users.limit,
-                              org.users.unlimited
-                            )}
-                          </div>
-                          <div className="flex space-x-1 mt-1">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => quickIncrease(org.id, "users", 5)}
-                              className="h-6 w-6 p-0"
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Building className="h-4 w-4 text-amber-500" />
-                            <span
-                              className={getStatusColor(
-                                org.objects.current,
-                                org.objects.limit,
-                                org.objects.unlimited
-                              )}
-                            >
-                              {org.objects.current}/
-                              {org.objects.unlimited ? "∞" : org.objects.limit}
-                            </span>
-                            {getStatusIcon(
-                              org.objects.current,
-                              org.objects.limit,
-                              org.objects.unlimited
-                            )}
-                          </div>
-                          <div className="flex space-x-1 mt-1">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() =>
-                                quickIncrease(org.id, "objects", 5)
+                            <select
+                              className="w-full text-xs border rounded p-1"
+                              value={org.planName}
+                              onChange={(e) =>
+                                changePlan(org.id, e.target.value)
                               }
-                              className="h-6 w-6 p-0"
                             >
-                              <Plus className="h-3 w-3" />
-                            </Button>
+                              {Object.keys(PLAN_DETAILS).map((planId) => (
+                                <option key={planId} value={planId}>
+                                  {
+                                    PLAN_DETAILS[
+                                      planId as keyof typeof PLAN_DETAILS
+                                    ].name
+                                  }
+                                </option>
+                              ))}
+                            </select>
                           </div>
                         </TableCell>
+                        <LimitCell
+                          org={org}
+                          limitInfo={org.users}
+                          type="users"
+                          icon={Users}
+                          color="text-blue-500"
+                        />
+                        <LimitCell
+                          org={org}
+                          limitInfo={org.objects}
+                          type="objects"
+                          icon={Building}
+                          color="text-amber-500"
+                        />
+                        <LimitCell
+                          org={org}
+                          limitInfo={org.sectors}
+                          type="sectors"
+                          icon={Layers}
+                          color="text-purple-500"
+                        />
+                        <LimitCell
+                          org={org}
+                          limitInfo={org.articles}
+                          type="articles"
+                          icon={FileText}
+                          color="text-indigo-500"
+                        />
+                        <LimitCell
+                          org={org}
+                          limitInfo={org.tasks}
+                          type="tasks"
+                          icon={ListTodo}
+                          color="text-emerald-500"
+                        />
+                        <LimitCell
+                          org={org}
+                          limitInfo={org.storage}
+                          type="storage"
+                          icon={HardDrive}
+                          color="text-rose-500"
+                          formatValue={formatStorage}
+                        />
                         <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <HardDrive className="h-4 w-4 text-purple-500" />
-                            <span
-                              className={getStatusColor(
-                                org.storage.current,
-                                org.storage.limit,
-                                org.storage.unlimited
-                              )}
-                            >
-                              {formatStorage(org.storage.current)}/
-                              {org.storage.unlimited
-                                ? "∞"
-                                : formatStorage(org.storage.limit || 0)}
-                            </span>
-                            {getStatusIcon(
-                              org.storage.current,
-                              org.storage.limit,
-                              org.storage.unlimited
-                            )}
-                          </div>
-                          <div className="flex space-x-1 mt-1">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() =>
-                                quickIncrease(org.id, "storage", 1024)
-                              } // +1GB
-                              className="h-6 w-6 p-0"
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              org.status === "ACTIVE"
-                                ? "bg-green-50 text-green-600"
-                                : "bg-gray-50 text-gray-600"
-                            }`}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditLimits(org)}
                           >
-                            {org.status}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditLimits(org)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </div>
+                            <Settings className="h-4 w-4" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))
@@ -431,97 +476,80 @@ export function SubscriptionLimitsManagement() {
         </CardContent>
       </Card>
 
-      {/* Modal d'édition des limites */}
+      {/* Modal d'édition des limites - Version améliorée */}
       {isEditing && selectedOrg && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background p-6 rounded-lg shadow-lg w-full max-w-md">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-background p-6 rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">
               Modifier les limites de {selectedOrg.name}
             </h3>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Limite d&apos;utilisateurs
-                </label>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    type="number"
-                    value={customLimits.maxUsers || ""}
-                    onChange={(e) =>
-                      setCustomLimits({
-                        ...customLimits,
-                        maxUsers: e.target.value
-                          ? parseInt(e.target.value)
-                          : null,
-                      })
-                    }
-                    placeholder="Illimité si vide"
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    Actuel: {selectedOrg.users.current}
-                  </span>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                {
+                  key: "maxUsers",
+                  label: "Utilisateurs",
+                  current: selectedOrg.users.current,
+                },
+                {
+                  key: "maxObjects",
+                  label: "Objets",
+                  current: selectedOrg.objects.current,
+                },
+                {
+                  key: "maxSectors",
+                  label: "Secteurs",
+                  current: selectedOrg.sectors.current,
+                },
+                {
+                  key: "maxArticles",
+                  label: "Articles",
+                  current: selectedOrg.articles.current,
+                },
+                {
+                  key: "maxTasks",
+                  label: "Tâches",
+                  current: selectedOrg.tasks.current,
+                },
+                {
+                  key: "maxStorage",
+                  label: "Stockage (MB)",
+                  current: selectedOrg.storage.current,
+                },
+              ].map(({ key, label, current }) => (
+                <div key={key}>
+                  <label className="block text-sm font-medium mb-1">
+                    Limite de {label.toLowerCase()}
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      type="number"
+                      value={customLimits[key as keyof CustomLimits] || ""}
+                      onChange={(e) =>
+                        setCustomLimits({
+                          ...customLimits,
+                          [key]: e.target.value
+                            ? parseInt(e.target.value)
+                            : null,
+                        })
+                      }
+                      placeholder="Illimité si vide"
+                    />
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">
+                      Actuel:{" "}
+                      {key === "maxStorage" ? formatStorage(current) : current}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              ))}
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Limite d&apos;objets
-                </label>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    type="number"
-                    value={customLimits.maxObjects || ""}
-                    onChange={(e) =>
-                      setCustomLimits({
-                        ...customLimits,
-                        maxObjects: e.target.value
-                          ? parseInt(e.target.value)
-                          : null,
-                      })
-                    }
-                    placeholder="Illimité si vide"
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    Actuel: {selectedOrg.objects.current}
-                  </span>
-                </div>
+            <div className="bg-blue-50 p-3 rounded-md mt-4">
+              <div className="text-sm text-blue-800">
+                <strong>Plan actuel:</strong> {selectedOrg.planName}
               </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Limite de stockage (MB)
-                </label>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    type="number"
-                    value={customLimits.maxStorage || ""}
-                    onChange={(e) =>
-                      setCustomLimits({
-                        ...customLimits,
-                        maxStorage: e.target.value
-                          ? parseInt(e.target.value)
-                          : null,
-                      })
-                    }
-                    placeholder="Illimité si vide"
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    Actuel: {formatStorage(selectedOrg.storage.current)}
-                  </span>
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Raccourcis: 1GB = 1024MB, 5GB = 5120MB, 10GB = 10240MB
-                </div>
-              </div>
-
-              <div className="bg-blue-50 p-3 rounded-md">
-                <div className="text-sm text-blue-800">
-                  <strong>Plan actuel:</strong> {selectedOrg.planName}
-                </div>
-                <div className="text-xs text-blue-600 mt-1">
-                  Les limites personnalisées remplaceront celles du plan
-                </div>
+              <div className="text-xs text-blue-600 mt-1">
+                Les limites personnalisées remplaceront celles du plan
               </div>
             </div>
 

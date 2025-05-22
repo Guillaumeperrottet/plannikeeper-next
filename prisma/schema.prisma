@@ -277,12 +277,37 @@ model Plan {
   price             Decimal      // Prix en euros
   monthlyPrice      Decimal      // Prix mensuel
   yearlyPrice       Decimal?     // Prix annuel (optionnel)
+  
+  // Limites principales
   maxUsers          Int?         // Null = illimité
   maxObjects        Int?         // Null = illimité
   maxStorage        Int?         // Limite de stockage en MB, Null = illimité
+  
+  // Nouvelles limites granulaires
+  maxSectors        Int?         // Limite de secteurs par objet, Null = illimité
+  maxArticles       Int?         // Limite d'articles par secteur, Null = illimité
+  maxTasks          Int?         // Limite de tâches par article, Null = illimité
+  maxDocuments      Int?         // Limite de documents par tâche, Null = illimité
+  
+  // Métadonnées
   hasCustomPricing  Boolean      @default(false)
   trialDays         Int          @default(0)
   features          String[]     // Liste des fonctionnalités
+  description       String?      // Description du plan
+  isActive          Boolean      @default(true) // Pour désactiver un plan
+  sortOrder         Int          @default(0)    // Ordre d'affichage
+  
+  // Nouvelles limites fonctionnelles
+  maxInvitations    Int?         // Limite d'invitations simultanées
+  maxExports        Int?         // Limite d'exports par mois
+  maxApiCalls       Int?         // Limite d'appels API par mois
+  
+  // Support et fonctionnalités
+  supportLevel      String       @default("community") // community, email, priority, phone
+  hasAdvancedReports Boolean     @default(false)
+  hasApiAccess      Boolean      @default(false)
+  hasCustomBranding Boolean      @default(false)
+  
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
   
