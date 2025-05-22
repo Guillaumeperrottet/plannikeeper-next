@@ -1,10 +1,16 @@
-// src/lib/auth.ts - Version sécurisée avec vérification email avant création
+// src/lib/auth.ts - Version corrigée pour inscription avec vérification email préalable
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { createAuthMiddleware } from "better-auth/api";
 import { prisma } from "./prisma";
 import { EmailService } from "./email";
 import { PlanType } from "@prisma/client";
+
+// Types pour Better Auth context
+interface AuthContext {
+  request: Request;
+  body: unknown;
+  json: (data: unknown, options?: { status?: number }) => Response;
+}
 
 const isDev =
   process.env.NODE_ENV === "development" ||
@@ -16,7 +22,7 @@ const pendingUsers = new Map<
   {
     email: string;
     name: string;
-    password: string; // Hashé par Better Auth
+    password: string;
     image?: string;
     inviteCode?: string;
     planType?: string;
@@ -55,108 +61,212 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: true,
+    requireEmailVerification: false, // On gère manuellement
     autoSignIn: false, // Pas de connexion automatique après inscription
   },
 
   emailVerification: {
     sendOnSignUp: false, // Désactivé car on gère manuellement
-    autoSignInAfterVerification: true, // Connexion après vérification
+    autoSignInAfterVerification: false, // On gère la redirection manuellement
+  },
 
-    sendVerificationEmail: async ({ user, token }) => {
-      console.log(`📧 Envoi d'email de vérification vers: ${user.email}`);
+  // Routes personnalisées
+  customRoutes: {
+    // Route personnalisée pour l'inscription avec vérification préalable
+    "/sign-up/email": {
+      POST: async (ctx: AuthContext) => {
+        try {
+          type SignUpEmailBody = {
+            email: string;
+            name: string;
+            password: string;
+            image?: string;
+            inviteCode?: string;
+            planType?: string;
+          };
 
-      try {
-        const baseUrl = isDev
-          ? "http://localhost:3000"
-          : process.env.NEXT_PUBLIC_APP_URL;
+          const body = ctx.body as SignUpEmailBody;
+          console.log("📝 Inscription personnalisée pour:", body.email);
 
-        // Récupérer les données du pending user
-        const pendingUser = pendingUsers.get(user.email);
+          // Vérifier si l'email existe déjà
+          const existingUser = await prisma.user.findUnique({
+            where: { email: body.email },
+          });
 
-        // Construire l'URL de vérification personnalisée
-        const verificationUrl = new URL(
-          `${baseUrl}/api/auth/verify-email-custom`
-        );
-        verificationUrl.searchParams.set("token", token);
-        verificationUrl.searchParams.set("email", user.email);
+          if (existingUser) {
+            return ctx.json(
+              { error: { message: "Un compte existe déjà avec cet email" } },
+              { status: 400 }
+            );
+          }
 
-        // Ajouter les paramètres de redirection
-        const callbackUrl = new URL(`${baseUrl}/auth/verification-success`);
-        if (pendingUser?.planType) {
-          callbackUrl.searchParams.set("plan", pendingUser.planType);
+          // Générer un token de vérification
+          const token = crypto.randomUUID();
+          const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+
+          // Stocker les données temporairement
+          pendingUsers.set(body.email, {
+            email: body.email,
+            name: body.name,
+            password: body.password,
+            image: body.image,
+            inviteCode: body.inviteCode,
+            planType: body.planType || "FREE",
+            token,
+            expiresAt,
+          });
+
+          console.log("💾 Données stockées temporairement pour:", body.email);
+
+          // Envoyer l'email de vérification
+          await sendCustomVerificationEmail({
+            email: body.email,
+            name: body.name,
+            token,
+            inviteCode: body.inviteCode,
+            planType: body.planType,
+          });
+
+          // Retourner une réponse de succès
+          return ctx.json({
+            success: true,
+            message:
+              "Email de vérification envoyé. Vérifiez votre boîte de réception.",
+            user: null, // Pas d'utilisateur créé pour l'instant
+          });
+        } catch (error) {
+          console.error("❌ Erreur inscription personnalisée:", error);
+          return ctx.json(
+            {
+              error: {
+                message:
+                  error instanceof Error
+                    ? error.message
+                    : "Erreur lors de l'inscription",
+              },
+            },
+            { status: 500 }
+          );
         }
-        if (pendingUser?.inviteCode) {
-          callbackUrl.searchParams.set("code", pendingUser.inviteCode);
+      },
+    },
+
+    // Route personnalisée pour la vérification d'email
+    "/verify-email-custom": {
+      GET: async (ctx: AuthContext) => {
+        try {
+          const url = new URL(ctx.request.url);
+          const token = url.searchParams.get("token");
+          const email = url.searchParams.get("email");
+          const callbackURL = url.searchParams.get("callbackURL");
+
+          if (!token || !email) {
+            console.error("❌ Token ou email manquant");
+            return Response.redirect(
+              new URL("/auth/verification-failed", ctx.request.url)
+            );
+          }
+
+          console.log("🔍 Vérification du token pour:", email);
+
+          // Vérifier si les données temporaires existent
+          const pendingUser = pendingUsers.get(email);
+
+          if (!pendingUser) {
+            console.error("❌ Aucune donnée temporaire trouvée pour:", email);
+            return Response.redirect(
+              new URL(
+                "/auth/verification-failed?error=expired",
+                ctx.request.url
+              )
+            );
+          }
+
+          // Vérifier le token
+          if (pendingUser.token !== token) {
+            console.error("❌ Token invalide pour:", email);
+            return Response.redirect(
+              new URL(
+                "/auth/verification-failed?error=invalid",
+                ctx.request.url
+              )
+            );
+          }
+
+          // Vérifier l'expiration
+          if (pendingUser.expiresAt < new Date()) {
+            console.error("❌ Token expiré pour:", email);
+            pendingUsers.delete(email);
+            return Response.redirect(
+              new URL(
+                "/auth/verification-failed?error=expired",
+                ctx.request.url
+              )
+            );
+          }
+
+          console.log("✅ Token valide, création de l'utilisateur");
+
+          // Maintenant créer l'utilisateur avec Better Auth
+          const signUpResult = await auth.api.signUpEmail({
+            body: {
+              email: pendingUser.email,
+              name: pendingUser.name,
+              password: pendingUser.password,
+            },
+          });
+
+          if (!signUpResult) {
+            console.error("❌ Erreur création utilisateur: résultat invalide");
+            return Response.redirect(
+              new URL(
+                "/auth/verification-failed?error=creation",
+                ctx.request.url
+              )
+            );
+          }
+
+          console.log("✅ Utilisateur créé avec succès");
+
+          // Récupérer l'utilisateur créé
+          const newUser = await prisma.user.findUnique({
+            where: { email: pendingUser.email },
+          });
+
+          if (newUser) {
+            // Marquer l'email comme vérifié
+            await prisma.user.update({
+              where: { id: newUser.id },
+              data: { emailVerified: true },
+            });
+
+            // Traitement post-création (organisation, abonnement, etc.)
+            if (pendingUser.inviteCode) {
+              await handleInviteSignup(newUser, pendingUser.inviteCode);
+            } else {
+              await handleNewUserSignup(
+                newUser,
+                pendingUser.planType || "FREE"
+              );
+            }
+
+            // Envoyer l'email de bienvenue
+            await sendWelcomeEmailAfterVerification(newUser);
+          }
+
+          // Nettoyer les données temporaires
+          pendingUsers.delete(email);
+
+          // Rediriger vers la page de succès
+          const redirectUrl = callbackURL || "/auth/verification-success";
+          return Response.redirect(new URL(redirectUrl, ctx.request.url));
+        } catch (error) {
+          console.error("❌ Erreur dans verify-email-custom:", error);
+          return Response.redirect(
+            new URL("/auth/verification-failed", ctx.request.url)
+          );
         }
-
-        verificationUrl.searchParams.set("callbackURL", callbackUrl.toString());
-
-        const htmlContent = `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="utf-8">
-              <title>Vérifiez votre adresse email</title>
-              <style>
-                body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }
-                .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-                .header { background-color: #d9840d; color: white; padding: 24px; text-align: center; }
-                .content { padding: 32px 24px; }
-                .button { display: inline-block; background-color: #d9840d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; }
-                .footer { background-color: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 14px; }
-              </style>
-            </head>
-            <body>
-              <div class="container">
-                <div class="header">
-                  <h1>🏠 PlanniKeeper</h1>
-                  <h2>Finaliser votre inscription</h2>
-                </div>
-                
-                <div class="content">
-                  <p>Bonjour ${user.name || user.email.split("@")[0]},</p>
-                  <p>Merci de votre intérêt pour PlanniKeeper ! Pour finaliser votre inscription et activer votre compte, veuillez cliquer sur le bouton ci-dessous :</p>
-                  
-                  <div style="text-align: center; margin: 30px 0;">
-                    <a href="${verificationUrl.toString()}" class="button">
-                      Activer mon compte
-                    </a>
-                  </div>
-                  
-                  <p>Ou copiez-collez ce lien dans votre navigateur :</p>
-                  <p style="word-break: break-all; background-color: #f5f5f5; padding: 10px; border-radius: 4px;">
-                    ${verificationUrl.toString()}
-                  </p>
-                  
-                  <p><strong>Important :</strong> Ce lien expire dans 24 heures. Si vous ne finalisez pas votre inscription dans ce délai, vous devrez recommencer le processus.</p>
-                  <p>Si vous n'avez pas demandé cette inscription, vous pouvez ignorer cet email en toute sécurité.</p>
-                </div>
-                
-                <div class="footer">
-                  <p>© 2025 PlanniKeeper. Tous droits réservés.</p>
-                </div>
-              </div>
-            </body>
-          </html>
-        `;
-
-        const result = await EmailService.sendEmail({
-          to: user.email,
-          subject: "Finalisez votre inscription à PlanniKeeper",
-          html: htmlContent,
-        });
-
-        if (!result.success) {
-          console.error("❌ Erreur lors de l'envoi de l'email:", result.error);
-          throw new Error(`Échec de l'envoi: ${result.error}`);
-        }
-
-        console.log("✅ Email de vérification envoyé avec succès");
-      } catch (error) {
-        console.error("❌ Exception lors de l'envoi de l'email:", error);
-        throw error;
-      }
+      },
     },
   },
 
@@ -169,115 +279,6 @@ export const auth = betterAuth({
       httpOnly: true,
       path: "/",
     },
-  },
-
-  hooks: {
-    // Hook AVANT inscription - intercepter et stocker temporairement
-    before: createAuthMiddleware(async (ctx) => {
-      if (ctx.path === "/sign-up/email") {
-        type SignUpEmailBody = {
-          email: string;
-          name: string;
-          password: string;
-          image?: string;
-          inviteCode?: string;
-          planType?: string;
-        };
-        const body = ctx.body as SignUpEmailBody;
-        console.log("📝 Interception de l'inscription pour:", body.email);
-
-        // Vérifier si l'email existe déjà
-        const existingUser = await prisma.user.findUnique({
-          where: { email: body.email },
-        });
-
-        if (existingUser) {
-          // Si l'utilisateur existe déjà, le laisser passer normalement
-          console.log("👤 Utilisateur existant, traitement normal");
-          return;
-        }
-
-        // Générer un token de vérification
-        const token = crypto.randomUUID();
-        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
-
-        // Stocker les données temporairement
-        pendingUsers.set(body.email, {
-          email: body.email,
-          name: body.name,
-          password: body.password, // Better Auth va le hasher
-          image: body.image,
-          inviteCode: body.inviteCode,
-          planType: body.planType || "FREE",
-          token,
-          expiresAt,
-        });
-
-        console.log("💾 Données stockées temporairement pour:", body.email);
-
-        // Envoyer l'email de vérification directement
-        try {
-          await sendCustomVerificationEmail({
-            email: body.email,
-            name: body.name,
-            token,
-            inviteCode: body.inviteCode,
-            planType: body.planType,
-          });
-
-          // Retourner une réponse success sans créer l'utilisateur
-          return ctx.json({
-            success: true,
-            message:
-              "Email de vérification envoyé. Vérifiez votre boîte de réception.",
-          });
-        } catch (error) {
-          console.error("❌ Erreur envoi email:", error);
-          pendingUsers.delete(body.email);
-          throw new Error("Erreur lors de l'envoi de l'email de vérification");
-        }
-      }
-    }),
-
-    // Hook APRÈS vérification d'email - créer l'utilisateur et l'organisation
-    after: createAuthMiddleware(async (ctx) => {
-      if (ctx.path === "/verify-email-custom" && ctx.context.newSession) {
-        const user = ctx.context.newSession.user;
-        console.log(
-          "✉️ Email vérifié, création de l'organisation pour:",
-          user.id
-        );
-
-        // Récupérer les données temporaires
-        const pendingUser = pendingUsers.get(user.email);
-
-        if (pendingUser) {
-          console.log("📋 Données récupérées:", {
-            inviteCode: pendingUser.inviteCode,
-            planType: pendingUser.planType,
-          });
-
-          if (pendingUser.inviteCode) {
-            // Utilisateur invité
-            await handleInviteSignup(user, pendingUser.inviteCode);
-          } else {
-            // Nouvel utilisateur
-            await handleNewUserSignup(user, pendingUser.planType || "FREE");
-          }
-
-          // Nettoyer les données temporaires
-          pendingUsers.delete(user.email);
-          console.log("🧹 Données temporaires nettoyées");
-        } else {
-          console.warn("⚠️ Aucune donnée temporaire pour:", user.email);
-          // Fallback
-          await handleNewUserSignup(user, "FREE");
-        }
-
-        // Envoyer l'email de bienvenue
-        await sendWelcomeEmailAfterVerification(user);
-      }
-    }),
   },
 });
 
