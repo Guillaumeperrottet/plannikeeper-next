@@ -1,4 +1,4 @@
-// src/app/admin/subscription-limits-management.tsx - Version améliorée
+// src/app/admin/subscription-limits-management.tsx - Version corrigée
 "use client";
 
 import { useState, useEffect } from "react";
@@ -36,7 +36,7 @@ import {
   ListTodo,
 } from "lucide-react";
 import { toast } from "sonner";
-import { PLAN_DETAILS } from "@/lib/stripe";
+import { PLAN_DETAILS } from "@/lib/stripe"; // Import sécurisé
 
 interface OrganizationLimits {
   id: string;
