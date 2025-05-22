@@ -93,7 +93,8 @@ model Organization {
   Objet            Objet[]
   OrganizationUser OrganizationUser[]
   invitationCodes  InvitationCode[]
-  subscription      Subscription?
+  subscription     Subscription?
+  storageUsage     StorageUsage?
 
   @@map("organization")
 }
@@ -278,6 +279,7 @@ model Plan {
   yearlyPrice       Decimal?     // Prix annuel (optionnel)
   maxUsers          Int?         // Null = illimité
   maxObjects        Int?         // Null = illimité
+  maxStorage        Int?         // Limite de stockage en MB, Null = illimité
   hasCustomPricing  Boolean      @default(false)
   trialDays         Int          @default(0)
   features          String[]     // Liste des fonctionnalités
@@ -286,6 +288,19 @@ model Plan {
   
   subscriptions     Subscription[]
 }
+
+model StorageUsage {
+  id                String       @id @default(uuid())
+  organizationId    String       @unique
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  totalUsedBytes    BigInt       @default(0)
+  lastCalculatedAt  DateTime     @default(now())
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@map("storage_usage")
+}
+
 
 model Subscription {
   id                    String            @id @default(uuid())
@@ -346,4 +361,5 @@ enum PlanType {
   ENTERPRISE
   SUPER_ADMIN
   ILLIMITE
+  CUSTOM  
 }
