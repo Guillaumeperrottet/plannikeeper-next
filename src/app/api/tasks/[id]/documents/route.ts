@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 import { CloudinaryService } from "@/lib/cloudinary";
+import { StorageService } from "@/lib/storage-service";
 
 // Typage mis à jour : params est une Promise qui résout { id: string }
 type RouteParams = {
@@ -132,6 +133,34 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       );
     }
 
+    //  Limites de stockage
+    const organizationId = task.article.sector.object.organizationId;
+    const storageCheck = await StorageService.canUploadFile(
+      organizationId,
+      file.size
+    );
+
+    if (!storageCheck.allowed) {
+      const currentUsage = StorageService.formatSize(
+        storageCheck.currentUsageBytes
+      );
+      const limit = storageCheck.limitBytes
+        ? StorageService.formatSize(storageCheck.limitBytes)
+        : "Illimité";
+
+      return NextResponse.json(
+        {
+          error: `Limite de stockage dépassée. Usage actuel: ${currentUsage}/${limit}. Veuillez passer à un forfait supérieur ou libérer de l'espace.`,
+          storageInfo: {
+            current: currentUsage,
+            limit: limit,
+            unlimited: storageCheck.unlimited,
+          },
+        },
+        { status: 413 } // Payload Too Large
+      );
+    }
+
     // Vérification du nom de fichier
     if (
       !file.name ||
@@ -196,6 +225,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         taskId,
       },
     });
+
+    // APRÈS UN UPLOAD RÉUSSI : Mettre à jour l'usage du stockage
+    await StorageService.updateStorageUsage(organizationId);
 
     return NextResponse.json(document);
   } catch (error) {

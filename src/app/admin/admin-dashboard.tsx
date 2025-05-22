@@ -11,9 +11,17 @@ import { UsersManagement } from "@/app/admin/users-management";
 import { SubscriptionsManagement } from "@/app/admin/subscriptions-management";
 import { OrganizationsManagement } from "@/app/admin/organizations-management";
 import { SystemSettings } from "@/app/admin/system-settings";
+import { SubscriptionLimitsManagement } from "@/app/admin/subscription-limits-management";
 import Link from "next/link";
 import { Button } from "@/app/components/ui/button";
-import { ArrowLeft, Settings, Users, Building, CreditCard } from "lucide-react";
+import {
+  ArrowLeft,
+  Settings,
+  Users,
+  Building,
+  CreditCard,
+  BarChart3,
+} from "lucide-react";
 
 interface User {
   id: string;
@@ -47,7 +55,7 @@ export function AdminDashboard({ user }: { user: User }) {
         onValueChange={setActiveTab}
         className="w-full"
       >
-        <TabsList className="grid grid-cols-4 mb-8">
+        <TabsList className="grid grid-cols-5 mb-8">
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             <span>Utilisateurs</span>
@@ -66,6 +74,10 @@ export function AdminDashboard({ user }: { user: User }) {
             <CreditCard className="h-4 w-4" />
             <span>Abonnements</span>
           </TabsTrigger>
+          <TabsTrigger value="limits" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            <span>Limites</span>
+          </TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             <span>Paramètres</span>
@@ -82,6 +94,10 @@ export function AdminDashboard({ user }: { user: User }) {
 
         <TabsContent value="subscriptions" className="mt-6">
           <SubscriptionsManagement />
+        </TabsContent>
+
+        <TabsContent value="limits" className="mt-6">
+          <SubscriptionLimitsManagement />
         </TabsContent>
 
         <TabsContent value="settings" className="mt-6">
