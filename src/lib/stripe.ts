@@ -1,21 +1,49 @@
-// src/lib/stripe.ts - Version corrigée
+// src/lib/stripe.ts - Version production-ready
 import Stripe from "stripe";
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  console.warn(
-    "STRIPE_SECRET_KEY is not defined. Stripe functionality will be limited."
-  );
+// Vérification robuste des variables d'environnement
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const isProduction = process.env.NODE_ENV === "production";
+const isVercel = process.env.VERCEL === "1";
+
+// Logging pour debug (seulement en dev)
+if (!isProduction) {
+  console.log("🔧 Stripe Configuration:", {
+    hasSecretKey: !!stripeSecretKey,
+    keyPrefix: stripeSecretKey?.substring(0, 12) + "...",
+    environment: isProduction ? "production" : "development",
+    platform: isVercel ? "vercel" : "local",
+  });
 }
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2025-04-30.basil",
-  appInfo: {
-    name: "PlanniKeeper",
-    version: "0.1.0",
-  },
-});
+// Validation de la clé Stripe
+if (!stripeSecretKey) {
+  const errorMsg = `❌ STRIPE_SECRET_KEY manquante en ${isProduction ? "production" : "développement"}`;
+  console.error(errorMsg);
 
-// Configuration centralisée des plans avec toutes les limites
+  // En production, c'est critique
+  if (isProduction) {
+    throw new Error("STRIPE_SECRET_KEY est requise en production");
+  }
+  console.warn("⚠️ Fonctionnalités Stripe désactivées en développement");
+}
+
+// Initialisation Stripe conditionnelle
+export const stripe = stripeSecretKey
+  ? new Stripe(stripeSecretKey, {
+      apiVersion: "2025-04-30.basil", // Version stable
+      appInfo: {
+        name: "PlanniKeeper",
+        version: "1.0.0",
+        url: isProduction ? "https://plannikeeper.ch" : "http://localhost:3000",
+      },
+      // Configuration spécifique à l'environnement
+      typescript: true,
+      timeout: isProduction ? 30000 : 10000, // 30s en prod, 10s en dev
+    })
+  : null;
+
+// Configuration centralisée des plans avec IDs Stripe
 export const PLAN_DETAILS = {
   FREE: {
     id: "FREE",
@@ -46,7 +74,7 @@ export const PLAN_DETAILS = {
     description: "Pour la gestion personnelle",
     price: 12,
     monthlyPrice: 12,
-    yearlyPrice: 120, // 2 mois offerts
+    yearlyPrice: 120,
     maxUsers: 1,
     maxObjects: 10,
     maxStorage: 2048, // 2GB
@@ -61,8 +89,13 @@ export const PLAN_DETAILS = {
       "Toutes les fonctionnalités",
     ],
     popular: true,
-    stripePriceId: process.env.STRIPE_PERSONAL_PRICE_ID,
-    stripeProductId: process.env.STRIPE_PERSONAL_PRODUCT_ID,
+    // IMPORTANT: Utilisez vos vrais IDs Stripe
+    stripePriceId: isProduction
+      ? "price_1RLldxBQLEouvGCfL3be36t8" // Votre ID LIVE
+      : "price_test_personal", // ID TEST pour dev
+    stripeProductId: isProduction
+      ? "prod_SGIEtVCmOll3el" // Votre produit LIVE
+      : "prod_test_personal", // Produit TEST pour dev
   },
   PROFESSIONAL: {
     id: "PROFESSIONAL",
@@ -70,7 +103,7 @@ export const PLAN_DETAILS = {
     description: "Pour les professionnels indépendants",
     price: 35,
     monthlyPrice: 35,
-    yearlyPrice: 350, // 2 mois offerts
+    yearlyPrice: 350,
     maxUsers: 10,
     maxObjects: 50,
     maxStorage: 10240, // 10GB
@@ -83,11 +116,14 @@ export const PLAN_DETAILS = {
       "10GB de stockage",
       "Support prioritaire",
       "Gestion des accès",
-      "Rapports avancés",
     ],
     popular: false,
-    stripePriceId: process.env.STRIPE_PROFESSIONAL_PRICE_ID,
-    stripeProductId: process.env.STRIPE_PROFESSIONAL_PRODUCT_ID,
+    stripePriceId: isProduction
+      ? "price_1RLlfZBQLEouvGCfM7mFl469" // Votre ID LIVE
+      : "price_test_professional", // ID TEST pour dev
+    stripeProductId: isProduction
+      ? "prod_SGIGQkZN7Seepi" // Votre produit LIVE
+      : "prod_test_professional", // Produit TEST pour dev
   },
   ENTERPRISE: {
     id: "ENTERPRISE",
@@ -95,7 +131,7 @@ export const PLAN_DETAILS = {
     description: "Pour les équipes et entreprises",
     price: 85,
     monthlyPrice: 85,
-    yearlyPrice: 850, // 2 mois offerts
+    yearlyPrice: 850,
     maxUsers: null, // Illimité
     maxObjects: null, // Illimité
     maxStorage: 51200, // 50GB
@@ -108,14 +144,12 @@ export const PLAN_DETAILS = {
       "50GB de stockage",
       "Support téléphone + email",
       "Formation incluse",
-      "API access",
-      "Intégrations avancées",
     ],
     popular: false,
-    stripePriceId: process.env.STRIPE_ENTERPRISE_PRICE_ID,
-    stripeProductId: process.env.STRIPE_ENTERPRISE_PRODUCT_ID,
+    stripePriceId: null, // Pricing personnalisé
+    stripeProductId: null,
   },
-  // Plans spéciaux pour l'administration
+  // Plans administratifs (pas de Stripe)
   SUPER_ADMIN: {
     id: "SUPER_ADMIN",
     name: "Super Administrateur",
@@ -159,7 +193,7 @@ export const PLAN_DETAILS = {
     price: 0,
     monthlyPrice: 0,
     yearlyPrice: 0,
-    maxUsers: 1, // Valeurs par défaut, modifiables
+    maxUsers: 1,
     maxObjects: 1,
     maxStorage: 1024,
     maxSectors: 10,
@@ -175,12 +209,32 @@ export const PLAN_DETAILS = {
 
 export type PlanId = keyof typeof PLAN_DETAILS;
 
-// Helper pour récupérer un plan par son ID
+// Helpers utilitaires
 export function getPlanDetails(planId: string) {
   return PLAN_DETAILS[planId as PlanId] || PLAN_DETAILS.FREE;
 }
 
-// Helper pour vérifier si un plan est valide
 export function isValidPlanId(planId: string): planId is PlanId {
   return planId in PLAN_DETAILS;
+}
+
+export function isStripeAvailable(): boolean {
+  return stripe !== null;
+}
+
+// Helper pour obtenir les plans payants avec Stripe
+export function getPayablePlans() {
+  return Object.values(PLAN_DETAILS).filter(
+    (plan) => plan.stripePriceId && plan.price > 0
+  );
+}
+
+// Validation de la configuration en production
+if (isProduction && !stripeSecretKey) {
+  console.error(
+    "🚨 ERREUR CRITIQUE: STRIPE_SECRET_KEY manquante en production!"
+  );
+  console.error(
+    "📝 Ajoutez la variable dans Vercel Dashboard > Settings > Environment Variables"
+  );
 }
