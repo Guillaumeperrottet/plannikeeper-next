@@ -1,3 +1,4 @@
+// src/lib/auth.ts - Configuration Better Auth corrigée
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { createAuthMiddleware } from "better-auth/api";
@@ -39,110 +40,89 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    verifyEmail: {
-      enabled: true,
-      preventUnverifiedLogin: true,
-      redirects: {
-        success: "/auth/verification-success",
-        error: "/auth/verification-failed",
-        emailNotVerified: "/auth/email-verification-required",
-      },
-    },
+    requireEmailVerification: true, // ✅ Obligatoire pour la vérification
+    autoSignIn: false, // ✅ Désactiver l'auto-connexion pour forcer la vérification
   },
 
-  // Configuration de l'envoi d'emails
-  email: {
-    async sendEmail({
-      type,
-      to,
-      variables,
-    }: {
-      type: string;
-      to: string;
-      variables: { url: string };
-    }) {
-      console.log(`📧 Tentative d'envoi d'email de type: ${type} vers: ${to}`);
+  // ✅ Configuration de la vérification d'email (séparée d'emailAndPassword)
+  emailVerification: {
+    sendOnSignUp: true, // ✅ Envoie automatiquement l'email lors de l'inscription
+    autoSignInAfterVerification: true, // ✅ Connexion automatique après vérification
+    sendVerificationEmail: async ({ user, url, token }) => {
+      console.log(`📧 Envoi d'email de vérification vers: ${user.email}`);
+      console.log(`🔗 URL de vérification: ${url}`);
+      console.log(`🎫 Token: ${token}`);
 
-      if (type === "verifyEmail") {
-        try {
-          // Vérifier que l'URL de vérification est correcte
-          console.log(`🔗 URL de vérification: ${variables.url}`);
-
-          const htmlContent = `
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <meta charset="utf-8">
-                <title>Vérifiez votre adresse email</title>
-                <style>
-                  body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }
-                  .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-                  .header { background-color: #d9840d; color: white; padding: 24px; text-align: center; }
-                  .content { padding: 32px 24px; }
-                  .button { display: inline-block; background-color: #d9840d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; }
-                  .footer { background-color: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 14px; }
-                </style>
-              </head>
-              <body>
-                <div class="container">
-                  <div class="header">
-                    <h1>🏠 PlanniKeeper</h1>
-                    <h2>Vérification de votre adresse email</h2>
-                  </div>
-                  
-                  <div class="content">
-                    <p>Bonjour,</p>
-                    <p>Merci de vous être inscrit(e) sur PlanniKeeper. Veuillez cliquer sur le bouton ci-dessous pour vérifier votre adresse email :</p>
-                    
-                    <div style="text-align: center; margin: 30px 0;">
-                      <a href="${variables.url}" class="button">
-                        Vérifier mon email
-                      </a>
-                    </div>
-                    
-                    <p>Ou copiez-collez ce lien dans votre navigateur :</p>
-                    <p style="word-break: break-all; background-color: #f5f5f5; padding: 10px; border-radius: 4px;">
-                      ${variables.url}
-                    </p>
-                    
-                    <p>Ce lien expire dans 24 heures.</p>
-                    <p>Si vous n'avez pas demandé cette vérification, vous pouvez ignorer cet email.</p>
-                  </div>
-                  
-                  <div class="footer">
-                    <p>© 2025 PlanniKeeper. Tous droits réservés.</p>
-                  </div>
+      try {
+        const htmlContent = `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="utf-8">
+              <title>Vérifiez votre adresse email</title>
+              <style>
+                body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }
+                .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                .header { background-color: #d9840d; color: white; padding: 24px; text-align: center; }
+                .content { padding: 32px 24px; }
+                .button { display: inline-block; background-color: #d9840d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; }
+                .footer { background-color: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 14px; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1>🏠 PlanniKeeper</h1>
+                  <h2>Vérification de votre adresse email</h2>
                 </div>
-              </body>
-            </html>
-          `;
+                
+                <div class="content">
+                  <p>Bonjour ${user.name || user.email.split("@")[0]},</p>
+                  <p>Merci de vous être inscrit(e) sur PlanniKeeper. Veuillez cliquer sur le bouton ci-dessous pour vérifier votre adresse email :</p>
+                  
+                  <div style="text-align: center; margin: 30px 0;">
+                    <a href="${url}" class="button">
+                      Vérifier mon email
+                    </a>
+                  </div>
+                  
+                  <p>Ou copiez-collez ce lien dans votre navigateur :</p>
+                  <p style="word-break: break-all; background-color: #f5f5f5; padding: 10px; border-radius: 4px;">
+                    ${url}
+                  </p>
+                  
+                  <p>Ce lien expire dans 24 heures.</p>
+                  <p>Si vous n'avez pas demandé cette vérification, vous pouvez ignorer cet email.</p>
+                </div>
+                
+                <div class="footer">
+                  <p>© 2025 PlanniKeeper. Tous droits réservés.</p>
+                </div>
+              </div>
+            </body>
+          </html>
+        `;
 
-          const result = await EmailService.sendEmail({
-            to,
-            subject: "Vérifiez votre adresse email - PlanniKeeper",
-            html: htmlContent,
-          });
+        const result = await EmailService.sendEmail({
+          to: user.email,
+          subject: "Vérifiez votre adresse email - PlanniKeeper",
+          html: htmlContent,
+        });
 
-          if (!result.success) {
-            console.error(
-              "❌ Erreur lors de l'envoi de l'email de vérification:",
-              result.error
-            );
-            // Retourner false pour indiquer l'échec à Better Auth
-            return false;
-          }
-
-          console.log("✅ Email de vérification envoyé avec succès");
-          return true;
-        } catch (error) {
-          console.error("❌ Exception lors de l'envoi de l'email:", error);
-          return false;
+        if (!result.success) {
+          console.error(
+            "❌ Erreur lors de l'envoi de l'email de vérification:",
+            result.error
+          );
+          throw new Error(`Échec de l'envoi: ${result.error}`);
         }
-      }
 
-      // Pour les autres types d'emails, retourner true par défaut
-      console.log(`ℹ️ Type d'email non géré: ${type}`);
-      return true;
+        console.log("✅ Email de vérification envoyé avec succès");
+        // No return value needed as the function expects void
+      } catch (error) {
+        console.error("❌ Exception lors de l'envoi de l'email:", error);
+        throw error; // ✅ Propager l'erreur pour que Better Auth puisse la gérer
+      }
     },
   },
 
@@ -222,7 +202,7 @@ export const auth = betterAuth({
   },
 });
 
-// ... (garder toutes les autres fonctions inchangées)
+// ... (garder toutes les autres fonctions helper inchangées)
 async function handleInviteSignup(
   user: {
     id: string;
