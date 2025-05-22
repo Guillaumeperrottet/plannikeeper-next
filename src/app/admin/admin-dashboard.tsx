@@ -24,7 +24,13 @@ import {
   BarChart3,
   TrendingUp,
   AlertTriangle,
+  RefreshCw,
+  Briefcase,
+  CheckSquare,
+  TrendingDown,
 } from "lucide-react";
+import { useAdminStats } from "@/hooks/useAdminStats";
+import { toast } from "sonner";
 
 interface User {
   id: string;
@@ -32,22 +38,18 @@ interface User {
   email?: string | null;
 }
 
-interface AdminStats {
-  totalUsers: number;
-  totalOrganizations: number;
-  activeSubscriptions: number;
-  systemHealth: "good" | "warning" | "critical";
-}
-
 export function AdminDashboard({ user }: { user: User }) {
   const [activeTab, setActiveTab] = useState("overview");
+  const { stats, isLoading, isError, error, refresh } = useAdminStats();
 
-  // Mock stats - vous devriez les récupérer via une API
-  const stats: AdminStats = {
-    totalUsers: 156,
-    totalOrganizations: 89,
-    activeSubscriptions: 45,
-    systemHealth: "good",
+  // Fonction pour gérer l'actualisation manuelle
+  const handleRefresh = async () => {
+    try {
+      await refresh();
+      toast.success("Statistiques actualisées");
+    } catch {
+      toast.error("Erreur lors de l'actualisation");
+    }
   };
 
   const getHealthColor = (health: string) => {
@@ -70,10 +72,29 @@ export function AdminDashboard({ user }: { user: User }) {
       case "warning":
         return <AlertTriangle className="h-4 w-4" />;
       case "critical":
-        return <AlertTriangle className="h-4 w-4" />;
+        return <TrendingDown className="h-4 w-4" />;
       default:
         return <BarChart3 className="h-4 w-4" />;
     }
+  };
+
+  const getHealthText = (health: string) => {
+    switch (health) {
+      case "good":
+        return "Excellent";
+      case "warning":
+        return "Attention";
+      case "critical":
+        return "Critique";
+      default:
+        return "Inconnu";
+    }
+  };
+
+  // Fonction pour formater les tendances
+  const formatGrowthPercentage = (percentage: number) => {
+    if (percentage === 0) return "Aucune croissance";
+    return `+${percentage}% cette semaine`;
   };
 
   return (
@@ -137,66 +158,221 @@ export function AdminDashboard({ user }: { user: User }) {
 
         {/* Vue d'ensemble */}
         <TabsContent value="overview" className="mt-6">
+          {/* Bouton d'actualisation */}
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-semibold">Statistiques générales</h2>
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={isLoading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+              />
+              {isLoading ? "Actualisation..." : "Actualiser"}
+            </Button>
+          </div>
+
+          {/* Gestion des états de chargement et d'erreur */}
+          {isError && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <div className="flex items-center gap-2 text-red-800">
+                <AlertTriangle className="h-5 w-5" />
+                <span className="font-medium">Erreur de chargement</span>
+              </div>
+              <p className="text-red-700 mt-1">
+                {error?.message || "Impossible de charger les statistiques"}
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                className="mt-2"
+              >
+                Réessayer
+              </Button>
+            </div>
+          )}
+
+          {/* Cartes de statistiques */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            {/* Utilisateurs */}
             <div className="bg-card p-6 rounded-lg border">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
                     Utilisateurs
                   </p>
-                  <p className="text-3xl font-bold">{stats.totalUsers}</p>
+                  <div className="flex items-baseline gap-2">
+                    {isLoading ? (
+                      <div className="h-8 w-16 bg-gray-200 animate-pulse rounded"></div>
+                    ) : (
+                      <p className="text-3xl font-bold">
+                        {stats?.totalUsers || 0}
+                      </p>
+                    )}
+                  </div>
+                  {stats?.growth && (
+                    <p className="text-xs text-green-600 mt-1">
+                      {formatGrowthPercentage(stats.growth.usersPercentage)}
+                    </p>
+                  )}
                 </div>
                 <Users className="h-8 w-8 text-blue-500" />
               </div>
             </div>
 
+            {/* Organisations */}
             <div className="bg-card p-6 rounded-lg border">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
                     Organisations
                   </p>
-                  <p className="text-3xl font-bold">
-                    {stats.totalOrganizations}
-                  </p>
+                  <div className="flex items-baseline gap-2">
+                    {isLoading ? (
+                      <div className="h-8 w-16 bg-gray-200 animate-pulse rounded"></div>
+                    ) : (
+                      <p className="text-3xl font-bold">
+                        {stats?.totalOrganizations || 0}
+                      </p>
+                    )}
+                  </div>
+                  {stats?.avgUsersPerOrganization && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {stats.avgUsersPerOrganization} utilisateurs/org en
+                      moyenne
+                    </p>
+                  )}
                 </div>
                 <Building className="h-8 w-8 text-amber-500" />
               </div>
             </div>
 
+            {/* Abonnements actifs */}
             <div className="bg-card p-6 rounded-lg border">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
                     Abonnements actifs
                   </p>
-                  <p className="text-3xl font-bold">
-                    {stats.activeSubscriptions}
-                  </p>
+                  <div className="flex items-baseline gap-2">
+                    {isLoading ? (
+                      <div className="h-8 w-16 bg-gray-200 animate-pulse rounded"></div>
+                    ) : (
+                      <p className="text-3xl font-bold">
+                        {stats?.activeSubscriptions || 0}
+                      </p>
+                    )}
+                  </div>
+                  {stats?.subscriptionRate !== undefined && (
+                    <p className="text-xs text-green-600 mt-1">
+                      {stats.subscriptionRate}% de taux de conversion
+                    </p>
+                  )}
                 </div>
                 <CreditCard className="h-8 w-8 text-green-500" />
               </div>
             </div>
 
+            {/* État système */}
             <div className="bg-card p-6 rounded-lg border">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
                     État système
                   </p>
-                  <div
-                    className={`flex items-center gap-2 ${getHealthColor(stats.systemHealth)}`}
-                  >
-                    {getHealthIcon(stats.systemHealth)}
-                    <span className="text-sm font-medium capitalize">
-                      {stats.systemHealth}
-                    </span>
+                  <div className="flex items-center gap-2 mt-2">
+                    {isLoading ? (
+                      <div className="h-6 w-20 bg-gray-200 animate-pulse rounded"></div>
+                    ) : (
+                      <>
+                        {stats?.systemHealth &&
+                          getHealthIcon(stats.systemHealth)}
+                        <span
+                          className={`text-sm font-medium ${stats?.systemHealth ? getHealthColor(stats.systemHealth) : "text-gray-500"}`}
+                        >
+                          {stats?.systemHealth
+                            ? getHealthText(stats.systemHealth)
+                            : "Inconnu"}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Statistiques supplémentaires */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {/* Objets immobiliers */}
+            <div className="bg-card p-6 rounded-lg border">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Objets immobiliers</h3>
+                <Briefcase className="h-6 w-6 text-purple-500" />
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total</span>
+                  {isLoading ? (
+                    <div className="h-5 w-12 bg-gray-200 animate-pulse rounded"></div>
+                  ) : (
+                    <span className="font-medium">
+                      {stats?.totalObjects || 0}
+                    </span>
+                  )}
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    Moyenne par organisation
+                  </span>
+                  {isLoading ? (
+                    <div className="h-5 w-12 bg-gray-200 animate-pulse rounded"></div>
+                  ) : (
+                    <span className="font-medium">
+                      {stats?.avgObjectsPerOrganization || 0}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Tâches */}
+            <div className="bg-card p-6 rounded-lg border">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Tâches</h3>
+                <CheckSquare className="h-6 w-6 text-indigo-500" />
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total actives</span>
+                  {isLoading ? (
+                    <div className="h-5 w-12 bg-gray-200 animate-pulse rounded"></div>
+                  ) : (
+                    <span className="font-medium">
+                      {stats?.totalTasks || 0}
+                    </span>
+                  )}
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    Nouveaux utilisateurs (7j)
+                  </span>
+                  {isLoading ? (
+                    <div className="h-5 w-12 bg-gray-200 animate-pulse rounded"></div>
+                  ) : (
+                    <span className="font-medium text-green-600">
+                      +{stats?.recentUsers || 0}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions rapides */}
           <div className="bg-card p-6 rounded-lg border">
             <h3 className="text-lg font-semibold mb-4">Actions rapides</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
