@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
-import { stripe, PLAN_DETAILS } from "@/lib/stripe";
+import { stripe } from "@/lib/stripe-server"; // Import serveur pour Stripe
+import { PLAN_DETAILS } from "@/lib/stripe"; // Import partagé pour les configs
 
 export async function POST(req: NextRequest) {
   try {

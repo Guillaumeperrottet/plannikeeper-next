@@ -1,58 +1,6 @@
-// src/lib/stripe.ts - Version mise à jour (safe pour client/serveur)
-import Stripe from "stripe";
+// src/lib/stripe-client.ts - Version client (sans variables serveur)
 
-// Vérifier si on est côté serveur
-const isServer = typeof window === "undefined";
-
-// Vérification robuste des variables d'environnement (uniquement côté serveur)
-const stripeSecretKey = isServer ? process.env.STRIPE_SECRET_KEY : undefined;
-const isProduction = process.env.NODE_ENV === "production";
-const isVercel = process.env.VERCEL === "1";
-
-// Logging pour debug (seulement en dev et côté serveur)
-if (!isProduction && isServer) {
-  console.log("🔧 Stripe Configuration:", {
-    hasSecretKey: !!stripeSecretKey,
-    keyPrefix: stripeSecretKey?.substring(0, 12) + "...",
-    environment: isProduction ? "production" : "development",
-    platform: isVercel ? "vercel" : "local",
-  });
-}
-
-// Validation de la clé Stripe (uniquement côté serveur)
-if (isServer && !stripeSecretKey) {
-  const errorMsg = `❌ STRIPE_SECRET_KEY manquante en ${isProduction ? "production" : "développement"}`;
-  console.error(errorMsg);
-
-  // En production, c'est critique (mais ne pas throw côté client)
-  if (isProduction) {
-    console.error(
-      "🚨 ERREUR CRITIQUE: STRIPE_SECRET_KEY manquante en production!"
-    );
-    console.error(
-      "📝 Ajoutez la variable dans Vercel Dashboard > Settings > Environment Variables"
-    );
-  } else {
-    console.warn("⚠️ Fonctionnalités Stripe désactivées en développement");
-  }
-}
-
-// Initialisation Stripe conditionnelle (uniquement côté serveur)
-export const stripe =
-  isServer && stripeSecretKey
-    ? new Stripe(stripeSecretKey, {
-        apiVersion: "2025-04-30.basil",
-        appInfo: {
-          name: "PlanniKeeper",
-          version: "1.0.0",
-          url: isProduction
-            ? "https://plannikeeper.ch"
-            : "http://localhost:3000",
-        },
-        typescript: true,
-        timeout: isProduction ? 30000 : 10000,
-      })
-    : null;
+// Configuration centralisée des plans (sans Stripe server)
 export const PLAN_DETAILS = {
   FREE: {
     id: "FREE",
@@ -207,9 +155,3 @@ export function isValidPlanId(planId: string): planId is PlanId {
 export function getPayablePlans() {
   return Object.values(PLAN_DETAILS).filter((plan) => plan.price > 0);
 }
-
-export function isStripeAvailable(): boolean {
-  return stripe !== null;
-}
-
-// Configuration centralisée des plans

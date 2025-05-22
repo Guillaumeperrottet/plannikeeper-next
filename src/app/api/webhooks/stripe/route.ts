@@ -1,6 +1,6 @@
 // src/app/api/webhooks/stripe/route.ts - Version corrigée
 import { NextRequest, NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
+import { stripe } from "@/lib/stripe-server"; // Import serveur pour Stripe
 import { prisma } from "@/lib/prisma";
 import { PlanType, SubscriptionStatus } from "@prisma/client";
 import Stripe from "stripe";
