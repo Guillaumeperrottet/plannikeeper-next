@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { getUser } from "@/lib/auth-session";
+import { getClientUser } from "@/lib/auth-client-utils";
 import { Loader2, CheckCircle, ArrowRight, Users } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 
@@ -20,19 +20,7 @@ export default function JoinInvitePage() {
     const processInvitation = async () => {
       try {
         // Vérifier si l'utilisateur est connecté et vérifié
-        // Ajout d'un typage explicite pour inclure organizationId
-        type UserWithOrg = {
-          id: string;
-          name: string;
-          email: string;
-          emailVerified: boolean;
-          createdAt: Date;
-          updatedAt: Date;
-          image?: string | null;
-          organizationId?: string | null;
-        };
-
-        const currentUser = (await getUser()) as UserWithOrg | null;
+        const currentUser = await getClientUser();
 
         if (!currentUser) {
           // Pas connecté, rediriger vers l'inscription avec le code
@@ -46,8 +34,16 @@ export default function JoinInvitePage() {
           return;
         }
 
+        // Définition du type pour currentUser
+        interface UserWithOrg {
+          emailVerified: boolean;
+          organizationId?: string;
+        }
+
         // Vérifier si l'utilisateur a déjà une organisation
-        if (currentUser.organizationId) {
+        // Si l'utilisateur a déjà une organisation (adapter selon la structure réelle de currentUser)
+        const typedUser = currentUser as UserWithOrg;
+        if ("organizationId" in currentUser && typedUser.organizationId) {
           setError(
             "Vous appartenez déjà à une organisation. Contactez votre administrateur pour changer d'organisation."
           );

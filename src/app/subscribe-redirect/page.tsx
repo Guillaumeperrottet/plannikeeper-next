@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { getUser } from "@/lib/auth-session";
+import { getClientUser } from "@/lib/auth-client-utils";
 import { Loader2, CheckCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 
@@ -11,6 +11,7 @@ export default function SubscribeRedirectPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
+  // const [user, setUser] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const planType = searchParams.get("plan") || "FREE";
 
@@ -46,7 +47,7 @@ export default function SubscribeRedirectPage() {
     const checkUserAndRedirect = async () => {
       try {
         // Vérifier si l'utilisateur est connecté et vérifié
-        const currentUser = await getUser();
+        const currentUser = await getClientUser();
 
         if (!currentUser) {
           // Pas connecté, rediriger vers la connexion
@@ -60,23 +61,10 @@ export default function SubscribeRedirectPage() {
           return;
         }
 
-        // setUser(currentUser); // No longer needed
-        // Si c'est un plan payant, rediriger vers le checkout
-        if (planType !== "FREE") {
-          // Petite pause pour montrer le message de succès
-          setTimeout(() => {
-            handlePayment();
-          }, 2000);
-        } else {
-          // Plan gratuit, rediriger vers le dashboard après 3 secondes
-          setTimeout(() => {
-            router.push("/dashboard");
-          }, 3000);
-        }
-      } catch (err) {
-        console.error("Erreur lors de la vérification:", err);
-        setError("Une erreur est survenue lors de la vérification");
-      } finally {
+        // Si tout est ok, lancer le paiement ou la redirection
+        await handlePayment();
+      } catch {
+        setError("Erreur lors de la vérification de l'utilisateur");
         setIsLoading(false);
       }
     };
