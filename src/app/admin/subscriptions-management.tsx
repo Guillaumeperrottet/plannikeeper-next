@@ -140,29 +140,39 @@ export function SubscriptionsManagement() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(selectedSubscription),
+          body: JSON.stringify({
+            name: selectedSubscription.organization.name,
+            subscription: {
+              planName: selectedSubscription.plan.name,
+              status: selectedSubscription.status,
+              cancelAtPeriodEnd: selectedSubscription.cancelAtPeriodEnd,
+            },
+          }),
         }
       );
 
       if (!response.ok) {
-        throw new Error("Erreur lors de la mise à jour");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Erreur lors de la mise à jour");
       }
 
-      // Mettre à jour la liste des abonnements
-      const updatedSubscriptions = subscriptions.map((sub) => {
-        if (sub.id === selectedSubscription.id) {
-          return selectedSubscription;
-        }
-        return sub;
-      });
+      // Recharger les données
+      const fetchResponse = await fetch("/api/admin/subscriptions");
+      if (fetchResponse.ok) {
+        const data = await fetchResponse.json();
+        setSubscriptions(data.subscriptions);
+      }
 
-      setSubscriptions(updatedSubscriptions);
       setIsEditing(false);
       setSelectedSubscription(null);
       toast.success("Abonnement mis à jour avec succès");
     } catch (error) {
       console.error("Erreur:", error);
-      toast.error("Erreur lors de la mise à jour de l'abonnement");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Erreur lors de la mise à jour de l'abonnement"
+      );
     }
   };
 
@@ -181,7 +191,7 @@ export function SubscriptionsManagement() {
     return statusMap[status] || status;
   };
 
-  // Formater un date
+  // Formater une date
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
   };
@@ -228,7 +238,7 @@ export function SubscriptionsManagement() {
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                onClick={() => setSubscriptions([])}
+                onClick={() => window.location.reload()}
                 disabled={loading}
               >
                 <RefreshCw className="mr-2 h-4 w-4" />
@@ -366,7 +376,7 @@ export function SubscriptionsManagement() {
                 >
                   <option value="FREE">Gratuit</option>
                   <option value="PERSONAL">Particulier</option>
-                  <option value="PROFESSIONAL">Indépendant</option>
+                  <option value="PROFESSIONAL">Professionnel</option>
                   <option value="ENTERPRISE">Entreprise</option>
                   <option value="ILLIMITE">Accès Illimité</option>
                   <option value="SUPER_ADMIN">Super Admin</option>

@@ -1,53 +1,10 @@
-// src/app/api/admin/subscriptions/[id]/route.ts
+// src/app/api/admin/subscriptions/[id]/route.ts - Version corrigée
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { superAdminGuard } from "@/lib/super-admin";
 
-// GET : récupérer une organisation spécifique
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const user = await getUser();
-    if (!user || !(await superAdminGuard(user.id))) {
-      return NextResponse.json(
-        { error: "Accès non autorisé" },
-        { status: 403 }
-      );
-    }
-
-    const { id: orgId } = await params;
-    const organization = await prisma.organization.findUnique({
-      where: { id: orgId },
-      include: {
-        users: {
-          include: { OrganizationUser: { select: { role: true } } },
-        },
-        Objet: true,
-        subscription: { include: { plan: true } },
-      },
-    });
-
-    if (!organization) {
-      return NextResponse.json(
-        { error: "Organisation non trouvée" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({ organization });
-  } catch (error) {
-    console.error("Erreur lors de la récupération de l'organisation :", error);
-    return NextResponse.json(
-      { error: "Erreur interne du serveur" },
-      { status: 500 }
-    );
-  }
-}
-
-// PUT : mettre à jour une organisation et son abonnement
+// PUT : mettre à jour un abonnement
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -61,83 +18,92 @@ export async function PUT(
       );
     }
 
-    const { id: orgId } = await params;
+    const { id: subscriptionId } = await params;
     const updateData = await request.json();
 
-    const existingOrg = await prisma.organization.findUnique({
-      where: { id: orgId },
+    console.log("Données reçues:", updateData);
+    console.log("ID abonnement:", subscriptionId);
+
+    // Vérifier que l'abonnement existe
+    const existingSubscription = await prisma.subscription.findUnique({
+      where: { id: subscriptionId },
+      include: { organization: true, plan: true },
     });
-    if (!existingOrg) {
+
+    if (!existingSubscription) {
       return NextResponse.json(
-        { error: "Organisation non trouvée" },
+        { error: "Abonnement non trouvé" },
         { status: 404 }
       );
     }
 
-    const updatedOrg = await prisma.organization.update({
-      where: { id: orgId },
-      data: { name: updateData.name },
-    });
+    // Si un changement de plan est demandé
+    if (updateData.subscription?.planName) {
+      const newPlan = await prisma.plan.findUnique({
+        where: { name: updateData.subscription.planName },
+      });
 
-    if (updateData.subscription) {
-      const {
-        planName,
-        status = "ACTIVE",
-        cancelAtPeriodEnd = false,
-      } = updateData.subscription;
-      const plan = await prisma.plan.findUnique({ where: { name: planName } });
-      if (!plan) {
+      if (!newPlan) {
         return NextResponse.json(
-          { error: "Plan non trouvé", organization: updatedOrg },
+          { error: `Plan "${updateData.subscription.planName}" non trouvé` },
           { status: 400 }
         );
       }
 
-      const existingSub = await prisma.subscription.findUnique({
-        where: { organizationId: orgId },
+      // Mettre à jour l'abonnement avec le nouveau plan
+      const updatedSubscription = await prisma.subscription.update({
+        where: { id: subscriptionId },
+        data: {
+          planId: newPlan.id,
+          status: updateData.subscription.status || existingSubscription.status,
+          cancelAtPeriodEnd:
+            updateData.subscription.cancelAtPeriodEnd ??
+            existingSubscription.cancelAtPeriodEnd,
+          currentPeriodEnd: updateData.subscription.currentPeriodEnd
+            ? new Date(updateData.subscription.currentPeriodEnd)
+            : existingSubscription.currentPeriodEnd,
+        },
       });
 
-      if (existingSub) {
-        await prisma.subscription.update({
-          where: { id: existingSub.id },
-          data: {
-            planId: plan.id,
-            status,
-            cancelAtPeriodEnd,
-          },
-        });
-      } else {
-        const now = new Date();
-        await prisma.subscription.create({
-          data: {
-            organizationId: orgId,
-            planId: plan.id,
-            status,
-            currentPeriodStart: now,
-            currentPeriodEnd: new Date(
-              now.getTime() + 30 * 24 * 60 * 60 * 1000
-            ),
-            cancelAtPeriodEnd,
-          },
-        });
-      }
+      return NextResponse.json({
+        success: true,
+        message: "Abonnement mis à jour avec succès",
+        subscription: updatedSubscription,
+      });
     }
+
+    // Sinon, mise à jour simple des champs
+    const updatedSubscription = await prisma.subscription.update({
+      where: { id: subscriptionId },
+      data: {
+        status: updateData.subscription?.status || existingSubscription.status,
+        cancelAtPeriodEnd:
+          updateData.subscription?.cancelAtPeriodEnd ??
+          existingSubscription.cancelAtPeriodEnd,
+        currentPeriodEnd: updateData.subscription?.currentPeriodEnd
+          ? new Date(updateData.subscription.currentPeriodEnd)
+          : existingSubscription.currentPeriodEnd,
+      },
+    });
 
     return NextResponse.json({
       success: true,
-      message: "Organisation mise à jour avec succès",
-      organization: updatedOrg,
+      message: "Abonnement mis à jour avec succès",
+      subscription: updatedSubscription,
     });
   } catch (error) {
-    console.error("Erreur lors de la mise à jour de l'organisation :", error);
+    console.error("Erreur lors de la mise à jour de l'abonnement:", error);
     return NextResponse.json(
-      { error: "Erreur interne du serveur" },
+      {
+        error: "Erreur interne du serveur",
+        details: error instanceof Error ? error.message : "Erreur inconnue",
+      },
       { status: 500 }
     );
   }
 }
 
-// DELETE : supprimer une organisation et tout son périmètre
+// DELETE : supprimer un abonnement
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -151,30 +117,30 @@ export async function DELETE(
       );
     }
 
-    const { id: orgId } = await params;
-    const existingOrg = await prisma.organization.findUnique({
-      where: { id: orgId },
+    const { id: subscriptionId } = await params;
+
+    const existingSubscription = await prisma.subscription.findUnique({
+      where: { id: subscriptionId },
     });
-    if (!existingOrg) {
+
+    if (!existingSubscription) {
       return NextResponse.json(
-        { error: "Organisation non trouvée" },
+        { error: "Abonnement non trouvé" },
         { status: 404 }
       );
     }
 
-    await prisma.$transaction([
-      prisma.subscription.deleteMany({ where: { organizationId: orgId } }),
-      prisma.organizationUser.deleteMany({ where: { organizationId: orgId } }),
-      prisma.invitationCode.deleteMany({ where: { organizationId: orgId } }),
-      prisma.organization.delete({ where: { id: orgId } }),
-    ]);
+    // Supprimer l'abonnement
+    await prisma.subscription.delete({
+      where: { id: subscriptionId },
+    });
 
     return NextResponse.json({
       success: true,
-      message: "Organisation supprimée avec succès",
+      message: "Abonnement supprimé avec succès",
     });
   } catch (error) {
-    console.error("Erreur lors de la suppression de l'organisation :", error);
+    console.error("Erreur lors de la suppression de l'abonnement:", error);
     return NextResponse.json(
       { error: "Erreur interne du serveur" },
       { status: 500 }
