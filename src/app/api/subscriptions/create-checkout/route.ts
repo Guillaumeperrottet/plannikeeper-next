@@ -1,4 +1,3 @@
-// src/app/api/subscriptions/create-checkout/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
@@ -13,19 +12,16 @@ export async function POST(req: NextRequest) {
 
     const { planType } = await req.json();
 
-    // Vérifiez que le plan est valide
     if (!planType || !Object.keys(PLAN_DETAILS).includes(planType)) {
       return NextResponse.json({ error: "Plan non valide" }, { status: 400 });
     }
 
-    // Pour les plans sur mesure (ENTERPRISE), rediriger vers un formulaire de contact
     if (planType === "ENTERPRISE") {
       return NextResponse.json({
         url: `${process.env.NEXT_PUBLIC_APP_URL}/contact?plan=enterprise`,
       });
     }
 
-    // Obtenez l'organisation de l'utilisateur
     const userWithOrg = await prisma.user.findUnique({
       where: { id: user.id },
       include: { Organization: true },
@@ -38,15 +34,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Vérifiez si l'organisation a déjà un abonnement
     const existingSubscription = await prisma.subscription.findUnique({
       where: { organizationId: userWithOrg.Organization.id },
       include: { plan: true },
     });
 
-    // Pour le plan FREE, mettez simplement à jour la base de données
+    // Pour le plan FREE, pas besoin de Stripe
     if (planType === "FREE") {
-      // Trouvez le plan gratuit
       const freePlan = await prisma.plan.findUnique({
         where: { name: "FREE" },
       });
@@ -58,7 +52,6 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Si un abonnement existe déjà, mettez-le à jour
       if (existingSubscription) {
         await prisma.subscription.update({
           where: { id: existingSubscription.id },
@@ -69,18 +62,17 @@ export async function POST(req: NextRequest) {
             stripeCustomerId: null,
             cancelAtPeriodEnd: false,
             currentPeriodStart: new Date(),
-            currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 an
+            currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
           },
         });
       } else {
-        // Sinon, créez un nouvel abonnement
         await prisma.subscription.create({
           data: {
             organizationId: userWithOrg.Organization.id,
             planId: freePlan.id,
             status: "ACTIVE",
             currentPeriodStart: new Date(),
-            currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 an
+            currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
           },
         });
       }
@@ -91,7 +83,14 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Pour les autres plans, créez une session de paiement Stripe
+    // Pour les plans payants, vérifier que Stripe est disponible
+    if (!stripe) {
+      return NextResponse.json(
+        { error: "Service de paiement temporairement indisponible" },
+        { status: 503 }
+      );
+    }
+
     const plan = await prisma.plan.findUnique({
       where: { name: planType },
     });
@@ -100,10 +99,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Plan non trouvé" }, { status: 404 });
     }
 
-    // Vérifiez si l'organisation a déjà un client Stripe
     let customerId = existingSubscription?.stripeCustomerId || null;
 
-    // Si non, créez un nouveau client Stripe
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: user.email || undefined,
@@ -116,7 +113,6 @@ export async function POST(req: NextRequest) {
       customerId = customer.id;
     }
 
-    // Créez une session de paiement
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ["card"],

@@ -1,4 +1,3 @@
-// src/app/api/subscriptions/create-portal/route.ts
 import { NextResponse } from "next/server";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
@@ -6,12 +5,19 @@ import { stripe } from "@/lib/stripe";
 
 export async function POST() {
   try {
+    // Vérifier que Stripe est disponible
+    if (!stripe) {
+      return NextResponse.json(
+        { error: "Service de paiement temporairement indisponible" },
+        { status: 503 }
+      );
+    }
+
     const user = await getUser();
     if (!user) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
-    // Obtenez l'organisation de l'utilisateur
     const userWithOrg = await prisma.user.findUnique({
       where: { id: user.id },
       include: { Organization: true },
@@ -24,7 +30,6 @@ export async function POST() {
       );
     }
 
-    // Vérifiez si l'organisation a un abonnement
     const subscription = await prisma.subscription.findUnique({
       where: { organizationId: userWithOrg.Organization.id },
     });
@@ -36,7 +41,6 @@ export async function POST() {
       );
     }
 
-    // Créez une session de portail client Stripe
     const session = await stripe.billingPortal.sessions.create({
       customer: subscription.stripeCustomerId,
       return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,

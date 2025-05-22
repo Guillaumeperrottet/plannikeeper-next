@@ -1,4 +1,3 @@
-// src/app/api/subscriptions/cancel/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
@@ -6,12 +5,19 @@ import { stripe } from "@/lib/stripe";
 
 export async function POST(req: NextRequest) {
   try {
+    // Vérifier que Stripe est disponible
+    if (!stripe) {
+      return NextResponse.json(
+        { error: "Service de paiement temporairement indisponible" },
+        { status: 503 }
+      );
+    }
+
     const user = await getUser();
     if (!user) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
-    // Récupérer l'organisation de l'utilisateur
     const userWithOrg = await prisma.user.findUnique({
       where: { id: user.id },
       include: { Organization: true },
@@ -24,7 +30,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Vérifier si l'utilisateur est admin de l'organisation
     const isAdmin = await prisma.organizationUser.findFirst({
       where: {
         userId: user.id,
@@ -40,7 +45,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Récupérer l'abonnement
     const subscription = await prisma.subscription.findUnique({
       where: { organizationId: userWithOrg.Organization.id },
     });
@@ -52,20 +56,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Obtenir les détails de l'abonnement depuis Stripe
     const { cancelImmediately } = await req.json();
 
     if (cancelImmediately) {
-      // Annulation immédiate de l'abonnement
       await stripe.subscriptions.cancel(subscription.stripeSubscriptionId);
     } else {
-      // Annulation à la fin de la période (comportement par défaut)
       await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
         cancel_at_period_end: true,
       });
     }
 
-    // Mettre à jour l'état dans la base de données
     await prisma.subscription.update({
       where: { id: subscription.id },
       data: {
