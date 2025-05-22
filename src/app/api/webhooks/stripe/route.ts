@@ -1,4 +1,4 @@
-// src/app/api/webhooks/stripe/route.ts
+// src/app/api/webhooks/stripe/route.ts - Version corrigée
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
@@ -34,6 +34,24 @@ interface StripeSubscription extends Stripe.Subscription {
 export async function POST(req: NextRequest) {
   console.log("Webhook Stripe reçu - Début du traitement");
   console.log("URL de la requête webhook:", req.url);
+
+  // Vérification critique : Stripe doit être disponible pour traiter les webhooks
+  if (!stripe) {
+    console.error("🚨 ERREUR CRITIQUE: Stripe non initialisé pour le webhook");
+    console.error(
+      "📝 Vérifiez que STRIPE_SECRET_KEY est définie dans les variables d'environnement"
+    );
+
+    // En webhook, on doit retourner 200 même en cas d'erreur pour éviter les retry infinis
+    return NextResponse.json(
+      {
+        error: "Stripe non configuré",
+        received: true,
+        timestamp: new Date().toISOString(),
+      },
+      { status: 200 }
+    );
+  }
 
   // Log détaillé des en-têtes pour déboguer
   const headers: Record<string, string> = {};
@@ -136,6 +154,7 @@ export async function POST(req: NextRequest) {
         console.log(
           `Abonnement créé/mis à jour pour l'organisation: ${organizationId}, plan: ${plan.name}`
         );
+
         try {
           // Récupérer l'organisation et le plan
           const subscription = await prisma.subscription.findUnique({
@@ -178,32 +197,27 @@ export async function POST(req: NextRequest) {
 
       // Charges
       case "charge.refunded": {
-        // Vous pourriez vouloir enregistrer cette information ou envoyer une notification
         console.log(`Remboursement traité: ${event.data.object.id}`);
         break;
       }
 
       case "charge.dispute.created": {
-        // Un litige a été créé, vous pourriez vouloir notifier un administrateur
         console.log(`Litige créé: ${event.data.object.id}`);
         break;
       }
 
       // Customer
       case "customer.created": {
-        // Un nouveau client a été créé
         console.log(`Client créé: ${event.data.object.id}`);
         break;
       }
 
       case "customer.deleted": {
-        // Un client a été supprimé
         console.log(`Client supprimé: ${event.data.object.id}`);
         break;
       }
 
       case "customer.updated": {
-        // Un client a été mis à jour
         console.log(`Client mis à jour: ${event.data.object.id}`);
         break;
       }
@@ -362,6 +376,7 @@ export async function POST(req: NextRequest) {
         }
         break;
       }
+
       // Invoice
       case "invoice.payment_succeeded": {
         const invoice = event.data.object as StripeInvoice;
@@ -519,7 +534,6 @@ export async function POST(req: NextRequest) {
               data: { status: "PAST_DUE" },
             });
 
-            // TODO: Envoyer une notification à l'utilisateur
             console.log(
               `Échec de paiement pour l'abonnement: ${subscription.id}`
             );
@@ -529,15 +543,12 @@ export async function POST(req: NextRequest) {
       }
 
       case "invoice.upcoming": {
-        // Stripe vous avertit qu'une facture va être créée prochainement
-        // Vous pourriez envoyer une notification à l'utilisateur
         console.log(`Facture à venir: ${event.data.object.id}`);
         break;
       }
 
       // Payment Method
       case "payment_method.updated": {
-        // Une méthode de paiement a été mise à jour
         console.log(`Méthode de paiement mise à jour: ${event.data.object.id}`);
         break;
       }
@@ -554,6 +565,7 @@ export async function POST(req: NextRequest) {
       {
         error: `Erreur de webhook: ${error instanceof Error ? error.message : "Erreur inconnue"}`,
         received: true,
+        timestamp: new Date().toISOString(),
       },
       { status: 200 }
     );
