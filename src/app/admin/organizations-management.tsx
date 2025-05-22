@@ -44,7 +44,13 @@ interface Organization {
   };
 }
 
-export function OrganizationsManagement() {
+interface OrganizationsManagementProps {
+  hideCreateButton?: boolean;
+}
+
+export function OrganizationsManagement({
+  hideCreateButton = false,
+}: OrganizationsManagementProps) {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -204,10 +210,12 @@ export function OrganizationsManagement() {
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Actualiser
               </Button>
-              <Button onClick={handleCreateOrg}>
-                <Plus className="mr-2 h-4 w-4" />
-                Nouvelle organisation
-              </Button>
+              {!hideCreateButton && (
+                <Button onClick={handleCreateOrg}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nouvelle organisation
+                </Button>
+              )}
             </div>
           </div>
 
