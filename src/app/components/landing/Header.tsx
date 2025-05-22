@@ -12,6 +12,7 @@ import {
   useTransform,
   AnimatePresence,
 } from "framer-motion";
+import { track } from "@vercel/analytics";
 import { buttonVariants } from "@/app/components/ui/button";
 import { VT323 } from "next/font/google";
 import Link from "next/link";
@@ -43,6 +44,45 @@ export default function Header() {
   const sideOpacity = useTransform(scrollY, [0, 100], [1, 0]);
   const sideScale = useTransform(scrollY, [0, 100], [1, 0.8]);
   const navScale = useTransform(scrollY, [0, 100], [1, 1.1]);
+
+  // Fonctions de tracking
+  const handleAboutClick = (location: string) => {
+    track("about_us_clicked", {
+      location: location,
+      timestamp: new Date().toISOString(),
+      user_agent:
+        typeof navigator !== "undefined" ? navigator.userAgent : "unknown",
+    });
+  };
+
+  const handleContactClick = (location: string) => {
+    track("contact_clicked", {
+      location: location,
+      timestamp: new Date().toISOString(),
+    });
+  };
+
+  const handleSignupClick = (location: string) => {
+    track("signup_clicked", {
+      plan: "FREE",
+      location: location,
+      timestamp: new Date().toISOString(),
+    });
+  };
+
+  const handleLogoClick = () => {
+    track("logo_clicked", {
+      timestamp: new Date().toISOString(),
+    });
+  };
+
+  const handleNavigationClick = (sectionId: string) => {
+    track("navigation_clicked", {
+      section: sectionId,
+      location: "header",
+      timestamp: new Date().toISOString(),
+    });
+  };
 
   // Effet pour la gestion du scroll lors de l'ouverture du menu mobile
   useEffect(() => {
@@ -109,6 +149,7 @@ export default function Header() {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     setActiveSection(id);
     setMobileMenuOpen(false); // Ferme le menu mobile après la sélection
+    handleNavigationClick(id);
   };
 
   // Générer un effet de feedback haptique sur mobile
@@ -121,6 +162,12 @@ export default function Header() {
   const toggleMobileMenu = () => {
     triggerHapticFeedback();
     setMobileMenuOpen(!mobileMenuOpen);
+
+    // Tracker l'ouverture/fermeture du menu
+    track("mobile_menu_toggled", {
+      action: !mobileMenuOpen ? "opened" : "closed",
+      timestamp: new Date().toISOString(),
+    });
   };
 
   return (
@@ -131,7 +178,8 @@ export default function Header() {
         {/* Logo on the left */}
         <motion.div
           style={{ opacity: sideOpacity, scale: sideScale }}
-          className={`text-3xl md:text-5xl font-bold ${vt323.className} text-black`}
+          className={`text-3xl md:text-5xl font-bold ${vt323.className} text-black cursor-pointer`}
+          onClick={handleLogoClick}
         >
           PlanniKeeper
         </motion.div>
@@ -159,6 +207,18 @@ export default function Header() {
                       ? "bg-[#d9840d] text-white"
                       : "text-[#62605d] hover:bg-[#e8ebe0]"
                   }`}
+                  onClick={() => {
+                    if (id === "about") {
+                      handleAboutClick("header");
+                    } else if (id === "contact") {
+                      handleContactClick("header");
+                    }
+
+                    track("header_link_clicked", {
+                      link: id,
+                      timestamp: new Date().toISOString(),
+                    });
+                  }}
                 >
                   <Icon className="h-5 w-5" />
                   <span className={`text-sm ${scrolled ? "block" : "hidden"}`}>
@@ -198,6 +258,7 @@ export default function Header() {
                 variant: "outline",
                 className: "bg-white hover:bg-[#e8ebe0] border-[#beac93]",
               })}
+              onClick={() => handleSignupClick("header")}
             >
               <User className="w-4 h-4 mr-2" />
               Se connecter
@@ -294,7 +355,19 @@ export default function Header() {
                                 ? "bg-[#d9840d] text-white shadow-md"
                                 : "bg-white text-[#141313] hover:bg-[#e8ebe0] border border-[#beac93]"
                             }`}
-                            onClick={() => setMobileMenuOpen(false)}
+                            onClick={() => {
+                              setMobileMenuOpen(false);
+                              if (id === "about") {
+                                handleAboutClick("mobile_menu");
+                              } else if (id === "contact") {
+                                handleContactClick("mobile_menu");
+                              }
+
+                              track("mobile_menu_link_clicked", {
+                                link: id,
+                                timestamp: new Date().toISOString(),
+                              });
+                            }}
                           >
                             <Icon className="h-5 w-5" />
                             <span className="text-base font-medium">
@@ -338,7 +411,10 @@ export default function Header() {
                       <Link
                         href="/dashboard"
                         className="w-full p-4 rounded-xl transition duration-300 flex items-center gap-3 bg-white text-[#141313] hover:bg-[#e8ebe0] border border-[#beac93]"
-                        onClick={() => setMobileMenuOpen(false)}
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          handleSignupClick("mobile_menu");
+                        }}
                       >
                         <User className="h-5 w-5" />
                         <span className="text-base font-medium">
@@ -354,7 +430,13 @@ export default function Header() {
                       <Link
                         href="/signup"
                         className="w-full p-4 rounded-xl transition duration-300 flex items-center gap-3 bg-white text-[#141313] hover:bg-[#e8ebe0] border border-[#beac93]"
-                        onClick={() => setMobileMenuOpen(false)}
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          handleSignupClick("mobile_menu");
+                          track("mobile_menu_signup_clicked", {
+                            timestamp: new Date().toISOString(),
+                          });
+                        }}
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -388,6 +470,10 @@ export default function Header() {
                   onClick={() => {
                     triggerHapticFeedback();
                     setMobileMenuOpen(false);
+                    handleSignupClick("mobile_menu_cta");
+                    track("mobile_menu_cta_clicked", {
+                      timestamp: new Date().toISOString(),
+                    });
                   }}
                 >
                   Commencer gratuitement

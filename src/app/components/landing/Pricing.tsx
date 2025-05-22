@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { track } from "@vercel/analytics";
 import { Button } from "@/app/components/ui/button";
 import {
   Check,
@@ -13,6 +14,36 @@ import Link from "next/link";
 
 export default function PricingSection() {
   const [billingCycle, setBillingCycle] = useState("monthly");
+
+  // Fonction de tracking pour les interactions pricing
+  const handlePricingInteraction = (
+    action: string,
+    planName?: string,
+    additional?: Record<string, unknown>
+  ) => {
+    track("pricing_interaction", {
+      action,
+      plan: planName || "",
+      billing_cycle: billingCycle,
+      timestamp: new Date().toISOString(),
+      ...additional,
+    });
+  };
+
+  const handleBillingToggle = (cycle: string) => {
+    setBillingCycle(cycle);
+    handlePricingInteraction("billing_cycle_changed", undefined, {
+      new_cycle: cycle,
+    });
+  };
+
+  const handlePlanClick = (planName: string, isContact = false) => {
+    if (isContact) {
+      handlePricingInteraction("contact_enterprise_clicked", planName);
+    } else {
+      handlePricingInteraction("plan_selected", planName);
+    }
+  };
 
   const plans = [
     {
@@ -119,7 +150,7 @@ export default function PricingSection() {
           <div className="flex justify-center mt-8">
             <div className="inline-flex items-center bg-gray-100 rounded-full p-1">
               <button
-                onClick={() => setBillingCycle("monthly")}
+                onClick={() => handleBillingToggle("monthly")}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                   billingCycle === "monthly"
                     ? "bg-white text-[#d9840d] shadow-sm"
@@ -129,7 +160,7 @@ export default function PricingSection() {
                 Mensuel
               </button>
               <button
-                onClick={() => setBillingCycle("yearly")}
+                onClick={() => handleBillingToggle("yearly")}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-1 ${
                   billingCycle === "yearly"
                     ? "bg-white text-[#d9840d] shadow-sm"
@@ -165,11 +196,14 @@ export default function PricingSection() {
               transition={{ duration: 0.5, delay: index * 0.1 }}
               viewport={{ once: true, amount: 0.3 }}
               whileHover={{ y: -10, scale: 1.02 }}
-              className={`rounded-2xl overflow-hidden transition-all duration-300 relative ${
+              className={`rounded-2xl overflow-hidden transition-all duration-300 relative cursor-pointer ${
                 plan.popular
                   ? "border-2 border-[#d9840d] shadow-lg shadow-[#d9840d]/10"
                   : "border border-[#beac93]"
               }`}
+              onClick={() => {
+                handlePricingInteraction("plan_card_clicked", plan.name);
+              }}
             >
               {plan.popular && (
                 <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-[#d9840d] to-[#e36002]"></div>
@@ -223,6 +257,10 @@ export default function PricingSection() {
                         ? "/contact"
                         : `/signup?plan=${encodeURIComponent(plan.name)}`
                     }
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePlanClick(plan.name, plan.name === "ENTERPRISE");
+                    }}
                   >
                     {plan.name === "ENTERPRISE"
                       ? "Nous contacter"
@@ -279,6 +317,9 @@ export default function PricingSection() {
               <Link
                 href="/contact"
                 className="underline underline-offset-2 font-bold"
+                onClick={() => {
+                  handlePricingInteraction("custom_solution_clicked");
+                }}
               >
                 Contactez-nous
               </Link>
