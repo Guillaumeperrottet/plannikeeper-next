@@ -1,4 +1,4 @@
-// src/app/signup/signup-form.tsx - Version optimisée et modernisée
+// src/app/signup/signup-form.tsx - Version mise à jour
 "use client";
 
 import {
@@ -19,15 +19,13 @@ import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import { User, Mail, Lock, Home, ArrowRight, CheckCircle } from "lucide-react";
 
-// Chargement différé du composant lourd SignupImageUpload
 const SignupImageUpload = dynamic(() => import("./SignupImageUpload"), {
   loading: () => (
     <div className="h-24 w-24 rounded-full bg-gray-200 mx-auto mb-4"></div>
   ),
-  ssr: false, // Désactiver le SSR pour ce composant
+  ssr: false,
 });
 
-// Fonction utilitaire déplacée hors du composant pour éviter les recréations
 const getPlanDisplayName = (planType: string) => {
   const planNames = {
     PERSONAL: "Particulier",
@@ -50,12 +48,10 @@ function SignUpForm() {
   const planType = searchParams.get("plan") || "FREE";
   const isPaidPlan = planType !== "FREE";
 
-  // Utiliser useCallback pour la fonction de sélection d'image
   const handleImageSelect = useCallback((file: File | null) => {
     setSelectedFile(file);
   }, []);
 
-  // Charger les données d'invitation une seule fois au montage
   useEffect(() => {
     let mounted = true;
 
@@ -79,7 +75,6 @@ function SignUpForm() {
     };
   }, [inviteCode]);
 
-  // Optimiser la fonction de soumission avec useCallback
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -96,7 +91,7 @@ function SignUpForm() {
       try {
         let imageUrl: string | undefined = undefined;
 
-        // Upload d'image seulement si nécessaire
+        // Upload d'image si nécessaire
         if (selectedFile) {
           const imageFormData = new FormData();
           imageFormData.append("file", selectedFile);
@@ -124,34 +119,30 @@ function SignUpForm() {
           }
         }
 
-        // Inscription
-        await authClient.signUp.email(
-          {
-            email,
-            password,
-            name,
-            image: imageUrl,
-            callbackURL: inviteCode
-              ? `/join/${inviteCode}?plan=${planType}`
-              : `/subscribe-redirect?plan=${planType}`,
-          },
-          {
-            onSuccess: () => {
-              window.location.href = inviteCode
-                ? `/join/${inviteCode}?plan=${planType}`
-                : `/subscribe-redirect?plan=${planType}`;
-            },
-            onError: (ctx) => {
-              let errorMessage =
-                "Une erreur est survenue lors de l'inscription.";
-              if (ctx.error?.message) {
-                errorMessage = ctx.error.message;
-              }
-              setError(errorMessage);
-              setIsSubmitting(false);
-            },
-          }
+        // Inscription sans métadonnées (ajoutez inviteCode et planType si supporté par l'API)
+        const result = await authClient.signUp.email({
+          email,
+          password,
+          name,
+          image: imageUrl,
+          // Ajoutez ici inviteCode si l'API le supporte en tant que propriété de premier niveau
+          ...(inviteCode ? { inviteCode } : {}),
+        });
+
+        if (result.error) {
+          console.error("Signup error:", result.error);
+          setError(result.error.message || "Erreur lors de l'inscription");
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Afficher un message de succès
+        toast.success(
+          "Inscription réussie ! Vérifiez votre email pour activer votre compte."
         );
+
+        // Rediriger vers la page de vérification d'email
+        window.location.href = "/auth/email-verification-required";
       } catch (err) {
         console.error("Erreur d'inscription:", err);
         setError("Une erreur inattendue est survenue");
@@ -230,8 +221,8 @@ function SignUpForm() {
               className={`mt-1 text-sm ${isPaidPlan ? "text-[#f59e0b]/90" : "text-[#16a34a]/90"}`}
             >
               {isPaidPlan
-                ? "Après votre inscription, vous serez redirigé vers la page de paiement."
-                : "Votre compte sera activé immédiatement."}
+                ? "Après vérification de votre email, vous serez redirigé vers la page de paiement."
+                : "Votre compte sera activé après vérification de votre email."}
             </p>
             <p className="mt-3 text-sm">
               <Link
@@ -348,9 +339,7 @@ function SignUpForm() {
             "Inscription en cours..."
           ) : (
             <>
-              {isPaidPlan
-                ? "S'inscrire et continuer vers le paiement"
-                : "S'inscrire"}
+              S&apos;inscrire
               <ArrowRight className="ml-2 h-5 w-5" />
             </>
           )}
@@ -392,5 +381,4 @@ function SignUpForm() {
   );
 }
 
-// Mémoriser le composant pour éviter les rendus inutiles
 export default memo(SignUpForm);

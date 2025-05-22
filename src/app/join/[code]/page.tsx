@@ -1,155 +1,186 @@
 // src/app/join/[code]/page.tsx
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { getUser } from "@/lib/auth-session";
-import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import { getAccessibleObjects } from "@/lib/auth-session";
+import { Loader2, CheckCircle, ArrowRight, Users } from "lucide-react";
+import { Button } from "@/app/components/ui/button";
 
-export default async function JoinPage({
-  params,
-}: {
-  // Typage mis à jour : params est une Promise qui résout { code: string }
-  params: Promise<{ code: string }>;
-}) {
-  // Récupération du code depuis la promesse
-  const { code } = await params;
-  const user = await getUser();
+export default function JoinInvitePage() {
+  const { code } = useParams();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [organizationName, setOrganizationName] = useState<string>("");
+  const planType = searchParams.get("plan") || "FREE";
 
-  // Vérifiez si le code est valide
-  const invitation = await prisma.invitationCode.findFirst({
-    where: {
-      code,
-      isUsed: false,
-      expiresAt: { gt: new Date() },
-    },
-    include: { organization: true },
-  });
+  useEffect(() => {
+    const processInvitation = async () => {
+      try {
+        // Vérifier si l'utilisateur est connecté et vérifié
+        // Ajout d'un typage explicite pour inclure organizationId
+        type UserWithOrg = {
+          id: string;
+          name: string;
+          email: string;
+          emailVerified: boolean;
+          createdAt: Date;
+          updatedAt: Date;
+          image?: string | null;
+          organizationId?: string | null;
+        };
 
-  // Si le code est invalide, affichez un message d'erreur
-  if (!invitation) {
+        const currentUser = (await getUser()) as UserWithOrg | null;
+
+        if (!currentUser) {
+          // Pas connecté, rediriger vers l'inscription avec le code
+          router.push(`/signup?code=${code}&plan=${planType}`);
+          return;
+        }
+
+        if (!currentUser.emailVerified) {
+          // Email non vérifié, rediriger vers la page de vérification
+          router.push("/auth/email-verification-required");
+          return;
+        }
+
+        // Vérifier si l'utilisateur a déjà une organisation
+        if (currentUser.organizationId) {
+          setError(
+            "Vous appartenez déjà à une organisation. Contactez votre administrateur pour changer d'organisation."
+          );
+          setIsLoading(false);
+          return;
+        }
+
+        // Valider et traiter l'invitation
+        const inviteResponse = await fetch(
+          `/api/invitations/validate?code=${code}`
+        );
+        const inviteData = await inviteResponse.json();
+
+        if (!inviteData.valid) {
+          setError("Code d'invitation invalide ou expiré");
+          setIsLoading(false);
+          return;
+        }
+
+        setOrganizationName(inviteData.organizationName);
+
+        // L'utilisateur devrait déjà être associé à l'organisation via le hook
+        // Rediriger vers le dashboard après un délai
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 3000);
+      } catch (err) {
+        console.error("Erreur lors du traitement de l'invitation:", err);
+        setError("Une erreur est survenue lors du traitement de l'invitation");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (code) {
+      processInvitation();
+    }
+  }, [code, planType, router]);
+
+  if (error) {
     return (
-      <div className="max-w-md mx-auto mt-10 p-6 bg-background rounded-lg shadow-md text-center">
-        <h1 className="text-2xl font-bold text-red-600 mb-4">
-          Code d&apos;invitation invalide
-        </h1>
-        <p className="mb-6 text-gray-600">
-          Ce code d&apos;invitation est invalide, a expiré ou a déjà été
-          utilisé.
-        </p>
-        <Link
-          href="/"
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-        >
-          Retour à l&apos;accueil
-        </Link>
-      </div>
-    );
-  }
-
-  // Si l'utilisateur n'est pas connecté, redirigez vers la page de connexion
-  if (!user) {
-    return (
-      <div className="max-w-md mx-auto mt-10 p-6 bg-background rounded-lg shadow-md text-center">
-        <h1 className="text-2xl font-bold mb-4">
-          Rejoindre {invitation.organization.name}
-        </h1>
-        <p className="mb-6 text-gray-600">
-          Vous avez été invité à rejoindre {invitation.organization.name}.
-          Veuillez vous connecter ou créer un compte pour continuer.
-        </p>
-        <div className="flex justify-center gap-4">
-          <Link
-            href={`/signin?redirect=/join/${code}`}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-          >
-            Se connecter
-          </Link>
-          <Link
-            href={`/signup?code=${code}`}
-            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
-          >
-            Créer un compte
-          </Link>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f9f3ec] via-[#f5f3ef] to-[#e8ebe0]/50">
+        <div className="bg-white rounded-2xl shadow-xl border border-[#beac93]/30 p-8 max-w-md w-full mx-4">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg
+                className="w-8 h-8 text-red-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-[#141313] mb-2">
+              Erreur d&apos;invitation
+            </h2>
+            <p className="text-[#62605d] mb-6">{error}</p>
+            <div className="space-y-3">
+              <Button
+                onClick={() => router.push("/signup")}
+                className="bg-[#d9840d] hover:bg-[#c6780c] w-full"
+              >
+                Créer un nouveau compte
+              </Button>
+              <Button
+                onClick={() => router.push("/signin")}
+                variant="outline"
+                className="w-full border-[#beac93] hover:bg-[#e8ebe0]"
+              >
+                Se connecter
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
-  // Vérifiez si l'utilisateur est déjà membre de l'organisation
-  const existingMembership = await prisma.organizationUser.findFirst({
-    where: {
-      userId: user.id,
-      organizationId: invitation.organizationId,
-    },
-  });
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f9f3ec] via-[#f5f3ef] to-[#e8ebe0]/50">
+      <div className="bg-white rounded-2xl shadow-xl border border-[#beac93]/30 p-8 max-w-md w-full mx-4">
+        <div className="text-center">
+          {isLoading ? (
+            <>
+              <div className="w-16 h-16 bg-[#d9840d]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Loader2 className="w-8 h-8 text-[#d9840d] animate-spin" />
+              </div>
+              <h2 className="text-xl font-bold text-[#141313] mb-2">
+                Traitement de l&apos;invitation...
+              </h2>
+              <p className="text-[#62605d]">
+                Vérification de votre invitation en cours...
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-8 h-8 text-green-600" />
+              </div>
+              <h2 className="text-xl font-bold text-[#141313] mb-2">
+                Bienvenue dans l&apos;équipe !
+              </h2>
+              <p className="text-[#62605d] mb-4">
+                Vous avez rejoint avec succès l&apos;organisation{" "}
+                <strong>{organizationName}</strong>.
+              </p>
 
-  if (existingMembership) {
-    return (
-      <div className="max-w-md mx-auto mt-10 p-6 bg-background rounded-lg shadow-md text-center">
-        <h1 className="text-2xl font-bold mb-4">Déjà membre</h1>
-        <p className="mb-6 text-gray-600">
-          Vous êtes déjà membre de {invitation.organization.name}.
-        </p>
-        <Link
-          href="/dashboard"
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-        >
-          Aller au tableau de bord
-        </Link>
+              <div className="bg-[#e0f2fe] border border-[#7dd3fc] rounded-lg p-4 mb-6">
+                <div className="flex items-center justify-center gap-2 text-[#0284c7]">
+                  <Users className="w-5 h-5" />
+                  <p className="text-sm font-medium">
+                    Vous pouvez maintenant collaborer avec votre équipe
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                onClick={() => router.push("/dashboard")}
+                className="bg-[#d9840d] hover:bg-[#c6780c] w-full"
+              >
+                Accéder au tableau de bord
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </>
+          )}
+        </div>
       </div>
-    );
-  }
-
-  // Vérifier et supprimer toute appartenance existante à une organisation
-  const currentOrgUser = await prisma.organizationUser.findFirst({
-    where: { userId: user.id },
-  });
-
-  if (currentOrgUser) {
-    // Supprimer l'association existante
-    await prisma.organizationUser.delete({
-      where: { id: currentOrgUser.id },
-    });
-  }
-
-  // Ajoutez l'utilisateur à l'organisation avec le rôle spécifié
-  await prisma.organizationUser.create({
-    data: {
-      userId: user.id,
-      organizationId: invitation.organizationId,
-      role: invitation.role,
-    },
-  });
-
-  // Mettez à jour l'organisation principale de l'utilisateur
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { organizationId: invitation.organizationId },
-  });
-
-  // Initialiser les accès aux objets si l'utilisateur n'est pas admin
-  if (invitation.role !== "admin") {
-    const objets = await getAccessibleObjects(
-      user.id,
-      invitation.organizationId
-    );
-    if (objets.length > 0) {
-      await prisma.objectAccess.createMany({
-        data: objets.map((obj) => ({
-          userId: user.id,
-          objectId: obj.id,
-          accessLevel: "none",
-        })),
-      });
-    }
-  }
-
-  // Marquez le code comme utilisé
-  await prisma.invitationCode.update({
-    where: { id: invitation.id },
-    data: { isUsed: true },
-  });
-
-  // Redirigez vers le tableau de bord
-  redirect("/dashboard");
+    </div>
+  );
 }

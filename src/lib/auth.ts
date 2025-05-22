@@ -1,18 +1,35 @@
+// src/lib/auth.ts - Version mise à jour
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { createAuthMiddleware } from "better-auth/api";
 import { prisma } from "./prisma";
 import { EmailService } from "./email";
+import { PlanType } from "@prisma/client";
 
 const isDev =
   process.env.NODE_ENV === "development" ||
   process.env.NEXT_PUBLIC_DEV_MODE === "true";
 
+// Fonction utilitaire pour valider et normaliser le type de plan
+function validatePlanType(planType: string): PlanType {
+  const validPlans: PlanType[] = [
+    "FREE",
+    "PERSONAL",
+    "PROFESSIONAL",
+    "ENTERPRISE",
+    "SUPER_ADMIN",
+    "ILLIMITE",
+    "CUSTOM",
+  ];
+  return validPlans.includes(planType as PlanType)
+    ? (planType as PlanType)
+    : "FREE";
+}
+
 export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   secret: process.env.BETTER_AUTH_SECRET!,
 
-  // URL pour l'API d'authentification - utilisez celle de .env.local en dev
   baseURL: isDev
     ? "http://localhost:3000/api/auth"
     : process.env.BETTER_AUTH_URL,
@@ -23,26 +40,18 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    // Activer la vérification des emails
     verifyEmail: {
       enabled: true,
-      // Les utilisateurs ne peuvent pas se connecter si leur email n'est pas vérifié
       preventUnverifiedLogin: true,
-      // Redirections personnalisées
       redirects: {
-        // Redirection après une vérification réussie
         success: "/auth/verification-success",
-        // Redirection après une vérification échouée
         error: "/auth/verification-failed",
-        // Redirection si l'utilisateur tente de se connecter sans avoir vérifié son email
         emailNotVerified: "/auth/email-verification-required",
       },
     },
   },
 
-  // Configurer l'envoi des emails de vérification
   email: {
-    // Fonction pour envoyer les emails
     async sendEmail({
       type,
       to,
@@ -52,30 +61,36 @@ export const auth = betterAuth({
       to: string;
       variables: { url: string };
     }) {
-      // Utiliser votre service d'emails existant
       if (type === "verifyEmail") {
         try {
-          // Créer un template pour l'email de vérification
           const htmlContent = `
             <!DOCTYPE html>
             <html>
               <head>
                 <meta charset="utf-8">
                 <title>Vérifiez votre adresse email</title>
+                <style>
+                  body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }
+                  .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                  .header { background-color: #d9840d; color: white; padding: 24px; text-align: center; }
+                  .content { padding: 32px 24px; }
+                  .button { display: inline-block; background-color: #d9840d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; }
+                  .footer { background-color: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 14px; }
+                </style>
               </head>
               <body>
-                <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
-                  <div style="text-align: center; padding: 20px 0; background-color: #d9840d; color: white;">
-                    <h1>PlanniKeeper</h1>
+                <div class="container">
+                  <div class="header">
+                    <h1>🏠 PlanniKeeper</h1>
+                    <h2>Vérification de votre adresse email</h2>
                   </div>
                   
-                  <div style="padding: 20px; background-color: #fff; border-radius: 5px;">
-                    <h2>Vérification de votre adresse email</h2>
+                  <div class="content">
                     <p>Bonjour,</p>
                     <p>Merci de vous être inscrit(e) sur PlanniKeeper. Veuillez cliquer sur le bouton ci-dessous pour vérifier votre adresse email :</p>
                     
                     <div style="text-align: center; margin: 30px 0;">
-                      <a href="${variables.url}" style="background-color: #d9840d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+                      <a href="${variables.url}" class="button">
                         Vérifier mon email
                       </a>
                     </div>
@@ -89,7 +104,7 @@ export const auth = betterAuth({
                     <p>Si vous n'avez pas demandé cette vérification, vous pouvez ignorer cet email.</p>
                   </div>
                   
-                  <div style="text-align: center; padding: 20px; color: #666; font-size: 14px;">
+                  <div class="footer">
                     <p>© 2025 PlanniKeeper. Tous droits réservés.</p>
                   </div>
                 </div>
@@ -97,7 +112,6 @@ export const auth = betterAuth({
             </html>
           `;
 
-          // Envoyer l'email via Resend en utilisant votre service existant
           const { error } = await EmailService.sendEmail({
             to,
             subject: "Vérifiez votre adresse email - PlanniKeeper",
@@ -125,33 +139,29 @@ export const auth = betterAuth({
 
   advanced: {
     defaultCookieAttributes: {
-      // En dev ou mode local, toujours lax et HTTP
       sameSite: isDev ? "lax" : "none",
-      secure: !isDev, // Important: false en dev, true en prod
+      secure: !isDev,
       domain: isDev ? "localhost" : undefined,
-      maxAge: 60 * 60 * 4, // Modifié: 4 heures au lieu de 30 jours
+      maxAge: 60 * 60 * 4,
       httpOnly: true,
       path: "/",
     },
-
     cookies: {
       session_token: {
-        name: "session", // Garder ce nom cohérent
+        name: "session",
         attributes: {
           sameSite: isDev ? "lax" : "none",
-          secure: !isDev, // CRITIQUE: false en dev
+          secure: !isDev,
           path: "/",
           domain: isDev ? "localhost" : undefined,
-          maxAge: 60 * 60 * 4, // Modifié: 4 heures au lieu de 30 jours
+          maxAge: 60 * 60 * 4,
           httpOnly: true,
         },
       },
     },
-
     cookiePrefix: "",
   },
 
-  // Le reste de votre configuration
   hooks: {
     after: createAuthMiddleware(async (ctx) => {
       console.log("Auth hook after triggered", {
@@ -162,19 +172,251 @@ export const auth = betterAuth({
       });
 
       try {
+        // Hook après inscription réussie
         if (ctx.path === "/sign-up/email" && ctx.context.newSession) {
-          // Votre logique existante
+          const user = ctx.context.newSession.user;
+          console.log("Processing new user signup:", user.id);
+
+          // Définir le type des métadonnées
+          interface UserMetadata {
+            inviteCode?: string;
+            planType?: string;
+            [key: string]: unknown;
+          }
+
+          // Traiter les métadonnées de l'inscription
+          const metadata = user.metadata as UserMetadata;
+          const inviteCode = metadata?.inviteCode;
+          const planType = metadata?.planType || "FREE";
+
+          if (inviteCode) {
+            // Utilisateur invité - rejoindre une organisation existante
+            await handleInviteSignup(user, inviteCode);
+          } else {
+            // Nouvel utilisateur - créer une nouvelle organisation
+            await handleNewUserSignup(user, planType);
+          }
+        }
+
+        // Hook après vérification d'email réussie
+        if (ctx.path === "/verify-email" && ctx.context.newSession) {
+          const user = ctx.context.newSession.user;
+          console.log("Email verified for user:", user.id);
+
+          // Envoyer l'email de bienvenue après vérification
+          await sendWelcomeEmailAfterVerification(user);
         }
       } catch (error) {
         console.error("Erreur dans le hook after signup:", error);
       }
     }),
-    before: createAuthMiddleware(async (ctx) => {
-      console.log("Auth hook before triggered", {
-        path: ctx.path,
-        method: ctx.method,
-      });
-      return ctx;
-    }),
   },
 });
+
+// Fonction pour gérer l'inscription d'un utilisateur invité
+async function handleInviteSignup(
+  user: {
+    id: string;
+    email: string;
+    name?: string;
+    metadata?: Record<string, unknown>;
+  },
+  inviteCode: string
+) {
+  try {
+    console.log(
+      "Handling invite signup for user:",
+      user.id,
+      "with code:",
+      inviteCode
+    );
+
+    // Vérifier et utiliser le code d'invitation
+    const invitation = await prisma.invitationCode.findFirst({
+      where: {
+        code: inviteCode,
+        isUsed: false,
+        expiresAt: { gt: new Date() },
+      },
+      include: { organization: true },
+    });
+
+    if (!invitation) {
+      console.error("Invalid or expired invitation code:", inviteCode);
+      return;
+    }
+
+    // Marquer l'invitation comme utilisée
+    await prisma.invitationCode.update({
+      where: { id: invitation.id },
+      data: { isUsed: true },
+    });
+
+    // Associer l'utilisateur à l'organisation
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { organizationId: invitation.organizationId },
+    });
+
+    // Créer l'association OrganizationUser
+    await prisma.organizationUser.create({
+      data: {
+        userId: user.id,
+        organizationId: invitation.organizationId,
+        role: invitation.role,
+      },
+    });
+
+    // Créer les accès aux objets pour les non-admins
+    if (invitation.role !== "admin") {
+      const objects = await prisma.objet.findMany({
+        where: { organizationId: invitation.organizationId },
+        select: { id: true },
+      });
+
+      if (objects.length > 0) {
+        await prisma.objectAccess.createMany({
+          data: objects.map((obj) => ({
+            userId: user.id,
+            objectId: obj.id,
+            accessLevel: "none",
+          })),
+          skipDuplicates: true,
+        });
+      }
+    }
+
+    console.log(
+      "Successfully added user to organization:",
+      invitation.organization.name
+    );
+  } catch (error) {
+    console.error("Error handling invite signup:", error);
+  }
+}
+
+// Fonction pour gérer l'inscription d'un nouvel utilisateur
+async function handleNewUserSignup(
+  user: {
+    id: string;
+    email: string;
+    name?: string;
+    metadata?: Record<string, unknown>;
+  },
+  planType: string = "FREE"
+) {
+  try {
+    console.log(
+      "Handling new user signup for user:",
+      user.id,
+      "with plan:",
+      planType
+    );
+
+    // Créer une nouvelle organisation
+    const organization = await prisma.organization.create({
+      data: {
+        name: `${user.name || user.email.split("@")[0]}'s Organization`,
+      },
+    });
+
+    // Associer l'utilisateur à l'organisation
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { organizationId: organization.id },
+    });
+
+    // Créer l'association OrganizationUser avec le rôle admin
+    await prisma.organizationUser.create({
+      data: {
+        userId: user.id,
+        organizationId: organization.id,
+        role: "admin",
+      },
+    });
+
+    // Créer l'abonnement selon le plan choisi
+    await createSubscriptionForPlan(organization.id, planType);
+
+    console.log(
+      "Successfully created organization:",
+      organization.name,
+      "for user:",
+      user.id
+    );
+  } catch (error) {
+    console.error("Error handling new user signup:", error);
+  }
+}
+
+// Fonction pour créer l'abonnement selon le plan
+async function createSubscriptionForPlan(
+  organizationId: string,
+  planType: string
+) {
+  try {
+    // Valider et convertir le type de plan
+    const validatedPlanType = validatePlanType(planType);
+
+    // Récupérer ou créer le plan
+    let plan = await prisma.plan.findFirst({
+      where: { name: validatedPlanType },
+    });
+
+    if (!plan) {
+      // Si le plan n'existe pas, utiliser le plan gratuit
+      plan = await prisma.plan.findFirst({
+        where: { name: "FREE" as PlanType },
+      });
+
+      if (!plan) {
+        console.error("No FREE plan found in database");
+        return;
+      }
+    }
+
+    // Créer l'abonnement
+    await prisma.subscription.create({
+      data: {
+        organizationId,
+        planId: plan.id,
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // +1 an
+      },
+    });
+
+    console.log(
+      "Successfully created subscription with plan:",
+      validatedPlanType
+    );
+  } catch (error) {
+    console.error("Error creating subscription:", error);
+  }
+}
+
+// Fonction pour envoyer l'email de bienvenue après vérification
+async function sendWelcomeEmailAfterVerification(user: {
+  id: string;
+  email: string;
+  name?: string;
+  metadata?: Record<string, unknown>;
+}) {
+  try {
+    // Récupérer l'organisation de l'utilisateur
+    const userWithOrg = await prisma.user.findUnique({
+      where: { id: user.id },
+      include: { Organization: true },
+    });
+
+    if (userWithOrg?.Organization) {
+      await EmailService.sendWelcomeEmail(
+        userWithOrg,
+        userWithOrg.Organization.name
+      );
+      console.log("Welcome email sent to:", user.email);
+    }
+  } catch (error) {
+    console.error("Error sending welcome email:", error);
+  }
+}
