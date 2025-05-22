@@ -18,15 +18,7 @@ import {
 } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
-import {
-  Edit,
-  Trash2,
-  Search,
-  RefreshCw,
-  CreditCard,
-  Calendar,
-  Clock,
-} from "lucide-react";
+import { Edit, Trash2, Search, RefreshCw, Calendar, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 interface Subscription {
@@ -49,7 +41,13 @@ interface Subscription {
   createdAt: string;
 }
 
-export function SubscriptionsManagement() {
+interface SubscriptionsManagementProps {
+  hideCreateButton?: boolean;
+}
+
+export function SubscriptionsManagement({
+  hideCreateButton = false,
+}: SubscriptionsManagementProps) {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -244,10 +242,7 @@ export function SubscriptionsManagement() {
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Actualiser
               </Button>
-              <Button>
-                <CreditCard className="mr-2 h-4 w-4" />
-                Nouvel abonnement
-              </Button>
+              {!hideCreateButton && <Button>Nouvel abonnement</Button>}
             </div>
           </div>
 

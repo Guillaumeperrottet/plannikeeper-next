@@ -23,7 +23,6 @@ import {
   Trash2,
   Shield,
   Search,
-  UserPlus,
   RefreshCw,
   CheckCircle,
   XCircle,
@@ -41,7 +40,13 @@ interface User {
   role?: string;
 }
 
-export function UsersManagement() {
+interface UsersManagementProps {
+  hideCreateButton?: boolean;
+}
+
+export function UsersManagement({
+  hideCreateButton = false,
+}: UsersManagementProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -211,17 +216,16 @@ export function UsersManagement() {
               />
             </div>
             <div className="flex items-center gap-2">
+              {!hideCreateButton && (
+                <Button variant="default">Créer un utilisateur</Button>
+              )}
               <Button
                 variant="outline"
-                onClick={() => setUsers([])}
+                onClick={() => window.location.reload()}
                 disabled={loading}
               >
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Actualiser
-              </Button>
-              <Button>
-                <UserPlus className="mr-2 h-4 w-4" />
-                Nouvel utilisateur
               </Button>
             </div>
           </div>
