@@ -1,4 +1,4 @@
-// src/app/signup/signup-form.tsx - Version mise à jour
+// src/app/signup/signup-form.tsx - Version corrigée
 "use client";
 
 import {
@@ -119,15 +119,35 @@ function SignUpForm() {
           }
         }
 
-        // Inscription sans métadonnées (ajoutez inviteCode et planType si supporté par l'API)
-        const result = await authClient.signUp.email({
+        // Préparer les données pour l'inscription
+        interface SignupData {
+          email: string;
+          password: string;
+          name: string;
+          image?: string;
+          inviteCode?: string;
+          planType?: string;
+        }
+
+        const signupData: SignupData = {
           email,
           password,
           name,
           image: imageUrl,
-          // Ajoutez ici inviteCode si l'API le supporte en tant que propriété de premier niveau
-          ...(inviteCode ? { inviteCode } : {}),
-        });
+        };
+
+        // Ajouter les métadonnées dans le corps de la requête (pas dans un objet metadata)
+        if (inviteCode) {
+          signupData.inviteCode = inviteCode;
+        }
+        if (planType) {
+          signupData.planType = planType;
+        }
+
+        console.log("📤 Données d'inscription:", signupData);
+
+        // Inscription avec Better Auth
+        const result = await authClient.signUp.email(signupData);
 
         if (result.error) {
           console.error("Signup error:", result.error);
@@ -221,8 +241,8 @@ function SignUpForm() {
               className={`mt-1 text-sm ${isPaidPlan ? "text-[#f59e0b]/90" : "text-[#16a34a]/90"}`}
             >
               {isPaidPlan
-                ? "Après vérification de votre email, vous serez redirigé vers la page de paiement."
-                : "Votre compte sera activé après vérification de votre email."}
+                ? "Après vérification de votre email, vous pourrez configurer votre abonnement."
+                : "Votre compte gratuit sera activé après vérification de votre email."}
             </p>
             <p className="mt-3 text-sm">
               <Link

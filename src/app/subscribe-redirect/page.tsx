@@ -1,4 +1,4 @@
-// src/app/subscribe-redirect/page.tsx
+// src/app/subscribe-redirect/page.tsx - Version corrigée
 "use client";
 
 import { useEffect, useState } from "react";
@@ -11,15 +11,39 @@ export default function SubscribeRedirectPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
-  // const [user, setUser] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const planType = searchParams.get("plan") || "FREE";
 
   useEffect(() => {
-    const handlePayment = async () => {
+    const handleRedirect = async () => {
       try {
         setIsLoading(true);
 
+        // Vérifier si l'utilisateur est connecté et vérifié
+        const currentUser = await getClientUser();
+
+        if (!currentUser) {
+          // Pas connecté, rediriger vers la connexion
+          router.push("/signin");
+          return;
+        }
+
+        if (!currentUser.emailVerified) {
+          // Email non vérifié, rediriger vers la page de vérification
+          router.push("/auth/email-verification-required");
+          return;
+        }
+
+        // Si le plan est gratuit, rediriger directement vers le dashboard
+        if (planType === "FREE") {
+          setIsLoading(false);
+          setTimeout(() => {
+            router.push("/dashboard");
+          }, 2000);
+          return;
+        }
+
+        // Pour les plans payants, créer la session de paiement
         const response = await fetch("/api/subscriptions/create-checkout", {
           method: "POST",
           headers: {
@@ -38,38 +62,13 @@ export default function SubscribeRedirectPage() {
           throw new Error("URL de paiement non disponible");
         }
       } catch (err) {
-        console.error("Erreur lors de la création du checkout:", err);
-        setError("Erreur lors de la redirection vers le paiement");
+        console.error("Erreur lors de la redirection:", err);
+        setError("Erreur lors de la redirection");
         setIsLoading(false);
       }
     };
 
-    const checkUserAndRedirect = async () => {
-      try {
-        // Vérifier si l'utilisateur est connecté et vérifié
-        const currentUser = await getClientUser();
-
-        if (!currentUser) {
-          // Pas connecté, rediriger vers la connexion
-          router.push("/signin");
-          return;
-        }
-
-        if (!currentUser.emailVerified) {
-          // Email non vérifié, rediriger vers la page de vérification
-          router.push("/auth/email-verification-required");
-          return;
-        }
-
-        // Si tout est ok, lancer le paiement ou la redirection
-        await handlePayment();
-      } catch {
-        setError("Erreur lors de la vérification de l'utilisateur");
-        setIsLoading(false);
-      }
-    };
-
-    checkUserAndRedirect();
+    handleRedirect();
   }, [planType, router]);
 
   const getPlanDisplayName = (planType: string) => {
@@ -122,17 +121,44 @@ export default function SubscribeRedirectPage() {
         <div className="text-center">
           {isLoading ? (
             <>
-              <div className="w-16 h-16 bg-[#d9840d]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Loader2 className="w-8 h-8 text-[#d9840d] animate-spin" />
-              </div>
-              <h2 className="text-xl font-bold text-[#141313] mb-2">
-                Configuration en cours...
-              </h2>
-              <p className="text-[#62605d]">
-                {planType !== "FREE"
-                  ? "Redirection vers le paiement..."
-                  : "Préparation de votre espace..."}
-              </p>
+              {planType === "FREE" ? (
+                <>
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="w-8 h-8 text-green-600" />
+                  </div>
+                  <h2 className="text-xl font-bold text-[#141313] mb-2">
+                    Compte créé avec succès !
+                  </h2>
+                  <p className="text-[#62605d] mb-4">
+                    Votre compte gratuit est maintenant actif avec le plan{" "}
+                    <strong>{getPlanDisplayName(planType)}</strong>.
+                  </p>
+                  <div className="bg-[#dcfce7] border border-[#86efac] rounded-lg p-4 mb-6">
+                    <p className="text-[#16a34a] text-sm">
+                      Redirection vers votre tableau de bord...
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="w-16 h-16 bg-[#d9840d]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Loader2 className="w-8 h-8 text-[#d9840d] animate-spin" />
+                  </div>
+                  <h2 className="text-xl font-bold text-[#141313] mb-2">
+                    Configuration en cours...
+                  </h2>
+                  <p className="text-[#62605d] mb-4">
+                    Redirection vers le paiement pour le plan{" "}
+                    <strong>{getPlanDisplayName(planType)}</strong>...
+                  </p>
+                  <div className="bg-[#ffedd5] border border-[#fcd34d] rounded-lg p-4 mb-6">
+                    <p className="text-[#f59e0b] text-sm">
+                      Vous allez être redirigé vers notre partenaire de paiement
+                      sécurisé.
+                    </p>
+                  </div>
+                </>
+              )}
             </>
           ) : (
             <>
@@ -143,25 +169,8 @@ export default function SubscribeRedirectPage() {
                 Bienvenue sur PlanniKeeper !
               </h2>
               <p className="text-[#62605d] mb-4">
-                Votre compte a été créé avec succès avec le plan{" "}
-                <strong>{getPlanDisplayName(planType)}</strong>.
+                Votre compte a été créé avec succès.
               </p>
-
-              {planType !== "FREE" ? (
-                <div className="bg-[#ffedd5] border border-[#fcd34d] rounded-lg p-4 mb-6">
-                  <p className="text-[#f59e0b] text-sm">
-                    Vous allez être redirigé vers notre partenaire de paiement
-                    sécurisé pour finaliser votre abonnement.
-                  </p>
-                </div>
-              ) : (
-                <div className="bg-[#dcfce7] border border-[#86efac] rounded-lg p-4 mb-6">
-                  <p className="text-[#16a34a] text-sm">
-                    Votre compte gratuit est maintenant actif ! Vous allez être
-                    redirigé vers votre tableau de bord.
-                  </p>
-                </div>
-              )}
 
               <Button
                 onClick={() => router.push("/dashboard")}

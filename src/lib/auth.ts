@@ -1,4 +1,4 @@
-// src/lib/auth.ts - Configuration corrigée avec redirections
+// src/lib/auth.ts - Version corrigée
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { createAuthMiddleware } from "better-auth/api";
@@ -9,6 +9,17 @@ import { PlanType } from "@prisma/client";
 const isDev =
   process.env.NODE_ENV === "development" ||
   process.env.NEXT_PUBLIC_DEV_MODE === "true";
+
+// Store temporary user data during signup process
+const tempUserData = new Map<
+  string,
+  {
+    inviteCode?: string;
+    planType?: string;
+    email: string;
+    name?: string;
+  }
+>();
 
 // Fonction utilitaire pour valider et normaliser le type de plan
 function validatePlanType(planType: string): PlanType {
@@ -41,31 +52,38 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
-    autoSignIn: false, // Désactiver l'auto-connexion pour forcer la vérification
+    autoSignIn: false, // Important : désactiver l'auto-connexion pour forcer la vérification
   },
 
-  // ✅ Configuration corrigée de la vérification d'email
   emailVerification: {
     sendOnSignUp: true,
-    autoSignInAfterVerification: true, // ✅ Connexion automatique après vérification
-    // ✅ URLs de redirection corrigées
-    verificationURL: isDev
-      ? "http://localhost:3000/api/auth/verify-email"
-      : `${process.env.BETTER_AUTH_URL}/verify-email`,
+    autoSignInAfterVerification: true, // Connexion automatique après vérification
 
-    sendVerificationEmail: async ({ user, url, token }) => {
+    sendVerificationEmail: async ({ user, token }) => {
       console.log(`📧 Envoi d'email de vérification vers: ${user.email}`);
-      console.log(`🔗 URL de vérification: ${url}`);
 
       try {
-        // ✅ Construire l'URL de vérification avec redirection correcte
         const baseUrl = isDev
           ? "http://localhost:3000"
           : process.env.NEXT_PUBLIC_APP_URL;
 
-        const verificationUrl = `${baseUrl}/api/auth/verify-email?token=${token}&callbackURL=${encodeURIComponent(`${baseUrl}/auth/verification-success`)}`;
+        // Récupérer les données temporaires de l'utilisateur
+        const userData = tempUserData.get(user.email);
 
-        console.log(`🔗 URL de vérification construite: ${verificationUrl}`);
+        // Construire l'URL de vérification avec les paramètres nécessaires
+        const verificationUrl = new URL(`${baseUrl}/api/auth/verify-email`);
+        verificationUrl.searchParams.set("token", token);
+
+        // Ajouter les paramètres de redirection avec les données utilisateur
+        const callbackUrl = new URL(`${baseUrl}/auth/verification-success`);
+        if (userData?.planType) {
+          callbackUrl.searchParams.set("plan", userData.planType);
+        }
+        if (userData?.inviteCode) {
+          callbackUrl.searchParams.set("code", userData.inviteCode);
+        }
+
+        verificationUrl.searchParams.set("callbackURL", callbackUrl.toString());
 
         const htmlContent = `
           <!DOCTYPE html>
@@ -94,14 +112,14 @@ export const auth = betterAuth({
                   <p>Merci de vous être inscrit(e) sur PlanniKeeper. Veuillez cliquer sur le bouton ci-dessous pour vérifier votre adresse email :</p>
                   
                   <div style="text-align: center; margin: 30px 0;">
-                    <a href="${verificationUrl}" class="button">
+                    <a href="${verificationUrl.toString()}" class="button">
                       Vérifier mon email
                     </a>
                   </div>
                   
                   <p>Ou copiez-collez ce lien dans votre navigateur :</p>
                   <p style="word-break: break-all; background-color: #f5f5f5; padding: 10px; border-radius: 4px;">
-                    ${verificationUrl}
+                    ${verificationUrl.toString()}
                   </p>
                   
                   <p>Ce lien expire dans 24 heures.</p>
@@ -173,38 +191,64 @@ export const auth = betterAuth({
       });
 
       try {
-        // Hook après inscription réussie
+        // Hook après inscription - stocker les données temporaires
         if (ctx.path === "/sign-up/email" && ctx.context.newSession) {
           const user = ctx.context.newSession.user;
-          console.log("👤 Traitement du nouvel utilisateur:", user.id);
-
-          // Définir le type des métadonnées
-          interface UserMetadata {
+          interface SignUpBody {
             inviteCode?: string;
             planType?: string;
-            [key: string]: unknown;
           }
+          const body = ctx.body as SignUpBody;
 
-          // Traiter les métadonnées de l'inscription
-          const metadata = user.metadata as UserMetadata;
-          const inviteCode = metadata?.inviteCode;
-          const planType = metadata?.planType || "FREE";
+          console.log("👤 Stockage des données temporaires pour:", user.id);
+          console.log("📋 Données reçues:", {
+            inviteCode: body?.inviteCode,
+            planType: body?.planType,
+          });
 
-          if (inviteCode) {
-            // Utilisateur invité - rejoindre une organisation existante
-            await handleInviteSignup(user, inviteCode);
-          } else {
-            // Nouvel utilisateur - créer une nouvelle organisation
-            await handleNewUserSignup(user, planType);
-          }
+          // Stocker les données temporaires pour utilisation lors de la vérification
+          tempUserData.set(user.email, {
+            inviteCode: body?.inviteCode,
+            planType: body?.planType || "FREE",
+            email: user.email,
+            name: user.name,
+          });
+
+          console.log("✅ Données temporaires stockées");
         }
 
-        // ✅ Hook après vérification d'email réussie
+        // Hook après vérification d'email - créer l'organisation
         if (ctx.path === "/verify-email" && ctx.context.newSession) {
           const user = ctx.context.newSession.user;
           console.log("✉️ Email vérifié pour l'utilisateur:", user.id);
 
-          // Envoyer l'email de bienvenue après vérification
+          // Récupérer les données temporaires
+          const userData = tempUserData.get(user.email);
+
+          if (userData) {
+            console.log("📋 Données temporaires récupérées:", userData);
+
+            if (userData.inviteCode) {
+              // Utilisateur invité - rejoindre une organisation existante
+              await handleInviteSignup(user, userData.inviteCode);
+            } else {
+              // Nouvel utilisateur - créer une nouvelle organisation
+              await handleNewUserSignup(user, userData.planType || "FREE");
+            }
+
+            // Nettoyer les données temporaires
+            tempUserData.delete(user.email);
+            console.log("🧹 Données temporaires nettoyées");
+          } else {
+            console.warn(
+              "⚠️ Aucune donnée temporaire trouvée pour:",
+              user.email
+            );
+            // Fallback - créer une organisation gratuite par défaut
+            await handleNewUserSignup(user, "FREE");
+          }
+
+          // Envoyer l'email de bienvenue
           await sendWelcomeEmailAfterVerification(user);
         }
       } catch (error) {
@@ -214,13 +258,12 @@ export const auth = betterAuth({
   },
 });
 
-// ... (garder toutes les autres fonctions helper inchangées)
+// Fonction pour gérer l'inscription avec invitation
 async function handleInviteSignup(
   user: {
     id: string;
     email: string;
     name?: string;
-    metadata?: Record<string, unknown>;
   },
   inviteCode: string
 ) {
@@ -232,7 +275,6 @@ async function handleInviteSignup(
       inviteCode
     );
 
-    // Vérifier et utiliser le code d'invitation
     const invitation = await prisma.invitationCode.findFirst({
       where: {
         code: inviteCode,
@@ -244,6 +286,8 @@ async function handleInviteSignup(
 
     if (!invitation) {
       console.error("Invalid or expired invitation code:", inviteCode);
+      // Fallback : créer une organisation gratuite
+      await handleNewUserSignup(user, "FREE");
       return;
     }
 
@@ -302,7 +346,6 @@ async function handleNewUserSignup(
     id: string;
     email: string;
     name?: string;
-    metadata?: Record<string, unknown>;
   },
   planType: string = "FREE"
 ) {
@@ -356,16 +399,13 @@ async function createSubscriptionForPlan(
   planType: string
 ) {
   try {
-    // Valider et convertir le type de plan
     const validatedPlanType = validatePlanType(planType);
 
-    // Récupérer ou créer le plan
     let plan = await prisma.plan.findFirst({
       where: { name: validatedPlanType },
     });
 
     if (!plan) {
-      // Si le plan n'existe pas, utiliser le plan gratuit
       plan = await prisma.plan.findFirst({
         where: { name: "FREE" as PlanType },
       });
@@ -383,7 +423,7 @@ async function createSubscriptionForPlan(
         planId: plan.id,
         status: "ACTIVE",
         currentPeriodStart: new Date(),
-        currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // +1 an
+        currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
       },
     });
 
@@ -401,10 +441,8 @@ async function sendWelcomeEmailAfterVerification(user: {
   id: string;
   email: string;
   name?: string;
-  metadata?: Record<string, unknown>;
 }) {
   try {
-    // Récupérer l'organisation de l'utilisateur
     const userWithOrg = await prisma.user.findUnique({
       where: { id: user.id },
       include: { Organization: true },
