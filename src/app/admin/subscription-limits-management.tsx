@@ -36,7 +36,7 @@ import {
   ListTodo,
 } from "lucide-react";
 import { toast } from "sonner";
-import { PLAN_DETAILS_CLIENT } from "@/lib/plan-details-client"; // Import client sécurisé
+import { PLAN_DETAILS } from "@/lib/stripe-client"; // Import sécurisé
 
 interface OrganizationLimits {
   id: string;
@@ -402,17 +402,15 @@ export function SubscriptionLimitsManagement() {
                                 changePlan(org.id, e.target.value)
                               }
                             >
-                              {Object.keys(PLAN_DETAILS_CLIENT).map(
-                                (planId) => (
-                                  <option key={planId} value={planId}>
-                                    {
-                                      PLAN_DETAILS_CLIENT[
-                                        planId as keyof typeof PLAN_DETAILS_CLIENT
-                                      ].name
-                                    }
-                                  </option>
-                                )
-                              )}
+                              {Object.keys(PLAN_DETAILS).map((planId) => (
+                                <option key={planId} value={planId}>
+                                  {
+                                    PLAN_DETAILS[
+                                      planId as keyof typeof PLAN_DETAILS
+                                    ].name
+                                  }
+                                </option>
+                              ))}
                             </select>
                           </div>
                         </TableCell>
@@ -478,7 +476,7 @@ export function SubscriptionLimitsManagement() {
         </CardContent>
       </Card>
 
-      {/* Modal d'édition des limites */}
+      {/* Modal d'édition des limites - Version améliorée */}
       {isEditing && selectedOrg && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-background p-6 rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">

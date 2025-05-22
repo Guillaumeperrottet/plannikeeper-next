@@ -1,6 +1,6 @@
 // src/lib/subscription-limits.ts - Version corrigée
 import { prisma } from "./prisma";
-import { getPlanDetails } from "@/lib/stripe"; // Import partagé pour les configs
+import { getPlanDetails } from "@/lib/stripe-client"; // Import partagé pour les configs
 
 export type LimitType =
   | "users"
