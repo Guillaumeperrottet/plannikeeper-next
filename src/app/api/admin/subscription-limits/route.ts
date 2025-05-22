@@ -1,3 +1,4 @@
+// src/app/api/admin/subscription-limits/route.ts - Version corrigée
 import { NextResponse } from "next/server";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
@@ -27,7 +28,23 @@ export async function GET() {
           select: { id: true },
         },
         Objet: {
-          select: { id: true },
+          select: {
+            id: true,
+            sectors: {
+              select: {
+                id: true,
+                articles: {
+                  select: {
+                    id: true,
+                    tasks: {
+                      where: { archived: false },
+                      select: { id: true },
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
       },
       orderBy: {
@@ -60,6 +77,39 @@ export async function GET() {
           (documentsSize._sum.fileSize || 0) / (1024 * 1024)
         ); // Convertir en MB
 
+        // Calculer les secteurs
+        const sectorCount = org.Objet.reduce(
+          (total, obj) => total + obj.sectors.length,
+          0
+        );
+
+        // Calculer les articles
+        const articleCount = org.Objet.reduce(
+          (total, obj) =>
+            total +
+            obj.sectors.reduce(
+              (subTotal, sector) => subTotal + sector.articles.length,
+              0
+            ),
+          0
+        );
+
+        // Calculer les tâches
+        const taskCount = org.Objet.reduce(
+          (total, obj) =>
+            total +
+            obj.sectors.reduce(
+              (subTotal, sector) =>
+                subTotal +
+                sector.articles.reduce(
+                  (taskTotal, article) => taskTotal + article.tasks.length,
+                  0
+                ),
+              0
+            ),
+          0
+        );
+
         const plan = org.subscription?.plan;
         const status = org.subscription?.status || "FREE";
 
@@ -78,10 +128,25 @@ export async function GET() {
             limit: plan?.maxObjects,
             unlimited: plan?.maxObjects === null,
           },
+          sectors: {
+            current: sectorCount,
+            limit: plan?.maxSectors,
+            unlimited: plan?.maxSectors === null,
+          },
+          articles: {
+            current: articleCount,
+            limit: plan?.maxArticles,
+            unlimited: plan?.maxArticles === null,
+          },
+          tasks: {
+            current: taskCount,
+            limit: plan?.maxTasks,
+            unlimited: plan?.maxTasks === null,
+          },
           storage: {
             current: storageUsed,
-            limit: plan ? 5120 : 1024, // 5GB pour les plans payants, 1GB pour gratuit
-            unlimited: plan?.name === "ENTERPRISE" || plan?.name === "ILLIMITE",
+            limit: plan?.maxStorage || (plan?.name === "FREE" ? 500 : 2048), // MB
+            unlimited: plan?.maxStorage === null,
           },
           subscriptionId: org.subscription?.id,
           createdAt: org.createdAt,
