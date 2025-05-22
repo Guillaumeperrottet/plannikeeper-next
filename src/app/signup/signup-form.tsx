@@ -1,4 +1,4 @@
-// src/app/signup/signup-form.tsx - Version corrigée
+// src/app/signup/signup-form.tsx - Version sécurisée
 "use client";
 
 import {
@@ -17,7 +17,15 @@ import { Button } from "@/app/components/ui/button";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
-import { User, Mail, Lock, Home, ArrowRight, CheckCircle } from "lucide-react";
+import {
+  User,
+  Mail,
+  Lock,
+  Home,
+  ArrowRight,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
 
 const SignupImageUpload = dynamic(() => import("./SignupImageUpload"), {
   loading: () => (
@@ -44,6 +52,7 @@ function SignUpForm() {
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const planType = searchParams.get("plan") || "FREE";
   const isPaidPlan = planType !== "FREE";
@@ -136,7 +145,7 @@ function SignUpForm() {
           image: imageUrl,
         };
 
-        // Ajouter les métadonnées dans le corps de la requête (pas dans un objet metadata)
+        // Ajouter les métadonnées
         if (inviteCode) {
           signupData.inviteCode = inviteCode;
         }
@@ -144,9 +153,14 @@ function SignUpForm() {
           signupData.planType = planType;
         }
 
-        console.log("📤 Données d'inscription:", signupData);
+        console.log("📤 Envoi demande d'inscription:", {
+          email,
+          name,
+          planType,
+          inviteCode,
+        });
 
-        // Inscription avec Better Auth
+        // Inscription avec notre système sécurisé
         const result = await authClient.signUp.email(signupData);
 
         if (result.error) {
@@ -156,13 +170,9 @@ function SignUpForm() {
           return;
         }
 
-        // Afficher un message de succès
-        toast.success(
-          "Inscription réussie ! Vérifiez votre email pour activer votre compte."
-        );
-
-        // Rediriger vers la page de vérification d'email
-        window.location.href = "/auth/email-verification-required";
+        // Afficher le message de succès
+        setShowSuccess(true);
+        toast.success("Email de vérification envoyé !");
       } catch (err) {
         console.error("Erreur d'inscription:", err);
         setError("Une erreur inattendue est survenue");
@@ -171,6 +181,78 @@ function SignUpForm() {
     },
     [inviteCode, planType, selectedFile, isSubmitting]
   );
+
+  // Affichage du message de succès
+  if (showSuccess) {
+    return (
+      <div className="w-full text-center">
+        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <CheckCircle className="w-8 h-8 text-green-600" />
+        </div>
+
+        <h2 className="text-2xl font-bold text-[#141313] mb-4">
+          Vérifiez votre email
+        </h2>
+
+        <div className="bg-[#e0f2fe] border border-[#7dd3fc] rounded-xl p-6 mb-6">
+          <div className="flex items-start gap-3">
+            <div className="text-[#0284c7] mt-0.5">
+              <Mail className="h-5 w-5" />
+            </div>
+            <div className="text-left">
+              <h3 className="font-semibold text-[#0284c7] mb-2">
+                Email de vérification envoyé !
+              </h3>
+              <p className="text-[#0284c7] text-sm mb-3">
+                Nous avons envoyé un lien de vérification à votre adresse email.
+                <strong>
+                  {" "}
+                  Votre compte ne sera créé qu&apos;après avoir cliqué sur ce
+                  lien.
+                </strong>
+              </p>
+              <p className="text-[#0284c7] text-sm">
+                💡 <strong>Vérifiez également votre dossier spam</strong> si
+                vous ne voyez pas l&apos;email dans quelques minutes.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-[#fff3cd] border border-[#ffeaa7] rounded-xl p-4 mb-6">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-[#856404] mt-0.5" />
+            <div className="text-left">
+              <p className="text-[#856404] text-sm">
+                <strong>Important :</strong> Le lien expire dans 24 heures. Si
+                vous ne finalisez pas votre inscription dans ce délai, vous
+                devrez recommencer le processus.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <p className="text-sm text-[#62605d]">
+            Vous n&apos;avez pas reçu l&apos;email ?
+          </p>
+          <Button
+            onClick={() => setShowSuccess(false)}
+            variant="outline"
+            className="w-full border-[#beac93] hover:bg-[#e8ebe0]"
+          >
+            Réessayer avec une autre adresse
+          </Button>
+          <p className="text-xs text-[#62605d]">
+            Ou{" "}
+            <Link href="/signin" className="text-[#d9840d] hover:underline">
+              connectez-vous si vous avez déjà un compte
+            </Link>
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">
@@ -232,7 +314,7 @@ function SignUpForm() {
                   : "text-[#16a34a] font-medium"
               }
             >
-              Vous avez sélectionné le plan{" "}
+              Plan sélectionné :{" "}
               <strong className="font-semibold">
                 {getPlanDisplayName(planType)}
               </strong>
@@ -241,16 +323,8 @@ function SignUpForm() {
               className={`mt-1 text-sm ${isPaidPlan ? "text-[#f59e0b]/90" : "text-[#16a34a]/90"}`}
             >
               {isPaidPlan
-                ? "Après vérification de votre email, vous pourrez configurer votre abonnement."
-                : "Votre compte gratuit sera activé après vérification de votre email."}
-            </p>
-            <p className="mt-3 text-sm">
-              <Link
-                href="/pricing"
-                className="underline underline-offset-4 hover:text-[#d9840d] transition-colors"
-              >
-                Voir tous les plans disponibles
-              </Link>
+                ? "Votre compte sera créé après vérification de votre email. Vous pourrez ensuite configurer votre abonnement."
+                : "Votre compte gratuit sera créé après vérification de votre email."}
             </p>
           </div>
         </div>
@@ -356,10 +430,10 @@ function SignUpForm() {
           disabled={isSubmitting}
         >
           {isSubmitting ? (
-            "Inscription en cours..."
+            "Envoi en cours..."
           ) : (
             <>
-              S&apos;inscrire
+              Créer mon compte
               <ArrowRight className="ml-2 h-5 w-5" />
             </>
           )}

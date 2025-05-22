@@ -1,4 +1,4 @@
-// src/lib/auth.ts - Version corrigée
+// src/lib/auth.ts - Version sécurisée avec vérification email avant création
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { createAuthMiddleware } from "better-auth/api";
@@ -10,14 +10,18 @@ const isDev =
   process.env.NODE_ENV === "development" ||
   process.env.NEXT_PUBLIC_DEV_MODE === "true";
 
-// Store temporary user data during signup process
-const tempUserData = new Map<
+// Stockage temporaire AVANT création utilisateur
+const pendingUsers = new Map<
   string,
   {
+    email: string;
+    name: string;
+    password: string; // Hashé par Better Auth
+    image?: string;
     inviteCode?: string;
     planType?: string;
-    email: string;
-    name?: string;
+    token: string;
+    expiresAt: Date;
   }
 >();
 
@@ -52,12 +56,12 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
-    autoSignIn: false, // Important : désactiver l'auto-connexion pour forcer la vérification
+    autoSignIn: false, // Pas de connexion automatique après inscription
   },
 
   emailVerification: {
-    sendOnSignUp: true,
-    autoSignInAfterVerification: true, // Connexion automatique après vérification
+    sendOnSignUp: false, // Désactivé car on gère manuellement
+    autoSignInAfterVerification: true, // Connexion après vérification
 
     sendVerificationEmail: async ({ user, token }) => {
       console.log(`📧 Envoi d'email de vérification vers: ${user.email}`);
@@ -67,20 +71,23 @@ export const auth = betterAuth({
           ? "http://localhost:3000"
           : process.env.NEXT_PUBLIC_APP_URL;
 
-        // Récupérer les données temporaires de l'utilisateur
-        const userData = tempUserData.get(user.email);
+        // Récupérer les données du pending user
+        const pendingUser = pendingUsers.get(user.email);
 
-        // Construire l'URL de vérification avec les paramètres nécessaires
-        const verificationUrl = new URL(`${baseUrl}/api/auth/verify-email`);
+        // Construire l'URL de vérification personnalisée
+        const verificationUrl = new URL(
+          `${baseUrl}/api/auth/verify-email-custom`
+        );
         verificationUrl.searchParams.set("token", token);
+        verificationUrl.searchParams.set("email", user.email);
 
-        // Ajouter les paramètres de redirection avec les données utilisateur
+        // Ajouter les paramètres de redirection
         const callbackUrl = new URL(`${baseUrl}/auth/verification-success`);
-        if (userData?.planType) {
-          callbackUrl.searchParams.set("plan", userData.planType);
+        if (pendingUser?.planType) {
+          callbackUrl.searchParams.set("plan", pendingUser.planType);
         }
-        if (userData?.inviteCode) {
-          callbackUrl.searchParams.set("code", userData.inviteCode);
+        if (pendingUser?.inviteCode) {
+          callbackUrl.searchParams.set("code", pendingUser.inviteCode);
         }
 
         verificationUrl.searchParams.set("callbackURL", callbackUrl.toString());
@@ -104,16 +111,16 @@ export const auth = betterAuth({
               <div class="container">
                 <div class="header">
                   <h1>🏠 PlanniKeeper</h1>
-                  <h2>Vérification de votre adresse email</h2>
+                  <h2>Finaliser votre inscription</h2>
                 </div>
                 
                 <div class="content">
                   <p>Bonjour ${user.name || user.email.split("@")[0]},</p>
-                  <p>Merci de vous être inscrit(e) sur PlanniKeeper. Veuillez cliquer sur le bouton ci-dessous pour vérifier votre adresse email :</p>
+                  <p>Merci de votre intérêt pour PlanniKeeper ! Pour finaliser votre inscription et activer votre compte, veuillez cliquer sur le bouton ci-dessous :</p>
                   
                   <div style="text-align: center; margin: 30px 0;">
                     <a href="${verificationUrl.toString()}" class="button">
-                      Vérifier mon email
+                      Activer mon compte
                     </a>
                   </div>
                   
@@ -122,8 +129,8 @@ export const auth = betterAuth({
                     ${verificationUrl.toString()}
                   </p>
                   
-                  <p>Ce lien expire dans 24 heures.</p>
-                  <p>Si vous n'avez pas demandé cette vérification, vous pouvez ignorer cet email.</p>
+                  <p><strong>Important :</strong> Ce lien expire dans 24 heures. Si vous ne finalisez pas votre inscription dans ce délai, vous devrez recommencer le processus.</p>
+                  <p>Si vous n'avez pas demandé cette inscription, vous pouvez ignorer cet email en toute sécurité.</p>
                 </div>
                 
                 <div class="footer">
@@ -136,15 +143,12 @@ export const auth = betterAuth({
 
         const result = await EmailService.sendEmail({
           to: user.email,
-          subject: "Vérifiez votre adresse email - PlanniKeeper",
+          subject: "Finalisez votre inscription à PlanniKeeper",
           html: htmlContent,
         });
 
         if (!result.success) {
-          console.error(
-            "❌ Erreur lors de l'envoi de l'email de vérification:",
-            result.error
-          );
+          console.error("❌ Erreur lors de l'envoi de l'email:", result.error);
           throw new Error(`Échec de l'envoi: ${result.error}`);
         }
 
@@ -165,98 +169,206 @@ export const auth = betterAuth({
       httpOnly: true,
       path: "/",
     },
-    cookies: {
-      session_token: {
-        name: "session",
-        attributes: {
-          sameSite: isDev ? "lax" : "none",
-          secure: !isDev,
-          path: "/",
-          domain: isDev ? "localhost" : undefined,
-          maxAge: 60 * 60 * 4,
-          httpOnly: true,
-        },
-      },
-    },
-    cookiePrefix: "",
   },
 
   hooks: {
+    // Hook AVANT inscription - intercepter et stocker temporairement
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path === "/sign-up/email") {
+        type SignUpEmailBody = {
+          email: string;
+          name: string;
+          password: string;
+          image?: string;
+          inviteCode?: string;
+          planType?: string;
+        };
+        const body = ctx.body as SignUpEmailBody;
+        console.log("📝 Interception de l'inscription pour:", body.email);
+
+        // Vérifier si l'email existe déjà
+        const existingUser = await prisma.user.findUnique({
+          where: { email: body.email },
+        });
+
+        if (existingUser) {
+          // Si l'utilisateur existe déjà, le laisser passer normalement
+          console.log("👤 Utilisateur existant, traitement normal");
+          return;
+        }
+
+        // Générer un token de vérification
+        const token = crypto.randomUUID();
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+
+        // Stocker les données temporairement
+        pendingUsers.set(body.email, {
+          email: body.email,
+          name: body.name,
+          password: body.password, // Better Auth va le hasher
+          image: body.image,
+          inviteCode: body.inviteCode,
+          planType: body.planType || "FREE",
+          token,
+          expiresAt,
+        });
+
+        console.log("💾 Données stockées temporairement pour:", body.email);
+
+        // Envoyer l'email de vérification directement
+        try {
+          await sendCustomVerificationEmail({
+            email: body.email,
+            name: body.name,
+            token,
+            inviteCode: body.inviteCode,
+            planType: body.planType,
+          });
+
+          // Retourner une réponse success sans créer l'utilisateur
+          return ctx.json({
+            success: true,
+            message:
+              "Email de vérification envoyé. Vérifiez votre boîte de réception.",
+          });
+        } catch (error) {
+          console.error("❌ Erreur envoi email:", error);
+          pendingUsers.delete(body.email);
+          throw new Error("Erreur lors de l'envoi de l'email de vérification");
+        }
+      }
+    }),
+
+    // Hook APRÈS vérification d'email - créer l'utilisateur et l'organisation
     after: createAuthMiddleware(async (ctx) => {
-      console.log("🔄 Hook après authentification:", {
-        path: ctx.path,
-        method: ctx.method,
-        hasNewSession: !!ctx.context.newSession,
-        userId: ctx.context.newSession?.user?.id,
-      });
+      if (ctx.path === "/verify-email-custom" && ctx.context.newSession) {
+        const user = ctx.context.newSession.user;
+        console.log(
+          "✉️ Email vérifié, création de l'organisation pour:",
+          user.id
+        );
 
-      try {
-        // Hook après inscription - stocker les données temporaires
-        if (ctx.path === "/sign-up/email" && ctx.context.newSession) {
-          const user = ctx.context.newSession.user;
-          interface SignUpBody {
-            inviteCode?: string;
-            planType?: string;
-          }
-          const body = ctx.body as SignUpBody;
+        // Récupérer les données temporaires
+        const pendingUser = pendingUsers.get(user.email);
 
-          console.log("👤 Stockage des données temporaires pour:", user.id);
-          console.log("📋 Données reçues:", {
-            inviteCode: body?.inviteCode,
-            planType: body?.planType,
+        if (pendingUser) {
+          console.log("📋 Données récupérées:", {
+            inviteCode: pendingUser.inviteCode,
+            planType: pendingUser.planType,
           });
 
-          // Stocker les données temporaires pour utilisation lors de la vérification
-          tempUserData.set(user.email, {
-            inviteCode: body?.inviteCode,
-            planType: body?.planType || "FREE",
-            email: user.email,
-            name: user.name,
-          });
-
-          console.log("✅ Données temporaires stockées");
-        }
-
-        // Hook après vérification d'email - créer l'organisation
-        if (ctx.path === "/verify-email" && ctx.context.newSession) {
-          const user = ctx.context.newSession.user;
-          console.log("✉️ Email vérifié pour l'utilisateur:", user.id);
-
-          // Récupérer les données temporaires
-          const userData = tempUserData.get(user.email);
-
-          if (userData) {
-            console.log("📋 Données temporaires récupérées:", userData);
-
-            if (userData.inviteCode) {
-              // Utilisateur invité - rejoindre une organisation existante
-              await handleInviteSignup(user, userData.inviteCode);
-            } else {
-              // Nouvel utilisateur - créer une nouvelle organisation
-              await handleNewUserSignup(user, userData.planType || "FREE");
-            }
-
-            // Nettoyer les données temporaires
-            tempUserData.delete(user.email);
-            console.log("🧹 Données temporaires nettoyées");
+          if (pendingUser.inviteCode) {
+            // Utilisateur invité
+            await handleInviteSignup(user, pendingUser.inviteCode);
           } else {
-            console.warn(
-              "⚠️ Aucune donnée temporaire trouvée pour:",
-              user.email
-            );
-            // Fallback - créer une organisation gratuite par défaut
-            await handleNewUserSignup(user, "FREE");
+            // Nouvel utilisateur
+            await handleNewUserSignup(user, pendingUser.planType || "FREE");
           }
 
-          // Envoyer l'email de bienvenue
-          await sendWelcomeEmailAfterVerification(user);
+          // Nettoyer les données temporaires
+          pendingUsers.delete(user.email);
+          console.log("🧹 Données temporaires nettoyées");
+        } else {
+          console.warn("⚠️ Aucune donnée temporaire pour:", user.email);
+          // Fallback
+          await handleNewUserSignup(user, "FREE");
         }
-      } catch (error) {
-        console.error("❌ Erreur dans le hook après inscription:", error);
+
+        // Envoyer l'email de bienvenue
+        await sendWelcomeEmailAfterVerification(user);
       }
     }),
   },
 });
+
+// Fonction pour envoyer l'email de vérification personnalisé
+async function sendCustomVerificationEmail({
+  email,
+  name,
+  token,
+  inviteCode,
+  planType,
+}: {
+  email: string;
+  name: string;
+  token: string;
+  inviteCode?: string;
+  planType?: string;
+}) {
+  const baseUrl = isDev
+    ? "http://localhost:3000"
+    : process.env.NEXT_PUBLIC_APP_URL;
+
+  const verificationUrl = new URL(`${baseUrl}/api/auth/verify-email-custom`);
+  verificationUrl.searchParams.set("token", token);
+  verificationUrl.searchParams.set("email", email);
+
+  const callbackUrl = new URL(`${baseUrl}/auth/verification-success`);
+  if (planType) {
+    callbackUrl.searchParams.set("plan", planType);
+  }
+  if (inviteCode) {
+    callbackUrl.searchParams.set("code", inviteCode);
+  }
+
+  verificationUrl.searchParams.set("callbackURL", callbackUrl.toString());
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Finalisez votre inscription</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }
+          .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+          .header { background-color: #d9840d; color: white; padding: 24px; text-align: center; }
+          .content { padding: 32px 24px; }
+          .button { display: inline-block; background-color: #d9840d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; }
+          .footer { background-color: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🏠 PlanniKeeper</h1>
+            <h2>Finaliser votre inscription</h2>
+          </div>
+          
+          <div class="content">
+            <p>Bonjour ${name || email.split("@")[0]},</p>
+            <p>Merci de votre intérêt pour PlanniKeeper ! Pour finaliser votre inscription et créer votre compte, veuillez cliquer sur le bouton ci-dessous :</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${verificationUrl.toString()}" class="button">
+                Créer mon compte
+              </a>
+            </div>
+            
+            <p><strong>Important :</strong> Ce lien expire dans 24 heures. Votre compte ne sera créé qu'après avoir cliqué sur ce lien.</p>
+            
+            ${inviteCode ? `<p>📝 <strong>Invitation :</strong> Vous rejoindrez une organisation existante.</p>` : ""}
+            ${planType && planType !== "FREE" ? `<p>💼 <strong>Plan sélectionné :</strong> ${planType}</p>` : ""}
+          </div>
+          
+          <div class="footer">
+            <p>© 2025 PlanniKeeper. Tous droits réservés.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  const result = await EmailService.sendEmail({
+    to: email,
+    subject: "Finalisez votre inscription à PlanniKeeper",
+    html: htmlContent,
+  });
+
+  if (!result.success) {
+    throw new Error(`Erreur envoi email: ${result.error}`);
+  }
+}
 
 // Fonction pour gérer l'inscription avec invitation
 async function handleInviteSignup(
@@ -459,3 +571,17 @@ async function sendWelcomeEmailAfterVerification(user: {
     console.error("Error sending welcome email:", error);
   }
 }
+
+// Fonction de nettoyage pour supprimer les entrées expirées
+setInterval(
+  () => {
+    const now = new Date();
+    for (const [email, userData] of pendingUsers.entries()) {
+      if (userData.expiresAt < now) {
+        pendingUsers.delete(email);
+        console.log("🧹 Suppression données expirées pour:", email);
+      }
+    }
+  },
+  60 * 60 * 1000
+); // Nettoyage chaque heure
