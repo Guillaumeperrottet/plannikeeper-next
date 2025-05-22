@@ -76,7 +76,6 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
-    r;
 
     // Récupérer les données du nouvel utilisateur
     const userData = await request.json();
