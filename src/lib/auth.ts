@@ -1,4 +1,3 @@
-// src/lib/auth.ts - Version mise à jour
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { createAuthMiddleware } from "better-auth/api";
@@ -51,6 +50,7 @@ export const auth = betterAuth({
     },
   },
 
+  // Configuration de l'envoi d'emails
   email: {
     async sendEmail({
       type,
@@ -61,8 +61,13 @@ export const auth = betterAuth({
       to: string;
       variables: { url: string };
     }) {
+      console.log(`📧 Tentative d'envoi d'email de type: ${type} vers: ${to}`);
+
       if (type === "verifyEmail") {
         try {
+          // Vérifier que l'URL de vérification est correcte
+          console.log(`🔗 URL de vérification: ${variables.url}`);
+
           const htmlContent = `
             <!DOCTYPE html>
             <html>
@@ -112,27 +117,31 @@ export const auth = betterAuth({
             </html>
           `;
 
-          const { error } = await EmailService.sendEmail({
+          const result = await EmailService.sendEmail({
             to,
             subject: "Vérifiez votre adresse email - PlanniKeeper",
             html: htmlContent,
           });
 
-          if (error) {
+          if (!result.success) {
             console.error(
-              "Erreur lors de l'envoi de l'email de vérification:",
-              error
+              "❌ Erreur lors de l'envoi de l'email de vérification:",
+              result.error
             );
+            // Retourner false pour indiquer l'échec à Better Auth
             return false;
           }
 
+          console.log("✅ Email de vérification envoyé avec succès");
           return true;
         } catch (error) {
-          console.error("Erreur lors de l'envoi de l'email:", error);
+          console.error("❌ Exception lors de l'envoi de l'email:", error);
           return false;
         }
       }
 
+      // Pour les autres types d'emails, retourner true par défaut
+      console.log(`ℹ️ Type d'email non géré: ${type}`);
       return true;
     },
   },
@@ -164,18 +173,18 @@ export const auth = betterAuth({
 
   hooks: {
     after: createAuthMiddleware(async (ctx) => {
-      console.log("Auth hook after triggered", {
+      console.log("🔄 Hook après authentification:", {
         path: ctx.path,
         method: ctx.method,
-        newSession: !!ctx.context.newSession,
-        user: ctx.context.newSession?.user?.id,
+        hasNewSession: !!ctx.context.newSession,
+        userId: ctx.context.newSession?.user?.id,
       });
 
       try {
         // Hook après inscription réussie
         if (ctx.path === "/sign-up/email" && ctx.context.newSession) {
           const user = ctx.context.newSession.user;
-          console.log("Processing new user signup:", user.id);
+          console.log("👤 Traitement du nouvel utilisateur:", user.id);
 
           // Définir le type des métadonnées
           interface UserMetadata {
@@ -201,19 +210,19 @@ export const auth = betterAuth({
         // Hook après vérification d'email réussie
         if (ctx.path === "/verify-email" && ctx.context.newSession) {
           const user = ctx.context.newSession.user;
-          console.log("Email verified for user:", user.id);
+          console.log("✉️ Email vérifié pour l'utilisateur:", user.id);
 
           // Envoyer l'email de bienvenue après vérification
           await sendWelcomeEmailAfterVerification(user);
         }
       } catch (error) {
-        console.error("Erreur dans le hook after signup:", error);
+        console.error("❌ Erreur dans le hook après inscription:", error);
       }
     }),
   },
 });
 
-// Fonction pour gérer l'inscription d'un utilisateur invité
+// ... (garder toutes les autres fonctions inchangées)
 async function handleInviteSignup(
   user: {
     id: string;

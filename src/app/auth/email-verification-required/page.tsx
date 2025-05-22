@@ -1,7 +1,7 @@
+// src/app/auth/email-verification-required/page.tsx - Version corrigée
 "use client";
 
 import { useState } from "react";
-import { authClient } from "@/lib/auth-client";
 
 export default function EmailVerificationRequiredPage() {
   const [email, setEmail] = useState("");
@@ -14,14 +14,26 @@ export default function EmailVerificationRequiredPage() {
     setMessage("");
 
     try {
-      // Utiliser authClient pour envoyer l'email de vérification
-      await authClient.sendVerificationEmail({ email });
+      console.log("📧 Envoi de la demande de vérification pour:", email);
 
-      setMessage(
-        "Un nouvel email de vérification a été envoyé si ce compte existe."
-      );
+      const response = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erreur lors de l'envoi");
+      }
+
+      setMessage(data.message || "Email de vérification envoyé avec succès !");
+      console.log("✅ Email envoyé avec succès");
     } catch (error) {
-      console.error("Erreur:", error);
+      console.error("❌ Erreur:", error);
       setMessage("Une erreur s'est produite. Veuillez réessayer.");
     } finally {
       setIsSubmitting(false);
@@ -63,7 +75,9 @@ export default function EmailVerificationRequiredPage() {
             <div className="text-sm text-center">
               <p
                 className={
-                  message.includes("erreur") ? "text-red-500" : "text-green-500"
+                  message.includes("erreur") || message.includes("Erreur")
+                    ? "text-red-500"
+                    : "text-green-500"
                 }
               >
                 {message}
@@ -75,7 +89,7 @@ export default function EmailVerificationRequiredPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
             >
               {isSubmitting
                 ? "Envoi en cours..."
