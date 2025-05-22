@@ -1,4 +1,4 @@
-// src/lib/auth.ts - Configuration Better Auth corrigée
+// src/lib/auth.ts - Configuration corrigée avec redirections
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { createAuthMiddleware } from "better-auth/api";
@@ -40,20 +40,33 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: true, // ✅ Obligatoire pour la vérification
-    autoSignIn: false, // ✅ Désactiver l'auto-connexion pour forcer la vérification
+    requireEmailVerification: true,
+    autoSignIn: false, // Désactiver l'auto-connexion pour forcer la vérification
   },
 
-  // ✅ Configuration de la vérification d'email (séparée d'emailAndPassword)
+  // ✅ Configuration corrigée de la vérification d'email
   emailVerification: {
-    sendOnSignUp: true, // ✅ Envoie automatiquement l'email lors de l'inscription
+    sendOnSignUp: true,
     autoSignInAfterVerification: true, // ✅ Connexion automatique après vérification
+    // ✅ URLs de redirection corrigées
+    verificationURL: isDev
+      ? "http://localhost:3000/api/auth/verify-email"
+      : `${process.env.BETTER_AUTH_URL}/verify-email`,
+
     sendVerificationEmail: async ({ user, url, token }) => {
       console.log(`📧 Envoi d'email de vérification vers: ${user.email}`);
       console.log(`🔗 URL de vérification: ${url}`);
-      console.log(`🎫 Token: ${token}`);
 
       try {
+        // ✅ Construire l'URL de vérification avec redirection correcte
+        const baseUrl = isDev
+          ? "http://localhost:3000"
+          : process.env.NEXT_PUBLIC_APP_URL;
+
+        const verificationUrl = `${baseUrl}/api/auth/verify-email?token=${token}&callbackURL=${encodeURIComponent(`${baseUrl}/auth/verification-success`)}`;
+
+        console.log(`🔗 URL de vérification construite: ${verificationUrl}`);
+
         const htmlContent = `
           <!DOCTYPE html>
           <html>
@@ -81,14 +94,14 @@ export const auth = betterAuth({
                   <p>Merci de vous être inscrit(e) sur PlanniKeeper. Veuillez cliquer sur le bouton ci-dessous pour vérifier votre adresse email :</p>
                   
                   <div style="text-align: center; margin: 30px 0;">
-                    <a href="${url}" class="button">
+                    <a href="${verificationUrl}" class="button">
                       Vérifier mon email
                     </a>
                   </div>
                   
                   <p>Ou copiez-collez ce lien dans votre navigateur :</p>
                   <p style="word-break: break-all; background-color: #f5f5f5; padding: 10px; border-radius: 4px;">
-                    ${url}
+                    ${verificationUrl}
                   </p>
                   
                   <p>Ce lien expire dans 24 heures.</p>
@@ -118,10 +131,9 @@ export const auth = betterAuth({
         }
 
         console.log("✅ Email de vérification envoyé avec succès");
-        // No return value needed as the function expects void
       } catch (error) {
         console.error("❌ Exception lors de l'envoi de l'email:", error);
-        throw error; // ✅ Propager l'erreur pour que Better Auth puisse la gérer
+        throw error;
       }
     },
   },
@@ -187,7 +199,7 @@ export const auth = betterAuth({
           }
         }
 
-        // Hook après vérification d'email réussie
+        // ✅ Hook après vérification d'email réussie
         if (ctx.path === "/verify-email" && ctx.context.newSession) {
           const user = ctx.context.newSession.user;
           console.log("✉️ Email vérifié pour l'utilisateur:", user.id);
@@ -403,7 +415,7 @@ async function sendWelcomeEmailAfterVerification(user: {
         userWithOrg,
         userWithOrg.Organization.name
       );
-      console.log("Welcome email sent to:", user.email);
+      console.log("✅ Email de bienvenue envoyé à:", user.email);
     }
   } catch (error) {
     console.error("Error sending welcome email:", error);

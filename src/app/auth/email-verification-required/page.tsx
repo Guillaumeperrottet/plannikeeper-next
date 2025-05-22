@@ -50,7 +50,7 @@ export default function EmailVerificationRequiredPage() {
           <p className="mt-2 text-muted-foreground">
             Votre adresse email n&apos;a pas encore été vérifiée. Veuillez
             vérifier votre boîte de réception ou demander un nouvel email de
-            vérification.
+            vérification. Pensez à vérifier votre dossier spam.
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
