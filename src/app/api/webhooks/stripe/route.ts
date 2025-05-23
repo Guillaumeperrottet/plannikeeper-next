@@ -11,6 +11,8 @@ interface StripeCheckoutSession extends Stripe.Checkout.Session {
   metadata: {
     organizationId?: string;
     planType?: string;
+    initiatedBy?: string;
+    initiatedByUserId?: string;
   };
   customer: string;
   subscription: string;
@@ -192,6 +194,157 @@ export async function POST(req: NextRequest) {
           );
         }
 
+        break;
+      }
+
+      case "checkout.session.completed": {
+        const session = event.data.object as StripeCheckoutSession;
+        const { organizationId, planType, initiatedBy, initiatedByUserId } =
+          session.metadata || {};
+
+        if (!organizationId || !planType) {
+          console.error("Métadonnées manquantes dans la session de paiement");
+          break;
+        }
+
+        // Récupérer le plan correspondant
+        const normalizedPlanType = planType.toUpperCase();
+        console.log(
+          `Plan type reçu: ${planType}, normalisé: ${normalizedPlanType}`
+        );
+
+        const plan = await prisma.plan.findUnique({
+          where: { name: normalizedPlanType as PlanType },
+        });
+
+        if (!plan) {
+          console.error(
+            `Plan non trouvé: ${planType} (normalisé: ${normalizedPlanType})`
+          );
+          break;
+        }
+
+        // Dates de période
+        const currentPeriodStart = new Date();
+        const currentPeriodEnd = new Date();
+        currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1);
+
+        // Mise à jour ou création de l'abonnement
+        await prisma.subscription.upsert({
+          where: { organizationId },
+          update: {
+            planId: plan.id,
+            stripeSubscriptionId: session.subscription,
+            stripeCustomerId:
+              typeof session.customer === "string" ? session.customer : null,
+            status: "ACTIVE",
+            currentPeriodStart,
+            currentPeriodEnd,
+            cancelAtPeriodEnd: false,
+          },
+          create: {
+            organizationId,
+            planId: plan.id,
+            stripeSubscriptionId: session.subscription,
+            stripeCustomerId:
+              typeof session.customer === "string" ? session.customer : null,
+            status: "ACTIVE",
+            currentPeriodStart,
+            currentPeriodEnd,
+            cancelAtPeriodEnd: false,
+          },
+        });
+
+        // Si c'est un changement initié par un admin
+        if (initiatedBy === "admin" && initiatedByUserId) {
+          // Mettre à jour l'audit
+          await prisma.planChangeAudit.updateMany({
+            where: {
+              organizationId,
+              stripeSessionId: session.id,
+              status: "pending",
+            },
+            data: {
+              status: "completed",
+              completedAt: new Date(),
+              notes: "Paiement confirmé via Stripe",
+            },
+          });
+
+          // Notifier les admins de l'organisation
+          const organization = await prisma.organization.findUnique({
+            where: { id: organizationId },
+            include: {
+              users: true,
+              subscription: { include: { plan: true } },
+            },
+          });
+
+          if (organization) {
+            const admins = await prisma.organizationUser.findMany({
+              where: { organizationId, role: "admin" },
+              include: { user: true },
+            });
+
+            for (const admin of admins) {
+              if (
+                admin.user &&
+                admin.user.email !== session.customer_details?.email
+              ) {
+                await EmailService.sendSubscriptionConfirmationEmail(
+                  admin.user,
+                  organization,
+                  plan,
+                  currentPeriodEnd
+                );
+              }
+            }
+          }
+
+          console.log(
+            `Changement de plan admin complété pour l'organisation: ${organizationId}`
+          );
+        } else {
+          // Changement normal (non-admin)
+          try {
+            const subscription = await prisma.subscription.findUnique({
+              where: { organizationId },
+              include: {
+                organization: true,
+                plan: true,
+              },
+            });
+
+            if (subscription) {
+              const admin = await prisma.organizationUser.findFirst({
+                where: {
+                  organizationId,
+                  role: "admin",
+                },
+                include: { user: true },
+              });
+
+              if (admin?.user) {
+                await EmailService.sendSubscriptionConfirmationEmail(
+                  admin.user,
+                  subscription.organization,
+                  subscription.plan,
+                  subscription.currentPeriodEnd
+                );
+                console.log(`Email d'abonnement envoyé à ${admin.user.email}`);
+              }
+            }
+          } catch (emailError) {
+            console.error(
+              "Erreur lors de l'envoi de l'email d'abonnement:",
+              emailError
+            );
+          }
+        }
+
+        console.log(
+          `Abonnement créé/mis à jour pour l'organisation: ${organizationId}, plan: ${plan.name}`
+        );
         break;
       }
 

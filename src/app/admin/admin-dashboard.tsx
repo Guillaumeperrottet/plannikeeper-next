@@ -29,6 +29,8 @@ import {
 } from "lucide-react";
 import { useAdminStats } from "@/hooks/useAdminStats";
 import { toast } from "sonner";
+import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
 interface User {
   id: string;
@@ -94,6 +96,40 @@ export function AdminDashboard({ user }: { user: User }) {
     if (percentage === 0) return "Aucune croissance";
     return `+${percentage}% cette semaine`;
   };
+
+  const searchParams = useSearchParams();
+
+  // Ajouter useEffect pour gérer les paramètres de retour
+  useEffect(() => {
+    const upgrade = searchParams.get("upgrade");
+    // const orgId = searchParams.get("org");
+
+    if (upgrade === "success") {
+      toast.success("Paiement confirmé !", {
+        description: "Le plan de l'organisation a été mis à jour avec succès.",
+        duration: 5000,
+      });
+
+      // Nettoyer l'URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+
+      // Actualiser les données si on est sur l'onglet des limites
+      if (activeTab === "limits") {
+        // Cette fonction devrait être exposée depuis SubscriptionLimitsManagement
+        // ou vous pouvez déclencher un refresh global
+        window.location.reload();
+      }
+    } else if (upgrade === "cancelled") {
+      toast.warning("Paiement annulé", {
+        description: "Le changement de plan a été annulé.",
+      });
+
+      // Nettoyer l'URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+    }
+  }, [searchParams, activeTab]);
 
   return (
     <div className="container mx-auto px-4 py-8">

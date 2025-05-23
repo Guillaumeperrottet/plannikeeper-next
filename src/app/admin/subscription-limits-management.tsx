@@ -204,29 +204,91 @@ export function SubscriptionLimitsManagement() {
 
   const changePlan = async (orgId: string, newPlanName: string) => {
     try {
+      // Afficher un loader
+      toast.loading("Changement de plan en cours...", { id: "plan-change" });
+
       const response = await fetch(`/api/admin/subscription-limits/${orgId}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          planChange: {
-            newPlanName,
-            status: "ACTIVE",
-          },
+          planChange: { newPlanName, status: "ACTIVE" },
         }),
       });
 
+      const data = await response.json();
+
+      // Fermer le loader
+      toast.dismiss("plan-change");
+
       if (!response.ok) {
-        throw new Error("Erreur lors du changement de plan");
+        throw new Error(data.error || "Erreur lors du changement de plan");
       }
 
-      await fetchOrganizationsLimits();
-      toast.success(`Plan changé vers ${newPlanName}`);
+      if (data.requiresPayment) {
+        // Rediriger vers Stripe Checkout
+        toast.info("Redirection vers le paiement...", {
+          description:
+            "Vous allez être redirigé vers la page de paiement sécurisée.",
+          duration: 5000,
+        });
+
+        // Ouvrir dans un nouvel onglet
+        window.open(data.checkoutUrl, "_blank");
+
+        // Afficher un message d'information
+        toast.info("Paiement en attente", {
+          description: "Le plan sera activé une fois le paiement confirmé.",
+          duration: 10000,
+        });
+      } else if (data.warning) {
+        // Cas où Stripe n'est pas configuré
+        toast.warning(data.warning, {
+          description: "Le plan a été mis à jour localement uniquement.",
+        });
+        await fetchOrganizationsLimits();
+      } else {
+        // Succès complet
+        toast.success(`Plan changé vers ${formatPlanName(newPlanName)}`, {
+          description: "Les nouvelles limites sont maintenant actives.",
+        });
+        await fetchOrganizationsLimits();
+      }
     } catch (error) {
-      console.error("Erreur:", error);
-      toast.error("Erreur lors du changement de plan");
+      console.error("Erreur lors du changement de plan:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Erreur lors du changement de plan"
+      );
     }
+  };
+
+  // Ajouter cette fonction helper pour formater les noms de plans
+  const formatPlanName = (planName: string): string => {
+    const planNames: Record<string, string> = {
+      FREE: "Gratuit",
+      PERSONAL: "Particulier",
+      PROFESSIONAL: "Professionnel",
+      ENTERPRISE: "Entreprise",
+      SUPER_ADMIN: "Super Admin",
+      ILLIMITE: "Illimité",
+      CUSTOM: "Personnalisé",
+    };
+    return planNames[planName] || planName;
+  };
+
+  // Ajouter cette fonction helper pour déterminer la priorité d'un plan
+  const getPlanPriority = (planName: string): number => {
+    const priorities: Record<string, number> = {
+      FREE: 0,
+      PERSONAL: 1,
+      PROFESSIONAL: 2,
+      ENTERPRISE: 3,
+      ILLIMITE: 4,
+      SUPER_ADMIN: 5,
+      CUSTOM: 1, // Considéré comme équivalent à PERSONAL
+    };
+    return priorities[planName] || 0;
   };
 
   const getStatusColor = (
@@ -402,9 +464,23 @@ export function SubscriptionLimitsManagement() {
                             <select
                               className="w-32 text-xs border rounded p-1"
                               value={org.planName}
-                              onChange={(e) =>
-                                changePlan(org.id, e.target.value)
-                              }
+                              onChange={(e) => {
+                                const newPlan = e.target.value;
+                                // Demander confirmation pour les changements importants
+                                const isDowngrade =
+                                  getPlanPriority(newPlan) <
+                                  getPlanPriority(org.planName);
+                                const message = isDowngrade
+                                  ? `Êtes-vous sûr de vouloir rétrograder vers le plan ${formatPlanName(newPlan)} ? Certaines fonctionnalités pourraient être limitées.`
+                                  : `Confirmer le changement vers le plan ${formatPlanName(newPlan)} ?`;
+
+                                if (window.confirm(message)) {
+                                  changePlan(org.id, newPlan);
+                                } else {
+                                  // Réinitialiser la valeur du select
+                                  e.target.value = org.planName;
+                                }
+                              }}
                             >
                               {Object.keys(PLAN_DETAILS).map((planId) => (
                                 <option key={planId} value={planId}>
@@ -438,7 +514,7 @@ export function SubscriptionLimitsManagement() {
                           limitInfo={org.objects}
                           type="objects"
                           icon={Building}
-                          color="text-amber-500"
+                          color="text-green-500"
                         />
                         <LimitCell
                           org={org}

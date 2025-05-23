@@ -26,6 +26,7 @@ import { getSubscriptionConfirmationTemplate } from "./email-templates/subscript
 import { getWelcomeEmailTemplate } from "./email-templates/welcome-email";
 import { getTaskAssignmentEmailTemplate } from "./email-templates/task-assignement-email";
 import { getTasksReminderEmailTemplate } from "./email-templates/tasks-reminder-mail";
+import { getPlanChangeEmailTemplate } from "./email-templates/plan-change-email";
 
 let resend: Resend | null = null;
 
@@ -149,6 +150,54 @@ export const EmailService = {
       if (error) {
         console.error(
           "Erreur lors de l'envoi de l'email de confirmation d'abonnement:",
+          error
+        );
+        return { success: false, error };
+      }
+
+      return { success: true, data };
+    } catch (error) {
+      console.error("Erreur dans le service d'email:", error);
+      return { success: false, error };
+    }
+  },
+
+  async sendPlanChangeEmail(
+    user: User,
+    organizationName: string,
+    oldPlanName: string,
+    newPlanName: string,
+    newPlan: Plan
+  ) {
+    try {
+      const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`;
+
+      const htmlContent = getPlanChangeEmailTemplate(
+        user.name || "utilisateur",
+        organizationName,
+        oldPlanName,
+        newPlanName,
+        newPlan,
+        dashboardUrl
+      );
+
+      const { data, error } = await getResend().emails.send({
+        from:
+          process.env.RESEND_FROM_EMAIL ||
+          "PlanniKeeper <notifications@plannikeeper.ch>",
+        to: [user.email],
+        subject: `Changement de plan - ${organizationName} - PlanniKeeper`,
+        html: htmlContent,
+        replyTo: process.env.RESEND_REPLY_TO_EMAIL,
+        headers: {
+          "List-Unsubscribe": `<${process.env.NEXT_PUBLIC_APP_URL}/unsubscribe?email=${encodeURIComponent(user.email)}>`,
+          "X-Entity-Ref-ID": `plan-change-${user.id}-${Date.now()}`,
+        },
+      });
+
+      if (error) {
+        console.error(
+          "Erreur lors de l'envoi de l'email de changement de plan:",
           error
         );
         return { success: false, error };
