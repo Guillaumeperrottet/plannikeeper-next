@@ -178,17 +178,48 @@ export const auth = betterAuth({
               });
 
               if (invitation) {
+                // IMPORTANT: Associer l'utilisateur à l'organisation de l'invitation
                 await prisma.user.update({
                   where: { id: user.id },
                   data: {
                     organizationId: invitation.organizationId,
-                    metadata: { inviteCode, image },
+                    metadata: { inviteCode, image, joinedViaInvitation: true },
                   },
                 });
 
                 console.log(
-                  "👤 Utilisateur associé à l'organisation:",
-                  invitation.organizationId
+                  "👤 Utilisateur associé à l'organisation via invitation:",
+                  invitation.organizationId,
+                  "- Organisation:",
+                  invitation.organization.name
+                );
+                // Vérifier si l'invitation ajoute déjà l'utilisateur à l'organisation
+                const existingOrgUser = await prisma.organizationUser.findFirst(
+                  {
+                    where: {
+                      userId: user.id,
+                      organizationId: invitation.organizationId,
+                    },
+                  }
+                );
+                // Si l'association n'existe pas encore, la créer
+                if (!existingOrgUser) {
+                  await prisma.organizationUser.create({
+                    data: {
+                      userId: user.id,
+                      organizationId: invitation.organizationId,
+                      role: invitation.role,
+                    },
+                  });
+                  console.log(
+                    "✅ Association utilisateur-organisation créée directement avec rôle:",
+                    invitation.role
+                  );
+                }
+              } else {
+                console.warn(
+                  "⚠️ Code d'invitation invalide ou expiré:",
+                  inviteCode
                 );
               }
             } else {

@@ -20,27 +20,39 @@ export default function VerificationSuccessPage() {
   const planType = searchParams.get("plan") || "FREE";
   const inviteCode = searchParams.get("code");
 
+  // Fonction pour tester si l'utilisateur a rejoint une organisation
+  const checkJoinedOrganization = useCallback(async () => {
+    try {
+      const response = await fetch("/api/users/organization-check");
+      if (!response.ok) {
+        throw new Error(`Erreur ${response.status}`);
+      }
+      const data = await response.json();
+      console.log("📊 Vérification organisation:", data);
+      return data.success && data.user?.organizationId;
+    } catch (err) {
+      console.error("❌ Erreur lors de la vérification d'organisation:", err);
+      return false;
+    }
+  }, []);
+
   // Fonction pour créer une organisation de secours
   const createRecoveryOrganization = useCallback(async () => {
     try {
       console.log("🔄 Tentative de création d'organisation de secours...");
-
       const response = await fetch("/api/user/organization-recovery", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
       });
-
       if (!response.ok) {
         const text = await response.text();
         console.error("Réponse API brute:", text);
         throw new Error(`Erreur ${response.status}: ${response.statusText}`);
       }
-
       const data = await response.json();
       console.log("✅ Réponse de récupération:", data);
-
       if (data.success) {
         setMessage("Organisation créée avec succès! Redirection en cours...");
         return true;
@@ -57,51 +69,71 @@ export default function VerificationSuccessPage() {
 
   const handleRedirect = useCallback(() => {
     setIsRedirecting(true);
-
     if (inviteCode) {
-      // Utilisateur avec invitation
-      router.push(`/join/${inviteCode}?plan=${planType}`);
+      // Utilisateur avec invitation - rediriger directement vers le tableau de bord
+      router.push(`/dashboard`);
     } else {
-      // Nouvel utilisateur
-      router.push(`/subscribe-redirect?plan=${planType}`);
+      // Nouvel utilisateur - vérifier s'il faut passer par la page d'abonnement
+      if (planType !== "FREE") {
+        router.push(`/subscribe-redirect?plan=${planType}`);
+      } else {
+        router.push(`/dashboard`);
+      }
     }
   }, [inviteCode, planType, router]);
 
   useEffect(() => {
     let isMounted = true;
     const userId = searchParams.get("userId");
-
     console.log("📍 Verification Success Page - Paramètres:", {
       userId,
       planType,
       inviteCode,
     });
-
-    // Fonction pour vérifier l'organisation
-    const checkOrganization = async () => {
+    // Fonction pour vérifier et configurer la redirection
+    const setupRedirection = async () => {
       if (!isMounted) return;
-
       try {
-        // D'abord, attendons un peu pour laisser le temps au hook after de s'exécuter
+        // Attendre un peu pour permettre aux hooks de s'exécuter
         await new Promise((resolve) => setTimeout(resolve, 2000));
-
-        if (attempts === 0) {
-          setAttempts(1); // Premier essai
-          // Tentative directe de redirection, peut fonctionner si tout s'est bien passé
-          handleRedirect();
-        } else if (attempts === 1) {
-          // Si nous sommes toujours ici, c'est que la première tentative a échoué
-          // Maintenant, essayons de récupérer l'organisation
-          const success = await createRecoveryOrganization();
-
-          if (success && isMounted) {
-            // Configurer la redirection après un délai
+        // D'abord, vérifier si l'utilisateur a déjà rejoint une organisation
+        const hasOrganization = await checkJoinedOrganization();
+        if (hasOrganization) {
+          console.log("✅ L'utilisateur a bien rejoint une organisation");
+          if (inviteCode) {
+            setMessage(
+              "Vous avez bien rejoint l'organisation! Redirection en cours..."
+            );
+          } else {
+            setMessage(
+              "Votre compte et votre organisation ont été créés avec succès! Redirection en cours..."
+            );
+          }
+          // Configurer la redirection
+          setTimeout(() => {
+            if (isMounted) {
+              handleRedirect();
+            }
+          }, 1500);
+        } else if (attempts < 1) {
+          // Premier essai échoué, tenter une récupération
+          setAttempts(1);
+          console.log(
+            "⚠️ L'utilisateur n'a pas d'organisation, tentative de récupération..."
+          );
+          const recoverySuccess = await createRecoveryOrganization();
+          if (recoverySuccess && isMounted) {
             setTimeout(() => {
               if (isMounted) {
                 handleRedirect();
               }
             }, 1500);
           }
+        } else {
+          // Échec après la récupération
+          setError(
+            "Impossible de configurer votre compte correctement. Veuillez contacter le support."
+          );
         }
       } catch (err) {
         console.error("❌ Erreur globale:", err);
@@ -116,10 +148,8 @@ export default function VerificationSuccessPage() {
         }
       }
     };
-
     // Lancer la vérification
-    checkOrganization();
-
+    setupRedirection();
     return () => {
       isMounted = false;
     };
@@ -130,6 +160,7 @@ export default function VerificationSuccessPage() {
     createRecoveryOrganization,
     attempts,
     handleRedirect,
+    checkJoinedOrganization,
   ]);
 
   return (
@@ -151,12 +182,10 @@ export default function VerificationSuccessPage() {
               />
             </svg>
           </div>
-
           <h2 className="mt-6 text-3xl font-bold text-[#141313]">
             Email vérifié !
           </h2>
           <p className="mt-2 text-[#62605d]">{message}</p>
-
           {isProcessing && (
             <div className="mt-4 flex items-center justify-center">
               <Loader2 className="h-5 w-5 animate-spin text-[#d9840d] mr-2" />
@@ -165,22 +194,19 @@ export default function VerificationSuccessPage() {
               </span>
             </div>
           )}
-
           {error && (
             <div className="mt-4 p-3 bg-[#fee2e2] border border-[#fca5a5] rounded-lg">
               <p className="text-sm text-[#b91c1c]">{error}</p>
             </div>
           )}
-
           {inviteCode && (
             <div className="mt-4 p-3 bg-[#e0f2fe] border border-[#7dd3fc] rounded-lg">
               <p className="text-sm text-[#0284c7]">
-                🎉 Vous allez être ajouté à votre organisation !
+                🎉 Vous avez été ajouté à l&apos;organisation avec succès !
               </p>
             </div>
           )}
         </div>
-
         <div className="mt-8 space-y-6">
           <div className="flex items-center justify-center">
             <Button
@@ -198,7 +224,6 @@ export default function VerificationSuccessPage() {
               )}
             </Button>
           </div>
-
           {!error && !isProcessing && (
             <div className="text-center">
               <p className="text-xs text-[#62605d]">
@@ -206,7 +231,6 @@ export default function VerificationSuccessPage() {
               </p>
             </div>
           )}
-
           {error && (
             <div className="text-center">
               <Button
