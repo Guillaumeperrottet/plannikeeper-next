@@ -14,6 +14,29 @@ export default function VerificationSuccessPage() {
   const planType = searchParams.get("plan") || "FREE";
   const inviteCode = searchParams.get("code");
 
+  useEffect(() => {
+    // Récupérer les paramètres
+    const userId = searchParams.get("userId");
+    const planType = searchParams.get("plan") || "FREE";
+    const inviteCode = searchParams.get("code");
+
+    console.log("📍 Verification Success Page - Paramètres:", {
+      userId,
+      planType,
+      inviteCode,
+    });
+
+    // Tu peux aussi faire un appel API ici pour vérifier si l'organisation a été créée
+    fetch("/api/user/organization-check")
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("🏢 Vérification organisation:", data);
+      })
+      .catch((err) => {
+        console.error("❌ Erreur vérification:", err);
+      });
+  }, [searchParams]);
+
   const handleRedirect = useCallback(() => {
     setIsRedirecting(true);
 

@@ -100,13 +100,20 @@ export const auth = betterAuth({
       // Construire l'URL de redirection avec les paramètres nécessaires
       const baseUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/verification-success`;
       const params = new URLSearchParams();
+
+      // Toujours inclure l'ID utilisateur
       params.set("userId", data.user.id);
+
       // Ajouter les paramètres personnalisés si disponibles
       if (data.user.metadata) {
         const metadata = data.user.metadata;
         if (metadata.planType) params.set("plan", metadata.planType);
         if (metadata.inviteCode) params.set("code", metadata.inviteCode);
       }
+
+      console.log(
+        `🔄 Redirection après vérification vers: ${baseUrl}?${params.toString()}`
+      );
       return `${baseUrl}?${params.toString()}`;
     },
   },
@@ -125,18 +132,33 @@ export const auth = betterAuth({
       userOptions?: { inviteCode?: string; planType?: string; image?: string };
     }) => {
       try {
+        console.log(
+          "📝 afterSignUp hook exécuté pour:",
+          user.email,
+          "avec options:",
+          userOptions
+        );
+
+        // Stocker les métadonnées importantes
         const metadata = {
           inviteCode: userOptions?.inviteCode,
           planType: userOptions?.planType || "FREE",
           image: userOptions?.image,
         };
+
+        // Mettre à jour l'utilisateur avec les métadonnées
         await prisma.user.update({
           where: { id: user.id },
-          data: { metadata },
+          data: {
+            metadata,
+            // Ne pas mettre à jour l'organizationId ici, c'est fait dans afterEmailVerified
+          },
         });
+
+        console.log("✅ Métadonnées utilisateur mises à jour:", metadata);
         return { user };
       } catch (error) {
-        console.error("Erreur dans afterSignUp:", error);
+        console.error("❌ Erreur dans afterSignUp:", error);
         return { user };
       }
     },
@@ -151,19 +173,19 @@ export const auth = betterAuth({
       };
     }) => {
       console.log(
-        "🔍 Hook afterEmailVerified exécuté pour:",
+        "🔍 Hook afterEmailVerified DÉCLENCHÉ pour:",
         user.email,
         "avec metadata:",
-        user.metadata
+        JSON.stringify(user.metadata)
       );
       try {
-        // Récupérer l'utilisateur complet depuis la base de données pour s'assurer d'avoir toutes les métadonnées
+        // Récupérer l'utilisateur complet depuis la base de données
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id },
           select: { metadata: true, organizationId: true },
         });
 
-        console.log("📊 Utilisateur een base:", dbUser);
+        console.log("📊 Utilisateur en base:", JSON.stringify(dbUser));
 
         // Vérifier si l'utilisateur a déjà une organisation
         if (dbUser?.organizationId) {
@@ -174,21 +196,23 @@ export const auth = betterAuth({
           return { user };
         }
 
+        // Fusionner les métadonnées de l'utilisateur
         const metadata = {
           ...(user.metadata || {}),
           ...(typeof dbUser?.metadata === "object" && dbUser?.metadata !== null
             ? dbUser.metadata
             : {}),
         };
-        console.log("🧩 Métadonnées fusionnées:", metadata);
+        console.log("🧩 Métadonnées fusionnées:", JSON.stringify(metadata));
 
+        // Extraire le code d'invitation et le type de plan
         const inviteCode =
           typeof metadata === "object" &&
           metadata !== null &&
-          "inviteCode" in metadata &&
-          typeof (metadata as { inviteCode?: unknown }).inviteCode === "string"
-            ? (metadata as { inviteCode: string }).inviteCode
+          "inviteCode" in metadata
+            ? (metadata as { inviteCode?: string }).inviteCode
             : undefined;
+
         const planType =
           typeof metadata === "object" &&
           metadata !== null &&
@@ -196,15 +220,13 @@ export const auth = betterAuth({
             ? (metadata as { planType?: string }).planType || "FREE"
             : "FREE";
 
+        // Traiter en fonction du code d'invitation
         if (inviteCode) {
           console.log("🔗 Traitement invitation:", inviteCode);
           await handleInviteSignup(user, inviteCode);
         } else {
           console.log("🆕 Création organisation avec plan:", planType);
-          await handleNewUserSignup(
-            user,
-            typeof planType === "string" ? planType : "FREE"
-          );
+          await handleNewUserSignup(user, planType);
         }
 
         // Vérifier que l'organisation a bien été créée
