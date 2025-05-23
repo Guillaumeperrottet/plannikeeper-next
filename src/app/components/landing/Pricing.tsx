@@ -9,6 +9,7 @@ import {
   Users,
   Building2,
   Home,
+  Mail,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -50,15 +51,15 @@ export default function PricingSection() {
       name: "FREE",
       displayName: "Gratuit",
       icon: Home,
-      price: { monthly: "0CHF", yearly: "0CHF" },
-      description: "Pour les particuliers ou pour tester notre service !",
+      price: { monthly: "0€", yearly: "0€" },
+      description: "Pour découvrir PlanniKeeper",
       features: [
         "1 utilisateur",
-        "1 objet maximum",
-        "Gestion des tâches basique",
-        "Interface interactive",
+        "3 objets immobiliers",
+        "500MB de stockage",
+        "Support communauté",
       ],
-      limitations: ["Pas de collaboration", "Support limité"],
+      limitations: ["Fonctionnalités limitées", "Pas de support prioritaire"],
       color: "from-gray-100 to-gray-200",
       textColor: "text-gray-800",
       borderColor: "border-gray-300",
@@ -67,18 +68,18 @@ export default function PricingSection() {
     },
     {
       name: "PERSONAL",
-      displayName: "Particulier",
+      displayName: "Privé",
       icon: Home,
-      price: { monthly: "9CHF", yearly: "90CHF" },
-      description: "Parfait pour les propriétaires individuels",
+      price: { monthly: "12€", yearly: "120€" },
+      description: "Pour la gestion de bien personnels",
       features: [
         "1 utilisateur",
-        "Jusqu'à 5 objets",
+        "10 objets immobiliers",
+        "2GB de stockage",
+        "Support email",
         "Toutes les fonctionnalités",
-        "Stockage de documents 5GB",
-        "Support par email",
       ],
-      highlight: billingCycle === "yearly" ? "Économisez 18CHF par an" : null,
+      highlight: billingCycle === "yearly" ? "Économisez 24€ par an" : null,
       color: "from-blue-50 to-blue-100",
       textColor: "text-blue-900",
       borderColor: "border-blue-200",
@@ -90,16 +91,16 @@ export default function PricingSection() {
       displayName: "Indépendant",
       icon: Users,
       popular: true,
-      price: { monthly: "29CHF", yearly: "290CHF" },
-      description: "Idéal pour les petites équipes",
+      price: { monthly: "35€", yearly: "350€" },
+      description: "Pour les professionnels indépendants",
       features: [
-        "Jusqu'à 5 utilisateurs",
-        "Jusqu'à 20 objets",
-        "Toutes les fonctionnalités",
-        "Stockage de documents 20GB",
+        "Jusqu'à 10 utilisateurs",
+        "50 objets immobiliers",
+        "10GB de stockage",
         "Support prioritaire",
+        "Gestion des accès",
       ],
-      highlight: billingCycle === "yearly" ? "Économisez 58CHF par an" : null,
+      highlight: billingCycle === "yearly" ? "Économisez 70€ par an" : null,
       color: "from-[#d9840d]/10 to-[#e36002]/10",
       textColor: "text-[#d9840d]",
       borderColor: "border-[#d9840d]",
@@ -110,22 +111,22 @@ export default function PricingSection() {
       name: "ENTERPRISE",
       displayName: "Entreprise",
       icon: Building2,
-      price: { monthly: "Sur mesure", yearly: "Sur mesure" },
-      description: "Pour les grandes structures immobilières",
+      price: { monthly: "85€", yearly: "850€" },
+      description: "Pour les équipes et entreprises",
       features: [
         "Utilisateurs illimités",
         "Objets illimités",
-        "Fonctionnalités avancées",
-        "Stockage de documents illimité",
-        "Support dédié 24/7",
-        "Intégrations personnalisées",
-        "Formation personnalisée",
+        "50GB de stockage",
+        "Support téléphone + email",
+        "Formation incluse",
       ],
+      highlight: billingCycle === "yearly" ? "Économisez 170€ par an" : null,
       color: "from-purple-50 to-purple-100",
       textColor: "text-purple-900",
       borderColor: "border-purple-200",
       buttonColor: "bg-purple-600 hover:bg-purple-700 text-white",
       buttonVariant: "default",
+      contactOnly: true,
     },
   ];
 
@@ -246,27 +247,40 @@ export default function PricingSection() {
                     {plan.highlight}
                   </div>
                 )}
-                <Button
-                  className={`w-full py-6 font-bold rounded-xl ${plan.buttonColor} transition-all`}
-                  variant={plan.buttonVariant as "default" | "outline"}
-                  asChild
-                >
+
+                {plan.contactOnly ? (
                   <Link
-                    href={
-                      plan.name === "ENTERPRISE"
-                        ? "/contact"
-                        : `/signup?plan=${encodeURIComponent(plan.name)}`
-                    }
+                    href="/contact?subject=Demande%20Plan%20Entreprise"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handlePlanClick(plan.name, plan.name === "ENTERPRISE");
+                      handlePlanClick(plan.name, true);
                     }}
                   >
-                    {plan.name === "ENTERPRISE"
-                      ? "Nous contacter"
-                      : "Commencer maintenant"}
+                    <Button
+                      className={`w-full py-6 font-bold rounded-xl ${plan.buttonColor} transition-all`}
+                      variant={plan.buttonVariant as "default" | "outline"}
+                    >
+                      <Mail className="mr-2 h-4 w-4" />
+                      Nous contacter
+                    </Button>
                   </Link>
-                </Button>
+                ) : (
+                  <Button
+                    className={`w-full py-6 font-bold rounded-xl ${plan.buttonColor} transition-all`}
+                    variant={plan.buttonVariant as "default" | "outline"}
+                    asChild
+                  >
+                    <Link
+                      href={`/signup?plan=${encodeURIComponent(plan.name)}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePlanClick(plan.name);
+                      }}
+                    >
+                      Commencer maintenant
+                    </Link>
+                  </Button>
+                )}
               </div>
 
               <div className="p-6 md:p-8 bg-white border-t border-gray-100">
