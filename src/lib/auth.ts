@@ -314,25 +314,33 @@ async function sendCustomVerificationEmail({
   inviteCode?: string;
   planType?: string;
 }) {
-  const baseUrl = isDev
-    ? "http://localhost:3000"
-    : process.env.NEXT_PUBLIC_APP_URL;
+  console.log(`📧 Début processus email de vérification pour: ${email}`);
 
-  const verificationUrl = new URL(`${baseUrl}/api/auth/verify-email-custom`);
-  verificationUrl.searchParams.set("token", token);
-  verificationUrl.searchParams.set("email", email);
+  try {
+    const baseUrl = isDev
+      ? "http://localhost:3000"
+      : process.env.NEXT_PUBLIC_APP_URL;
+    console.log(`🔗 URL de base: ${baseUrl}`);
 
-  const callbackUrl = new URL(`${baseUrl}/auth/verification-success`);
-  if (planType) {
-    callbackUrl.searchParams.set("plan", planType);
-  }
-  if (inviteCode) {
-    callbackUrl.searchParams.set("code", inviteCode);
-  }
+    const verificationUrl = new URL(`${baseUrl}/api/auth/verify-email-custom`);
+    verificationUrl.searchParams.set("token", token);
+    verificationUrl.searchParams.set("email", email);
 
-  verificationUrl.searchParams.set("callbackURL", callbackUrl.toString());
+    const callbackUrl = new URL(`${baseUrl}/auth/verification-success`);
+    if (planType) {
+      callbackUrl.searchParams.set("plan", planType);
+    }
+    if (inviteCode) {
+      callbackUrl.searchParams.set("code", inviteCode);
+    }
 
-  const htmlContent = `
+    verificationUrl.searchParams.set("callbackURL", callbackUrl.toString());
+    console.log(`🔗 URL de vérification: ${verificationUrl.toString()}`);
+
+    // Création du contenu HTML
+    console.log(`📝 Préparation du contenu HTML`);
+
+    const htmlContent = `
     <!DOCTYPE html>
     <html>
       <head>
@@ -378,14 +386,28 @@ async function sendCustomVerificationEmail({
     </html>
   `;
 
-  const result = await EmailService.sendEmail({
-    to: email,
-    subject: "Finalisez votre inscription à PlanniKeeper",
-    html: htmlContent,
-  });
+    console.log(`📤 Tentative d'envoi via Resend`);
+    console.log(
+      `📧 Email From: ${process.env.RESEND_FROM_EMAIL || "PlanniKeeper <notifications@plannikeeper.ch>"}`
+    );
+    console.log(`📧 Email To: ${email}`);
+    const result = await EmailService.sendEmail({
+      to: email,
+      subject: "Finalisez votre inscription à PlanniKeeper",
+      html: htmlContent,
+    });
+    console.log(`📬 Résultat de l'envoi:`, result);
 
-  if (!result.success) {
-    throw new Error(`Erreur envoi email: ${result.error}`);
+    if (!result.success) {
+      console.error(`❌ Échec de l'envoi: ${result.error}`);
+
+      throw new Error(`Erreur envoi email: ${result.error}`);
+    }
+
+    console.log(`✅ Email de vérification envoyé à: ${email}`);
+  } catch (error) {
+    console.error(`❌ Erreur envoi email de vérification:`, error);
+    throw error;
   }
 }
 

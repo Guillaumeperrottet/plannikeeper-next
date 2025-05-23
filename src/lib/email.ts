@@ -32,14 +32,20 @@ let resend: Resend | null = null;
 
 function getResend(): Resend {
   if (!resend) {
-    if (!process.env.RESEND_API_KEY) {
+    const apiKey = process.env.RESEND_API_KEY;
+    console.log(`🔑 Resend API Key disponible: ${!!apiKey}`);
+    console.log(`🔑 Longueur de la clé: ${apiKey?.length || 0}`);
+
+    if (!apiKey) {
+      console.error("❌ RESEND_API_KEY manquante");
       throw new Error("RESEND_API_KEY is not defined");
     }
-    resend = new Resend(process.env.RESEND_API_KEY);
+
+    resend = new Resend(apiKey);
+    console.log(`✅ Instance Resend créée`);
   }
   return resend;
 }
-
 export const EmailService = {
   // Méthode générique pour envoyer des emails
   async sendEmail({
