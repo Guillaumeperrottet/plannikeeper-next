@@ -1,11 +1,9 @@
-// src/lib/auth.ts - Version corrigée pour inscription avec vérification email préalable
+// src/lib/auth.ts - Version compatible avec Better Auth actuel
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
 import { EmailService } from "./email";
 import { PlanType } from "@prisma/client";
-
-// Types pour Better Auth context
 
 const isDev =
   process.env.NODE_ENV === "development" ||
@@ -27,42 +25,6 @@ function validatePlanType(planType: string): PlanType {
     : "FREE";
 }
 
-interface AuthUser {
-  id: string;
-  email: string;
-  name?: string;
-  metadata?: Record<string, unknown>;
-}
-
-interface UserOptions {
-  inviteCode?: string;
-  planType?: string;
-  image?: string;
-}
-
-interface SendVerificationEmailParams {
-  user: AuthUser;
-  url: string;
-}
-
-interface AfterSignUpParams {
-  user: AuthUser;
-  userOptions?: UserOptions;
-}
-
-interface AfterEmailVerifiedParams {
-  user: AuthUser;
-}
-
-interface AfterHookContext {
-  path: string;
-  returned?: {
-    user?: AuthUser;
-    [key: string]: unknown;
-  };
-  [key: string]: unknown;
-}
-
 export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   secret: process.env.BETTER_AUTH_SECRET!,
@@ -79,15 +41,12 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
-    autoSignIn: false,
+    autoSignIn: true, // Connexion automatique après vérification de l'email
   },
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
-    sendVerificationEmail: async ({
-      user,
-      url,
-    }: SendVerificationEmailParams) => {
+    sendVerificationEmail: async ({ user, url }) => {
       console.log(
         "📧 Envoi d'email de vérification à:",
         user.email,
@@ -119,13 +78,13 @@ export const auth = betterAuth({
             </div>
             <div class=\"content\">
               <p>Bonjour ${name},</p>
-              <p>Merci de votre intérêt pour PlanniKeeper ! Pour finaliser votre inscription et créer votre compte, veuillez cliquer sur le bouton ci-dessous :</p>
+              <p>Merci de votre intérêt pour PlanniKeeper ! Pour finaliser votre inscription et activer votre compte, veuillez cliquer sur le bouton ci-dessous :</p>
               <div style=\"text-align: center; margin: 30px 0;\">
                 <a href=\"${url}\" class=\"button\">
-                  Créer mon compte
+                  Activer mon compte
                 </a>
               </div>
-              <p><strong>Important :</strong> Ce lien expire dans 24 heures. Votre compte ne sera créé qu'après avoir cliqué sur ce lien.</p>
+              <p><strong>Important :</strong> Ce lien expire dans 24 heures.</p>
             </div>
             <div class=\"footer\">
               <p>© 2025 PlanniKeeper. Tous droits réservés.</p>
@@ -133,7 +92,7 @@ export const auth = betterAuth({
           </div>
         </body>
       </html>
-    `;
+      `;
       await EmailService.sendEmail({
         to: user.email,
         subject,
@@ -144,207 +103,272 @@ export const auth = betterAuth({
   },
 
   hooks: {
-    afterSignUp: async ({ user, userOptions }: AfterSignUpParams) => {
-      try {
-        console.log(
-          "📝 afterSignUp hook exécuté pour:",
-          user.email,
-          "avec options:",
-          userOptions
-        );
-
-        // Stocker les métadonnées importantes
-        const metadata = {
-          inviteCode: userOptions?.inviteCode,
-          planType: userOptions?.planType || "FREE",
-          image: userOptions?.image,
-        };
-
-        // Mettre à jour l'utilisateur avec les métadonnées
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            metadata,
-            // Ne pas mettre à jour l'organizationId ici, c'est fait dans afterEmailVerified
-          },
-        });
-
-        console.log("✅ Métadonnées utilisateur mises à jour:", metadata);
-        return { user };
-      } catch (error) {
-        console.error("❌ Erreur dans afterSignUp:", error);
-        return { user };
-      }
-    },
-    afterEmailVerified: async ({ user }: AfterEmailVerifiedParams) => {
-      console.log(
-        "🔍 Hook afterEmailVerified DÉCLENCHÉ pour:",
-        user.email,
-        "avec metadata:",
-        JSON.stringify(user.metadata)
-      );
-      try {
-        // Récupérer l'utilisateur complet depuis la base de données
-        const dbUser = await prisma.user.findUnique({
-          where: { id: user.id },
-          select: { metadata: true, organizationId: true },
-        });
-
-        console.log("📊 Utilisateur en base:", JSON.stringify(dbUser));
-
-        // Vérifier si l'utilisateur a déjà une organisation
-        if (dbUser?.organizationId) {
-          console.log(
-            "🏢 L'utilisateur a déjà une organisation:",
-            dbUser.organizationId
-          );
-          return { user };
-        }
-
-        // Fusionner les métadonnées de l'utilisateur
-        const metadata = {
-          ...(user.metadata || {}),
-          ...(typeof dbUser?.metadata === "object" && dbUser?.metadata !== null
-            ? dbUser.metadata
-            : {}),
-        };
-        console.log("🧩 Métadonnées fusionnées:", JSON.stringify(metadata));
-
-        // Extraire le code d'invitation et le type de plan
-        const inviteCode =
-          typeof metadata === "object" &&
-          metadata !== null &&
-          "inviteCode" in metadata
-            ? (metadata as { inviteCode?: string }).inviteCode
-            : undefined;
-
-        const planType =
-          typeof metadata === "object" &&
-          metadata !== null &&
-          "planType" in metadata
-            ? (metadata as { planType?: string }).planType || "FREE"
-            : "FREE";
-
-        // Traiter en fonction du code d'invitation
-        if (inviteCode) {
-          console.log("🔗 Traitement invitation:", inviteCode);
-          await handleInviteSignup(user, inviteCode);
-        } else {
-          console.log("🆕 Création organisation avec plan:", planType);
-          await handleNewUserSignup(user, planType);
-        }
-
-        // Vérifier que l'organisation a bien été créée
-        const updatedUser = await prisma.user.findUnique({
-          where: { id: user.id },
-          select: { organizationId: true },
-        });
-
-        console.log(
-          "✅ Organisation créée?",
-          updatedUser?.organizationId ? "Oui" : "Non"
-        );
-
-        await sendWelcomeEmailAfterVerification(user);
-        return { user };
-      } catch (error) {
-        console.error("❌ Erreur critique dans afterEmailVerified:", error);
-
-        // Tentative de récupération forcée
-        try {
-          console.log("🔄 Tentative de récupération...");
-          await handleNewUserSignup(user, "FREE");
-          console.log("✅ Récupération réussie");
-        } catch (recoveryError) {
-          console.error("💥 Échec de la récupération:", recoveryError);
-        }
-
-        return { user };
-      }
-    },
+    // Utilisation du hook 'after' au lieu de hooks spécifiques
     after: async (inputContext) => {
-      console.log(
-        "🔄 BetterAuth after hook context:",
-        JSON.stringify(inputContext, null, 2)
-      );
+      // Correction : accès explicite aux propriétés du contexte sans utiliser 'any'
+      const path =
+        ((inputContext as Record<string, unknown>)["path"] as string) ||
+        ((
+          (inputContext as Record<string, unknown>)["req"] as Record<
+            string,
+            unknown
+          >
+        )?.["path"] as string) ||
+        ((
+          (inputContext as Record<string, unknown>)["req"] as Record<
+            string,
+            unknown
+          >
+        )?.["url"] as string) ||
+        "";
+      const returned = (inputContext as Record<string, unknown>)["returned"] as
+        | Record<string, unknown>
+        | undefined;
 
-      // Essayez d'accéder à path et returned de façon sécurisée
-      const { path, returned } = inputContext as AfterHookContext;
+      console.log("🔄 Hook after déclenché pour path:", path);
 
-      // Si l'action est verify-email, on profite pour créer l'organisation
-      if (path === "/verify-email" && returned?.user) {
-        const user = returned.user;
-        console.log("📨 Vérification d'email réussie pour:", user.email);
-
+      // 1. Hook équivalent à afterSignUp
+      if (path.includes("sign-up")) {
         try {
-          // Vérifier si l'utilisateur a déjà une organisation
-          const dbUser = await prisma.user.findUnique({
-            where: { id: user.id },
-            include: { Organization: true },
-          });
+          if (returned && typeof returned === "object" && "user" in returned) {
+            const user = returned["user"] as {
+              id: string;
+              email: string;
+              name?: string;
+            };
+            console.log("📝 Traitement inscription pour:", user.email);
 
-          if (dbUser?.Organization) {
-            console.log(
-              "🏢 L'utilisateur a déjà une organisation:",
-              dbUser.Organization.id
-            );
-            return {};
+            // Extraire les données depuis metadata ou userOptions
+            let metadata: Record<string, unknown> = {};
+            let inviteCode: string | undefined,
+              planType: string | undefined,
+              image: string | undefined;
+
+            if ("metadata" in returned && returned["metadata"]) {
+              metadata = returned["metadata"] as Record<string, unknown>;
+            } else if ("userOptions" in returned && returned["userOptions"]) {
+              metadata = returned["userOptions"] as Record<string, unknown>;
+            }
+
+            if (typeof metadata === "object" && metadata !== null) {
+              inviteCode =
+                typeof metadata["inviteCode"] === "string"
+                  ? (metadata["inviteCode"] as string)
+                  : undefined;
+              planType =
+                typeof metadata["planType"] === "string"
+                  ? (metadata["planType"] as string)
+                  : "FREE";
+              image =
+                typeof metadata["image"] === "string"
+                  ? (metadata["image"] as string)
+                  : undefined;
+            }
+
+            if (inviteCode) {
+              // Cas d'une invitation - l'utilisateur rejoindra une organisation existante
+              console.log("🔗 Traitement avec code d'invitation:", inviteCode);
+              const invitation = await prisma.invitationCode.findFirst({
+                where: {
+                  code: String(inviteCode),
+                  isUsed: false,
+                  expiresAt: { gt: new Date() },
+                },
+                include: { organization: true },
+              });
+
+              if (invitation) {
+                await prisma.user.update({
+                  where: { id: user.id },
+                  data: {
+                    organizationId: invitation.organizationId,
+                    metadata: { inviteCode, image },
+                  },
+                });
+
+                console.log(
+                  "👤 Utilisateur associé à l'organisation:",
+                  invitation.organizationId
+                );
+              }
+            } else {
+              // Cas d'un nouvel utilisateur - créer une nouvelle organisation
+              console.log(
+                "🆕 Création d'une nouvelle organisation pour:",
+                user.email
+              );
+
+              const organization = await prisma.organization.create({
+                data: {
+                  name: `${user.name || user.email.split("@")[0]}'s Organization`,
+                },
+              });
+
+              await prisma.user.update({
+                where: { id: user.id },
+                data: {
+                  organizationId: organization.id,
+                  metadata: { planType, image },
+                },
+              });
+
+              console.log(
+                "🏢 Organisation créée avec succès:",
+                organization.id
+              );
+            }
           }
+        } catch (error) {
+          console.error("❌ Erreur dans hook après inscription:", error);
+        }
+      }
 
-          console.log(
-            "🆕 Création d'une organisation après vérification d'email"
-          );
+      // 2. Hook équivalent à afterEmailVerified
+      else if (path.includes("verify-email")) {
+        try {
+          if (returned && typeof returned === "object" && "user" in returned) {
+            const user = returned["user"] as {
+              id: string;
+              email: string;
+              name?: string;
+            };
+            console.log("🔍 Vérification email réussie pour:", user.email);
 
-          // Créer une organisation pour l'utilisateur
-          const organization = await prisma.organization.create({
-            data: {
-              name: `${user.name || user.email.split("@")[0]}'s Organization`,
-            },
-          });
-
-          // Associer l'utilisateur à l'organisation
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { organizationId: organization.id },
-          });
-
-          // Créer l'association OrganizationUser avec le rôle admin
-          await prisma.organizationUser.create({
-            data: {
-              userId: user.id,
-              organizationId: organization.id,
-              role: "admin",
-            },
-          });
-
-          // Créer l'abonnement Free
-          const freePlan = await prisma.plan.findFirst({
-            where: { name: "FREE" },
-          });
-
-          if (freePlan) {
-            await prisma.subscription.create({
-              data: {
-                organizationId: organization.id,
-                planId: freePlan.id,
-                status: "ACTIVE",
-                currentPeriodStart: new Date(),
-                currentPeriodEnd: new Date(
-                  Date.now() + 365 * 24 * 60 * 60 * 1000
-                ),
+            const dbUser = await prisma.user.findUnique({
+              where: { id: user.id },
+              include: {
+                Organization: true,
               },
             });
-          }
 
-          console.log(
-            "✅ Organisation créée avec succès après vérification d'email:",
-            organization.id
-          );
+            const metadata: Record<string, unknown> =
+              dbUser?.metadata && typeof dbUser.metadata === "object"
+                ? (dbUser.metadata as Record<string, unknown>)
+                : {};
+            const inviteCode =
+              typeof metadata["inviteCode"] === "string"
+                ? (metadata["inviteCode"] as string)
+                : undefined;
+
+            if (inviteCode) {
+              const invitation = await prisma.invitationCode.findFirst({
+                where: {
+                  code: String(inviteCode),
+                  isUsed: false,
+                  expiresAt: { gt: new Date() },
+                },
+              });
+
+              if (invitation) {
+                await prisma.invitationCode.update({
+                  where: { id: invitation.id },
+                  data: { isUsed: true },
+                });
+
+                await prisma.organizationUser.create({
+                  data: {
+                    userId: user.id,
+                    organizationId: invitation.organizationId,
+                    role: invitation.role,
+                  },
+                });
+
+                console.log("✅ Invitation finalisée pour:", user.email);
+              }
+            } else if (dbUser?.Organization) {
+              await prisma.organizationUser.create({
+                data: {
+                  userId: user.id,
+                  organizationId: dbUser.Organization.id,
+                  role: "admin",
+                },
+              });
+
+              const planType =
+                typeof metadata["planType"] === "string"
+                  ? (metadata["planType"] as string)
+                  : "FREE";
+              const validatedPlanType = validatePlanType(planType || "FREE");
+
+              let plan = await prisma.plan.findFirst({
+                where: { name: validatedPlanType },
+              });
+
+              if (!plan) {
+                plan = await prisma.plan.findFirst({
+                  where: { name: "FREE" as PlanType },
+                });
+              }
+
+              if (plan) {
+                await prisma.subscription.create({
+                  data: {
+                    organizationId: dbUser.Organization.id,
+                    planId: plan.id,
+                    status: "ACTIVE",
+                    currentPeriodStart: new Date(),
+                    currentPeriodEnd: new Date(
+                      Date.now() + 365 * 24 * 60 * 60 * 1000
+                    ),
+                  },
+                });
+
+                console.log("💰 Abonnement créé avec plan:", plan.name);
+              }
+            } else {
+              // 3. Mécanisme de récupération - si l'organisation n'a pas été créée
+              console.log(
+                "⚠️ Organisation manquante, tentative de récupération"
+              );
+
+              const organization = await prisma.organization.create({
+                data: {
+                  name: `${user.name || user.email.split("@")[0]}'s Organization`,
+                },
+              });
+
+              await prisma.user.update({
+                where: { id: user.id },
+                data: { organizationId: organization.id },
+              });
+
+              await prisma.organizationUser.create({
+                data: {
+                  userId: user.id,
+                  organizationId: organization.id,
+                  role: "admin",
+                },
+              });
+
+              const freePlan = await prisma.plan.findFirst({
+                where: { name: "FREE" },
+              });
+
+              if (freePlan) {
+                await prisma.subscription.create({
+                  data: {
+                    organizationId: organization.id,
+                    planId: freePlan.id,
+                    status: "ACTIVE",
+                    currentPeriodStart: new Date(),
+                    currentPeriodEnd: new Date(
+                      Date.now() + 365 * 24 * 60 * 60 * 1000
+                    ),
+                  },
+                });
+              }
+
+              console.log(
+                "🔄 Organisation récupérée avec succès:",
+                organization.id
+              );
+            }
+
+            // 4. Envoyer l'email de bienvenue
+            await sendWelcomeEmailAfterVerification(user);
+          }
         } catch (error) {
-          console.error(
-            "❌ Erreur lors de la création de l'organisation:",
-            error
-          );
+          console.error("❌ Erreur dans hook après vérification email:", error);
         }
       }
 
@@ -362,196 +386,6 @@ export const auth = betterAuth({
     },
   },
 });
-
-// Fonction pour gérer l'inscription avec invitation
-async function handleInviteSignup(
-  user: {
-    id: string;
-    email: string;
-    name?: string;
-  },
-  inviteCode: string
-) {
-  try {
-    console.log(
-      "Handling invite signup for user:",
-      user.id,
-      "with code:",
-      inviteCode
-    );
-
-    const invitation = await prisma.invitationCode.findFirst({
-      where: {
-        code: inviteCode,
-        isUsed: false,
-        expiresAt: { gt: new Date() },
-      },
-      include: { organization: true },
-    });
-
-    if (!invitation) {
-      console.error("Invalid or expired invitation code:", inviteCode);
-      // Fallback : créer une organisation gratuite
-      await handleNewUserSignup(user, "FREE");
-      return;
-    }
-
-    // Marquer l'invitation comme utilisée
-    await prisma.invitationCode.update({
-      where: { id: invitation.id },
-      data: { isUsed: true },
-    });
-
-    // Associer l'utilisateur à l'organisation
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { organizationId: invitation.organizationId },
-    });
-
-    // Créer l'association OrganizationUser
-    await prisma.organizationUser.create({
-      data: {
-        userId: user.id,
-        organizationId: invitation.organizationId,
-        role: invitation.role,
-      },
-    });
-
-    // Créer les accès aux objets pour les non-admins
-    if (invitation.role !== "admin") {
-      const objects = await prisma.objet.findMany({
-        where: { organizationId: invitation.organizationId },
-        select: { id: true },
-      });
-
-      if (objects.length > 0) {
-        await prisma.objectAccess.createMany({
-          data: objects.map((obj) => ({
-            userId: user.id,
-            objectId: obj.id,
-            accessLevel: "none",
-          })),
-          skipDuplicates: true,
-        });
-      }
-    }
-
-    console.log(
-      "Successfully added user to organization:",
-      invitation.organization.name
-    );
-  } catch (error) {
-    console.error("Error handling invite signup:", error);
-  }
-}
-
-// Fonction pour gérer l'inscription d'un nouvel utilisateur
-async function handleNewUserSignup(
-  user: {
-    id: string;
-    email: string;
-    name?: string;
-  },
-  planType: string = "FREE"
-) {
-  console.log("🚀 Début handleNewUserSignup pour:", user.email);
-  try {
-    // Vérifier si l'utilisateur existe et n'a pas déjà une organisation
-    const existingUser = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { organizationId: true },
-    });
-
-    console.log("👤 État utilisateur:", existingUser);
-
-    if (existingUser?.organizationId) {
-      console.log(
-        "⚠️ L'utilisateur a déjà une organisation:",
-        existingUser.organizationId
-      );
-      return;
-    }
-
-    // Créer une nouvelle organisation
-    console.log("📝 Création organisation pour:", user.email);
-    const organization = await prisma.organization.create({
-      data: {
-        name: `${user.name || user.email.split("@")[0]}'s Organization`,
-      },
-    });
-
-    console.log("🏢 Organisation créée:", organization.id);
-
-    // Associer l'utilisateur à l'organisation
-    console.log("🔄 Association utilisateur-organisation");
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { organizationId: organization.id },
-    });
-
-    // Créer l'association OrganizationUser avec le rôle admin
-    console.log("👑 Création rôle admin");
-    await prisma.organizationUser.create({
-      data: {
-        userId: user.id,
-        organizationId: organization.id,
-        role: "admin",
-      },
-    });
-
-    // Créer l'abonnement selon le plan choisi
-    console.log("💰 Création abonnement:", planType);
-    await createSubscriptionForPlan(organization.id, planType);
-
-    console.log("✅ Organisation complète créée:", organization.name);
-  } catch (error) {
-    console.error("❌ Erreur dans handleNewUserSignup:", error);
-    throw error; // Remonter l'erreur pour la gérer au niveau supérieur
-  }
-}
-
-// Fonction pour créer l'abonnement selon le plan
-async function createSubscriptionForPlan(
-  organizationId: string,
-  planType: string
-) {
-  try {
-    const validatedPlanType = validatePlanType(planType);
-
-    let plan = await prisma.plan.findFirst({
-      where: { name: validatedPlanType },
-    });
-
-    if (!plan) {
-      plan = await prisma.plan.findFirst({
-        where: { name: "FREE" as PlanType },
-      });
-
-      if (!plan) {
-        console.error("No FREE plan found in database");
-        return;
-      }
-    }
-
-    // Créer l'abonnement
-    await prisma.subscription.create({
-      data: {
-        organizationId,
-        planId: plan.id,
-        status: "ACTIVE",
-        currentPeriodStart: new Date(),
-        currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-      },
-    });
-
-    console.log(
-      "Successfully created subscription with plan:",
-      validatedPlanType
-    );
-  } catch (error) {
-    console.error("Error creating subscription:", error);
-  }
-}
 
 // Fonction pour envoyer l'email de bienvenue après vérification
 async function sendWelcomeEmailAfterVerification(user: {

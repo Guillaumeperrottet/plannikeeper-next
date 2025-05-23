@@ -9,6 +9,9 @@ export default function VerificationSuccessPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [message, setMessage] = useState(
+    "Votre compte a été vérifié avec succès"
+  );
 
   // Récupérer les paramètres pour déterminer la redirection
   const planType = searchParams.get("plan") || "FREE";
@@ -17,8 +20,6 @@ export default function VerificationSuccessPage() {
   useEffect(() => {
     // Récupérer les paramètres
     const userId = searchParams.get("userId");
-    const planType = searchParams.get("plan") || "FREE";
-    const inviteCode = searchParams.get("code");
 
     console.log("📍 Verification Success Page - Paramètres:", {
       userId,
@@ -26,16 +27,58 @@ export default function VerificationSuccessPage() {
       inviteCode,
     });
 
-    // Tu peux aussi faire un appel API ici pour vérifier si l'organisation a été créée
-    fetch("/api/user/organization-check")
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("🏢 Vérification organisation:", data);
-      })
-      .catch((err) => {
-        console.error("❌ Erreur vérification:", err);
-      });
-  }, [searchParams]);
+    // Vérifier si l'organisation a été créée
+    const checkOrganization = async () => {
+      try {
+        const response = await fetch("/api/users/organization-check");
+        const data = await response.json();
+
+        if (data.success) {
+          console.log("🏢 Organisation vérifiée:", data);
+          setMessage(
+            "Votre compte a été activé avec succès! Redirection en cours..."
+          );
+        } else {
+          console.warn(
+            "⚠️ Problème avec l'organisation, tentative de récupération"
+          );
+          try {
+            // Tentative de récupération forcée
+            const recoveryResponse = await fetch(
+              "/api/users/organization-recovery",
+              {
+                method: "POST",
+              }
+            );
+            const recoveryData = await recoveryResponse.json();
+
+            if (recoveryData.success) {
+              console.log("✅ Organisation récupérée:", recoveryData);
+              setMessage(
+                "Votre compte a été activé avec succès! Redirection en cours..."
+              );
+            } else {
+              console.error("❌ Échec de la récupération:", recoveryData);
+              setMessage(
+                "Votre compte a été vérifié, mais il y a eu un problème avec votre organisation."
+              );
+            }
+          } catch (err) {
+            console.error("💥 Erreur lors de la récupération:", err);
+          }
+        }
+      } catch (err) {
+        console.error("❌ Erreur vérification organisation:", err);
+      }
+    };
+
+    // Exécuter la vérification après un court délai
+    const timer = setTimeout(() => {
+      checkOrganization();
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [searchParams, planType, inviteCode]);
 
   const handleRedirect = useCallback(() => {
     setIsRedirecting(true);
@@ -81,10 +124,7 @@ export default function VerificationSuccessPage() {
           <h2 className="mt-6 text-3xl font-bold text-[#141313]">
             Email vérifié !
           </h2>
-          <p className="mt-2 text-[#62605d]">
-            Votre adresse email a été vérifiée avec succès. Votre compte est
-            maintenant activé.
-          </p>
+          <p className="mt-2 text-[#62605d]">{message}</p>
 
           {inviteCode && (
             <div className="mt-4 p-3 bg-[#e0f2fe] border border-[#7dd3fc] rounded-lg">

@@ -1,4 +1,3 @@
-// src/app/signup/signup-form.tsx - Version sécurisée
 "use client";
 
 import {
@@ -142,10 +141,10 @@ function SignUpForm() {
           email,
           name,
           planType,
-          inviteCode,
+          inviteCode: inviteCode ? "****" : undefined,
         });
 
-        // Inscription avec notre système sécurisé
+        // Inscription avec Better Auth
         const result = await authClient.signUp.email(signupData);
 
         if (result.error) {
@@ -192,7 +191,7 @@ function SignUpForm() {
                 Nous avons envoyé un lien de vérification à votre adresse email.
                 <strong>
                   {" "}
-                  Votre compte ne sera créé qu&apos;après avoir cliqué sur ce
+                  Votre compte ne sera activé qu&apos;après avoir cliqué sur ce
                   lien.
                 </strong>
               </p>

@@ -27,7 +27,7 @@ export async function POST() {
     console.log(
       "⚠️ Organisation manquante pour l'utilisateur:",
       user.id,
-      "- Création en cours"
+      "- Récupération en cours"
     );
 
     // Créer une nouvelle organisation
