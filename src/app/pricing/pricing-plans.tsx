@@ -10,6 +10,7 @@ import {
   Shield,
   Award,
   Star,
+  Mail,
 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { toast } from "sonner";
@@ -115,7 +116,7 @@ const PlanConfirmationModal = ({
       case "FREE":
         return "Gratuit";
       case "PERSONAL":
-        return "Particulier";
+        return "Privé";
       case "PROFESSIONAL":
         return "Indépendant";
       case "ENTERPRISE":
@@ -402,6 +403,12 @@ export default function PricingPlans({
   };
 
   const handleSelectPlan = (plan: Plan) => {
+    // Pour le plan ENTERPRISE, rediriger vers la page de contact
+    if (plan.name === "ENTERPRISE") {
+      window.location.href = "/contact";
+      return;
+    }
+
     if (!isLoggedIn) {
       // Rediriger vers la page d'inscription avec le plan présélectionné
       window.location.href = `/signup?plan=${plan.name}`;
@@ -625,6 +632,7 @@ export default function PricingPlans({
           const colors = getPlanColor(plan.name);
           const isPopular = plan.name === "PROFESSIONAL";
           const isCurrentPlan = isLoggedIn && currentPlan?.id === plan.id;
+          const isEnterprisePlan = plan.name === "ENTERPRISE";
 
           return (
             <motion.div
@@ -683,7 +691,7 @@ export default function PricingPlans({
                       {getPlanIcon(plan.name)}
                     </div>
                     <h3 className={`text-lg font-bold ${colors.text}`}>
-                      {plan.name}
+                      {getPlanDisplayName(plan.name)}
                     </h3>
                   </div>
 
@@ -735,39 +743,68 @@ export default function PricingPlans({
                     ))}
                   </ul>
 
-                  <Button
-                    onClick={() => handleSelectPlan(plan)}
-                    className={`w-full transition-all duration-300 shadow-sm ${
-                      isCurrentPlan
-                        ? "bg-white border-2 text-[#141313] " +
-                          colors.border +
-                          " " +
-                          colors.text
-                        : colors.buttonBg +
-                          " " +
-                          colors.buttonHover +
-                          " text-white hover:shadow-md"
-                    }`}
-                    variant={isCurrentPlan ? "outline" : "default"}
-                    disabled={
-                      isLoggedIn &&
-                      (loading !== null || !isAdmin || isCurrentPlan)
-                    }
-                  >
-                    {isLoggedIn ? (
-                      loading === plan.id ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Chargement...
-                        </>
-                      ) : isCurrentPlan ? (
-                        <span className="flex items-center justify-center">
-                          <Check className="mr-2 h-4 w-4" />
-                          Plan actuel
-                        </span>
+                  {isEnterprisePlan ? (
+                    <Link href="/contact?subject=Demande%20Plan%20Entreprise">
+                      <Button
+                        className={`w-full transition-all duration-300 shadow-sm ${colors.buttonBg} ${colors.buttonHover} text-white hover:shadow-md`}
+                        variant="default"
+                      >
+                        <Mail className="mr-2 h-4 w-4" />
+                        Nous contacter
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Button
+                      onClick={() => handleSelectPlan(plan)}
+                      className={`w-full transition-all duration-300 shadow-sm ${
+                        isCurrentPlan
+                          ? "bg-white border-2 text-[#141313] " +
+                            colors.border +
+                            " " +
+                            colors.text
+                          : colors.buttonBg +
+                            " " +
+                            colors.buttonHover +
+                            " text-white hover:shadow-md"
+                      }`}
+                      variant={isCurrentPlan ? "outline" : "default"}
+                      disabled={
+                        isLoggedIn &&
+                        (loading !== null || !isAdmin || isCurrentPlan)
+                      }
+                    >
+                      {isLoggedIn ? (
+                        loading === plan.id ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Chargement...
+                          </>
+                        ) : isCurrentPlan ? (
+                          <span className="flex items-center justify-center">
+                            <Check className="mr-2 h-4 w-4" />
+                            Plan actuel
+                          </span>
+                        ) : (
+                          <>
+                            Sélectionner ce plan
+                            <svg
+                              className="ml-2 h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M14 5l7 7m0 0l-7 7m7-7H3"
+                              />
+                            </svg>
+                          </>
+                        )
                       ) : (
                         <>
-                          Sélectionner ce plan
+                          S&apos;inscrire avec ce plan
                           <svg
                             className="ml-2 h-4 w-4"
                             fill="none"
@@ -782,26 +819,9 @@ export default function PricingPlans({
                             />
                           </svg>
                         </>
-                      )
-                    ) : (
-                      <>
-                        S&apos;inscrire avec ce plan
-                        <svg
-                          className="ml-2 h-4 w-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M14 5l7 7m0 0l-7 7m7-7H3"
-                          />
-                        </svg>
-                      </>
-                    )}
-                  </Button>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </div>
             </motion.div>

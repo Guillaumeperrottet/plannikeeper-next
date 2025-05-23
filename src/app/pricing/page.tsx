@@ -14,7 +14,7 @@ export default async function PricingPage() {
   const prismaPlans = await prisma.plan.findMany({
     where: {
       name: {
-        notIn: ["SUPER_ADMIN", "ILLIMITE"], // Exclure ces plans
+        notIn: ["SUPER_ADMIN", "ILLIMITE", "CUSTOM"], // Exclure ces plans
       },
     },
     orderBy: {
