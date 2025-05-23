@@ -9,6 +9,11 @@ export async function POST() {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
+    console.log(
+      "🚀 Organisation recovery demandée pour l'utilisateur:",
+      user.id
+    );
+
     // Vérifier si l'utilisateur a déjà une organisation
     const dbUser = await prisma.user.findUnique({
       where: { id: user.id },
@@ -17,6 +22,10 @@ export async function POST() {
 
     // Si l'utilisateur a déjà une organisation, rien à faire
     if (dbUser?.Organization) {
+      console.log(
+        "✅ L'utilisateur a déjà une organisation:",
+        dbUser.Organization.id
+      );
       return NextResponse.json({
         success: true,
         message: "L'utilisateur a déjà une organisation",
@@ -43,14 +52,24 @@ export async function POST() {
       data: { organizationId: organization.id },
     });
 
-    // Créer l'association OrganizationUser avec le rôle admin
-    await prisma.organizationUser.create({
-      data: {
+    // Vérifier si l'association OrganizationUser existe déjà
+    const existingOrgUser = await prisma.organizationUser.findFirst({
+      where: {
         userId: user.id,
         organizationId: organization.id,
-        role: "admin",
       },
     });
+
+    // Créer l'association OrganizationUser avec le rôle admin si elle n'existe pas
+    if (!existingOrgUser) {
+      await prisma.organizationUser.create({
+        data: {
+          userId: user.id,
+          organizationId: organization.id,
+          role: "admin",
+        },
+      });
+    }
 
     // Récupérer le plan gratuit
     const freePlan = await prisma.plan.findFirst({
@@ -58,16 +77,23 @@ export async function POST() {
     });
 
     if (freePlan) {
-      // Créer l'abonnement
-      await prisma.subscription.create({
-        data: {
-          organizationId: organization.id,
-          planId: freePlan.id,
-          status: "ACTIVE",
-          currentPeriodStart: new Date(),
-          currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-        },
+      // Vérifier si un abonnement existe déjà
+      const existingSub = await prisma.subscription.findFirst({
+        where: { organizationId: organization.id },
       });
+
+      if (!existingSub) {
+        // Créer l'abonnement seulement s'il n'existe pas
+        await prisma.subscription.create({
+          data: {
+            organizationId: organization.id,
+            planId: freePlan.id,
+            status: "ACTIVE",
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+          },
+        });
+      }
     }
 
     console.log(
