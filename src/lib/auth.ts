@@ -27,6 +27,42 @@ function validatePlanType(planType: string): PlanType {
     : "FREE";
 }
 
+interface AuthUser {
+  id: string;
+  email: string;
+  name?: string;
+  metadata?: Record<string, unknown>;
+}
+
+interface UserOptions {
+  inviteCode?: string;
+  planType?: string;
+  image?: string;
+}
+
+interface SendVerificationEmailParams {
+  user: AuthUser;
+  url: string;
+}
+
+interface AfterSignUpParams {
+  user: AuthUser;
+  userOptions?: UserOptions;
+}
+
+interface AfterEmailVerifiedParams {
+  user: AuthUser;
+}
+
+interface AfterHookContext {
+  path: string;
+  returned?: {
+    user?: AuthUser;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
 export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   secret: process.env.BETTER_AUTH_SECRET!,
@@ -35,7 +71,11 @@ export const auth = betterAuth({
     : `${process.env.NEXT_PUBLIC_APP_URL}/api/auth`,
   trustedOrigins: isDev
     ? ["http://localhost:3000", "localhost:3000", "127.0.0.1:3000"]
-    : ["https://plannikeeper-next.vercel.app", "*"],
+    : [
+        "https://plannikeeper-next.vercel.app",
+        "*",
+        "https://www.plannikeeper.ch",
+      ],
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
@@ -44,93 +84,67 @@ export const auth = betterAuth({
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
-    sendVerificationEmail: async ({ user, url }) => {
+    sendVerificationEmail: async ({
+      user,
+      url,
+    }: SendVerificationEmailParams) => {
+      console.log(
+        "📧 Envoi d'email de vérification à:",
+        user.email,
+        "avec URL:",
+        url
+      );
       const name = user.name || user.email.split("@")[0];
       const subject = "Finalisez votre inscription à PlanniKeeper";
       const html = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset=\"utf-8\">
-            <title>Finalisez votre inscription</title>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }
-              .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-              .header { background-color: #d9840d; color: white; padding: 24px; text-align: center; }
-              .content { padding: 32px 24px; }
-              .button { display: inline-block; background-color: #d9840d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; }
-              .footer { background-color: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 14px; }
-            </style>
-          </head>
-          <body>
-            <div class=\"container\">
-              <div class=\"header\">
-                <h1>🏠 PlanniKeeper</h1>
-                <h2>Finaliser votre inscription</h2>
-              </div>
-              <div class=\"content\">
-                <p>Bonjour ${name},</p>
-                <p>Merci de votre intérêt pour PlanniKeeper ! Pour finaliser votre inscription et créer votre compte, veuillez cliquer sur le bouton ci-dessous :</p>
-                <div style=\"text-align: center; margin: 30px 0;\">
-                  <a href=\"${url}\" class=\"button\">
-                    Créer mon compte
-                  </a>
-                </div>
-                <p><strong>Important :</strong> Ce lien expire dans 24 heures. Votre compte ne sera créé qu'après avoir cliqué sur ce lien.</p>
-              </div>
-              <div class=\"footer\">
-                <p>© 2025 PlanniKeeper. Tous droits réservés.</p>
-              </div>
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset=\"utf-8\">
+          <title>Finalisez votre inscription</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }
+            .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            .header { background-color: #d9840d; color: white; padding: 24px; text-align: center; }
+            .content { padding: 32px 24px; }
+            .button { display: inline-block; background-color: #d9840d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; }
+            .footer { background-color: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 14px; }
+          </style>
+        </head>
+        <body>
+          <div class=\"container\">
+            <div class=\"header\">
+              <h1>🏠 PlanniKeeper</h1>
+              <h2>Finaliser votre inscription</h2>
             </div>
-          </body>
-        </html>
-      `;
+            <div class=\"content\">
+              <p>Bonjour ${name},</p>
+              <p>Merci de votre intérêt pour PlanniKeeper ! Pour finaliser votre inscription et créer votre compte, veuillez cliquer sur le bouton ci-dessous :</p>
+              <div style=\"text-align: center; margin: 30px 0;\">
+                <a href=\"${url}\" class=\"button\">
+                  Créer mon compte
+                </a>
+              </div>
+              <p><strong>Important :</strong> Ce lien expire dans 24 heures. Votre compte ne sera créé qu'après avoir cliqué sur ce lien.</p>
+            </div>
+            <div class=\"footer\">
+              <p>© 2025 PlanniKeeper. Tous droits réservés.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
       await EmailService.sendEmail({
         to: user.email,
         subject,
         html,
       });
-    },
-    redirectUrl: (data: {
-      user: {
-        id: string;
-        metadata?: { planType?: string; inviteCode?: string };
-      };
-    }) => {
-      // Construire l'URL de redirection avec les paramètres nécessaires
-      const baseUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/verification-success`;
-      const params = new URLSearchParams();
-
-      // Toujours inclure l'ID utilisateur
-      params.set("userId", data.user.id);
-
-      // Ajouter les paramètres personnalisés si disponibles
-      if (data.user.metadata) {
-        const metadata = data.user.metadata;
-        if (metadata.planType) params.set("plan", metadata.planType);
-        if (metadata.inviteCode) params.set("code", metadata.inviteCode);
-      }
-
-      console.log(
-        `🔄 Redirection après vérification vers: ${baseUrl}?${params.toString()}`
-      );
-      return `${baseUrl}?${params.toString()}`;
+      console.log("✅ Email de vérification envoyé avec succès à:", user.email);
     },
   },
 
   hooks: {
-    afterSignUp: async ({
-      user,
-      userOptions,
-    }: {
-      user: {
-        id: string;
-        email: string;
-        name?: string;
-        metadata?: Record<string, unknown>;
-      };
-      userOptions?: { inviteCode?: string; planType?: string; image?: string };
-    }) => {
+    afterSignUp: async ({ user, userOptions }: AfterSignUpParams) => {
       try {
         console.log(
           "📝 afterSignUp hook exécuté pour:",
@@ -162,16 +176,7 @@ export const auth = betterAuth({
         return { user };
       }
     },
-    afterEmailVerified: async ({
-      user,
-    }: {
-      user: {
-        id: string;
-        email: string;
-        name?: string;
-        metadata?: Record<string, unknown>;
-      };
-    }) => {
+    afterEmailVerified: async ({ user }: AfterEmailVerifiedParams) => {
       console.log(
         "🔍 Hook afterEmailVerified DÉCLENCHÉ pour:",
         user.email,
@@ -257,9 +262,92 @@ export const auth = betterAuth({
         return { user };
       }
     },
-    after: async (ctx) => {
-      console.log("BetterAuth after hook context:", ctx);
-      // TODO: Adapter la logique métier ici après inspection du contexte
+    after: async (inputContext) => {
+      console.log(
+        "🔄 BetterAuth after hook context:",
+        JSON.stringify(inputContext, null, 2)
+      );
+
+      // Essayez d'accéder à path et returned de façon sécurisée
+      const { path, returned } = inputContext as AfterHookContext;
+
+      // Si l'action est verify-email, on profite pour créer l'organisation
+      if (path === "/verify-email" && returned?.user) {
+        const user = returned.user;
+        console.log("📨 Vérification d'email réussie pour:", user.email);
+
+        try {
+          // Vérifier si l'utilisateur a déjà une organisation
+          const dbUser = await prisma.user.findUnique({
+            where: { id: user.id },
+            include: { Organization: true },
+          });
+
+          if (dbUser?.Organization) {
+            console.log(
+              "🏢 L'utilisateur a déjà une organisation:",
+              dbUser.Organization.id
+            );
+            return {};
+          }
+
+          console.log(
+            "🆕 Création d'une organisation après vérification d'email"
+          );
+
+          // Créer une organisation pour l'utilisateur
+          const organization = await prisma.organization.create({
+            data: {
+              name: `${user.name || user.email.split("@")[0]}'s Organization`,
+            },
+          });
+
+          // Associer l'utilisateur à l'organisation
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { organizationId: organization.id },
+          });
+
+          // Créer l'association OrganizationUser avec le rôle admin
+          await prisma.organizationUser.create({
+            data: {
+              userId: user.id,
+              organizationId: organization.id,
+              role: "admin",
+            },
+          });
+
+          // Créer l'abonnement Free
+          const freePlan = await prisma.plan.findFirst({
+            where: { name: "FREE" },
+          });
+
+          if (freePlan) {
+            await prisma.subscription.create({
+              data: {
+                organizationId: organization.id,
+                planId: freePlan.id,
+                status: "ACTIVE",
+                currentPeriodStart: new Date(),
+                currentPeriodEnd: new Date(
+                  Date.now() + 365 * 24 * 60 * 60 * 1000
+                ),
+              },
+            });
+          }
+
+          console.log(
+            "✅ Organisation créée avec succès après vérification d'email:",
+            organization.id
+          );
+        } catch (error) {
+          console.error(
+            "❌ Erreur lors de la création de l'organisation:",
+            error
+          );
+        }
+      }
+
       return {};
     },
   },

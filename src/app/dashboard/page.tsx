@@ -6,6 +6,7 @@ import { PlusCircle } from "lucide-react";
 import ObjetCard from "@/app/components/ObjetCard";
 import { Button } from "@/app/components/ui/button";
 import { getAccessibleObjects } from "@/lib/auth-session";
+import OrganizationRecovery from "./OrganizationRecovery";
 
 export default async function DashboardPage() {
   const session = await getUser();
@@ -23,12 +24,7 @@ export default async function DashboardPage() {
   if (!userWithOrg?.Organization) {
     return (
       <div className="max-w-6xl mx-auto p-6">
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-          <p className="text-amber-800">
-            Vous n&apos;appartenez à aucune organisation. Veuillez en créer une
-            ou rejoindre une existante.
-          </p>
-        </div>
+        <OrganizationRecovery />
       </div>
     );
   }
