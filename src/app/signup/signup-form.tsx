@@ -48,6 +48,7 @@ function SignUpForm() {
   const inviteCode = searchParams.get("code");
   const [isInvite, setIsInvite] = useState(false);
   const [organizationName, setOrganizationName] = useState("");
+  const [organizationId, setOrganizationId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,10 +72,18 @@ function SignUpForm() {
           if (data.valid) {
             setIsInvite(true);
             setOrganizationName(data.organizationName);
+            setOrganizationId(data.organizationId);
+            console.log("📋 Détails invitation validés:", data);
+          } else {
+            console.error("Code d'invitation invalide:", data.error);
+            setError(
+              `Code d'invitation invalide: ${data.error || "Code inconnu ou expiré"}`
+            );
           }
         })
         .catch((err) => {
           console.error("Erreur de validation du code:", err);
+          setError("Erreur lors de la validation du code d'invitation");
         });
     }
 
@@ -135,6 +144,7 @@ function SignUpForm() {
           image: imageUrl,
           inviteCode,
           planType,
+          organizationId: isInvite ? organizationId : undefined,
         };
 
         console.log("📤 Envoi demande d'inscription:", {
@@ -142,6 +152,8 @@ function SignUpForm() {
           name,
           planType,
           inviteCode: inviteCode ? "****" : undefined,
+          organizationId: isInvite ? organizationId : undefined,
+          isInvite,
         });
 
         // Inscription avec Better Auth
@@ -163,7 +175,7 @@ function SignUpForm() {
         setIsSubmitting(false);
       }
     },
-    [inviteCode, planType, selectedFile, isSubmitting]
+    [inviteCode, planType, selectedFile, isSubmitting, isInvite, organizationId]
   );
 
   // Affichage du message de succès
@@ -202,6 +214,23 @@ function SignUpForm() {
             </div>
           </div>
         </div>
+
+        {isInvite && (
+          <div className="bg-[#dcfce7] border border-[#86efac] rounded-xl p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <div className="text-[#16a34a] mt-0.5">
+                <CheckCircle className="h-5 w-5" />
+              </div>
+              <div className="text-left">
+                <p className="text-[#16a34a] text-sm">
+                  <strong>Invitation détectée :</strong> Après vérification de
+                  votre email, vous serez ajouté à l&apos;organisation{" "}
+                  <strong>{organizationName}</strong>.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="bg-[#fff3cd] border border-[#ffeaa7] rounded-xl p-4 mb-6">
           <div className="flex items-start gap-3">
