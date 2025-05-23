@@ -163,7 +163,7 @@ export const auth = betterAuth({
           select: { metadata: true, organizationId: true },
         });
 
-        console.log("📊 Utilisateur en base:", dbUser);
+        console.log("📊 Utilisateur een base:", dbUser);
 
         // Vérifier si l'utilisateur a déjà une organisation
         if (dbUser?.organizationId) {
