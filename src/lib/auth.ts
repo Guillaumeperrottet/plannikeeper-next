@@ -272,48 +272,123 @@ export const auth = betterAuth({
               },
             });
 
+            // Extraire les métadonnées
             const metadata: Record<string, unknown> =
               dbUser?.metadata && typeof dbUser.metadata === "object"
                 ? (dbUser.metadata as Record<string, unknown>)
                 : {};
+
             const inviteCode =
               typeof metadata["inviteCode"] === "string"
                 ? (metadata["inviteCode"] as string)
                 : undefined;
 
+            console.log("🔄 Métadonnées utilisateur:", {
+              metadata,
+              inviteCode,
+              hasOrg: !!dbUser?.Organization,
+            });
+
+            // Traitement spécifique pour les invitations
             if (inviteCode) {
+              console.log(
+                "🔍 Recherche de l'invitation avec code:",
+                inviteCode
+              );
               const invitation = await prisma.invitationCode.findFirst({
                 where: {
                   code: String(inviteCode),
-                  isUsed: false,
                   expiresAt: { gt: new Date() },
                 },
+                include: { organization: true },
               });
 
               if (invitation) {
+                console.log("✅ Invitation trouvée:", {
+                  orgId: invitation.organizationId,
+                  orgName: invitation.organization.name,
+                  role: invitation.role,
+                  isUsed: invitation.isUsed,
+                });
+
+                // Marquer l'invitation comme utilisée
                 await prisma.invitationCode.update({
                   where: { id: invitation.id },
                   data: { isUsed: true },
                 });
 
+                // Associer l'utilisateur à l'organisation si ce n'est pas déjà fait
+                if (
+                  !dbUser?.Organization ||
+                  dbUser.Organization.id !== invitation.organizationId
+                ) {
+                  await prisma.user.update({
+                    where: { id: user.id },
+                    data: { organizationId: invitation.organizationId },
+                  });
+                  console.log(
+                    "👤 Utilisateur associé à l'organisation:",
+                    invitation.organizationId
+                  );
+                }
+
+                // Vérifier si l'association OrganizationUser existe déjà
+                const existingOrgUser = await prisma.organizationUser.findFirst(
+                  {
+                    where: {
+                      userId: user.id,
+                      organizationId: invitation.organizationId,
+                    },
+                  }
+                );
+
+                // Créer l'association si elle n'existe pas
+                if (!existingOrgUser) {
+                  await prisma.organizationUser.create({
+                    data: {
+                      userId: user.id,
+                      organizationId: invitation.organizationId,
+                      role: invitation.role,
+                    },
+                  });
+                  console.log(
+                    "🔗 Association utilisateur-organisation créée avec rôle:",
+                    invitation.role
+                  );
+                } else {
+                  console.log(
+                    "ℹ️ Association utilisateur-organisation existe déjà"
+                  );
+                }
+              } else {
+                console.warn(
+                  "⚠️ Invitation non trouvée ou expirée:",
+                  inviteCode
+                );
+              }
+            } else if (dbUser?.Organization) {
+              // Cas d'un nouvel utilisateur avec une organisation déjà associée
+              // Vérifier si l'association OrganizationUser existe déjà
+              const existingOrgUser = await prisma.organizationUser.findFirst({
+                where: {
+                  userId: user.id,
+                  organizationId: dbUser.Organization.id,
+                },
+              });
+
+              // Si l'association n'existe pas, la créer
+              if (!existingOrgUser) {
                 await prisma.organizationUser.create({
                   data: {
                     userId: user.id,
-                    organizationId: invitation.organizationId,
-                    role: invitation.role,
+                    organizationId: dbUser.Organization.id,
+                    role: "admin", // Utilisateur par défaut admin de sa propre organisation
                   },
                 });
-
-                console.log("✅ Invitation finalisée pour:", user.email);
+                console.log(
+                  "✅ Association utilisateur-organisation créée pour propriétaire"
+                );
               }
-            } else if (dbUser?.Organization) {
-              await prisma.organizationUser.create({
-                data: {
-                  userId: user.id,
-                  organizationId: dbUser.Organization.id,
-                  role: "admin",
-                },
-              });
 
               const planType =
                 typeof metadata["planType"] === "string"
@@ -321,30 +396,37 @@ export const auth = betterAuth({
                   : "FREE";
               const validatedPlanType = validatePlanType(planType || "FREE");
 
-              let plan = await prisma.plan.findFirst({
-                where: { name: validatedPlanType },
+              // Vérifier si un abonnement existe déjà
+              const existingSubscription = await prisma.subscription.findFirst({
+                where: { organizationId: dbUser.Organization.id },
               });
 
-              if (!plan) {
-                plan = await prisma.plan.findFirst({
-                  where: { name: "FREE" as PlanType },
-                });
-              }
-
-              if (plan) {
-                await prisma.subscription.create({
-                  data: {
-                    organizationId: dbUser.Organization.id,
-                    planId: plan.id,
-                    status: "ACTIVE",
-                    currentPeriodStart: new Date(),
-                    currentPeriodEnd: new Date(
-                      Date.now() + 365 * 24 * 60 * 60 * 1000
-                    ),
-                  },
+              if (!existingSubscription) {
+                let plan = await prisma.plan.findFirst({
+                  where: { name: validatedPlanType },
                 });
 
-                console.log("💰 Abonnement créé avec plan:", plan.name);
+                if (!plan) {
+                  plan = await prisma.plan.findFirst({
+                    where: { name: "FREE" as PlanType },
+                  });
+                }
+
+                if (plan) {
+                  await prisma.subscription.create({
+                    data: {
+                      organizationId: dbUser.Organization.id,
+                      planId: plan.id,
+                      status: "ACTIVE",
+                      currentPeriodStart: new Date(),
+                      currentPeriodEnd: new Date(
+                        Date.now() + 365 * 24 * 60 * 60 * 1000
+                      ),
+                    },
+                  });
+
+                  console.log("💰 Abonnement créé avec plan:", plan.name);
+                }
               }
             } else {
               // 3. Mécanisme de récupération - si l'organisation n'a pas été créée
@@ -394,6 +476,22 @@ export const auth = betterAuth({
                 organization.id
               );
             }
+
+            // Vérification de l'état final
+            const finalState = await prisma.user.findUnique({
+              where: { id: user.id },
+              include: {
+                Organization: true,
+                OrganizationUser: true,
+              },
+            });
+
+            console.log("📊 État final de l'utilisateur:", {
+              hasOrg: !!finalState?.Organization,
+              orgId: finalState?.Organization?.id,
+              hasOrgUser: !!finalState?.OrganizationUser,
+              role: finalState?.OrganizationUser?.role,
+            });
 
             // 4. Envoyer l'email de bienvenue
             await sendWelcomeEmailAfterVerification(user);
