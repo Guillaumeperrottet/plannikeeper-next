@@ -27,34 +27,6 @@ function validatePlanType(planType: string): PlanType {
     : "FREE";
 }
 
-interface AuthUser {
-  id: string;
-  email: string;
-  name?: string;
-  metadata?: Record<string, unknown>;
-}
-
-interface UserOptions {
-  inviteCode?: string;
-  planType?: string;
-  image?: string;
-}
-
-interface AfterSignUpParams {
-  user: AuthUser;
-  userOptions?: UserOptions;
-}
-
-interface AfterEmailVerifiedParams {
-  user: AuthUser;
-}
-
-interface EmailVerificationParams {
-  name?: string;
-  url: string;
-  email: string;
-}
-
 export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   secret: process.env.BETTER_AUTH_SECRET!,
@@ -72,77 +44,86 @@ export const auth = betterAuth({
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
-    redirectUrl: (): string => {
-      const baseUrl =
-        process.env.NEXT_PUBLIC_APP_URL || "https://www.plannikeeper.ch";
-      return `${baseUrl}/auth/verification-success`;
-    },
-    emailContent: {
-      subject: "Finalisez votre inscription à PlanniKeeper",
-      html: (params: EmailVerificationParams): string => {
-        const { name, url, email } = params;
-
-        // Vérifier et corriger l'URL si nécessaire
-        let verificationUrl = url;
-        if (
-          url.includes("plannikeeper-next.vercel.app") &&
-          process.env.NODE_ENV === "production"
-        ) {
-          // Remplacer l'URL de Vercel par l'URL de production
-          verificationUrl = url.replace(
-            "plannikeeper-next.vercel.app",
-            "www.plannikeeper.ch"
-          );
-        }
-
-        return `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Finalisez votre inscription</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }
-            .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            .header { background-color: #d9840d; color: white; padding: 24px; text-align: center; }
-            .content { padding: 32px 24px; }
-            .button { display: inline-block; background-color: #d9840d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; }
-            .footer { background-color: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 14px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>🏠 PlanniKeeper</h1>
-              <h2>Finaliser votre inscription</h2>
-            </div>
-            
-            <div class="content">
-              <p>Bonjour ${name || email.split("@")[0]},</p>
-              <p>Merci de votre intérêt pour PlanniKeeper ! Pour finaliser votre inscription et créer votre compte, veuillez cliquer sur le bouton ci-dessous :</p>
-              
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${verificationUrl}" class="button">
-                  Créer mon compte
-                </a>
+    sendVerificationEmail: async ({ user, url }) => {
+      const name = user.name || user.email.split("@")[0];
+      const subject = "Finalisez votre inscription à PlanniKeeper";
+      const html = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset=\"utf-8\">
+            <title>Finalisez votre inscription</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }
+              .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+              .header { background-color: #d9840d; color: white; padding: 24px; text-align: center; }
+              .content { padding: 32px 24px; }
+              .button { display: inline-block; background-color: #d9840d; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; }
+              .footer { background-color: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 14px; }
+            </style>
+          </head>
+          <body>
+            <div class=\"container\">
+              <div class=\"header\">
+                <h1>🏠 PlanniKeeper</h1>
+                <h2>Finaliser votre inscription</h2>
               </div>
-              
-              <p><strong>Important :</strong> Ce lien expire dans 24 heures. Votre compte ne sera créé qu'après avoir cliqué sur ce lien.</p>
+              <div class=\"content\">
+                <p>Bonjour ${name},</p>
+                <p>Merci de votre intérêt pour PlanniKeeper ! Pour finaliser votre inscription et créer votre compte, veuillez cliquer sur le bouton ci-dessous :</p>
+                <div style=\"text-align: center; margin: 30px 0;\">
+                  <a href=\"${url}\" class=\"button\">
+                    Créer mon compte
+                  </a>
+                </div>
+                <p><strong>Important :</strong> Ce lien expire dans 24 heures. Votre compte ne sera créé qu'après avoir cliqué sur ce lien.</p>
+              </div>
+              <div class=\"footer\">
+                <p>© 2025 PlanniKeeper. Tous droits réservés.</p>
+              </div>
             </div>
-            
-            <div class="footer">
-              <p>© 2025 PlanniKeeper. Tous droits réservés.</p>
-            </div>
-          </div>
-        </body>
-      </html>
+          </body>
+        </html>
       `;
-      },
+      await EmailService.sendEmail({
+        to: user.email,
+        subject,
+        html,
+      });
+    },
+    redirectUrl: (data: {
+      user: {
+        id: string;
+        metadata?: { planType?: string; inviteCode?: string };
+      };
+    }) => {
+      // Construire l'URL de redirection avec les paramètres nécessaires
+      const baseUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/verification-success`;
+      const params = new URLSearchParams();
+      params.set("userId", data.user.id);
+      // Ajouter les paramètres personnalisés si disponibles
+      if (data.user.metadata) {
+        const metadata = data.user.metadata;
+        if (metadata.planType) params.set("plan", metadata.planType);
+        if (metadata.inviteCode) params.set("code", metadata.inviteCode);
+      }
+      return `${baseUrl}?${params.toString()}`;
     },
   },
 
   hooks: {
-    afterSignUp: async ({ user, userOptions }: AfterSignUpParams) => {
+    afterSignUp: async ({
+      user,
+      userOptions,
+    }: {
+      user: {
+        id: string;
+        email: string;
+        name?: string;
+        metadata?: Record<string, unknown>;
+      };
+      userOptions?: { inviteCode?: string; planType?: string; image?: string };
+    }) => {
       try {
         const metadata = {
           inviteCode: userOptions?.inviteCode,
@@ -159,14 +140,16 @@ export const auth = betterAuth({
         return { user };
       }
     },
-    afterVerify: async ({ user }: { user: AuthUser }) => {
-      // Ce hook est appelé immédiatement après la vérification du token
-      console.log("🔵 Hook afterVerify exécuté pour:", user.email);
-      // Vous pouvez mettre le même code que dans afterEmailVerified ou
-      // simplement retourner l'utilisateur, car afterEmailVerified sera appelé ensuite
-      return { user };
-    },
-    afterEmailVerified: async ({ user }: AfterEmailVerifiedParams) => {
+    afterEmailVerified: async ({
+      user,
+    }: {
+      user: {
+        id: string;
+        email: string;
+        name?: string;
+        metadata?: Record<string, unknown>;
+      };
+    }) => {
       try {
         const metadata = user.metadata || {};
         const inviteCode =
@@ -189,7 +172,7 @@ export const auth = betterAuth({
         return { user };
       }
     },
-    after: async (ctx: unknown) => {
+    after: async (ctx) => {
       console.log("BetterAuth after hook context:", ctx);
       // TODO: Adapter la logique métier ici après inspection du contexte
       return {};
