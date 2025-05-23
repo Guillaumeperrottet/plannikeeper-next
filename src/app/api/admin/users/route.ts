@@ -35,7 +35,7 @@ export async function GET() {
           select: {
             role: true,
           },
-        },
+        }, // This will return an array of { role: string }
       },
       orderBy: {
         createdAt: "desc",
@@ -52,7 +52,10 @@ export async function GET() {
       updatedAt: user.updatedAt,
       organizationId: user.organizationId,
       organizationName: user.Organization?.name || null,
-      role: user.OrganizationUser[0]?.role || null,
+      role:
+        Array.isArray(user.OrganizationUser) && user.OrganizationUser.length > 0
+          ? user.OrganizationUser[0].role
+          : null,
     }));
 
     return NextResponse.json({ users: formattedUsers });
