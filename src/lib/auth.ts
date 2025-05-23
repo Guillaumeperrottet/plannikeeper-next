@@ -150,25 +150,88 @@ export const auth = betterAuth({
         metadata?: Record<string, unknown>;
       };
     }) => {
+      console.log(
+        "🔍 Hook afterEmailVerified exécuté pour:",
+        user.email,
+        "avec metadata:",
+        user.metadata
+      );
       try {
-        const metadata = user.metadata || {};
+        // Récupérer l'utilisateur complet depuis la base de données pour s'assurer d'avoir toutes les métadonnées
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { metadata: true, organizationId: true },
+        });
+
+        console.log("📊 Utilisateur en base:", dbUser);
+
+        // Vérifier si l'utilisateur a déjà une organisation
+        if (dbUser?.organizationId) {
+          console.log(
+            "🏢 L'utilisateur a déjà une organisation:",
+            dbUser.organizationId
+          );
+          return { user };
+        }
+
+        const metadata = {
+          ...(user.metadata || {}),
+          ...(typeof dbUser?.metadata === "object" && dbUser?.metadata !== null
+            ? dbUser.metadata
+            : {}),
+        };
+        console.log("🧩 Métadonnées fusionnées:", metadata);
+
         const inviteCode =
-          typeof metadata.inviteCode === "string"
-            ? metadata.inviteCode
+          typeof metadata === "object" &&
+          metadata !== null &&
+          "inviteCode" in metadata &&
+          typeof (metadata as { inviteCode?: unknown }).inviteCode === "string"
+            ? (metadata as { inviteCode: string }).inviteCode
             : undefined;
-        const planType = metadata.planType || "FREE";
+        const planType =
+          typeof metadata === "object" &&
+          metadata !== null &&
+          "planType" in metadata
+            ? (metadata as { planType?: string }).planType || "FREE"
+            : "FREE";
+
         if (inviteCode) {
+          console.log("🔗 Traitement invitation:", inviteCode);
           await handleInviteSignup(user, inviteCode);
         } else {
+          console.log("🆕 Création organisation avec plan:", planType);
           await handleNewUserSignup(
             user,
             typeof planType === "string" ? planType : "FREE"
           );
         }
+
+        // Vérifier que l'organisation a bien été créée
+        const updatedUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { organizationId: true },
+        });
+
+        console.log(
+          "✅ Organisation créée?",
+          updatedUser?.organizationId ? "Oui" : "Non"
+        );
+
         await sendWelcomeEmailAfterVerification(user);
         return { user };
       } catch (error) {
-        console.error("Erreur dans afterEmailVerified:", error);
+        console.error("❌ Erreur critique dans afterEmailVerified:", error);
+
+        // Tentative de récupération forcée
+        try {
+          console.log("🔄 Tentative de récupération...");
+          await handleNewUserSignup(user, "FREE");
+          console.log("✅ Récupération réussie");
+        } catch (recoveryError) {
+          console.error("💥 Échec de la récupération:", recoveryError);
+        }
+
         return { user };
       }
     },
@@ -281,28 +344,43 @@ async function handleNewUserSignup(
   },
   planType: string = "FREE"
 ) {
+  console.log("🚀 Début handleNewUserSignup pour:", user.email);
   try {
-    console.log(
-      "Handling new user signup for user:",
-      user.id,
-      "with plan:",
-      planType
-    );
+    // Vérifier si l'utilisateur existe et n'a pas déjà une organisation
+    const existingUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { organizationId: true },
+    });
+
+    console.log("👤 État utilisateur:", existingUser);
+
+    if (existingUser?.organizationId) {
+      console.log(
+        "⚠️ L'utilisateur a déjà une organisation:",
+        existingUser.organizationId
+      );
+      return;
+    }
 
     // Créer une nouvelle organisation
+    console.log("📝 Création organisation pour:", user.email);
     const organization = await prisma.organization.create({
       data: {
         name: `${user.name || user.email.split("@")[0]}'s Organization`,
       },
     });
 
+    console.log("🏢 Organisation créée:", organization.id);
+
     // Associer l'utilisateur à l'organisation
+    console.log("🔄 Association utilisateur-organisation");
     await prisma.user.update({
       where: { id: user.id },
       data: { organizationId: organization.id },
     });
 
     // Créer l'association OrganizationUser avec le rôle admin
+    console.log("👑 Création rôle admin");
     await prisma.organizationUser.create({
       data: {
         userId: user.id,
@@ -312,16 +390,13 @@ async function handleNewUserSignup(
     });
 
     // Créer l'abonnement selon le plan choisi
+    console.log("💰 Création abonnement:", planType);
     await createSubscriptionForPlan(organization.id, planType);
 
-    console.log(
-      "Successfully created organization:",
-      organization.name,
-      "for user:",
-      user.id
-    );
+    console.log("✅ Organisation complète créée:", organization.name);
   } catch (error) {
-    console.error("Error handling new user signup:", error);
+    console.error("❌ Erreur dans handleNewUserSignup:", error);
+    throw error; // Remonter l'erreur pour la gérer au niveau supérieur
   }
 }
 
