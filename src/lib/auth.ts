@@ -73,6 +73,7 @@ export const auth = betterAuth({
   // Routes personnalisées
   customRoutes: {
     // Route personnalisée pour l'inscription avec vérification préalable
+    // Dans src/lib/auth.ts - Modification de la route /sign-up/email
     "/sign-up/email": {
       POST: async (ctx: AuthContext) => {
         try {
@@ -86,7 +87,7 @@ export const auth = betterAuth({
           };
 
           const body = ctx.body as SignUpEmailBody;
-          console.log("📝 Inscription personnalisée pour:", body.email);
+          console.log("📝 Inscription pour:", body.email);
 
           // Vérifier si l'email existe déjà
           const existingUser = await prisma.user.findUnique({
@@ -94,29 +95,73 @@ export const auth = betterAuth({
           });
 
           if (existingUser) {
-            return ctx.json(
-              { error: { message: "Un compte existe déjà avec cet email" } },
-              { status: 400 }
-            );
+            if (existingUser.emailVerified) {
+              return ctx.json(
+                { error: { message: "Un compte existe déjà avec cet email" } },
+                { status: 400 }
+              );
+            } else {
+              // L'utilisateur existe mais n'est pas vérifié
+              // On peut simplement envoyer un nouvel email de vérification
+              console.log(
+                "🔁 Re-envoi d'email pour un utilisateur non vérifié"
+              );
+            }
           }
 
           // Générer un token de vérification
           const token = crypto.randomUUID();
           const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
 
-          // Stocker les données temporairement
+          // Créer l'utilisateur directement mais non vérifié
+          const newUser =
+            existingUser ||
+            (await prisma.user.create({
+              data: {
+                email: body.email,
+                name: body.name,
+                emailVerified: false,
+                image: body.image,
+                // Autres champs utilisateur...
+              },
+            }));
+
+          // Stocker le token de vérification dans la base de données
+          await prisma.verification.create({
+            data: {
+              id: crypto.randomUUID(),
+              identifier: body.email,
+              value: token,
+              expiresAt,
+            },
+          });
+
+          // Stocker des métadonnées supplémentaires si nécessaire
+          if (body.inviteCode || body.planType) {
+            await prisma.user.update({
+              where: { id: newUser.id },
+              data: {
+                metadata: {
+                  inviteCode: body.inviteCode,
+                  planType: body.planType || "FREE",
+                  pendingCreation: true,
+                },
+              },
+            });
+          }
+
+          // Stocker le mot de passe pour une utilisation lors de la vérification d'email
+          // Nous utiliserons signUpEmail plus tard pour créer complètement l'utilisateur
           pendingUsers.set(body.email, {
             email: body.email,
             name: body.name,
             password: body.password,
             image: body.image,
             inviteCode: body.inviteCode,
-            planType: body.planType || "FREE",
-            token,
-            expiresAt,
+            planType: body.planType,
+            token: token,
+            expiresAt: expiresAt,
           });
-
-          console.log("💾 Données stockées temporairement pour:", body.email);
 
           // Envoyer l'email de vérification
           await sendCustomVerificationEmail({
@@ -127,15 +172,19 @@ export const auth = betterAuth({
             planType: body.planType,
           });
 
-          // Retourner une réponse de succès
           return ctx.json({
             success: true,
             message:
               "Email de vérification envoyé. Vérifiez votre boîte de réception.",
-            user: null, // Pas d'utilisateur créé pour l'instant
+            user: {
+              id: newUser.id,
+              name: newUser.name,
+              email: newUser.email,
+              emailVerified: false,
+            },
           });
         } catch (error) {
-          console.error("❌ Erreur inscription personnalisée:", error);
+          console.error("❌ Erreur inscription:", error);
           return ctx.json(
             {
               error: {
@@ -167,24 +216,17 @@ export const auth = betterAuth({
             );
           }
 
-          console.log("🔍 Vérification du token pour:", email);
+          // Vérifier le token dans la base de données
+          const verification = await prisma.verification.findFirst({
+            where: {
+              identifier: email,
+              value: token,
+              expiresAt: { gt: new Date() },
+            },
+          });
 
-          // Vérifier si les données temporaires existent
-          const pendingUser = pendingUsers.get(email);
-
-          if (!pendingUser) {
-            console.error("❌ Aucune donnée temporaire trouvée pour:", email);
-            return Response.redirect(
-              new URL(
-                "/auth/verification-failed?error=expired",
-                ctx.request.url
-              )
-            );
-          }
-
-          // Vérifier le token
-          if (pendingUser.token !== token) {
-            console.error("❌ Token invalide pour:", email);
+          if (!verification) {
+            console.error("❌ Token invalide ou expiré");
             return Response.redirect(
               new URL(
                 "/auth/verification-failed?error=invalid",
@@ -193,69 +235,45 @@ export const auth = betterAuth({
             );
           }
 
-          // Vérifier l'expiration
-          if (pendingUser.expiresAt < new Date()) {
-            console.error("❌ Token expiré pour:", email);
-            pendingUsers.delete(email);
+          // Récupérer l'utilisateur
+          const user = await prisma.user.findUnique({
+            where: { email },
+          });
+
+          if (!user) {
+            console.error("❌ Utilisateur non trouvé");
             return Response.redirect(
-              new URL(
-                "/auth/verification-failed?error=expired",
-                ctx.request.url
-              )
+              new URL("/auth/verification-failed?error=user", ctx.request.url)
             );
           }
 
-          console.log("✅ Token valide, création de l'utilisateur");
-
-          // Maintenant créer l'utilisateur avec Better Auth
-          const signUpResult = await auth.api.signUpEmail({
-            body: {
-              email: pendingUser.email,
-              name: pendingUser.name,
-              password: pendingUser.password,
-            },
+          // Marquer l'email comme vérifié
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { emailVerified: true },
           });
 
-          if (!signUpResult) {
-            console.error("❌ Erreur création utilisateur: résultat invalide");
-            return Response.redirect(
-              new URL(
-                "/auth/verification-failed?error=creation",
-                ctx.request.url
-              )
-            );
+          // Type spécifique pour les métadonnées utilisateur
+          type UserMetadata = {
+            inviteCode?: string;
+            planType?: PlanType | string;
+            pendingCreation?: boolean;
+          };
+
+          // Traitement post-vérification
+          const metadata = (user.metadata as UserMetadata) || {};
+          if (metadata.inviteCode) {
+            await handleInviteSignup(user, metadata.inviteCode);
+          } else {
+            await handleNewUserSignup(user, metadata.planType || "FREE");
           }
-
-          console.log("✅ Utilisateur créé avec succès");
-
-          // Récupérer l'utilisateur créé
-          const newUser = await prisma.user.findUnique({
-            where: { email: pendingUser.email },
+          // Supprimer la vérification
+          await prisma.verification.delete({
+            where: { id: verification.id },
           });
 
-          if (newUser) {
-            // Marquer l'email comme vérifié
-            await prisma.user.update({
-              where: { id: newUser.id },
-              data: { emailVerified: true },
-            });
-
-            // Traitement post-création (organisation, abonnement, etc.)
-            if (pendingUser.inviteCode) {
-              await handleInviteSignup(newUser, pendingUser.inviteCode);
-            } else {
-              await handleNewUserSignup(
-                newUser,
-                pendingUser.planType || "FREE"
-              );
-            }
-
-            // Envoyer l'email de bienvenue
-            await sendWelcomeEmailAfterVerification(newUser);
-          }
-
-          // Nettoyer les données temporaires
-          pendingUsers.delete(email);
+          // Envoyer l'email de bienvenue
+          await sendWelcomeEmailAfterVerification(user);
 
           // Rediriger vers la page de succès
           const redirectUrl = callbackURL || "/auth/verification-success";

@@ -355,6 +355,22 @@ model PlanChangeAudit {
   @@map("plan_change_audit")
 }
 
+model PendingUser {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  password    String
+  token       String   @unique
+  expiresAt   DateTime
+  planType    String?
+  inviteCode  String?
+  image       String?
+  createdAt   DateTime @default(now())
+
+  @@index([token])
+  @@index([email])
+}
+
 enum Platform {
   WEB
   ANDROID
