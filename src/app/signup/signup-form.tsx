@@ -129,29 +129,14 @@ function SignUpForm() {
         }
 
         // Préparer les données pour l'inscription
-        interface SignupData {
-          email: string;
-          password: string;
-          name: string;
-          image?: string;
-          inviteCode?: string;
-          planType?: string;
-        }
-
-        const signupData: SignupData = {
+        const signupData = {
           email,
           password,
           name,
           image: imageUrl,
+          inviteCode,
+          planType,
         };
-
-        // Ajouter les métadonnées
-        if (inviteCode) {
-          signupData.inviteCode = inviteCode;
-        }
-        if (planType) {
-          signupData.planType = planType;
-        }
 
         console.log("📤 Envoi demande d'inscription:", {
           email,
