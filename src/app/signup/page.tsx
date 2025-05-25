@@ -29,13 +29,6 @@ const SignUpForm = dynamic(() => import("./signup-form"), {
   ssr: true, // Garder true pour un bon SEO, mais optimiser le composant
 });
 
-// Ajouter des métadonnées explicites pour l'optimisation
-export const metadata = {
-  title: "Inscription - PlanniKeeper",
-  description:
-    "Créez votre compte PlanniKeeper et commencez à gérer vos projets immobiliers.",
-};
-
 // Composant de redirection si un code d'invitation est présent
 const InvitationRedirect = () => {
   const searchParams = useSearchParams();
