@@ -103,9 +103,7 @@ export const auth = betterAuth({
   },
 
   hooks: {
-    // Utilisation du hook 'after' au lieu de hooks spécifiques
     after: async (inputContext) => {
-      // Correction : accès explicite aux propriétés du contexte sans utiliser 'any'
       const path =
         ((inputContext as Record<string, unknown>)["path"] as string) ||
         ((
@@ -142,7 +140,8 @@ export const auth = betterAuth({
             let metadata: Record<string, unknown> = {};
             let inviteCode: string | undefined,
               planType: string | undefined,
-              image: string | undefined;
+              image: string | undefined,
+              organizationId: string | undefined;
 
             if ("metadata" in returned && returned["metadata"]) {
               metadata = returned["metadata"] as Record<string, unknown>;
@@ -163,7 +162,26 @@ export const auth = betterAuth({
                 typeof metadata["image"] === "string"
                   ? (metadata["image"] as string)
                   : undefined;
+              organizationId =
+                typeof metadata["organizationId"] === "string"
+                  ? (metadata["organizationId"] as string)
+                  : undefined;
             }
+
+            // Enregistrer systématiquement les informations importantes comme métadonnées
+            await prisma.user.update({
+              where: { id: user.id },
+              data: {
+                metadata: {
+                  inviteCode,
+                  organizationId,
+                  planType,
+                  image,
+                  signupPath: path,
+                  signupTimestamp: new Date().toISOString(),
+                },
+              },
+            });
 
             if (inviteCode) {
               // Cas d'une invitation - l'utilisateur rejoindra une organisation existante
@@ -178,15 +196,13 @@ export const auth = betterAuth({
               });
 
               if (invitation) {
-                // IMPORTANT: Associer l'utilisateur à l'organisation de l'invitation
+                // Associer l'utilisateur à l'organisation de l'invitation
                 await prisma.user.update({
                   where: { id: user.id },
                   data: {
                     organizationId: invitation.organizationId,
-                    metadata: { inviteCode, image, joinedViaInvitation: true },
                   },
                 });
-
                 console.log(
                   "👤 Utilisateur associé à l'organisation via invitation:",
                   invitation.organizationId,
@@ -202,7 +218,6 @@ export const auth = betterAuth({
                     },
                   }
                 );
-                // Si l'association n'existe pas encore, la créer
                 if (!existingOrgUser) {
                   await prisma.organizationUser.create({
                     data: {
@@ -216,10 +231,25 @@ export const auth = betterAuth({
                     invitation.role
                   );
                 }
-              } else {
-                console.warn(
-                  "⚠️ Code d'invitation invalide ou expiré:",
-                  inviteCode
+                // Ne pas marquer l'invitation comme utilisée maintenant, mais après vérification email
+              }
+            } else if (organizationId) {
+              // Traitement spécifique pour organizationId explicite (cas de l'API directe)
+              console.log(
+                "🆔 OrganizationId spécifié directement:",
+                organizationId
+              );
+              const organization = await prisma.organization.findUnique({
+                where: { id: organizationId },
+              });
+              if (organization) {
+                await prisma.user.update({
+                  where: { id: user.id },
+                  data: { organizationId },
+                });
+                console.log(
+                  "👤 Utilisateur associé directement à l'organisation:",
+                  organizationId
                 );
               }
             } else {
@@ -228,21 +258,15 @@ export const auth = betterAuth({
                 "🆕 Création d'une nouvelle organisation pour:",
                 user.email
               );
-
               const organization = await prisma.organization.create({
                 data: {
                   name: `${user.name || user.email.split("@")[0]}'s Organization`,
                 },
               });
-
               await prisma.user.update({
                 where: { id: user.id },
-                data: {
-                  organizationId: organization.id,
-                  metadata: { planType, image },
-                },
+                data: { organizationId: organization.id },
               });
-
               console.log(
                 "🏢 Organisation créée avec succès:",
                 organization.id
@@ -267,9 +291,7 @@ export const auth = betterAuth({
 
             const dbUser = await prisma.user.findUnique({
               where: { id: user.id },
-              include: {
-                Organization: true,
-              },
+              include: { Organization: true },
             });
 
             // Extraire les métadonnées
@@ -282,14 +304,18 @@ export const auth = betterAuth({
               typeof metadata["inviteCode"] === "string"
                 ? (metadata["inviteCode"] as string)
                 : undefined;
+            const organizationId =
+              typeof metadata["organizationId"] === "string"
+                ? (metadata["organizationId"] as string)
+                : undefined;
 
             console.log("🔄 Métadonnées utilisateur:", {
               metadata,
               inviteCode,
+              organizationId,
               hasOrg: !!dbUser?.Organization,
             });
 
-            // Traitement spécifique pour les invitations
             if (inviteCode) {
               console.log(
                 "🔍 Recherche de l'invitation avec code:",
@@ -310,13 +336,11 @@ export const auth = betterAuth({
                   role: invitation.role,
                   isUsed: invitation.isUsed,
                 });
-
                 // Marquer l'invitation comme utilisée
                 await prisma.invitationCode.update({
                   where: { id: invitation.id },
                   data: { isUsed: true },
                 });
-
                 // Associer l'utilisateur à l'organisation si ce n'est pas déjà fait
                 if (
                   !dbUser?.Organization ||
@@ -331,7 +355,6 @@ export const auth = betterAuth({
                     invitation.organizationId
                   );
                 }
-
                 // Vérifier si l'association OrganizationUser existe déjà
                 const existingOrgUser = await prisma.organizationUser.findFirst(
                   {
@@ -341,8 +364,6 @@ export const auth = betterAuth({
                     },
                   }
                 );
-
-                // Créer l'association si elle n'existe pas
                 if (!existingOrgUser) {
                   await prisma.organizationUser.create({
                     data: {
@@ -365,53 +386,87 @@ export const auth = betterAuth({
                   "⚠️ Invitation non trouvée ou expirée:",
                   inviteCode
                 );
+                await createDefaultOrganizationForUser(user);
+              }
+            } else if (organizationId) {
+              // Gérer le cas où l'organizationId est explicitement défini
+              const organization = await prisma.organization.findUnique({
+                where: { id: organizationId },
+              });
+              if (organization) {
+                if (
+                  !dbUser?.Organization ||
+                  dbUser.Organization.id !== organizationId
+                ) {
+                  await prisma.user.update({
+                    where: { id: user.id },
+                    data: { organizationId },
+                  });
+                }
+                const existingOrgUser = await prisma.organizationUser.findFirst(
+                  {
+                    where: {
+                      userId: user.id,
+                      organizationId,
+                    },
+                  }
+                );
+                if (!existingOrgUser) {
+                  await prisma.organizationUser.create({
+                    data: {
+                      userId: user.id,
+                      organizationId,
+                      role: "admin",
+                    },
+                  });
+                }
+                console.log(
+                  "✅ Association utilisateur-organisation complétée pour organizationId spécifié"
+                );
+              } else {
+                console.warn(
+                  "⚠️ OrganizationId spécifié mais introuvable:",
+                  organizationId
+                );
+                await createDefaultOrganizationForUser(user);
               }
             } else if (dbUser?.Organization) {
               // Cas d'un nouvel utilisateur avec une organisation déjà associée
-              // Vérifier si l'association OrganizationUser existe déjà
               const existingOrgUser = await prisma.organizationUser.findFirst({
                 where: {
                   userId: user.id,
                   organizationId: dbUser.Organization.id,
                 },
               });
-
-              // Si l'association n'existe pas, la créer
               if (!existingOrgUser) {
                 await prisma.organizationUser.create({
                   data: {
                     userId: user.id,
                     organizationId: dbUser.Organization.id,
-                    role: "admin", // Utilisateur par défaut admin de sa propre organisation
+                    role: "admin",
                   },
                 });
                 console.log(
                   "✅ Association utilisateur-organisation créée pour propriétaire"
                 );
               }
-
               const planType =
                 typeof metadata["planType"] === "string"
                   ? (metadata["planType"] as string)
                   : "FREE";
               const validatedPlanType = validatePlanType(planType || "FREE");
-
-              // Vérifier si un abonnement existe déjà
               const existingSubscription = await prisma.subscription.findFirst({
                 where: { organizationId: dbUser.Organization.id },
               });
-
               if (!existingSubscription) {
                 let plan = await prisma.plan.findFirst({
                   where: { name: validatedPlanType },
                 });
-
                 if (!plan) {
                   plan = await prisma.plan.findFirst({
                     where: { name: "FREE" as PlanType },
                   });
                 }
-
                 if (plan) {
                   await prisma.subscription.create({
                     data: {
@@ -424,57 +479,12 @@ export const auth = betterAuth({
                       ),
                     },
                   });
-
                   console.log("💰 Abonnement créé avec plan:", plan.name);
                 }
               }
             } else {
-              // 3. Mécanisme de récupération - si l'organisation n'a pas été créée
-              console.log(
-                "⚠️ Organisation manquante, tentative de récupération"
-              );
-
-              const organization = await prisma.organization.create({
-                data: {
-                  name: `${user.name || user.email.split("@")[0]}'s Organization`,
-                },
-              });
-
-              await prisma.user.update({
-                where: { id: user.id },
-                data: { organizationId: organization.id },
-              });
-
-              await prisma.organizationUser.create({
-                data: {
-                  userId: user.id,
-                  organizationId: organization.id,
-                  role: "admin",
-                },
-              });
-
-              const freePlan = await prisma.plan.findFirst({
-                where: { name: "FREE" },
-              });
-
-              if (freePlan) {
-                await prisma.subscription.create({
-                  data: {
-                    organizationId: organization.id,
-                    planId: freePlan.id,
-                    status: "ACTIVE",
-                    currentPeriodStart: new Date(),
-                    currentPeriodEnd: new Date(
-                      Date.now() + 365 * 24 * 60 * 60 * 1000
-                    ),
-                  },
-                });
-              }
-
-              console.log(
-                "🔄 Organisation récupérée avec succès:",
-                organization.id
-              );
+              // Mécanisme de récupération - si l'organisation n'a pas été créée
+              await createDefaultOrganizationForUser(user);
             }
 
             // Vérification de l'état final
@@ -493,7 +503,7 @@ export const auth = betterAuth({
               role: finalState?.OrganizationUser?.role,
             });
 
-            // 4. Envoyer l'email de bienvenue
+            // Envoyer l'email de bienvenue
             await sendWelcomeEmailAfterVerification(user);
           }
         } catch (error) {
@@ -515,6 +525,49 @@ export const auth = betterAuth({
     },
   },
 });
+
+// NOUVELLE FONCTION UTILITAIRE: Créer une organisation par défaut pour un utilisateur
+async function createDefaultOrganizationForUser(user: {
+  id: string;
+  email: string;
+  name?: string;
+}) {
+  console.log(
+    "⚠️ Organisation manquante, création d'une organisation par défaut"
+  );
+  const organization = await prisma.organization.create({
+    data: {
+      name: `${user.name || user.email.split("@")[0]}'s Organization`,
+    },
+  });
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { organizationId: organization.id },
+  });
+  await prisma.organizationUser.create({
+    data: {
+      userId: user.id,
+      organizationId: organization.id,
+      role: "admin",
+    },
+  });
+  const freePlan = await prisma.plan.findFirst({
+    where: { name: "FREE" },
+  });
+  if (freePlan) {
+    await prisma.subscription.create({
+      data: {
+        organizationId: organization.id,
+        planId: freePlan.id,
+        status: "ACTIVE",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      },
+    });
+  }
+  console.log("🔄 Organisation par défaut créée avec succès:", organization.id);
+  return organization;
+}
 
 // Fonction pour envoyer l'email de bienvenue après vérification
 async function sendWelcomeEmailAfterVerification(user: {
