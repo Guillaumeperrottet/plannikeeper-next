@@ -201,7 +201,7 @@ export default async function ProfilePage() {
               <div className="p-6 space-y-6">
                 <div className="space-y-4">
                   <div className="group/field">
-                    <label className="block font-medium mb-2 text-[color:var(--foreground)] flex items-center gap-2">
+                    <label className="font-medium mb-2 text-[color:var(--foreground)] flex items-center gap-2">
                       <User size={16} className="text-[color:var(--primary)]" />
                       Nom complet
                     </label>
@@ -215,7 +215,7 @@ export default async function ProfilePage() {
                   </div>
 
                   <div className="group/field">
-                    <label className="block font-medium mb-2 text-[color:var(--foreground)] flex items-center gap-2">
+                    <label className="font-medium mb-2 text-[color:var(--foreground)] flex items-center gap-2">
                       <Mail size={16} className="text-[color:var(--primary)]" />
                       Adresse email
                     </label>
@@ -273,7 +273,7 @@ export default async function ProfilePage() {
 
                 <div className="p-6 space-y-6">
                   <div className="group/field">
-                    <label className="block font-medium mb-2 text-[color:var(--foreground)] flex items-center gap-2">
+                    <label className="font-medium mb-2 text-[color:var(--foreground)] flex items-center gap-2">
                       <Building2
                         size={16}
                         className="text-[color:var(--primary)]"
