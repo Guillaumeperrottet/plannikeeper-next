@@ -479,7 +479,7 @@ export const auth = betterAuth({
                       ),
                     },
                   });
-                  console.log("💰 Abonnement créé avec plan:", plan.name);
+                  console.log("💰 Abonnement créé aavec plan:", plan.name);
                 }
               }
             } else {
