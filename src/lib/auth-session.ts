@@ -290,12 +290,24 @@ export async function getAccessibleObjects(
 
   // Récupérer l'utilisateur avec son organisation si pas fournie
   let userOrgId = organizationId;
+  let userRole = null;
+
   if (!userOrgId) {
     const userWithOrg = await prisma.user.findUnique({
       where: { id: userId },
-      include: { Organization: true },
+      include: {
+        Organization: true,
+        OrganizationUser: true,
+      },
     });
     userOrgId = userWithOrg?.Organization?.id;
+    userRole = userWithOrg?.OrganizationUser?.role;
+  } else {
+    // Récupérer le rôle si on a l'orgId
+    const orgUser = await prisma.organizationUser.findFirst({
+      where: { userId, organizationId: userOrgId },
+    });
+    userRole = orgUser?.role;
   }
 
   if (!userOrgId) {
@@ -304,8 +316,8 @@ export async function getAccessibleObjects(
   }
 
   // Vérifier si l'utilisateur est admin
-  const isAdmin = await isOrganizationAdmin(userId);
-  console.log("🔧 Utilisateur admin:", isAdmin);
+  const isAdmin = userRole === "admin";
+  console.log("🔧 Utilisateur admin:", isAdmin, "- Rôle:", userRole);
 
   // Si l'utilisateur est admin, retourner tous les objets
   if (isAdmin) {
@@ -316,8 +328,7 @@ export async function getAccessibleObjects(
     });
   }
 
-  // ⭐ CORRECTIF : Logique améliorée pour les membres
-  // Récupérer les accès explicites
+  // Pour les membres non-admin, récupérer les accès explicites
   const objectAccess = await prisma.objectAccess.findMany({
     where: {
       userId,
@@ -328,39 +339,30 @@ export async function getAccessibleObjects(
 
   console.log("🔐 Accès trouvés:", objectAccess.length);
 
-  // Si aucun accès explicite trouvé, vérifier si c'est un membre de l'organisation
-  if (objectAccess.length === 0) {
-    const orgMembership = await prisma.organizationUser.findFirst({
-      where: { userId, organizationId: userOrgId },
+  // CORRECTIF: Si aucun accès et que l'utilisateur est membre, créer les accès par défaut
+  if (objectAccess.length === 0 && userRole) {
+    console.log("⚠️ Membre sans accès détecté - Création des accès par défaut");
+
+    await createDefaultObjectAccessForNewMember(userId, userOrgId, userRole);
+
+    // Re-récupérer les accès après création
+    const newObjectAccess = await prisma.objectAccess.findMany({
+      where: {
+        userId,
+        NOT: { accessLevel: "none" },
+      },
+      select: { objectId: true },
     });
 
-    if (orgMembership) {
-      console.log(
-        "⚠️ Membre sans accès explicites détecté - Création des accès par défaut"
-      );
-
-      // Créer les accès par défaut de manière synchrone
-      await createDefaultObjectAccess(userId, userOrgId, orgMembership.role);
-
-      // Re-récupérer les accès après création
-      const newObjectAccess = await prisma.objectAccess.findMany({
+    if (newObjectAccess.length > 0) {
+      const objectIds = newObjectAccess.map((access) => access.objectId);
+      return prisma.objet.findMany({
         where: {
-          userId,
-          NOT: { accessLevel: "none" },
+          id: { in: objectIds },
+          organizationId: userOrgId,
         },
-        select: { objectId: true },
+        orderBy: { nom: "asc" },
       });
-
-      if (newObjectAccess.length > 0) {
-        const objectIds = newObjectAccess.map((access) => access.objectId);
-        return prisma.objet.findMany({
-          where: {
-            id: { in: objectIds },
-            organizationId: userOrgId,
-          },
-          orderBy: { nom: "asc" },
-        });
-      }
     }
   }
 
@@ -380,7 +382,7 @@ export async function getAccessibleObjects(
  * - Les admins ont accès "admin" à tous les objets de l'organisation.
  * - Les membres ont accès "read" à tous les objets de l'organisation.
  */
-async function createDefaultObjectAccess(
+async function createDefaultObjectAccessForNewMember(
   userId: string,
   userOrgId: string,
   role: string

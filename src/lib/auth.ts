@@ -235,7 +235,10 @@ async function handleEmailVerificationProcess(user: {
 
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
-    include: { Organization: true },
+    include: {
+      Organization: true,
+      OrganizationUser: true,
+    },
   });
 
   if (!dbUser) {
@@ -245,9 +248,71 @@ async function handleEmailVerificationProcess(user: {
 
   const metadata = extractUserMetadata(dbUser.metadata);
 
-  // Finaliser selon le contexte
+  // CORRECTIF PRINCIPAL: Gérer le cas d'invitation plus robustement
   if (metadata.inviteCode) {
-    await finalizeInvitationProcess(user, metadata.inviteCode);
+    console.log("🔗 Traitement finalisation invitation pour:", user.email);
+
+    // Récupérer l'invitation
+    const invitation = await prisma.invitationCode.findFirst({
+      where: { code: metadata.inviteCode },
+      include: { organization: true },
+    });
+
+    if (invitation) {
+      // S'assurer que l'utilisateur est bien associé à l'organisation
+      if (
+        !dbUser.organizationId ||
+        dbUser.organizationId !== invitation.organizationId
+      ) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { organizationId: invitation.organizationId },
+        });
+        console.log("✅ OrganizationId mis à jour:", invitation.organizationId);
+      }
+
+      // Vérifier/Créer l'association OrganizationUser
+      let orgUser = await prisma.organizationUser.findFirst({
+        where: { userId: user.id, organizationId: invitation.organizationId },
+      });
+
+      if (!orgUser) {
+        orgUser = await prisma.organizationUser.create({
+          data: {
+            userId: user.id,
+            organizationId: invitation.organizationId,
+            role: invitation.role,
+          },
+        });
+        console.log(
+          "✅ Association OrganizationUser créée avec rôle:",
+          invitation.role
+        );
+      }
+
+      // CORRECTIF CRITIQUE: Créer les accès par défaut aux objets existants
+      await createDefaultObjectAccessForNewMember(
+        user.id,
+        invitation.organizationId,
+        orgUser.role
+      );
+
+      // Marquer l'invitation comme utilisée
+      if (!invitation.isUsed) {
+        await prisma.invitationCode.update({
+          where: { id: invitation.id },
+          data: { isUsed: true },
+        });
+        console.log("✅ Invitation marquée comme utilisée");
+      }
+
+      console.log("🎉 Processus d'invitation finalisé avec succès");
+    } else {
+      console.warn(
+        "⚠️ Invitation introuvable, création organisation par défaut"
+      );
+      await createDefaultOrganization(user);
+    }
   } else if (dbUser.Organization) {
     await finalizeRegularUserSetup(user, dbUser.Organization.id, metadata);
   } else {
@@ -255,7 +320,7 @@ async function handleEmailVerificationProcess(user: {
     await createDefaultOrganization(user);
   }
 
-  // Vérification finale et email de bienvenue
+  // Email de bienvenue
   await sendWelcomeEmail(user);
 }
 
@@ -413,74 +478,6 @@ async function handleRegularSignup(user: {
 // ============================================================================
 // FONCTIONS DE FINALISATION (APRÈS VÉRIFICATION EMAIL)
 // ============================================================================
-
-// CORRECTIF: Finaliser le processus d'invitation avec création des accès par défaut
-async function finalizeInvitationProcess(
-  user: { id: string; email: string; name?: string },
-  inviteCode: string
-) {
-  console.log(
-    "🔗 Finalisation processus invitation pour:",
-    user.email,
-    "Code:",
-    inviteCode
-  );
-
-  const invitation = await prisma.invitationCode.findFirst({
-    where: { code: inviteCode },
-    include: { organization: true },
-  });
-
-  if (!invitation) {
-    console.warn(
-      "⚠️ Invitation introuvable lors de la finalisation:",
-      inviteCode
-    );
-    await createDefaultOrganization(user);
-    return;
-  }
-
-  // Marquer invitation comme utilisée (si pas déjà fait)
-  if (!invitation.isUsed) {
-    await prisma.invitationCode.update({
-      where: { id: invitation.id },
-      data: { isUsed: true },
-    });
-    console.log("✅ Invitation marquée comme utilisée");
-  }
-
-  // Vérifier que l'association OrganizationUser existe
-  const existingOrgUser = await prisma.organizationUser.findFirst({
-    where: { userId: user.id, organizationId: invitation.organizationId },
-  });
-
-  if (!existingOrgUser) {
-    // Fallback : créer l'association si elle n'existe pas
-    await prisma.organizationUser.create({
-      data: {
-        userId: user.id,
-        organizationId: invitation.organizationId,
-        role: invitation.role,
-      },
-    });
-    console.log(
-      "⚠️ Association OrganizationUser créée en fallback avec rôle:",
-      invitation.role
-    );
-  } else {
-    console.log(
-      "✅ Association OrganizationUser déjà existante avec rôle:",
-      existingOrgUser.role
-    );
-  }
-
-  // CORRECTIF PRINCIPAL: Créer les accès par défaut aux objets pour les nouveaux membres
-  await createDefaultObjectAccess(
-    user.id,
-    invitation.organizationId,
-    invitation.role
-  );
-}
 
 // Finaliser configuration utilisateur normal
 async function finalizeRegularUserSetup(
@@ -668,4 +665,65 @@ async function createDefaultObjectAccess(
   }
 
   console.log("🎉 Création des accès par défaut terminée");
+}
+
+// ============================================================================
+// CORRECTIF 2: Nouvelle fonction pour créer les accès par défaut
+// ============================================================================
+
+async function createDefaultObjectAccessForNewMember(
+  userId: string,
+  organizationId: string,
+  role: string
+) {
+  console.log("🔐 Création accès par défaut pour nouveau membre:", {
+    userId,
+    organizationId,
+    role,
+  });
+
+  // Récupérer tous les objets existants dans l'organisation
+  const existingObjects = await prisma.objet.findMany({
+    where: { organizationId },
+    select: { id: true, nom: true },
+  });
+
+  console.log(
+    `📊 ${existingObjects.length} objets trouvés dans l'organisation`
+  );
+
+  if (existingObjects.length === 0) {
+    console.log("ℹ️ Aucun objet dans l'organisation, pas d'accès à créer");
+    return;
+  }
+
+  // Déterminer le niveau d'accès par défaut
+  const accessLevel = role === "admin" ? "admin" : "read";
+
+  // Créer les accès pour chaque objet
+  const accessPromises = existingObjects.map((object) =>
+    prisma.objectAccess.upsert({
+      where: {
+        userId_objectId: { userId, objectId: object.id },
+      },
+      update: {
+        accessLevel,
+      },
+      create: {
+        userId,
+        objectId: object.id,
+        accessLevel,
+      },
+    })
+  );
+
+  try {
+    await Promise.all(accessPromises);
+    console.log(
+      `✅ Accès ${accessLevel} créés pour ${existingObjects.length} objets`
+    );
+  } catch (error) {
+    console.error("❌ Erreur lors de la création des accès:", error);
+    throw error;
+  }
 }
