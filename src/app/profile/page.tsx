@@ -6,6 +6,19 @@ import EditName from "./edit-name";
 import EditOrganizationName from "./edit-organization-name";
 import ChangePasswordForm from "./change-password-form";
 import UpdateProfileImage from "./UpdateProfileImage";
+import {
+  User,
+  Building2,
+  Shield,
+  Settings,
+  Bell,
+  Users,
+  Sparkles,
+  ArrowRight,
+  Mail,
+  Lock,
+  Crown,
+} from "lucide-react";
 
 export default async function ProfilePage() {
   const user = await getUser();
@@ -21,52 +34,210 @@ export default async function ProfilePage() {
   const isAdmin = orgUser?.role === "admin";
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Main content */}
-      <main className="flex-1 p-4 sm:p-6 md:p-10 bg-background">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-8 text-[color:var(--foreground)]">
-          Mon profil
-        </h1>
+    <div className="min-h-screen bg-gradient-to-br from-[color:var(--background)] via-[color:var(--muted)]/20 to-[color:var(--background)]">
+      {/* Header avec effet glassmorphism */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-[color:var(--primary)]/10 via-[color:var(--primary)]/5 to-transparent border-b border-[color:var(--border)]/20 backdrop-blur-sm">
+        <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--primary)]/5 to-transparent opacity-50"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+          <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
+            <div className="relative">
+              <div className="absolute -inset-1 bg-gradient-to-r from-[color:var(--primary)] to-[color:var(--primary)]/60 rounded-full blur opacity-20"></div>
+              <div className="relative w-20 h-20 sm:w-24 sm:h-24">
+                <UpdateProfileImage
+                  initialImage={user.image ?? null}
+                  userName={user.name ?? ""}
+                />
+              </div>
+            </div>
+            <div className="text-center sm:text-left">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 mb-2">
+                <h1 className="text-3xl sm:text-4xl font-bold text-[color:var(--foreground)]">
+                  {user.name || "Utilisateur"}
+                </h1>
+                {isAdmin && (
+                  <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-[color:var(--primary)] text-[color:var(--primary-foreground)] text-sm font-semibold shadow-lg self-center sm:self-auto">
+                    <Crown size={14} />
+                    Admin
+                  </div>
+                )}
+              </div>
+              <p className="text-[color:var(--muted-foreground)] text-lg flex items-center gap-2">
+                <Mail size={16} />
+                {user.email}
+              </p>
+              {orgUser?.organization && (
+                <div className="flex items-center gap-2 mt-2">
+                  <Building2
+                    size={16}
+                    className="text-[color:var(--primary)]"
+                  />
+                  <span className="text-[color:var(--muted-foreground)]">
+                    {orgUser.organization.name}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
-          {/* Carte Infos personnelles - Déplacée en premier pour mobile */}
-          <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg p-4 sm:p-6 shadow-sm flex flex-col gap-3 sm:gap-4 order-1 lg:order-2">
-            <h2 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 text-[color:var(--foreground)]">
-              Informations personnelles
-            </h2>
-            <div className="flex flex-col items-center gap-6 mb-4">
-              <UpdateProfileImage
-                initialImage={user.image ?? null}
-                userName={user.name ?? ""}
+      {/* Main content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        {/* Navigation cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <Link
+            href="/profile/edit"
+            className="group relative overflow-hidden bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/80 border border-[color:var(--border)] rounded-xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105 hover:border-[color:var(--primary)]/30"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--primary)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-[color:var(--primary)]/10 text-[color:var(--primary)] group-hover:bg-[color:var(--primary)]/20 transition-colors">
+                <Users size={20} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-[color:var(--foreground)] group-hover:text-[color:var(--primary)] transition-colors">
+                  Utilisateurs
+                </h3>
+                <p className="text-sm text-[color:var(--muted-foreground)]">
+                  Gérer l&apos;équipe
+                </p>
+              </div>
+              <ArrowRight
+                size={16}
+                className="ml-auto text-[color:var(--muted-foreground)] group-hover:text-[color:var(--primary)] group-hover:translate-x-1 transition-all"
               />
             </div>
-            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-              <div className="flex-1 w-full text-center sm:text-left">
-                <div className="mb-3">
-                  <label className="block font-semibold mb-1 text-[color:var(--foreground)]">
-                    Nom
-                  </label>
-                  <EditName initialName={user.name ?? ""} />
-                  <p className="mt-1 text-xs sm:text-sm text-[color:var(--muted-foreground)]">
-                    Cliquez sur le nom pour le modifier
-                  </p>
+          </Link>
+
+          <Link
+            href="/profile/notifications"
+            className="group relative overflow-hidden bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/80 border border-[color:var(--border)] rounded-xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105 hover:border-[color:var(--primary)]/30"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--primary)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-[color:var(--primary)]/10 text-[color:var(--primary)] group-hover:bg-[color:var(--primary)]/20 transition-colors">
+                <Bell size={20} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-[color:var(--foreground)] group-hover:text-[color:var(--primary)] transition-colors">
+                  Notifications
+                </h3>
+                <p className="text-sm text-[color:var(--muted-foreground)]">
+                  Préférences
+                </p>
+              </div>
+              <ArrowRight
+                size={16}
+                className="ml-auto text-[color:var(--muted-foreground)] group-hover:text-[color:var(--primary)] group-hover:translate-x-1 transition-all"
+              />
+            </div>
+          </Link>
+
+          <Link
+            href="/profile/subscription"
+            className="group relative overflow-hidden bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/80 border border-[color:var(--border)] rounded-xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105 hover:border-[color:var(--primary)]/30"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--primary)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-[color:var(--primary)]/10 text-[color:var(--primary)] group-hover:bg-[color:var(--primary)]/20 transition-colors">
+                <Sparkles size={20} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-[color:var(--foreground)] group-hover:text-[color:var(--primary)] transition-colors">
+                  Abonnement
+                </h3>
+                <p className="text-sm text-[color:var(--muted-foreground)]">
+                  Plan actuel
+                </p>
+              </div>
+              <ArrowRight
+                size={16}
+                className="ml-auto text-[color:var(--muted-foreground)] group-hover:text-[color:var(--primary)] group-hover:translate-x-1 transition-all"
+              />
+            </div>
+          </Link>
+
+          <Link
+            href="/features"
+            className="group relative overflow-hidden bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/80 border border-[color:var(--border)] rounded-xl p-4 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105 hover:border-[color:var(--primary)]/30"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--primary)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-[color:var(--primary)]/10 text-[color:var(--primary)] group-hover:bg-[color:var(--primary)]/20 transition-colors">
+                <Settings size={20} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-[color:var(--foreground)] group-hover:text-[color:var(--primary)] transition-colors">
+                  Feedback
+                </h3>
+                <p className="text-sm text-[color:var(--muted-foreground)]">
+                  Améliorer l&apos;app
+                </p>
+              </div>
+              <ArrowRight
+                size={16}
+                className="ml-auto text-[color:var(--muted-foreground)] group-hover:text-[color:var(--primary)] group-hover:translate-x-1 transition-all"
+              />
+            </div>
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Carte Informations personnelles */}
+          <div className="group relative">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-[color:var(--primary)]/20 to-[color:var(--primary)]/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="relative bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-xl shadow-sm backdrop-blur-sm">
+              <div className="p-6 border-b border-[color:var(--border)]/50 bg-gradient-to-r from-[color:var(--muted)]/30 to-transparent rounded-t-xl">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-[color:var(--primary)]/10">
+                    <User size={20} className="text-[color:var(--primary)]" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-[color:var(--foreground)]">
+                    Informations personnelles
+                  </h2>
                 </div>
-                <div>
-                  <label className="block font-semibold mb-1 text-[color:var(--foreground)]">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={user.email ?? ""}
-                    disabled
-                    className="w-full border border-[color:var(--border)] rounded px-3 py-2 bg-[color:var(--muted)] text-[color:var(--muted-foreground)] text-sm"
-                  />
+              </div>
+
+              <div className="p-6 space-y-6">
+                <div className="space-y-4">
+                  <div className="group/field">
+                    <label className="block font-medium mb-2 text-[color:var(--foreground)] flex items-center gap-2">
+                      <User size={16} className="text-[color:var(--primary)]" />
+                      Nom complet
+                    </label>
+                    <div className="transition-transform group-hover/field:scale-[1.02]">
+                      <EditName initialName={user.name ?? ""} />
+                    </div>
+                    <p className="mt-2 text-xs text-[color:var(--muted-foreground)] flex items-center gap-1">
+                      <Settings size={12} />
+                      Cliquez pour modifier votre nom
+                    </p>
+                  </div>
+
+                  <div className="group/field">
+                    <label className="block font-medium mb-2 text-[color:var(--foreground)] flex items-center gap-2">
+                      <Mail size={16} className="text-[color:var(--primary)]" />
+                      Adresse email
+                    </label>
+                    <input
+                      type="email"
+                      value={user.email ?? ""}
+                      disabled
+                      className="w-full border border-[color:var(--border)] rounded-lg px-4 py-3 bg-[color:var(--muted)]/50 text-[color:var(--muted-foreground)] text-sm backdrop-blur-sm"
+                    />
+                    <p className="mt-2 text-xs text-[color:var(--muted-foreground)]">
+                      L&apos;email ne peut pas être modifié
+                    </p>
+                  </div>
                 </div>
 
-                <div className="mt-4 border-t border-[color:var(--border)] pt-4">
-                  <label className="block font-semibold mb-1 text-[color:var(--foreground)]">
-                    Sécurité
-                  </label>
+                <div className="pt-6 border-t border-[color:var(--border)]/50">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Lock size={16} className="text-[color:var(--primary)]" />
+                    <h3 className="font-medium text-[color:var(--foreground)]">
+                      Sécurité du compte
+                    </h3>
+                  </div>
                   <ChangePasswordForm />
                 </div>
               </div>
@@ -75,49 +246,83 @@ export default async function ProfilePage() {
 
           {/* Carte Organisation */}
           {orgUser?.organization && (
-            <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg p-4 sm:p-6 shadow-sm flex flex-col gap-3 sm:gap-4 order-2 lg:order-1">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-lg sm:text-xl font-semibold text-[color:var(--foreground)]">
-                  Organisation
-                </h2>
-                {isAdmin && (
-                  <span className="px-2 py-1 rounded-full bg-[color:var(--primary)] text-[color:var(--primary-foreground)] text-xs font-semibold">
-                    Admin
-                  </span>
-                )}
+            <div className="group relative">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[color:var(--primary)]/20 to-[color:var(--primary)]/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="relative bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-xl shadow-sm backdrop-blur-sm">
+                <div className="p-6 border-b border-[color:var(--border)]/50 bg-gradient-to-r from-[color:var(--muted)]/30 to-transparent rounded-t-xl">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-[color:var(--primary)]/10">
+                        <Building2
+                          size={20}
+                          className="text-[color:var(--primary)]"
+                        />
+                      </div>
+                      <h2 className="text-xl font-semibold text-[color:var(--foreground)]">
+                        Organisation
+                      </h2>
+                    </div>
+                    {isAdmin && (
+                      <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-[color:var(--primary)] text-[color:var(--primary-foreground)] text-xs font-semibold shadow-lg">
+                        <Shield size={12} />
+                        Administrateur
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-6 space-y-6">
+                  <div className="group/field">
+                    <label className="block font-medium mb-2 text-[color:var(--foreground)] flex items-center gap-2">
+                      <Building2
+                        size={16}
+                        className="text-[color:var(--primary)]"
+                      />
+                      Nom de l&apos;organisation
+                    </label>
+                    <div className="transition-transform group-hover/field:scale-[1.02]">
+                      <EditOrganizationName
+                        initialName={orgUser.organization.name}
+                        organizationId={orgUser.organization.id}
+                        isAdmin={isAdmin}
+                      />
+                    </div>
+                    {isAdmin && (
+                      <p className="mt-2 text-xs text-[color:var(--muted-foreground)] flex items-center gap-1">
+                        <Settings size={12} />
+                        En tant qu&apos;administrateur, vous pouvez modifier le
+                        nom
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 rounded-lg bg-gradient-to-r from-[color:var(--muted)]/30 to-transparent border border-[color:var(--border)]/50">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-[color:var(--primary)]/10">
+                        {isAdmin ? (
+                          <Shield
+                            size={16}
+                            className="text-[color:var(--primary)]"
+                          />
+                        ) : (
+                          <User
+                            size={16}
+                            className="text-[color:var(--muted-foreground)]"
+                          />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium text-[color:var(--foreground)]">
+                          Votre rôle
+                        </p>
+                        <p className="text-sm text-[color:var(--muted-foreground)] capitalize">
+                          {orgUser.role}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block font-semibold mb-1 text-[color:var(--foreground)]">
-                  Nom de l&apos;organisation
-                </label>
-                <EditOrganizationName
-                  initialName={orgUser.organization.name}
-                  organizationId={orgUser.organization.id}
-                  isAdmin={isAdmin}
-                />
-                {isAdmin && (
-                  <p className="mt-1 text-xs sm:text-sm text-[color:var(--muted-foreground)]">
-                    En tant qu&apos;administrateur, vous pouvez modifier le nom
-                    de l&apos;organisation
-                  </p>
-                )}
-              </div>
-              <div className="text-xs sm:text-sm text-[color:var(--muted-foreground)]">
-                <span className="font-medium">Votre rôle : </span>
-                <span className="capitalize">{orgUser.role}</span>
-              </div>
-              <Link
-                href="/profile/edit"
-                className="mt-2 block w-full py-3 sm:py-2 text-center sm:text-left rounded-md bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:bg-[color:var(--primary)]/90 text-sm font-medium transition-colors sm:px-3 sm:w-auto"
-              >
-                Gestion des utilisateurs
-              </Link>
-              <Link
-                href="/profile/notifications"
-                className="mt-2 block w-full py-3 sm:py-2 text-center sm:text-left rounded-md bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:bg-[color:var(--primary)]/90 text-sm font-medium transition-colors sm:px-3 sm:w-auto"
-              >
-                Gestion des notifications
-              </Link>
             </div>
           )}
         </div>
