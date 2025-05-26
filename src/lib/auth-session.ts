@@ -8,7 +8,43 @@ export type AccessLevel = "none" | "read" | "write" | "admin";
 export const getUser = async () => {
   const session = await auth.api.getSession({ headers: await headers() });
 
-  return session?.user;
+  if (!session?.user) {
+    return null;
+  }
+
+  // CORRECTIF: Récupérer les informations complètes de l'utilisateur depuis la DB
+  // car Better Auth ne retourne que les infos de base
+  const userWithOrganization = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    include: {
+      Organization: true,
+      OrganizationUser: {
+        include: {
+          organization: true,
+        },
+      },
+    },
+  });
+
+  if (!userWithOrganization) {
+    console.warn(
+      "⚠️ Utilisateur trouvé dans la session mais pas en DB:",
+      session.user.id
+    );
+    return session.user;
+  }
+
+  // Enrichir les données de session avec les infos d'organisation
+  return {
+    ...session.user,
+    organizationId: userWithOrganization.organizationId,
+    Organization: userWithOrganization.Organization,
+    OrganizationUser: userWithOrganization.OrganizationUser,
+    // Ajouter des informations d'appartenance
+    hasOrganization: !!userWithOrganization.organizationId,
+    isAdmin: userWithOrganization.OrganizationUser?.role === "admin",
+    organizationRole: userWithOrganization.OrganizationUser?.role,
+  };
 };
 
 export const getRequiredUser = async () => {
@@ -28,12 +64,18 @@ export async function checkOrganizationMembership(
   userId: string,
   objectId: string
 ): Promise<boolean> {
+  console.log("🔍 Vérification appartenance organisation:", {
+    userId,
+    objectId,
+  });
+
   const userWithOrg = await prisma.user.findUnique({
     where: { id: userId },
     include: { Organization: true },
   });
 
   if (!userWithOrg?.Organization) {
+    console.log("❌ Utilisateur sans organisation:", userId);
     return false;
   }
 
@@ -43,10 +85,18 @@ export async function checkOrganizationMembership(
   });
 
   if (!object) {
+    console.log("❌ Objet introuvable:", objectId);
     return false;
   }
 
-  return userWithOrg.Organization.id === object.organizationId;
+  const isMember = userWithOrg.Organization.id === object.organizationId;
+  console.log("✅ Appartenance vérifiée:", {
+    userOrgId: userWithOrg.Organization.id,
+    objectOrgId: object.organizationId,
+    isMember,
+  });
+
+  return isMember;
 }
 
 /**
@@ -57,7 +107,9 @@ export async function isOrganizationAdmin(userId: string): Promise<boolean> {
     where: { userId, role: "admin" },
   });
 
-  return !!orgUser;
+  const isAdmin = !!orgUser;
+  console.log("🔧 Vérification admin:", { userId, isAdmin });
+  return isAdmin;
 }
 
 /**
@@ -68,9 +120,16 @@ export async function checkObjectAccess(
   objectId: string,
   requiredLevel: AccessLevel
 ): Promise<boolean> {
+  console.log("🔐 Vérification accès objet:", {
+    userId,
+    objectId,
+    requiredLevel,
+  });
+
   // Les administrateurs ont toujours accès à tout
   const isAdmin = await isOrganizationAdmin(userId);
   if (isAdmin) {
+    console.log("✅ Accès admin accordé");
     return true;
   }
 
@@ -82,6 +141,7 @@ export async function checkObjectAccess(
   // Vérifier d'abord l'appartenance à l'organisation
   const isMember = await checkOrganizationMembership(userId, objectId);
   if (!isMember) {
+    console.log("❌ Utilisateur pas membre de l'organisation");
     return false;
   }
 
@@ -106,7 +166,14 @@ export async function checkObjectAccess(
     : 0;
   const requiredLevelValue = accessLevels[requiredLevel];
 
-  return userLevel >= requiredLevelValue;
+  const hasAccess = userLevel >= requiredLevelValue;
+  console.log("🔐 Résultat vérification accès:", {
+    userLevel,
+    requiredLevel: requiredLevelValue,
+    hasAccess,
+  });
+
+  return hasAccess;
 }
 
 /**
@@ -208,18 +275,42 @@ export async function checkTaskAccess(
   return checkObjectAccess(userId, task.article.sector.objectId, requiredLevel);
 }
 
-// Dans auth-session.ts
+/**
+ * NOUVELLE FONCTION: Récupère les objets accessibles pour un utilisateur
+ * Cette fonction remplace la logique dans /api/objet/route.ts
+ */
 export async function getAccessibleObjects(
   userId: string,
-  organizationId: string
+  organizationId?: string
 ) {
+  console.log("🏠 Récupération objets accessibles:", {
+    userId,
+    organizationId,
+  });
+
+  // Récupérer l'utilisateur avec son organisation si pas fournie
+  let userOrgId = organizationId;
+  if (!userOrgId) {
+    const userWithOrg = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { Organization: true },
+    });
+    userOrgId = userWithOrg?.Organization?.id;
+  }
+
+  if (!userOrgId) {
+    console.log("❌ Pas d'organisation trouvée pour l'utilisateur");
+    return [];
+  }
+
   // Vérifier si l'utilisateur est admin
   const isAdmin = await isOrganizationAdmin(userId);
 
   // Si l'utilisateur est admin, retourner tous les objets
   if (isAdmin) {
+    console.log("✅ Admin: retour de tous les objets");
     return prisma.objet.findMany({
-      where: { organizationId },
+      where: { organizationId: userOrgId },
       orderBy: { nom: "asc" },
     });
   }
@@ -234,11 +325,12 @@ export async function getAccessibleObjects(
   });
 
   const objectIds = objectAccess.map((access) => access.objectId);
+  console.log("🔐 Objets avec accès:", objectIds);
 
   return prisma.objet.findMany({
     where: {
       id: { in: objectIds },
-      organizationId,
+      organizationId: userOrgId,
     },
     orderBy: { nom: "asc" },
   });

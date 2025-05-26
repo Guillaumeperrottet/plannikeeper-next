@@ -1,81 +1,87 @@
-// src/app/api/objet/route.ts (simplifié)
+// src/app/api/objet/route.ts - Version corrigée avec debug
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUser } from "@/lib/auth-session";
+import { getUser, getAccessibleObjects } from "@/lib/auth-session";
 
 export async function GET() {
+  console.log("🏠 API /api/objet appelée");
+
   const user = await getUser();
   if (!user) {
+    console.log("❌ Utilisateur non authentifié");
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
-  // Récupérer l'organisation de l'utilisateur
-  const userWithOrg = await prisma.user.findUnique({
-    where: { id: user.id },
-    include: { Organization: true },
+  console.log("👤 Utilisateur authentifié:", {
+    id: user.id,
+    email: user.email,
+    organizationId: user.organizationId,
   });
 
-  if (!userWithOrg?.Organization) {
+  // Utiliser les informations enrichies de la session
+  const organizationId = user.organizationId;
+
+  if (!organizationId) {
+    console.log("❌ Utilisateur sans organisation");
+
+    // Vérifier si l'utilisateur a une organisation en DB mais pas dans la session
+    const userWithOrg = await prisma.user.findUnique({
+      where: { id: user.id },
+      include: {
+        Organization: true,
+        OrganizationUser: true,
+      },
+    });
+
+    console.log("🔍 Vérification DB:", {
+      userOrgId: userWithOrg?.organizationId,
+      hasOrganization: !!userWithOrg?.Organization,
+      hasOrgUser: !!userWithOrg?.OrganizationUser,
+    });
+
+    if (userWithOrg?.Organization) {
+      console.log("⚠️ Discordance: organisation en DB mais pas dans session");
+      // Utiliser l'organisation de la DB
+      return getObjectsForOrganization(user.id, userWithOrg.Organization.id);
+    }
+
     return NextResponse.json(
       { error: "Aucune organisation trouvée" },
       { status: 404 }
     );
   }
 
-  // Vérifier si l'utilisateur est admin de l'organisation
-  const isAdmin = await prisma.organizationUser.findFirst({
-    where: {
-      userId: user.id,
-      organizationId: userWithOrg.Organization.id,
-      role: "admin",
-    },
-  });
+  // Utiliser la nouvelle fonction getAccessibleObjects
+  return getObjectsForOrganization(user.id, organizationId);
+}
 
-  // Si l'utilisateur est admin, retourner tous les objets
-  if (isAdmin) {
-    const objects = await prisma.objet.findMany({
-      where: { organizationId: userWithOrg.Organization.id },
-      orderBy: { nom: "asc" },
-      select: {
-        id: true,
-        nom: true,
-        adresse: true,
-        secteur: true,
-      },
-    });
+async function getObjectsForOrganization(
+  userId: string,
+  organizationId: string
+) {
+  console.log("🏠 Récupération objets pour organisation:", organizationId);
 
-    // Retourner simplement les données
-    return NextResponse.json(objects);
+  try {
+    // Utiliser la fonction getAccessibleObjects qui gère la logique admin/member
+    const objects = await getAccessibleObjects(userId, organizationId);
+
+    console.log("✅ Objets récupérés:", objects.length);
+    objects.forEach((obj) => console.log(`  - ${obj.nom} (${obj.id})`));
+
+    // Formatter les données pour la réponse
+    const formattedObjects = objects.map((obj) => ({
+      id: obj.id,
+      nom: obj.nom,
+      adresse: obj.adresse,
+      secteur: obj.secteur,
+    }));
+
+    return NextResponse.json(formattedObjects);
+  } catch (error) {
+    console.error("❌ Erreur lors de la récupération des objets:", error);
+    return NextResponse.json(
+      { error: "Erreur lors de la récupération des objets" },
+      { status: 500 }
+    );
   }
-
-  // Sinon, uniquement retourner les objets auxquels l'utilisateur a accès
-  // On récupère tous les accès spécifiques de l'utilisateur
-  const objectAccess = await prisma.objectAccess.findMany({
-    where: {
-      userId: user.id,
-      NOT: { accessLevel: "none" },
-    },
-    select: { objectId: true },
-  });
-
-  // Extrait la liste des IDs d'objets
-  const objectIds = objectAccess.map((access) => access.objectId);
-
-  // Récupère uniquement les objets auxquels l'utilisateur a accès (niveau différent de "none")
-  const objects = await prisma.objet.findMany({
-    where: {
-      id: { in: objectIds }, // Ne contiendra que les IDs avec accessLevel != "none"
-      organizationId: userWithOrg.Organization.id,
-    },
-    orderBy: { nom: "asc" },
-    select: {
-      id: true,
-      nom: true,
-      adresse: true,
-      secteur: true,
-    },
-  });
-
-  // Retourner simplement les données
-  return NextResponse.json(objects);
 }

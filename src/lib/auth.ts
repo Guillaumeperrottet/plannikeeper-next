@@ -149,6 +149,7 @@ export const auth = betterAuth({
               email: string;
               name?: string;
             };
+            console.log("📝 Traitement inscription pour:", user.email);
             await handleSignupProcess(user, returned);
           }
         } catch (error) {
@@ -156,7 +157,7 @@ export const auth = betterAuth({
         }
       }
 
-      // Hook pour vérification email
+      // Hook pour vérification email - CORRECTIF PRINCIPAL
       else if (path.includes("verify-email")) {
         try {
           if (returned && typeof returned === "object" && "user" in returned) {
@@ -165,6 +166,7 @@ export const auth = betterAuth({
               email: string;
               name?: string;
             };
+            console.log("✅ Email vérifié pour:", user.email);
             await handleEmailVerificationProcess(user);
           }
         } catch (error) {
@@ -309,7 +311,7 @@ function extractUserMetadata(metadata: unknown) {
 // FONCTIONS DE TRAITEMENT D'INSCRIPTION
 // ============================================================================
 
-// Gérer inscription avec invitation
+// Gérer inscription avec invitation - CORRECTIF AMÉLIORÉ
 async function handleInvitationSignup(
   user: { id: string; email: string; name?: string },
   inviteCode: string
@@ -343,7 +345,6 @@ async function handleInvitationSignup(
   });
 
   // CORRECTIF: Créer immédiatement l'association OrganizationUser
-  // (ne pas attendre la vérification email)
   const existingOrgUser = await prisma.organizationUser.findFirst({
     where: { userId: user.id, organizationId: invitation.organizationId },
   });
@@ -358,6 +359,13 @@ async function handleInvitationSignup(
     });
     console.log(
       "✅ Association OrganizationUser créée immédiatement avec rôle:",
+      invitation.role
+    );
+
+    // NOUVEAU: Créer les accès par défaut dès maintenant
+    await createDefaultObjectAccess(
+      user.id,
+      invitation.organizationId,
       invitation.role
     );
   }
@@ -405,11 +413,18 @@ async function handleRegularSignup(user: {
 // FONCTIONS DE FINALISATION (APRÈS VÉRIFICATION EMAIL)
 // ============================================================================
 
-// Finaliser le processus d'invitation
+// CORRECTIF: Finaliser le processus d'invitation avec création des accès par défaut
 async function finalizeInvitationProcess(
   user: { id: string; email: string; name?: string },
   inviteCode: string
 ) {
+  console.log(
+    "🔗 Finalisation processus invitation pour:",
+    user.email,
+    "Code:",
+    inviteCode
+  );
+
   const invitation = await prisma.invitationCode.findFirst({
     where: { code: inviteCode },
     include: { organization: true },
@@ -434,7 +449,6 @@ async function finalizeInvitationProcess(
   }
 
   // Vérifier que l'association OrganizationUser existe
-  // (elle devrait déjà exister grâce au correctif ci-dessus)
   const existingOrgUser = await prisma.organizationUser.findFirst({
     where: { userId: user.id, organizationId: invitation.organizationId },
   });
@@ -458,6 +472,13 @@ async function finalizeInvitationProcess(
       existingOrgUser.role
     );
   }
+
+  // CORRECTIF PRINCIPAL: Créer les accès par défaut aux objets pour les nouveaux membres
+  await createDefaultObjectAccess(
+    user.id,
+    invitation.organizationId,
+    invitation.role
+  );
 }
 
 // Finaliser configuration utilisateur normal
@@ -579,4 +600,72 @@ async function sendWelcomeEmail(user: {
   } catch (error) {
     console.error("❌ Erreur envoi email de bienvenue:", error);
   }
+}
+
+// ============================================================================
+// NOUVELLE FONCTION: Créer les accès par défaut aux objets
+// ============================================================================
+
+// NOUVELLE FONCTION: Créer les accès par défaut aux objets
+async function createDefaultObjectAccess(
+  userId: string,
+  organizationId: string,
+  role: string
+) {
+  console.log("🔐 Création accès par défaut pour:", {
+    userId,
+    organizationId,
+    role,
+  });
+
+  // Si c'est un admin, pas besoin d'accès spécifiques (il a tout par défaut)
+  if (role === "admin") {
+    console.log("✅ Admin détecté, pas d'accès spécifiques nécessaires");
+    return;
+  }
+
+  // Récupérer tous les objets de l'organisation
+  const objects = await prisma.objet.findMany({
+    where: { organizationId },
+    select: { id: true, nom: true },
+  });
+
+  console.log("🏠 Objets trouvés dans l'organisation:", objects.length);
+
+  // Créer les accès par défaut (lecture pour les membres)
+  const defaultAccessLevel = role === "member" ? "read" : "none";
+
+  for (const object of objects) {
+    try {
+      // Vérifier si l'accès existe déjà
+      const existingAccess = await prisma.objectAccess.findUnique({
+        where: {
+          userId_objectId: { userId, objectId: object.id },
+        },
+      });
+
+      if (!existingAccess) {
+        await prisma.objectAccess.create({
+          data: {
+            userId,
+            objectId: object.id,
+            accessLevel: defaultAccessLevel,
+          },
+        });
+        console.log(
+          `✅ Accès ${defaultAccessLevel} créé pour objet:`,
+          object.nom
+        );
+      } else {
+        console.log(`ℹ️ Accès déjà existant pour objet:`, object.nom);
+      }
+    } catch (error) {
+      console.error(
+        `❌ Erreur création accès pour objet ${object.nom}:`,
+        error
+      );
+    }
+  }
+
+  console.log("🎉 Création des accès par défaut terminée");
 }
