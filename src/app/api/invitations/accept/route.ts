@@ -1,7 +1,6 @@
-// src/app/api/invitations/accept/route.ts - VERSION CORRIGÉE FINALE
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
+import { auth } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
@@ -55,43 +54,46 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. CORRECTION PRINCIPALE : Transaction atomique avec structure Better Auth correcte
+    // 3. CORRECTIF PRINCIPAL : Utiliser Better Auth pour créer l'utilisateur
+    console.log("🔧 Création de l'utilisateur via Better Auth...");
+
+    // Utiliser Better Auth API pour créer l'utilisateur avec vérification email automatique
+    const signupResult = await auth.api.signUpEmail({
+      body: {
+        email: email.toLowerCase().trim(),
+        password: password,
+        name: name.trim(),
+      },
+    });
+
+    if (!signupResult.user) {
+      console.error("❌ Erreur création utilisateur Better Auth:");
+      return NextResponse.json(
+        { error: "Erreur lors de la création du compte" },
+        { status: 500 }
+      );
+    }
+
+    const user = signupResult.user;
+    console.log("✅ Utilisateur créé via Better Auth:", user.id);
+
+    // 4. Finaliser avec la logique d'invitation dans une transaction
     const result = await prisma.$transaction(async (tx) => {
-      // Créer l'utilisateur - MARQUER COMME VÉRIFIÉ
-      const user = await tx.user.create({
+      // Mettre à jour l'utilisateur avec les métadonnées d'invitation
+      const updatedUser = await tx.user.update({
+        where: { id: user.id },
         data: {
-          name: name.trim(),
-          email: email.toLowerCase().trim(),
-          emailVerified: true, // ✅ Pas besoin de vérification email
+          emailVerified: true, // S'assurer que c'est vérifié
           organizationId: invitation.organizationId,
           metadata: {
             inviteCode,
             invitedBy: invitation.createdBy,
             invitedAt: new Date().toISOString(),
             acceptedAt: new Date().toISOString(),
+            directVerification: true,
           },
         },
       });
-
-      console.log("✅ Utilisateur créé:", { id: user.id, email: user.email });
-
-      // CORRECTION CRITIQUE : Créer le compte d'authentification avec la structure Better Auth
-      const hashedPassword = await bcrypt.hash(password, 12);
-      const accountId = crypto.randomUUID();
-
-      await tx.account.create({
-        data: {
-          id: accountId,
-          userId: user.id,
-          accountId: user.id, // ✅ IMPORTANT : accountId = userId pour Better Auth
-          providerId: "credential", // ✅ Correct pour Better Auth email/password
-          password: hashedPassword,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      });
-
-      console.log("✅ Compte d'authentification créé");
 
       // Créer l'association OrganizationUser
       await tx.organizationUser.create({
@@ -137,33 +139,39 @@ export async function POST(req: NextRequest) {
 
       console.log("✅ Invitation marquée comme utilisée");
 
-      return user;
+      return updatedUser;
     });
 
-    // 4. CORRECTION : Créer une session compatible Better Auth
-    const sessionToken = crypto.randomUUID();
-    const sessionId = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 4 * 60 * 60 * 1000); // 4 heures
+    // 5. CORRECTIF : Créer une session automatiquement
+    console.log("🔧 Connexion automatique de l'utilisateur...");
 
-    await prisma.session.create({
-      data: {
-        id: sessionId,
-        token: sessionToken,
-        userId: result.id,
-        expiresAt,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        ipAddress:
-          req.headers.get("x-forwarded-for") ||
-          req.headers.get("x-real-ip") ||
-          "unknown",
-        userAgent: req.headers.get("user-agent") || "unknown",
+    const signInResult = await auth.api.signInEmail({
+      body: {
+        email: email.toLowerCase().trim(),
+        password: password,
       },
     });
 
-    console.log("✅ Session créée:", { sessionId, expiresAt });
+    if (!signInResult.user) {
+      console.error("❌ Erreur connexion automatique:");
+      // Malgré l'erreur de connexion, le compte est créé
+      return NextResponse.json({
+        success: true,
+        message:
+          "Compte créé avec succès. Veuillez vous connecter manuellement.",
+        user: {
+          id: result.id,
+          name: result.name,
+          email: result.email,
+          organizationName: invitation.organization.name,
+          role: invitation.role,
+        },
+        redirect: "/signin?message=account_created",
+      });
+    }
+    console.log("✅ Connexion automatique réussie");
 
-    // 5. CORRECTION : Créer la réponse avec cookies Better Auth compatibles
+    // 6. Réponse de succès avec session créée
     const response = NextResponse.json({
       success: true,
       message: "Compte créé et connecté avec succès",
@@ -178,28 +186,7 @@ export async function POST(req: NextRequest) {
       timestamp: new Date().toISOString(),
     });
 
-    // 6. CORRECTION : Définir les cookies avec les bonnes options
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax" as const,
-      maxAge: 4 * 60 * 60, // 4 heures
-      path: "/",
-    };
-
-    // Cookie principal Better Auth (nom exact)
-    response.cookies.set(
-      "better-auth.session_token",
-      sessionToken,
-      cookieOptions
-    );
-
-    // Cookie de sauvegarde
-    response.cookies.set("session", sessionToken, cookieOptions);
-
-    console.log("✅ Cookies de session définis");
     console.log("🎉 Invitation acceptée avec succès pour:", result.email);
-
     return response;
   } catch (error) {
     console.error("❌ Erreur acceptation invitation:", error);
@@ -219,60 +206,6 @@ export async function POST(req: NextRequest) {
               : "Erreur inconnue"
             : undefined,
       },
-      { status: 500 }
-    );
-  }
-}
-
-// BONUS: Route pour debug (à supprimer en production)
-export async function GET(req: NextRequest) {
-  if (process.env.NODE_ENV !== "development") {
-    return NextResponse.json(
-      { error: "Route de debug uniquement" },
-      { status: 404 }
-    );
-  }
-
-  const url = new URL(req.url);
-  const email = url.searchParams.get("email");
-
-  if (!email) {
-    return NextResponse.json(
-      { error: "Paramètre email requis" },
-      { status: 400 }
-    );
-  }
-
-  try {
-    // Récupérer les informations de l'utilisateur pour debug
-    const user = await prisma.user.findUnique({
-      where: { email },
-      include: {
-        accounts: true,
-        sessions: true,
-        OrganizationUser: {
-          include: { organization: true },
-        },
-      },
-    });
-
-    return NextResponse.json({
-      user: user
-        ? {
-            id: user.id,
-            email: user.email,
-            emailVerified: user.emailVerified,
-            organizationId: user.organizationId,
-            hasAccount: user.accounts.length > 0,
-            accountProviderId: user.accounts[0]?.providerId,
-            hasSession: user.sessions.length > 0,
-            organization: user.OrganizationUser?.organization?.name,
-          }
-        : null,
-    });
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Erreur debug", details: String(error) },
       { status: 500 }
     );
   }
