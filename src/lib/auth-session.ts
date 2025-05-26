@@ -5,7 +5,44 @@ import { prisma } from "./prisma";
 // Types pour les niveaux d'accès
 export type AccessLevel = "none" | "read" | "write" | "admin";
 
-export const getUser = async () => {
+// Type étendu pour l'utilisateur avec informations d'organisation
+export interface EnrichedUser {
+  id: string;
+  name: string;
+  email: string;
+  emailVerified: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  image?: string | null;
+  planType?: string | null;
+  // Propriétés enrichies
+  organizationId?: string | null;
+  Organization?: {
+    id: string;
+    name: string;
+    createdAt: Date;
+    updatedAt: Date;
+  } | null;
+  OrganizationUser?: {
+    id: string;
+    userId: string;
+    organizationId: string;
+    role: string;
+    createdAt: Date;
+    updatedAt: Date;
+    organization?: {
+      id: string;
+      name: string;
+      createdAt: Date;
+      updatedAt: Date;
+    };
+  } | null;
+  hasOrganization: boolean;
+  isAdmin: boolean;
+  organizationRole?: string;
+}
+
+export const getUser = async (): Promise<EnrichedUser | null> => {
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session?.user) {
@@ -13,7 +50,6 @@ export const getUser = async () => {
   }
 
   // CORRECTIF: Récupérer les informations complètes de l'utilisateur depuis la DB
-  // car Better Auth ne retourne que les infos de base
   const userWithOrganization = await prisma.user.findUnique({
     where: { id: session.user.id },
     include: {
@@ -31,7 +67,16 @@ export const getUser = async () => {
       "⚠️ Utilisateur trouvé dans la session mais pas en DB:",
       session.user.id
     );
-    return session.user;
+    // Retourner l'utilisateur de base avec les propriétés enrichies par défaut
+    return {
+      ...session.user,
+      hasOrganization: false,
+      isAdmin: false,
+      organizationId: null,
+      Organization: null,
+      OrganizationUser: null,
+      organizationRole: undefined,
+    } as EnrichedUser;
   }
 
   // Enrichir les données de session avec les infos d'organisation
@@ -44,10 +89,10 @@ export const getUser = async () => {
     hasOrganization: !!userWithOrganization.organizationId,
     isAdmin: userWithOrganization.OrganizationUser?.role === "admin",
     organizationRole: userWithOrganization.OrganizationUser?.role,
-  };
+  } as EnrichedUser;
 };
 
-export const getRequiredUser = async () => {
+export const getRequiredUser = async (): Promise<EnrichedUser> => {
   const user = await getUser();
 
   if (!user) {

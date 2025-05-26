@@ -1,12 +1,16 @@
-// src/app/api/objet/route.ts - Version corrigée avec debug
+// src/app/api/objet/route.ts - Version corrigée avec types
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUser, getAccessibleObjects } from "@/lib/auth-session";
+import {
+  getUser,
+  getAccessibleObjects,
+  type EnrichedUser,
+} from "@/lib/auth-session";
 
 export async function GET() {
   console.log("🏠 API /api/objet appelée");
 
-  const user = await getUser();
+  const user: EnrichedUser | null = await getUser();
   if (!user) {
     console.log("❌ Utilisateur non authentifié");
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
@@ -15,7 +19,9 @@ export async function GET() {
   console.log("👤 Utilisateur authentifié:", {
     id: user.id,
     email: user.email,
-    organizationId: user.organizationId,
+    organizationId: user.organizationId, // ✅ Maintenant TypeScript reconnaît cette propriété
+    hasOrganization: user.hasOrganization,
+    isAdmin: user.isAdmin,
   });
 
   // Utiliser les informations enrichies de la session
