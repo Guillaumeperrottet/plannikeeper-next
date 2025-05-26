@@ -342,6 +342,26 @@ async function handleInvitationSignup(
     data: { organizationId: invitation.organizationId },
   });
 
+  // CORRECTIF: Créer immédiatement l'association OrganizationUser
+  // (ne pas attendre la vérification email)
+  const existingOrgUser = await prisma.organizationUser.findFirst({
+    where: { userId: user.id, organizationId: invitation.organizationId },
+  });
+
+  if (!existingOrgUser) {
+    await prisma.organizationUser.create({
+      data: {
+        userId: user.id,
+        organizationId: invitation.organizationId,
+        role: invitation.role,
+      },
+    });
+    console.log(
+      "✅ Association OrganizationUser créée immédiatement avec rôle:",
+      invitation.role
+    );
+  }
+
   console.log(
     "✅ Utilisateur associé à l'organisation:",
     invitation.organizationId
@@ -404,18 +424,23 @@ async function finalizeInvitationProcess(
     return;
   }
 
-  // Marquer invitation comme utilisée
-  await prisma.invitationCode.update({
-    where: { id: invitation.id },
-    data: { isUsed: true },
-  });
+  // Marquer invitation comme utilisée (si pas déjà fait)
+  if (!invitation.isUsed) {
+    await prisma.invitationCode.update({
+      where: { id: invitation.id },
+      data: { isUsed: true },
+    });
+    console.log("✅ Invitation marquée comme utilisée");
+  }
 
-  // Créer association OrganizationUser
+  // Vérifier que l'association OrganizationUser existe
+  // (elle devrait déjà exister grâce au correctif ci-dessus)
   const existingOrgUser = await prisma.organizationUser.findFirst({
     where: { userId: user.id, organizationId: invitation.organizationId },
   });
 
   if (!existingOrgUser) {
+    // Fallback : créer l'association si elle n'existe pas
     await prisma.organizationUser.create({
       data: {
         userId: user.id,
@@ -424,8 +449,13 @@ async function finalizeInvitationProcess(
       },
     });
     console.log(
-      "🔗 Association OrganizationUser créée avec rôle:",
+      "⚠️ Association OrganizationUser créée en fallback avec rôle:",
       invitation.role
+    );
+  } else {
+    console.log(
+      "✅ Association OrganizationUser déjà existante avec rôle:",
+      existingOrgUser.role
     );
   }
 }
