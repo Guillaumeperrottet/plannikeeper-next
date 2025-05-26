@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
+import { EmailService } from "@/lib/email";
 
 export async function POST() {
   try {
@@ -100,6 +101,24 @@ export async function POST() {
       "✅ Organisation créée avec succès (récupération):",
       organization.id
     );
+
+    // 🆕 AJOUTER : Envoi de l'email de bienvenue
+    try {
+      // Récupérer l'utilisateur complet depuis la DB pour l'email
+      const userForEmail = await prisma.user.findUnique({
+        where: { id: user.id },
+      });
+
+      if (userForEmail) {
+        await EmailService.sendWelcomeEmail(userForEmail, organization.name);
+        console.log(
+          "📧 Email de bienvenue envoyé pour récupération d'organisation"
+        );
+      }
+    } catch (emailError) {
+      console.error("❌ Erreur envoi email bienvenue:", emailError);
+      // Ne pas faire échouer la route si l'email échoue
+    }
 
     return NextResponse.json({
       success: true,

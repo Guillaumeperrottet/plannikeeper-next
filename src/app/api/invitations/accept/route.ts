@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { EmailService } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   try {
@@ -171,7 +172,16 @@ export async function POST(req: NextRequest) {
     }
     console.log("✅ Connexion automatique réussie");
 
-    // 6. Réponse de succès avec session créée
+    // 6. Envoi de l'email de bienvenue
+    try {
+      await EmailService.sendWelcomeEmail(result, invitation.organization.name);
+      console.log("📧 Email de bienvenue envoyé pour invitation acceptée");
+    } catch (emailError) {
+      console.error("❌ Erreur envoi email bienvenue:", emailError);
+      // Ne pas faire échouer la création pour autant
+    }
+
+    // 7. Réponse de succès avec session créée
     const response = NextResponse.json({
       success: true,
       message: "Compte créé et connecté avec succès",
