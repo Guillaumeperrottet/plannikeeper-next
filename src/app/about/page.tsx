@@ -318,12 +318,13 @@ export default function AboutPage() {
             </p>
             <p className="text-gray-600 mb-6">
               Passionné par la technologie et l&apos;optimisation des processus,
-              j&apos;ai décidé de créer ma propre solution. PlanniKeeper a
+              nous avons décidé de créer notre propre solution. PlanniKeeper a
               d&apos;abord été développé pour notre usage personnel, avec
               l&apos;objectif de simplifier notre quotidien. C&apos;est en
               voyant les résultats concrets - gain de temps, réduction des
-              erreurs, meilleure communication - que j&apos;ai réalisé que cette
-              solution pourrait aider d&apos;autres professionnels du secteur.
+              erreurs, meilleure communication - que nous avons réalisé que
+              cette solution pourrait aider d&apos;autres professionnels du
+              secteur.
             </p>
             <div className="flex gap-4 mt-8">
               <Link href="/contact">
