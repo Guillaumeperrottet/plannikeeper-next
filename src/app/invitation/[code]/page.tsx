@@ -1,9 +1,7 @@
 // src/app/invitation/[code]/page.tsx
-// Cette page sera accessible via /invitation/ABC123
-
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
@@ -21,6 +19,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 
+// Charger l'upload d'image dynamiquement pour éviter les problèmes SSR
 const SignupImageUpload = dynamic(
   () => import("@/app/signup/SignupImageUpload"),
   {
@@ -137,7 +136,7 @@ export default function InvitationSignupPage() {
         }
       }
 
-      // Assurez-vous que les métadonnées incluent le code d'invitation et l'ID de l'organisation
+      // Préparer les données pour l'inscription
       const signupData = {
         email,
         password,
@@ -145,7 +144,6 @@ export default function InvitationSignupPage() {
         image: imageUrl,
         inviteCode: inviteCode,
         organizationId: inviteDetails?.organizationId,
-        // On n'inclut pas de planType car l'utilisateur rejoindra une organisation existante
       };
 
       console.log("📤 Envoi demande d'inscription avec invitation:", {
