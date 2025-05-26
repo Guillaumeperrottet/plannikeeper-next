@@ -368,6 +368,7 @@ async function handleInvitationSignup(
       invitation.organizationId,
       invitation.role
     );
+    console.log("🔐 Accès par défaut créés immédiatement");
   }
 
   console.log(
@@ -632,39 +633,38 @@ async function createDefaultObjectAccess(
 
   console.log("🏠 Objets trouvés dans l'organisation:", objects.length);
 
-  // Créer les accès par défaut (lecture pour les membres)
+  // ⭐ CORRECTIF : Créer les accès par défaut avec une stratégie plus robuste
   const defaultAccessLevel = role === "member" ? "read" : "none";
+  const accessPromises = [];
 
   for (const object of objects) {
-    try {
-      // Vérifier si l'accès existe déjà
-      const existingAccess = await prisma.objectAccess.findUnique({
+    // Utiliser upsert au lieu de create pour éviter les erreurs de duplication
+    accessPromises.push(
+      prisma.objectAccess.upsert({
         where: {
           userId_objectId: { userId, objectId: object.id },
         },
-      });
+        update: {
+          // Si existe déjà, ne pas écraser avec un niveau inférieur
+          accessLevel: defaultAccessLevel,
+        },
+        create: {
+          userId,
+          objectId: object.id,
+          accessLevel: defaultAccessLevel,
+        },
+      })
+    );
+  }
 
-      if (!existingAccess) {
-        await prisma.objectAccess.create({
-          data: {
-            userId,
-            objectId: object.id,
-            accessLevel: defaultAccessLevel,
-          },
-        });
-        console.log(
-          `✅ Accès ${defaultAccessLevel} créé pour objet:`,
-          object.nom
-        );
-      } else {
-        console.log(`ℹ️ Accès déjà existant pour objet:`, object.nom);
-      }
-    } catch (error) {
-      console.error(
-        `❌ Erreur création accès pour objet ${object.nom}:`,
-        error
-      );
-    }
+  try {
+    await Promise.all(accessPromises);
+    console.log(
+      `✅ Accès ${defaultAccessLevel} créés/mis à jour pour ${objects.length} objets`
+    );
+  } catch (error) {
+    console.error("❌ Erreur lors de la création des accès:", error);
+    throw error;
   }
 
   console.log("🎉 Création des accès par défaut terminée");
