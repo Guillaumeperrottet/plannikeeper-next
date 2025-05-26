@@ -42,21 +42,11 @@ export const auth = betterAuth({
   // Configuration des champs supplémentaires avec Better Auth
   user: {
     additionalFields: {
-      inviteCode: {
-        type: "string",
-        required: false,
-        input: true, // Permet de passer cette valeur lors de l'inscription
-      },
       planType: {
         type: "string",
         required: false,
         input: true,
         defaultValue: "FREE",
-      },
-      organizationId: {
-        type: "string",
-        required: false,
-        input: true,
       },
     },
   },
@@ -116,7 +106,7 @@ export const auth = betterAuth({
     },
   },
 
-  // Hooks simplifiés mais compatibles avec votre version
+  // Hooks simplifiés pour inscriptions normales uniquement
   hooks: {
     after: async (inputContext) => {
       const path =
@@ -140,8 +130,8 @@ export const auth = betterAuth({
 
       console.log("🔄 Hook after déclenché pour path:", path);
 
-      // Hook pour inscription
-      if (path.includes("sign-up")) {
+      // ✅ GARDER SEULEMENT LES INSCRIPTIONS NORMALES (sans invitation)
+      if (path.includes("sign-up") && !path.includes("invitation")) {
         try {
           if (returned && typeof returned === "object" && "user" in returned) {
             const user = returned["user"] as {
@@ -149,15 +139,15 @@ export const auth = betterAuth({
               email: string;
               name?: string;
             };
-            console.log("📝 Traitement inscription pour:", user.email);
-            await handleSignupProcess(user, returned);
+            console.log("📝 Inscription normale pour:", user.email);
+            await handleRegularSignup(user);
           }
         } catch (error) {
-          console.error("❌ Erreur dans hook après inscription:", error);
+          console.error("❌ Erreur dans hook inscription normale:", error);
         }
       }
 
-      // Hook pour vérification email - CORRECTIF PRINCIPAL
+      // ✅ GARDER LA VÉRIFICATION EMAIL SEULEMENT POUR LES INSCRIPTIONS NORMALES
       else if (path.includes("verify-email")) {
         try {
           if (returned && typeof returned === "object" && "user" in returned) {
@@ -166,11 +156,26 @@ export const auth = betterAuth({
               email: string;
               name?: string;
             };
-            console.log("✅ Email vérifié pour:", user.email);
-            await handleEmailVerificationProcess(user);
+
+            // Vérifier si c'est une invitation (auquel cas ne rien faire)
+            const dbUser = await prisma.user.findUnique({
+              where: { id: user.id },
+              select: { metadata: true },
+            });
+
+            const metadata = dbUser?.metadata as Record<string, unknown> | null;
+            if (metadata && typeof metadata["inviteCode"] === "string") {
+              console.log(
+                "ℹ️ Invitation détectée, pas de traitement supplémentaire"
+              );
+              return {};
+            }
+
+            // Traitement normal pour les inscriptions classiques
+            await handleEmailVerificationForRegularUser(user);
           }
         } catch (error) {
-          console.error("❌ Erreur dans hook après vérification email:", error);
+          console.error("❌ Erreur dans hook vérification email:", error);
         }
       }
 
@@ -191,47 +196,39 @@ export const auth = betterAuth({
 });
 
 // ============================================================================
-// NOUVELLES FONCTIONS SIMPLIFIÉES ET MODULAIRES
+// FONCTIONS SIMPLIFIÉES POUR INSCRIPTIONS NORMALES UNIQUEMENT
 // ============================================================================
 
-// Fonction pour gérer le processus d'inscription
-async function handleSignupProcess(
-  user: { id: string; email: string; name?: string },
-  returned: Record<string, unknown>
-) {
-  console.log("📝 Traitement inscription pour:", user.email);
+// Gérer inscription normale (nouveau propriétaire)
+async function handleRegularSignup(user: {
+  id: string;
+  email: string;
+  name?: string;
+}) {
+  console.log("🆕 Nouveau propriétaire, création organisation:", user.email);
 
-  // Extraire les métadonnées de manière simplifiée
-  const metadata = extractMetadata(returned);
-
-  // Enregistrer les métadonnées
+  // Enregistrer les métadonnées basiques
   await prisma.user.update({
     where: { id: user.id },
     data: {
       metadata: {
-        ...metadata,
+        planType: "FREE",
         signupTimestamp: new Date().toISOString(),
       },
     },
   });
 
-  // Traitement basé sur le type d'inscription
-  if (metadata.inviteCode) {
-    await handleInvitationSignup(user, metadata.inviteCode);
-  } else if (metadata.organizationId) {
-    await handleDirectOrganizationSignup(user, metadata.organizationId);
-  } else {
-    await handleRegularSignup(user);
-  }
+  // Pas de création d'organisation ici, on attend la vérification email
+  console.log("✅ Métadonnées sauvegardées, attente vérification email");
 }
 
-// Fonction pour gérer le processus de vérification email
-async function handleEmailVerificationProcess(user: {
+// Fonction pour gérer la vérification email des utilisateurs normaux
+async function handleEmailVerificationForRegularUser(user: {
   id: string;
   email: string;
   name?: string;
 }) {
-  console.log("✅ Email vérifié pour:", user.email);
+  console.log("✅ Email vérifié pour inscription normale:", user.email);
 
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
@@ -246,78 +243,13 @@ async function handleEmailVerificationProcess(user: {
     return;
   }
 
-  const metadata = extractUserMetadata(dbUser.metadata);
-
-  // CORRECTIF PRINCIPAL: Gérer le cas d'invitation plus robustement
-  if (metadata.inviteCode) {
-    console.log("🔗 Traitement finalisation invitation pour:", user.email);
-
-    // Récupérer l'invitation
-    const invitation = await prisma.invitationCode.findFirst({
-      where: { code: metadata.inviteCode },
-      include: { organization: true },
-    });
-
-    if (invitation) {
-      // S'assurer que l'utilisateur est bien associé à l'organisation
-      if (
-        !dbUser.organizationId ||
-        dbUser.organizationId !== invitation.organizationId
-      ) {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { organizationId: invitation.organizationId },
-        });
-        console.log("✅ OrganizationId mis à jour:", invitation.organizationId);
-      }
-
-      // Vérifier/Créer l'association OrganizationUser
-      let orgUser = await prisma.organizationUser.findFirst({
-        where: { userId: user.id, organizationId: invitation.organizationId },
-      });
-
-      if (!orgUser) {
-        orgUser = await prisma.organizationUser.create({
-          data: {
-            userId: user.id,
-            organizationId: invitation.organizationId,
-            role: invitation.role,
-          },
-        });
-        console.log(
-          "✅ Association OrganizationUser créée avec rôle:",
-          invitation.role
-        );
-      }
-
-      // CORRECTIF CRITIQUE: Créer les accès par défaut aux objets existants
-      await createDefaultObjectAccessForNewMember(
-        user.id,
-        invitation.organizationId,
-        orgUser.role
-      );
-
-      // Marquer l'invitation comme utilisée
-      if (!invitation.isUsed) {
-        await prisma.invitationCode.update({
-          where: { id: invitation.id },
-          data: { isUsed: true },
-        });
-        console.log("✅ Invitation marquée comme utilisée");
-      }
-
-      console.log("🎉 Processus d'invitation finalisé avec succès");
-    } else {
-      console.warn(
-        "⚠️ Invitation introuvable, création organisation par défaut"
-      );
-      await createDefaultOrganization(user);
-    }
-  } else if (dbUser.Organization) {
-    await finalizeRegularUserSetup(user, dbUser.Organization.id, metadata);
-  } else {
-    // Fallback: créer organisation par défaut
+  // Si l'utilisateur n'a pas encore d'organisation, en créer une
+  if (!dbUser.Organization) {
     await createDefaultOrganization(user);
+  } else {
+    // Finaliser la configuration si l'organisation existe déjà
+    const metadata = extractUserMetadata(dbUser.metadata);
+    await finalizeRegularUserSetup(user, dbUser.Organization.id, metadata);
   }
 
   // Email de bienvenue
@@ -325,36 +257,10 @@ async function handleEmailVerificationProcess(user: {
 }
 
 // ============================================================================
-// FONCTIONS UTILITAIRES
+// FONCTIONS UTILITAIRES SIMPLIFIÉES
 // ============================================================================
 
-// Extraire métadonnées depuis la réponse d'inscription
-function extractMetadata(returned: Record<string, unknown>) {
-  let metadata: Record<string, unknown> = {};
-
-  if ("metadata" in returned && returned["metadata"]) {
-    metadata = returned["metadata"] as Record<string, unknown>;
-  } else if ("userOptions" in returned && returned["userOptions"]) {
-    metadata = returned["userOptions"] as Record<string, unknown>;
-  }
-
-  return {
-    inviteCode:
-      typeof metadata["inviteCode"] === "string"
-        ? metadata["inviteCode"]
-        : undefined,
-    planType:
-      typeof metadata["planType"] === "string" ? metadata["planType"] : "FREE",
-    organizationId:
-      typeof metadata["organizationId"] === "string"
-        ? metadata["organizationId"]
-        : undefined,
-    image:
-      typeof metadata["image"] === "string" ? metadata["image"] : undefined,
-  };
-}
-
-// Extraire métadonnées depuis l'utilisateur DB
+// Extraire métadonnées depuis l'utilisateur DB (simplifié)
 function extractUserMetadata(metadata: unknown) {
   const meta =
     metadata && typeof metadata === "object"
@@ -362,117 +268,8 @@ function extractUserMetadata(metadata: unknown) {
       : {};
 
   return {
-    inviteCode:
-      typeof meta["inviteCode"] === "string" ? meta["inviteCode"] : undefined,
     planType: typeof meta["planType"] === "string" ? meta["planType"] : "FREE",
-    organizationId:
-      typeof meta["organizationId"] === "string"
-        ? meta["organizationId"]
-        : undefined,
   };
-}
-
-// ============================================================================
-// FONCTIONS DE TRAITEMENT D'INSCRIPTION
-// ============================================================================
-
-// Gérer inscription avec invitation - CORRECTIF AMÉLIORÉ
-async function handleInvitationSignup(
-  user: { id: string; email: string; name?: string },
-  inviteCode: string
-) {
-  console.log(
-    "🔗 Traitement invitation pour:",
-    user.email,
-    "Code:",
-    inviteCode
-  );
-
-  const invitation = await prisma.invitationCode.findFirst({
-    where: {
-      code: inviteCode,
-      isUsed: false,
-      expiresAt: { gt: new Date() },
-    },
-    include: { organization: true },
-  });
-
-  if (!invitation) {
-    console.warn("⚠️ Invitation invalide ou expirée:", inviteCode);
-    await handleRegularSignup(user);
-    return;
-  }
-
-  // Associer à l'organisation de l'invitation
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { organizationId: invitation.organizationId },
-  });
-
-  // CORRECTIF: Créer immédiatement l'association OrganizationUser
-  const existingOrgUser = await prisma.organizationUser.findFirst({
-    where: { userId: user.id, organizationId: invitation.organizationId },
-  });
-
-  if (!existingOrgUser) {
-    await prisma.organizationUser.create({
-      data: {
-        userId: user.id,
-        organizationId: invitation.organizationId,
-        role: invitation.role,
-      },
-    });
-    console.log(
-      "✅ Association OrganizationUser créée immédiatement avec rôle:",
-      invitation.role
-    );
-
-    // NOUVEAU: Créer les accès par défaut dès maintenant
-    await createDefaultObjectAccess(
-      user.id,
-      invitation.organizationId,
-      invitation.role
-    );
-    console.log("🔐 Accès par défaut créés immédiatement");
-  }
-
-  console.log(
-    "✅ Utilisateur associé à l'organisation:",
-    invitation.organizationId
-  );
-}
-
-// Gérer inscription avec organizationId direct
-async function handleDirectOrganizationSignup(
-  user: { id: string; email: string; name?: string },
-  organizationId: string
-) {
-  console.log("🆔 Organisation spécifiée directement:", organizationId);
-
-  const organization = await prisma.organization.findUnique({
-    where: { id: organizationId },
-  });
-
-  if (organization) {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { organizationId },
-    });
-    console.log("✅ Utilisateur associé à l'organisation:", organizationId);
-  } else {
-    console.warn("⚠️ Organisation introuvable:", organizationId);
-    await handleRegularSignup(user);
-  }
-}
-
-// Gérer inscription normale (nouveau propriétaire)
-async function handleRegularSignup(user: {
-  id: string;
-  email: string;
-  name?: string;
-}) {
-  console.log("🆕 Nouveau propriétaire, création organisation:", user.email);
-  await createDefaultOrganization(user);
 }
 
 // ============================================================================
@@ -597,133 +394,5 @@ async function sendWelcomeEmail(user: {
     }
   } catch (error) {
     console.error("❌ Erreur envoi email de bienvenue:", error);
-  }
-}
-
-// ============================================================================
-// NOUVELLE FONCTION: Créer les accès par défaut aux objets
-// ============================================================================
-
-// NOUVELLE FONCTION: Créer les accès par défaut aux objets
-async function createDefaultObjectAccess(
-  userId: string,
-  organizationId: string,
-  role: string
-) {
-  console.log("🔐 Création accès par défaut pour:", {
-    userId,
-    organizationId,
-    role,
-  });
-
-  // Si c'est un admin, pas besoin d'accès spécifiques (il a tout par défaut)
-  if (role === "admin") {
-    console.log("✅ Admin détecté, pas d'accès spécifiques nécessaires");
-    return;
-  }
-
-  // Récupérer tous les objets de l'organisation
-  const objects = await prisma.objet.findMany({
-    where: { organizationId },
-    select: { id: true, nom: true },
-  });
-
-  console.log("🏠 Objets trouvés dans l'organisation:", objects.length);
-
-  // ⭐ CORRECTIF : Créer les accès par défaut avec une stratégie plus robuste
-  const defaultAccessLevel = role === "member" ? "read" : "none";
-  const accessPromises = [];
-
-  for (const object of objects) {
-    // Utiliser upsert au lieu de create pour éviter les erreurs de duplication
-    accessPromises.push(
-      prisma.objectAccess.upsert({
-        where: {
-          userId_objectId: { userId, objectId: object.id },
-        },
-        update: {
-          // Si existe déjà, ne pas écraser avec un niveau inférieur
-          accessLevel: defaultAccessLevel,
-        },
-        create: {
-          userId,
-          objectId: object.id,
-          accessLevel: defaultAccessLevel,
-        },
-      })
-    );
-  }
-
-  try {
-    await Promise.all(accessPromises);
-    console.log(
-      `✅ Accès ${defaultAccessLevel} créés/mis à jour pour ${objects.length} objets`
-    );
-  } catch (error) {
-    console.error("❌ Erreur lors de la création des accès:", error);
-    throw error;
-  }
-
-  console.log("🎉 Création des accès par défaut terminée");
-}
-
-// ============================================================================
-// CORRECTIF 2: Nouvelle fonction pour créer les accès par défaut
-// ============================================================================
-
-async function createDefaultObjectAccessForNewMember(
-  userId: string,
-  organizationId: string,
-  role: string
-) {
-  console.log("🔐 Création accès par défaut pour nouveau membre:", {
-    userId,
-    organizationId,
-    role,
-  });
-
-  // Récupérer tous les objets existants dans l'organisation
-  const existingObjects = await prisma.objet.findMany({
-    where: { organizationId },
-    select: { id: true, nom: true },
-  });
-
-  console.log(
-    `📊 ${existingObjects.length} objets trouvés dans l'organisation`
-  );
-
-  if (existingObjects.length === 0) {
-    console.log("ℹ️ Aucun objet dans l'organisation, pas d'accès à créer");
-    return;
-  }
-
-  // Déterminer le niveau d'accès par défaut
-  const accessLevel = role === "admin" ? "admin" : "read";
-
-  // Créer les accès pour chaque objet
-  const accessPromises = existingObjects.map((object) =>
-    prisma.objectAccess.upsert({
-      where: {
-        userId_objectId: { userId, objectId: object.id },
-      },
-      update: {
-        accessLevel,
-      },
-      create: {
-        userId,
-        objectId: object.id,
-        accessLevel,
-      },
-    })
-  );
-
-  try {
-    await Promise.all(accessPromises);
-    console.log(
-      `✅ Accès ${accessLevel} créés pour ${existingObjects.length} objets`
-    );
-  } catch (error) {
-    console.error("❌ Erreur lors de la création des accès:", error);
-    throw error;
   }
 }
