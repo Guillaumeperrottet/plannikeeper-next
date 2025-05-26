@@ -1,3 +1,4 @@
+// 2. Mise à jour de signup-form.tsx - Utilisation correcte des additionalFields
 "use client";
 
 import {
@@ -33,16 +34,6 @@ const SignupImageUpload = dynamic(() => import("./SignupImageUpload"), {
   ssr: false,
 });
 
-const getPlanDisplayName = (planType: string) => {
-  const planNames = {
-    PERSONAL: "Particulier",
-    PROFESSIONAL: "Indépendant",
-    ENTERPRISE: "Entreprise",
-    FREE: "Gratuit",
-  };
-  return planNames[planType as keyof typeof planNames] || planType;
-};
-
 function SignUpForm() {
   const searchParams = useSearchParams();
   const inviteCode = searchParams.get("code");
@@ -55,7 +46,6 @@ function SignUpForm() {
   const [showSuccess, setShowSuccess] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const planType = searchParams.get("plan") || "FREE";
-  const isPaidPlan = planType !== "FREE";
 
   const handleImageSelect = useCallback((file: File | null) => {
     setSelectedFile(file);
@@ -73,7 +63,7 @@ function SignUpForm() {
             setIsInvite(true);
             setOrganizationName(data.organizationName);
             setOrganizationId(data.organizationId);
-            console.log("📋 Détails invitation validés:", data);
+            console.log("📋 Invitation validée:", data);
           } else {
             console.error("Code d'invitation invalide:", data.error);
             setError(
@@ -136,31 +126,39 @@ function SignUpForm() {
           }
         }
 
-        // Préparer les données pour l'inscription
-        const signupData = {
+        console.log("📤 Données d'inscription:", {
+          email,
+          name,
+          inviteCode: inviteCode ? "***" : undefined,
+          planType,
+          organizationId: isInvite ? organizationId : undefined,
+        });
+
+        // Définir un type pour les données d'inscription
+        interface SignupData {
+          email: string;
+          password: string;
+          name: string;
+          image?: string;
+          inviteCode?: string;
+          planType: string;
+          organizationId?: string;
+        }
+
+        const signupData: SignupData = {
           email,
           password,
           name,
           image: imageUrl,
-          inviteCode,
-          planType,
+          inviteCode: inviteCode || undefined,
+          planType: planType || "FREE",
           organizationId: isInvite ? organizationId : undefined,
         };
 
-        console.log("📤 Envoi demande d'inscription:", {
-          email,
-          name,
-          planType,
-          inviteCode: inviteCode ? "****" : undefined,
-          organizationId: isInvite ? organizationId : undefined,
-          isInvite,
-        });
-
-        // Inscription avec Better Auth
         const result = await authClient.signUp.email(signupData);
 
         if (result.error) {
-          console.error("Signup error:", result.error);
+          console.error("Erreur d'inscription:", result.error);
           setError(result.error.message || "Erreur lors de l'inscription");
           setIsSubmitting(false);
           return;
@@ -177,8 +175,7 @@ function SignUpForm() {
     },
     [inviteCode, planType, selectedFile, isSubmitting, isInvite, organizationId]
   );
-
-  // Affichage du message de succès
+  // Le reste du composant reste identique...
   if (showSuccess) {
     return (
       <div className="w-full text-center">
@@ -307,41 +304,6 @@ function SignUpForm() {
           </div>
         </div>
       )}
-
-      <div
-        className={`mb-6 p-5 rounded-xl shadow-sm ${
-          isPaidPlan
-            ? "bg-[#ffedd5] border border-[#fcd34d]"
-            : "bg-[#dcfce7] border border-[#86efac]"
-        }`}
-      >
-        <div className="flex items-start gap-3">
-          <div className={isPaidPlan ? "text-[#f59e0b]" : "text-[#16a34a]"}>
-            <CheckCircle className="h-5 w-5" />
-          </div>
-          <div className="flex-1">
-            <p
-              className={
-                isPaidPlan
-                  ? "text-[#f59e0b] font-medium"
-                  : "text-[#16a34a] font-medium"
-              }
-            >
-              Plan sélectionné :{" "}
-              <strong className="font-semibold">
-                {getPlanDisplayName(planType)}
-              </strong>
-            </p>
-            <p
-              className={`mt-1 text-sm ${isPaidPlan ? "text-[#f59e0b]/90" : "text-[#16a34a]/90"}`}
-            >
-              {isPaidPlan
-                ? "Votre compte sera créé après vérification de votre email. Vous pourrez ensuite configurer votre abonnement."
-                : "Votre compte gratuit sera créé après vérification de votre email."}
-            </p>
-          </div>
-        </div>
-      </div>
 
       {error && (
         <div className="mb-6 p-4 rounded-xl bg-[#fee2e2] border border-[#fca5a5] shadow-sm">

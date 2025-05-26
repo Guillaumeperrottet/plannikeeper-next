@@ -19,6 +19,9 @@ model User {
   notificationsEnabled      Boolean           @default(true)
   emailNotificationsEnabled Boolean           @default(true)
   metadata                  Json?
+  inviteCode        String?
+  planType          String?   @default("FREE")
+  tempOrganizationId String?
   comments                  Comment[]
   deviceTokens              DeviceToken[]
   notifications             Notification[]
