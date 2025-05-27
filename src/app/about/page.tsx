@@ -15,6 +15,33 @@ import { Button } from "@/app/components/ui/button";
 import Link from "next/link";
 import PremiumBurgerButton from "@/app/components/ui/BurgerButton";
 import { useState } from "react";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Contact - PlanniKeeper | Discutons de votre projet",
+  description:
+    "Contactez l'équipe PlanniKeeper pour discuter de votre projet de gestion immobilière. Support disponible par email, téléphone ou via notre formulaire de contact.",
+  keywords:
+    "contact PlanniKeeper, support PlanniKeeper, aide gestion immobilière, contacter PlanniKeeper, bureau Bulle Suisse",
+  openGraph: {
+    title: "Contactez PlanniKeeper - Discutons de votre projet",
+    description:
+      "Notre équipe est prête à vous accompagner dans la gestion de vos biens immobiliers. Contactez-nous dès aujourd'hui.",
+    url: "https://plannikeeper.ch/contact",
+    type: "website",
+    images: [
+      {
+        url: "/images/logo.png",
+        width: 1200,
+        height: 630,
+        alt: "Contactez l'équipe PlanniKeeper",
+      },
+    ],
+  },
+  alternates: {
+    canonical: "https://plannikeeper.ch/contact",
+  },
+};
 
 // Animations pour les entrées des éléments
 const fadeInUp = {
@@ -748,4 +775,36 @@ export default function AboutPage() {
       </section>
     </div>
   );
+  <script
+    type="application/ld+json"
+    dangerouslySetInnerHTML={{
+      __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "AboutPage",
+        name: "À propos de PlanniKeeper",
+        description: "L'histoire derrière PlanniKeeper et notre mission",
+        url: "https://plannikeeper.ch/about",
+        mainEntity: {
+          "@type": "Organization",
+          name: "PlanniKeeper",
+          founder: {
+            "@type": "Person",
+            name: "Guillaume Perrottet",
+            jobTitle: "Développeur et Fondateur",
+            image: "/images/guillaume-perrottet.jpg",
+          },
+          foundingDate: "2023",
+          description:
+            "Solution de gestion immobilière simplifiée pour campings et hôtels",
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: "Rue de Battentin 1",
+            addressLocality: "Bulle",
+            postalCode: "1630",
+            addressCountry: "CH",
+          },
+        },
+      }),
+    }}
+  />;
 }

@@ -763,4 +763,53 @@ export default function ContactPage() {
       </section>
     </div>
   );
+  // À ajouter dans le return de ContactPage, juste après le div principal
+
+  <script
+    type="application/ld+json"
+    dangerouslySetInnerHTML={{
+      __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "ContactPage",
+        name: "Contactez PlanniKeeper",
+        description: "Page de contact pour PlanniKeeper",
+        url: "https://plannikeeper.ch/contact",
+        mainEntity: {
+          "@type": "Organization",
+          name: "PlanniKeeper",
+          url: "https://plannikeeper.ch",
+          logo: "https://plannikeeper.ch/images/logo.png",
+          contactPoint: {
+            "@type": "ContactPoint",
+            telephone: "+41-79-341-40-74",
+            contactType: "customer service",
+            email: "perrottet.guillaume.97@gmail.com",
+            availableLanguage: ["French", "English"],
+            areaServed: "CH",
+          },
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: "Rue de Battentin 1",
+            addressLocality: "Bulle",
+            postalCode: "1630",
+            addressCountry: "CH",
+          },
+          sameAs: ["https://www.campus-gerance.ch/"],
+        },
+        potentialAction: {
+          "@type": "CommunicateAction",
+          target: {
+            "@type": "EntryPoint",
+            urlTemplate: "https://plannikeeper.ch/contact",
+            inLanguage: "fr",
+            actionPlatform: [
+              "http://schema.org/DesktopWebPlatform",
+              "http://schema.org/MobileWebPlatform",
+            ],
+          },
+          query: "required",
+        },
+      }),
+    }}
+  />;
 }
