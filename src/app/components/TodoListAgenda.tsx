@@ -12,7 +12,6 @@ import {
   SearchIcon,
   ExternalLink,
   Filter,
-  User,
   RefreshCcw,
 } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -656,15 +655,6 @@ export default function TodoListAgenda({
     else upcomingTasks.push(task);
   });
 
-  // Fonction pour scroller vers une section spécifique
-  const scrollToSection = (section: "thisWeek" | "upcoming") => {
-    if (section === "thisWeek" && thisWeekRef.current) {
-      thisWeekRef.current.scrollIntoView({ behavior: "smooth" });
-    } else if (section === "upcoming" && upcomingRef.current) {
-      upcomingRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
   // Fonction pour obtenir la couleur de statut
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -706,14 +696,26 @@ export default function TodoListAgenda({
           {/* Partie gauche */}
           <div className="w-1/4 h-full flex items-center justify-start">
             {isMobile && isExpanded ? (
-              <button
-                onClick={closeAgenda}
-                className="ml-2 p-2 rounded-full hover:bg-[color:var(--muted)]"
-                aria-label="Fermer l'agenda"
+              // Sur mobile quand l'agenda est ouvert, afficher le sélecteur d'objet à gauche
+              <select
+                className="bg-[color:var(--background)] text-[color:var(--foreground)] px-2 py-1 rounded border border-[color:var(--border)] text-sm transition-all active:scale-95 ml-2"
+                value={selectedObjectId}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  setSelectedObjectId(e.target.value)
+                }
+                style={{
+                  WebkitAppearance: "none",
+                  maxWidth: "140px",
+                }}
               >
-                <X size={20} className="text-[color:var(--foreground)]" />
-              </button>
+                {objects.map((obj) => (
+                  <option key={obj.id} value={obj.id}>
+                    {obj.nom}
+                  </option>
+                ))}
+              </select>
             ) : (
+              // Sur desktop, toujours afficher le bouton d'impression
               !isMobile && (
                 <PrintButton
                   tasks={tasks}
@@ -753,39 +755,53 @@ export default function TodoListAgenda({
 
           {/* Partie droite */}
           <div className="w-1/4 h-full flex items-center justify-end">
-            {(!isMobile || (isMobile && showControls)) && (
-              <select
-                className="bg-[color:var(--background)] text-[color:var(--foreground)] px-2 md:px-3 py-1 rounded border border-[color:var(--border)] text-sm transition-all active:scale-95 md:mr-8"
-                value={selectedObjectId}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                  setSelectedObjectId(e.target.value)
-                }
-                style={{
-                  WebkitAppearance: isMobile ? "none" : undefined,
-                  maxWidth: isMobile ? "140px" : undefined,
-                }}
-              >
-                {objects.map((obj) => (
-                  <option key={obj.id} value={obj.id}>
-                    {obj.nom}
-                  </option>
-                ))}
-              </select>
-            )}
-            {/* Bouton toggle expand/collapse - adaptative selon la plateforme */}
-            {(!isMobile || (isMobile && !isExpanded)) && (
+            {isMobile && isExpanded ? (
+              // Sur mobile quand l'agenda est ouvert, afficher la croix à droite
               <button
-                onClick={toggleExpanded}
-                className="print:hidden text-[color:var(--foreground)] active:scale-95 transition-all mr-2"
-                title={isExpanded ? "Réduire" : "Agrandir"}
-                aria-label={isExpanded ? "Réduire" : "Agrandir"}
+                onClick={closeAgenda}
+                className="mr-2 p-2 rounded-full hover:bg-[color:var(--muted)]"
+                aria-label="Fermer l'agenda"
               >
-                {isExpanded ? (
-                  <ChevronDown size={24} />
-                ) : (
-                  <ChevronUp size={24} />
-                )}
+                <X size={20} className="text-[color:var(--foreground)]" />
               </button>
+            ) : (
+              // Comportement normal pour desktop et mobile fermé
+              <>
+                {(!isMobile || (isMobile && showControls)) && (
+                  <select
+                    className="bg-[color:var(--background)] text-[color:var(--foreground)] px-2 md:px-3 py-1 rounded border border-[color:var(--border)] text-sm transition-all active:scale-95 md:mr-8"
+                    value={selectedObjectId}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                      setSelectedObjectId(e.target.value)
+                    }
+                    style={{
+                      WebkitAppearance: isMobile ? "none" : undefined,
+                      maxWidth: isMobile ? "140px" : undefined,
+                    }}
+                  >
+                    {objects.map((obj) => (
+                      <option key={obj.id} value={obj.id}>
+                        {obj.nom}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {/* Bouton toggle expand/collapse - adaptative selon la plateforme */}
+                {(!isMobile || (isMobile && !isExpanded)) && (
+                  <button
+                    onClick={toggleExpanded}
+                    className="print:hidden text-[color:var(--foreground)] active:scale-95 transition-all mr-2"
+                    title={isExpanded ? "Réduire" : "Agrandir"}
+                    aria-label={isExpanded ? "Réduire" : "Agrandir"}
+                  >
+                    {isExpanded ? (
+                      <ChevronDown size={24} />
+                    ) : (
+                      <ChevronUp size={24} />
+                    )}
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -797,158 +813,141 @@ export default function TodoListAgenda({
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="flex flex-col gap-2 px-4 py-2 bg-[color:var(--muted)] border-b border-[color:var(--border)]"
+              className="bg-[color:var(--muted)] border-b border-[color:var(--border)]"
             >
-              {/* Première ligne: Contrôles de vue (liste/calendrier) et bouton de filtre */}
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
+              {/* Ligne principale compacte */}
+              <div className="flex items-center justify-between px-4 py-2">
+                {/* Contrôles de vue (gauche) */}
+                <div className="flex items-center gap-1">
                   <button
                     onClick={toggleViewMode}
-                    className={`flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full text-sm ${
+                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs ${
                       viewMode === ViewMode.LIST
                         ? "bg-[color:var(--primary)] text-[color:var(--primary-foreground)]"
                         : "bg-[color:var(--background)] text-[color:var(--foreground)]"
                     }`}
                   >
-                    <ListIcon size={14} />
-                    <span>Liste</span>
+                    <ListIcon size={12} />
+                    {!isMobile && <span>Liste</span>}
                   </button>
                   <button
                     onClick={toggleViewMode}
-                    className={`flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full text-sm ${
+                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs ${
                       viewMode === ViewMode.CALENDAR
                         ? "bg-[color:var(--primary)] text-[color:var(--primary-foreground)]"
                         : "bg-[color:var(--background)] text-[color:var(--foreground)]"
                     }`}
                   >
-                    <CalendarIcon size={14} />
-                    <span>Agenda</span>
+                    <CalendarIcon size={12} />
+                    {!isMobile && <span>Agenda</span>}
                   </button>
+                </div>
 
-                  {/* Bouton pour afficher/masquer les filtres */}
+                {/* Filtre d'assignation (centre) */}
+                <div className="flex items-center">
+                  <select
+                    className="bg-[color:var(--background)] text-[color:var(--foreground)] pl-2 pr-3 py-1.5 rounded-full border border-[color:var(--border)] text-xs appearance-none focus:outline-none"
+                    value={assigneeFilter}
+                    onChange={(e) => setAssigneeFilter(e.target.value)}
+                    style={{ WebkitAppearance: "none", minWidth: "100px" }}
+                  >
+                    <option value="me">👤 Mes tâches</option>
+                    <option value="all">👥 Toutes</option>
+                    {assignableUsers.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.name.length > 10
+                          ? `${user.name.substring(0, 10)}...`
+                          : user.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Actions (droite) */}
+                <div className="flex items-center gap-1">
                   {viewMode === ViewMode.LIST && (
-                    <>
-                      <button
-                        onClick={() => setShowFiltersPanel(!showFiltersPanel)}
-                        className={`flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full text-sm ${
-                          showFiltersPanel
-                            ? "bg-[color:var(--primary)] text-[color:var(--primary-foreground)]"
-                            : "bg-[color:var(--background)] text-[color:var(--foreground)]"
-                        }`}
-                      >
-                        <Filter size={14} />
-                      </button>
-                    </>
+                    <button
+                      onClick={() => setShowFiltersPanel(!showFiltersPanel)}
+                      className={`p-1.5 rounded-full ${
+                        showFiltersPanel
+                          ? "bg-[color:var(--primary)] text-[color:var(--primary-foreground)]"
+                          : "bg-[color:var(--background)] text-[color:var(--foreground)]"
+                      }`}
+                    >
+                      <Filter size={14} />
+                    </button>
                   )}
-
-                  {/* Bouton refresh visible pour tous les modes */}
                   {onRefresh && (
                     <button
                       onClick={handleManualRefresh}
-                      className={`ml-0 flex items-center justify-center rounded-full p-1.5 
-    ${
-      isRefreshingLocal
-        ? "bg-[color:var(--muted-foreground)] bg-opacity-10"
-        : "bg-[color:var(--background)] hover:bg-[color:var(--muted)]"
-    } 
-    transition-colors`}
-                      title="Rafraîchir les données"
-                      aria-label="Rafraîchir les données"
+                      className="p-1.5 rounded-full bg-[color:var(--background)] text-[color:var(--foreground)]"
                       disabled={isRefreshingLocal}
                     >
                       <RefreshCcw
-                        size={16}
-                        className={`text-[color:var(--foreground)] ${isRefreshingLocal ? "animate-spin" : ""}`}
+                        size={14}
+                        className={isRefreshingLocal ? "animate-spin" : ""}
                       />
                     </button>
                   )}
                 </div>
-
-                <div className="flex items-center">
-                  <div className="relative">
-                    <User
-                      className="absolute left-2 top-1/2 transform -translate-y-1/2 text-[color:var(--muted-foreground)]"
-                      size={14}
-                    />
-                    <select
-                      className="bg-[color:var(--background)] text-[color:var(--foreground)] pl-7 pr-1 py-1.5 rounded border border-[color:var(--border)] text-xs sm:text-sm transition-all active:scale-95"
-                      value={assigneeFilter}
-                      onChange={(e) => setAssigneeFilter(e.target.value)}
-                      style={{
-                        WebkitAppearance: isMobile ? "none" : undefined,
-                        maxWidth: isMobile ? "110px" : "160px",
-                      }}
-                    >
-                      <option value="me">Mes tâches</option>
-                      <option value="all">Toutes</option>
-                      {assignableUsers.map((user) => (
-                        <option key={user.id} value={user.id}>
-                          {isMobile && user.name.length > 10
-                            ? `${user.name.substring(0, 9)}...`
-                            : user.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
               </div>
-              {/* Panneau de filtres conditionnel */}
+
+              {/* Panneau de filtres condensé (seulement quand nécessaire) */}
               <AnimatePresence>
                 {viewMode === ViewMode.LIST && showFiltersPanel && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="space-y-2 mt-1"
+                    className="px-4 pb-2 space-y-2"
                   >
-                    {/* Barre de recherche */}
-                    <div className="relative flex-1">
+                    {/* Recherche compacte */}
+                    <div className="relative">
                       <SearchIcon
-                        size={16}
-                        className="absolute left-2 top-2.5 text-[color:var(--muted-foreground)]"
+                        size={12}
+                        className="absolute left-2 top-1/2 transform -translate-y-1/2 text-[color:var(--muted-foreground)]"
                       />
                       <input
                         type="text"
-                        placeholder="Rechercher une tâche..."
+                        placeholder="Rechercher..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full py-1.5 pl-8 pr-3 text-sm rounded border border-[color:var(--border)] bg-[color:var(--background)]"
+                        className="w-full py-1.5 pl-7 pr-7 text-xs rounded-full border border-[color:var(--border)] bg-[color:var(--background)]"
                       />
                       {searchTerm && (
                         <button
                           onClick={() => setSearchTerm("")}
-                          className="absolute right-2 top-2.5 text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)]"
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2"
                         >
-                          <X size={16} />
+                          <X size={12} />
                         </button>
                       )}
                     </div>
 
-                    {/* Filtres : statut et article */}
-                    <div className="flex justify-between gap-3">
-                      {/* Filtre par statut */}
+                    {/* Filtres sur une ligne */}
+                    <div className="flex gap-2">
                       <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="w-1/2 bg-[color:var(--background)] text-[color:var(--foreground)] px-3 py-1.5 rounded border border-[color:var(--border)] text-sm"
+                        className="flex-1 bg-[color:var(--background)] px-2 py-1.5 rounded-full border border-[color:var(--border)] text-xs"
                       >
-                        <option value="all">Tous les statuts</option>
-                        <option value="pending">A faire</option>
+                        <option value="all">Tous statuts</option>
+                        <option value="pending">À faire</option>
                         <option value="in_progress">En cours</option>
                         <option value="completed">Terminées</option>
                         <option value="cancelled">Annulées</option>
                       </select>
-
-                      {/* Filtre par article */}
                       <select
                         value={articleFilter}
                         onChange={(e) => setArticleFilter(e.target.value)}
-                        className="w-1/2 bg-[color:var(--background)] text-[color:var(--foreground)] px-3 py-1.5 rounded border border-[color:var(--border)] text-sm"
+                        className="flex-1 bg-[color:var(--background)] px-2 py-1.5 rounded-full border border-[color:var(--border)] text-xs"
                       >
-                        <option value="all">Tous les articles</option>
+                        <option value="all">Tous articles</option>
                         {availableArticles.map((article) => (
                           <option key={article.id} value={article.id}>
-                            {article.title} ({article.sectorName})
+                            {article.title.length > 15
+                              ? `${article.title.substring(0, 15)}...`
+                              : article.title}
                           </option>
                         ))}
                       </select>
@@ -957,53 +956,40 @@ export default function TodoListAgenda({
                 )}
               </AnimatePresence>
 
-              {/* Navigation rapide en mode liste - toujours visible */}
-              {viewMode === ViewMode.LIST && (
-                <div className="flex justify-between mt-1">
-                  <button
-                    onClick={() => scrollToSection("thisWeek")}
-                    className="text-sm text-[color:var(--primary)] hover:underline flex items-center"
-                  >
-                    Cette semaine ({thisWeekTasks.length})
-                  </button>
-                  <button
-                    onClick={() => scrollToSection("upcoming")}
-                    className="text-sm text-[color:var(--primary)] hover:underline flex items-center"
-                  >
-                    À venir ({upcomingTasks.length})
-                  </button>
-                </div>
-              )}
-
-              {/* Message informatif sur le drag and drop (uniquement sur desktop en mode calendrier) */}
+              {/* Hint drag and drop (très compact) */}
               {showDragHint &&
                 viewMode === ViewMode.CALENDAR &&
                 !isMobile &&
                 updateTaskDate && (
                   <motion.div
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 0.85, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    className="bg-[color:var(--background)] text-[color:var(--muted-foreground)] text-xs px-3 py-1.5 rounded-md shadow-sm border border-[color:var(--border)] border-opacity-30 mt-1 mx-auto max-w-max"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 0.7 }}
+                    exit={{ opacity: 0 }}
+                    className="text-center text-xs text-[color:var(--muted-foreground)] py-1"
                   >
-                    <span className="text-[color:var(--primary)] font-medium">
-                      Astuce :
-                    </span>{" "}
-                    Glissez les tâches pour changer leur date.
+                    💡 Glissez les tâches pour changer leur date
                   </motion.div>
                 )}
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Contenu: Liste ou Calendrier selon le mode - protégé contre les clics de fermeture */}
+        {/* Ajustement de la hauteur du contenu pour compenser la compacité */}
         <div
           ref={contentRef}
           className="overflow-y-auto agenda-content"
           style={{
-            height: `calc(100% - ${isExpanded && showControls ? (viewMode === ViewMode.LIST ? "110px" : showDragHint ? "140px" : "96px") : "48px"})`,
+            height: `calc(100% - ${
+              isExpanded && showControls
+                ? viewMode === ViewMode.LIST
+                  ? showFiltersPanel
+                    ? "110px" // Avec filtres ouverts
+                    : "58px" // Contrôles uniquement
+                  : "58px" // Mode calendrier
+                : "48px" // Agenda fermé
+            })`,
           }}
-          onClick={handleContentClick} // Empêcher la propagation
+          onClick={handleContentClick}
         >
           {isLoading ? (
             <div className="p-4 text-center text-[color:var(--muted-foreground)]">
