@@ -57,13 +57,10 @@ export default async function NotificationsPage() {
   const totalCount = mappedNotifications.length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[color:var(--background)] via-[color:var(--muted)]/10 to-[color:var(--background)]">
-      {/* Header avec effet glassmorphism */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-[color:var(--primary)]/10 via-[color:var(--primary)]/5 to-transparent border-b border-[color:var(--border)]/20 backdrop-blur-sm">
-        <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--primary)]/5 to-transparent opacity-50"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[color:var(--primary)]/10 to-transparent rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+    <div className="min-h-screen bg-[color:var(--background)]">
+      {/* Header */}
+      <div className="bg-[color:var(--card)] border-b border-[color:var(--border)]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
           <BackButton
             href="/profile"
             label="Retour au profil"
@@ -71,9 +68,8 @@ export default async function NotificationsPage() {
           />
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-            <div className="relative">
-              <div className="absolute -inset-2 bg-gradient-to-r from-[color:var(--primary)] to-[color:var(--primary)]/60 rounded-2xl blur opacity-20"></div>
-              <div className="relative w-16 h-16 bg-gradient-to-br from-[color:var(--primary)] to-[color:var(--primary)]/80 rounded-2xl flex items-center justify-center shadow-lg">
+            <div>
+              <div className="w-16 h-16 bg-[color:var(--primary)] rounded-2xl flex items-center justify-center shadow-lg">
                 <Bell
                   size={28}
                   className="text-[color:var(--primary-foreground)]"
@@ -91,7 +87,7 @@ export default async function NotificationsPage() {
 
               {/* Stats cards mini */}
               <div className="flex items-center gap-4 mt-4">
-                <div className="bg-[color:var(--card)]/80 backdrop-blur-sm border border-[color:var(--border)]/50 rounded-lg px-3 py-2">
+                <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg px-3 py-2">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-[color:var(--primary)] rounded-full animate-pulse"></div>
                     <span className="text-sm font-medium text-[color:var(--foreground)]">
@@ -99,7 +95,7 @@ export default async function NotificationsPage() {
                     </span>
                   </div>
                 </div>
-                <div className="bg-[color:var(--card)]/80 backdrop-blur-sm border border-[color:var(--border)]/50 rounded-lg px-3 py-2">
+                <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg px-3 py-2">
                   <span className="text-sm text-[color:var(--muted-foreground)]">
                     {totalCount} au total
                   </span>
@@ -123,10 +119,9 @@ export default async function NotificationsPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             {/* Notifications générales */}
-            <div className="group relative">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-[color:var(--primary)]/20 to-[color:var(--primary)]/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="relative bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-xl shadow-sm backdrop-blur-sm overflow-hidden h-full">
-                <div className="p-4 border-b border-[color:var(--border)]/50 bg-gradient-to-r from-[color:var(--muted)]/30 to-transparent">
+            <div>
+              <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-xl shadow-sm overflow-hidden h-full">
+                <div className="p-4 border-b border-[color:var(--border)] bg-[color:var(--muted)]/30">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-[color:var(--primary)]/10">
                       <Bell size={18} className="text-[color:var(--primary)]" />
@@ -145,10 +140,9 @@ export default async function NotificationsPage() {
             </div>
 
             {/* Notifications email */}
-            <div className="group relative">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-[color:var(--primary)]/20 to-[color:var(--primary)]/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="relative bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-xl shadow-sm backdrop-blur-sm overflow-hidden h-full">
-                <div className="p-4 border-b border-[color:var(--border)]/50 bg-gradient-to-r from-[color:var(--muted)]/30 to-transparent">
+            <div>
+              <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-xl shadow-sm overflow-hidden h-full">
+                <div className="p-4 border-b border-[color:var(--border)] bg-[color:var(--muted)]/30">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-[color:var(--primary)]/10">
                       <Zap size={18} className="text-[color:var(--primary)]" />
@@ -167,10 +161,9 @@ export default async function NotificationsPage() {
             </div>
 
             {/* Récapitulatifs quotidiens */}
-            <div className="group relative">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-[color:var(--primary)]/20 to-[color:var(--primary)]/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="relative bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-xl shadow-sm backdrop-blur-sm overflow-hidden h-full">
-                <div className="p-4 border-b border-[color:var(--border)]/50 bg-gradient-to-r from-[color:var(--muted)]/30 to-transparent">
+            <div>
+              <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-xl shadow-sm overflow-hidden h-full">
+                <div className="p-4 border-b border-[color:var(--border)] bg-[color:var(--muted)]/30">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-[color:var(--primary)]/10">
                       <Sparkles
@@ -197,10 +190,9 @@ export default async function NotificationsPage() {
         <div className="mb-8">
           {/* Main content area */}
           <div>
-            <div className="group relative">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-[color:var(--primary)]/20 to-[color:var(--primary)]/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="relative bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-xl shadow-sm backdrop-blur-sm overflow-hidden min-h-[600px]">
-                <div className="p-4 sm:p-6 border-b border-[color:var(--border)]/50 bg-gradient-to-r from-[color:var(--muted)]/30 to-transparent">
+            <div>
+              <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-xl shadow-sm overflow-hidden min-h-[600px]">
+                <div className="p-4 sm:p-6 border-b border-[color:var(--border)] bg-[color:var(--muted)]/30">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="p-2 rounded-lg bg-[color:var(--primary)]/10">
@@ -220,7 +212,7 @@ export default async function NotificationsPage() {
                     </div>
 
                     {unreadCount > 0 && (
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-[color:var(--primary)] to-[color:var(--primary)]/80 text-[color:var(--primary-foreground)] rounded-full text-sm font-medium shadow-lg">
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-[color:var(--primary)] text-[color:var(--primary-foreground)] rounded-full text-sm font-medium shadow-lg">
                         <div className="w-2 h-2 bg-[color:var(--primary-foreground)] rounded-full animate-pulse"></div>
                         {unreadCount} nouvelles
                       </div>
@@ -228,10 +220,8 @@ export default async function NotificationsPage() {
                   </div>
                 </div>
 
-                <div className="relative">
-                  {/* Effet de gradient pour le scroll */}
-                  <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-[color:var(--card)] to-transparent z-10 pointer-events-none"></div>
-                  <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-[color:var(--card)] to-transparent z-10 pointer-events-none"></div>
+                <div>
+                  {/* Removed gradient effects for scroll */}
 
                   <div className="max-h-[calc(100vh-400px)] overflow-y-auto">
                     <NotificationsList notifications={mappedNotifications} />
