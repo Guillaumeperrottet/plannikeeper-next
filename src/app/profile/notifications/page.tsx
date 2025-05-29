@@ -7,7 +7,7 @@ import { NotificationPreferences } from "@/app/profile/notifications/notificatio
 import { EmailPreferences } from "@/app/profile/email-preferences";
 import { DailySummaryPreferences } from "@/app/profile/notifications/daily-summary-preferences";
 
-import { ArrowLeft, Bell, Settings, Sparkles, Zap, Shield } from "lucide-react";
+import { ArrowLeft, Bell, Settings, Sparkles, Zap } from "lucide-react";
 
 export default async function NotificationsPage() {
   const user = await getUser();
@@ -117,70 +117,64 @@ export default async function NotificationsPage() {
 
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar avec préférences */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Card Préférences générales */}
+        {/* Section préférences - horizontale */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-[color:var(--foreground)] mb-6 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-[color:var(--primary)]/10">
+              <Settings size={24} className="text-[color:var(--primary)]" />
+            </div>
+            Préférences de notifications
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            {/* Notifications générales */}
             <div className="group relative">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[color:var(--primary)]/20 to-[color:var(--primary)]/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="relative bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-xl shadow-sm backdrop-blur-sm overflow-hidden">
+              <div className="relative bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-xl shadow-sm backdrop-blur-sm overflow-hidden h-full">
                 <div className="p-4 border-b border-[color:var(--border)]/50 bg-gradient-to-r from-[color:var(--muted)]/30 to-transparent">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-[color:var(--primary)]/10">
-                      <Settings
-                        size={18}
-                        className="text-[color:var(--primary)]"
-                      />
+                      <Bell size={18} className="text-[color:var(--primary)]" />
                     </div>
-                    <h2 className="font-semibold text-[color:var(--foreground)]">
-                      Préférences
-                    </h2>
+                    <h3 className="font-semibold text-[color:var(--foreground)]">
+                      Notifications
+                    </h3>
                   </div>
                 </div>
-
-                <div className="p-5 space-y-6">
-                  <div className="group/pref">
-                    <div className="p-4 rounded-lg border border-[color:var(--border)]/50 bg-gradient-to-r from-[color:var(--muted)]/20 to-transparent group-hover/pref:from-[color:var(--primary)]/5 transition-all duration-300">
-                      <NotificationPreferences
-                        initialEnabled={notificationsEnabled}
-                      />
-                    </div>
-                  </div>
+                <div className="p-5">
+                  <NotificationPreferences
+                    initialEnabled={notificationsEnabled}
+                  />
                 </div>
               </div>
             </div>
 
-            {/* Card Emails */}
+            {/* Notifications email */}
             <div className="group relative">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[color:var(--primary)]/20 to-[color:var(--primary)]/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="relative bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-xl shadow-sm backdrop-blur-sm overflow-hidden">
+              <div className="relative bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-xl shadow-sm backdrop-blur-sm overflow-hidden h-full">
                 <div className="p-4 border-b border-[color:var(--border)]/50 bg-gradient-to-r from-[color:var(--muted)]/30 to-transparent">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-[color:var(--primary)]/10">
                       <Zap size={18} className="text-[color:var(--primary)]" />
                     </div>
-                    <h2 className="font-semibold text-[color:var(--foreground)]">
-                      Notifications Email
-                    </h2>
+                    <h3 className="font-semibold text-[color:var(--foreground)]">
+                      Emails
+                    </h3>
                   </div>
                 </div>
-
                 <div className="p-5">
-                  <div className="group/pref">
-                    <div className="p-4 rounded-lg border border-[color:var(--border)]/50 bg-gradient-to-r from-[color:var(--muted)]/20 to-transparent group-hover/pref:from-[color:var(--primary)]/5 transition-all duration-300">
-                      <EmailPreferences
-                        initialEnabled={emailNotificationsEnabled}
-                      />
-                    </div>
-                  </div>
+                  <EmailPreferences
+                    initialEnabled={emailNotificationsEnabled}
+                  />
                 </div>
               </div>
             </div>
 
-            {/* Card Récapitulatif quotidien */}
+            {/* Récapitulatifs quotidiens */}
             <div className="group relative">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[color:var(--primary)]/20 to-[color:var(--primary)]/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="relative bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-xl shadow-sm backdrop-blur-sm overflow-hidden">
+              <div className="relative bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-xl shadow-sm backdrop-blur-sm overflow-hidden h-full">
                 <div className="p-4 border-b border-[color:var(--border)]/50 bg-gradient-to-r from-[color:var(--muted)]/30 to-transparent">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-[color:var(--primary)]/10">
@@ -189,79 +183,84 @@ export default async function NotificationsPage() {
                         className="text-[color:var(--primary)]"
                       />
                     </div>
-                    <h2 className="font-semibold text-[color:var(--foreground)]">
+                    <h3 className="font-semibold text-[color:var(--foreground)]">
                       Récapitulatifs
-                    </h2>
+                    </h3>
                   </div>
                 </div>
-
                 <div className="p-5">
-                  <div className="group/pref">
-                    <div className="p-4 rounded-lg border border-[color:var(--border)]/50 bg-gradient-to-r from-[color:var(--muted)]/20 to-transparent group-hover/pref:from-[color:var(--primary)]/5 transition-all duration-300">
-                      <DailySummaryPreferences
-                        initialEnabled={dailySummaryEnabled}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick stats card */}
-            <div className="group relative">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-[color:var(--primary)]/20 to-[color:var(--primary)]/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="relative bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-xl shadow-sm backdrop-blur-sm overflow-hidden">
-                <div className="p-4 border-b border-[color:var(--border)]/50 bg-gradient-to-r from-[color:var(--muted)]/30 to-transparent">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-[color:var(--primary)]/10">
-                      <Shield
-                        size={18}
-                        className="text-[color:var(--primary)]"
-                      />
-                    </div>
-                    <h2 className="font-semibold text-[color:var(--foreground)]">
-                      Statistiques
-                    </h2>
-                  </div>
-                </div>
-
-                <div className="p-5 space-y-4">
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-[color:var(--primary)]/5 to-transparent border border-[color:var(--primary)]/20">
-                    <span className="text-sm text-[color:var(--muted-foreground)]">
-                      Cette semaine
-                    </span>
-                    <span className="font-bold text-[color:var(--primary)]">
-                      {Math.min(unreadCount + 3, totalCount)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-[color:var(--muted)]/20 to-transparent">
-                    <span className="text-sm text-[color:var(--muted-foreground)]">
-                      Ce mois
-                    </span>
-                    <span className="font-bold text-[color:var(--foreground)]">
-                      {totalCount}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-[color:var(--muted)]/20 to-transparent">
-                    <span className="text-sm text-[color:var(--muted-foreground)]">
-                      Taux de lecture
-                    </span>
-                    <span className="font-bold text-[color:var(--foreground)]">
-                      {totalCount > 0
-                        ? Math.round(
-                            ((totalCount - unreadCount) / totalCount) * 100
-                          )
-                        : 0}
-                      %
-                    </span>
-                  </div>
+                  <DailySummaryPreferences
+                    initialEnabled={dailySummaryEnabled}
+                  />
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Stats compactes */}
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+            <div className="bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-[color:var(--primary)]">
+                {unreadCount}
+              </div>
+              <div className="text-xs text-[color:var(--muted-foreground)]">
+                Non lues
+              </div>
+            </div>
+            <div className="bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-[color:var(--foreground)]">
+                {totalCount}
+              </div>
+              <div className="text-xs text-[color:var(--muted-foreground)]">
+                Total
+              </div>
+            </div>
+            <div className="bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-[color:var(--foreground)]">
+                {totalCount > 0
+                  ? Math.round(((totalCount - unreadCount) / totalCount) * 100)
+                  : 0}
+                %
+              </div>
+              <div className="text-xs text-[color:var(--muted-foreground)]">
+                Lues
+              </div>
+            </div>
+            <div className="bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-[color:var(--primary)]">
+                {Math.min(unreadCount + 3, totalCount)}
+              </div>
+              <div className="text-xs text-[color:var(--muted-foreground)]">
+                Semaine
+              </div>
+            </div>
+            <div className="bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-[color:var(--foreground)]">
+                {totalCount}
+              </div>
+              <div className="text-xs text-[color:var(--muted-foreground)]">
+                Mois
+              </div>
+            </div>
+            <div className="bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-[color:var(--primary)]">
+                {notificationsEnabled &&
+                emailNotificationsEnabled &&
+                dailySummaryEnabled
+                  ? "🔔"
+                  : "🔕"}
+              </div>
+              <div className="text-xs text-[color:var(--muted-foreground)]">
+                État
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section historique - pleine largeur */}
+        <div className="mb-8">
           {/* Main content area */}
-          <div className="lg:col-span-3">
+          <div>
             <div className="group relative">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-[color:var(--primary)]/20 to-[color:var(--primary)]/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div className="relative bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-xl shadow-sm backdrop-blur-sm overflow-hidden min-h-[600px]">
@@ -298,71 +297,12 @@ export default async function NotificationsPage() {
                   <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-[color:var(--card)] to-transparent z-10 pointer-events-none"></div>
                   <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-[color:var(--card)] to-transparent z-10 pointer-events-none"></div>
 
-                  <div className="max-h-[calc(100vh-300px)] overflow-y-auto">
+                  <div className="max-h-[calc(100vh-400px)] overflow-y-auto">
                     <NotificationsList notifications={mappedNotifications} />
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Section FAQ modernisée */}
-        <div className="mt-12">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-[color:var(--foreground)] mb-2">
-              Questions fréquentes
-            </h2>
-            <p className="text-[color:var(--muted-foreground)]">
-              Tout ce que vous devez savoir sur les notifications
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              {
-                icon: Bell,
-                question:
-                  "Comment puis-je désactiver certaines notifications ?",
-                answer:
-                  "Utilisez les interrupteurs dans le panneau de préférences pour contrôler finement vos notifications.",
-              },
-              {
-                icon: Zap,
-                question:
-                  "Quelle est la différence entre les notifications et les emails ?",
-                answer:
-                  "Les notifications apparaissent dans l'app, les emails sont envoyés quotidiennement avec un récapitulatif.",
-              },
-              {
-                icon: Sparkles,
-                question: "Puis-je personnaliser l'heure des récapitulatifs ?",
-                answer:
-                  "Les récapitulatifs sont envoyés automatiquement le matin vers 7h pour optimiser votre productivité.",
-              },
-            ].map((faq, index) => (
-              <div key={index} className="group relative">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-[color:var(--primary)]/20 to-[color:var(--primary)]/10 rounded-xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                <div className="relative bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-xl p-6 shadow-sm backdrop-blur-sm h-full">
-                  <div className="flex items-start gap-4">
-                    <div className="p-2 rounded-lg bg-[color:var(--primary)]/10 flex-shrink-0">
-                      <faq.icon
-                        size={20}
-                        className="text-[color:var(--primary)]"
-                      />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-[color:var(--foreground)] mb-2">
-                        {faq.question}
-                      </h3>
-                      <p className="text-sm text-[color:var(--muted-foreground)] leading-relaxed">
-                        {faq.answer}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </main>
