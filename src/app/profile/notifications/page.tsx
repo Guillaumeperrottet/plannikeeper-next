@@ -1,3 +1,4 @@
+// src/app/profile/notifications/page.tsx
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
@@ -58,48 +59,52 @@ export default async function NotificationsPage() {
 
   return (
     <div className="min-h-screen bg-[color:var(--background)]">
-      {/* Header */}
-      <div className="bg-[color:var(--card)] border-b border-[color:var(--border)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-          <BackButton
-            href="/profile"
-            label="Retour au profil"
-            loadingMessage="Retour au profil..."
-          />
+      {/* Header compact */}
+      <div className="bg-[color:var(--card)] border-b border-[color:var(--border)] sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+          {/* Ligne navigation avec titre et stats */}
+          <div className="flex items-center justify-between">
+            {/* Navigation et titre */}
+            <div className="flex items-center gap-4">
+              <BackButton
+                href="/profile"
+                label="Retour au profil"
+                loadingMessage="Retour au profil..."
+              />
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-            <div>
-              <div className="w-16 h-16 bg-[color:var(--primary)] rounded-2xl flex items-center justify-center shadow-lg">
-                <Bell
-                  size={28}
-                  className="text-[color:var(--primary-foreground)]"
-                />
+              <div className="h-4 w-px bg-[color:var(--border)]"></div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-[color:var(--primary)] rounded-lg flex items-center justify-center">
+                  <Bell
+                    size={16}
+                    className="text-[color:var(--primary-foreground)]"
+                  />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-[color:var(--foreground)]">
+                    Notifications
+                  </h1>
+                  <p className="text-xs text-[color:var(--muted-foreground)] hidden sm:block">
+                    Centre de notifications et préférences
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div>
-              <h1 className="text-3xl sm:text-4xl font-bold text-[color:var(--foreground)] mb-2">
-                Centre de notifications
-              </h1>
-              <p className="text-[color:var(--muted-foreground)] text-lg">
-                Gérez vos préférences et consultez votre historique
-              </p>
-
-              {/* Stats cards mini */}
-              <div className="flex items-center gap-4 mt-4">
-                <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg px-3 py-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-[color:var(--primary)] rounded-full animate-pulse"></div>
-                    <span className="text-sm font-medium text-[color:var(--foreground)]">
-                      {unreadCount} non lues
-                    </span>
-                  </div>
-                </div>
-                <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg px-3 py-2">
-                  <span className="text-sm text-[color:var(--muted-foreground)]">
-                    {totalCount} au total
-                  </span>
-                </div>
+            {/* Stats compactes */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-[color:var(--muted)] rounded-full text-sm">
+                <div className="w-2 h-2 bg-[color:var(--primary)] rounded-full animate-pulse"></div>
+                <span className="font-medium text-[color:var(--foreground)]">
+                  {unreadCount}
+                </span>
+                <span className="text-[color:var(--muted-foreground)] hidden sm:inline">
+                  non lues
+                </span>
+              </div>
+              <div className="text-xs text-[color:var(--muted-foreground)] hidden md:block">
+                {totalCount} au total
               </div>
             </div>
           </div>
@@ -107,127 +112,94 @@ export default async function NotificationsPage() {
       </div>
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* Section préférences - horizontale */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-[color:var(--foreground)] mb-6 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-[color:var(--primary)]/10">
-              <Settings size={24} className="text-[color:var(--primary)]" />
-            </div>
-            Préférences de notifications
-          </h2>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        {/* Section préférences - version compacte horizontale */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Settings size={18} className="text-[color:var(--primary)]" />
+            <h2 className="text-lg font-semibold text-[color:var(--foreground)]">
+              Préférences
+            </h2>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Notifications générales */}
-            <div>
-              <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-xl shadow-sm overflow-hidden h-full">
-                <div className="p-4 border-b border-[color:var(--border)] bg-[color:var(--muted)]/30">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-[color:var(--primary)]/10">
-                      <Bell size={18} className="text-[color:var(--primary)]" />
-                    </div>
-                    <h3 className="font-semibold text-[color:var(--foreground)]">
-                      Notifications
-                    </h3>
-                  </div>
+            <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg shadow-sm overflow-hidden">
+              <div className="p-3 border-b border-[color:var(--border)] bg-[color:var(--muted)]/30">
+                <div className="flex items-center gap-2">
+                  <Bell size={16} className="text-[color:var(--primary)]" />
+                  <h3 className="font-medium text-[color:var(--foreground)] text-sm">
+                    Notifications
+                  </h3>
                 </div>
-                <div className="p-5">
-                  <NotificationPreferences
-                    initialEnabled={notificationsEnabled}
-                  />
-                </div>
+              </div>
+              <div className="p-4">
+                <NotificationPreferences
+                  initialEnabled={notificationsEnabled}
+                />
               </div>
             </div>
 
             {/* Notifications email */}
-            <div>
-              <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-xl shadow-sm overflow-hidden h-full">
-                <div className="p-4 border-b border-[color:var(--border)] bg-[color:var(--muted)]/30">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-[color:var(--primary)]/10">
-                      <Zap size={18} className="text-[color:var(--primary)]" />
-                    </div>
-                    <h3 className="font-semibold text-[color:var(--foreground)]">
-                      Emails
-                    </h3>
-                  </div>
+            <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg shadow-sm overflow-hidden">
+              <div className="p-3 border-b border-[color:var(--border)] bg-[color:var(--muted)]/30">
+                <div className="flex items-center gap-2">
+                  <Zap size={16} className="text-[color:var(--primary)]" />
+                  <h3 className="font-medium text-[color:var(--foreground)] text-sm">
+                    Emails
+                  </h3>
                 </div>
-                <div className="p-5">
-                  <EmailPreferences
-                    initialEnabled={emailNotificationsEnabled}
-                  />
-                </div>
+              </div>
+              <div className="p-4">
+                <EmailPreferences initialEnabled={emailNotificationsEnabled} />
               </div>
             </div>
 
             {/* Récapitulatifs quotidiens */}
-            <div>
-              <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-xl shadow-sm overflow-hidden h-full">
-                <div className="p-4 border-b border-[color:var(--border)] bg-[color:var(--muted)]/30">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-[color:var(--primary)]/10">
-                      <Sparkles
-                        size={18}
-                        className="text-[color:var(--primary)]"
-                      />
-                    </div>
-                    <h3 className="font-semibold text-[color:var(--foreground)]">
-                      Récapitulatifs
-                    </h3>
-                  </div>
+            <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg shadow-sm overflow-hidden">
+              <div className="p-3 border-b border-[color:var(--border)] bg-[color:var(--muted)]/30">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={16} className="text-[color:var(--primary)]" />
+                  <h3 className="font-medium text-[color:var(--foreground)] text-sm">
+                    Récapitulatifs
+                  </h3>
                 </div>
-                <div className="p-5">
-                  <DailySummaryPreferences
-                    initialEnabled={dailySummaryEnabled}
-                  />
-                </div>
+              </div>
+              <div className="p-4">
+                <DailySummaryPreferences initialEnabled={dailySummaryEnabled} />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Section historique - pleine largeur */}
-        <div className="mb-8">
-          {/* Main content area */}
-          <div>
-            <div>
-              <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-xl shadow-sm overflow-hidden min-h-[600px]">
-                <div className="p-4 sm:p-6 border-b border-[color:var(--border)] bg-[color:var(--muted)]/30">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-[color:var(--primary)]/10">
-                        <Bell
-                          size={20}
-                          className="text-[color:var(--primary)]"
-                        />
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-semibold text-[color:var(--foreground)]">
-                          Historique des notifications
-                        </h2>
-                        <p className="text-sm text-[color:var(--muted-foreground)]">
-                          Vos {totalCount} dernières notifications
-                        </p>
-                      </div>
-                    </div>
-
-                    {unreadCount > 0 && (
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-[color:var(--primary)] text-[color:var(--primary-foreground)] rounded-full text-sm font-medium shadow-lg">
-                        <div className="w-2 h-2 bg-[color:var(--primary-foreground)] rounded-full animate-pulse"></div>
-                        {unreadCount} nouvelles
-                      </div>
-                    )}
+        {/* Section historique - avec header plus compact */}
+        <div className="mb-6">
+          <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-[color:var(--border)] bg-[color:var(--muted)]/30">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bell size={18} className="text-[color:var(--primary)]" />
+                  <div>
+                    <h2 className="text-lg font-semibold text-[color:var(--foreground)]">
+                      Historique
+                    </h2>
+                    <p className="text-xs text-[color:var(--muted-foreground)]">
+                      {totalCount} notifications
+                    </p>
                   </div>
                 </div>
 
-                <div>
-                  {/* Removed gradient effects for scroll */}
-
-                  <div className="max-h-[calc(100vh-400px)] overflow-y-auto">
-                    <NotificationsList notifications={mappedNotifications} />
+                {unreadCount > 0 && (
+                  <div className="flex items-center gap-2 px-3 py-1 bg-[color:var(--primary)] text-[color:var(--primary-foreground)] rounded-full text-sm font-medium">
+                    <div className="w-1.5 h-1.5 bg-[color:var(--primary-foreground)] rounded-full animate-pulse"></div>
+                    {unreadCount} nouvelles
                   </div>
-                </div>
+                )}
               </div>
+            </div>
+
+            <div className="max-h-[calc(100vh-300px)] overflow-y-auto">
+              <NotificationsList notifications={mappedNotifications} />
             </div>
           </div>
         </div>
