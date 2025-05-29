@@ -38,7 +38,8 @@ export function getDailySummaryEmailTemplate({
   totalTasksCompleted,
   totalTasksPending,
 }: DailySummaryData): string {
-  const hasActivity = totalTasksAdded > 0 || totalTasksCompleted > 0;
+  const hasActivity =
+    totalTasksAdded > 0 || totalTasksCompleted > 0 || totalTasksPending > 0;
 
   return `
     <!DOCTYPE html>

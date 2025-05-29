@@ -134,8 +134,44 @@ export async function GET() {
           },
         });
 
+        // Récupérer les tâches en attente (toutes les tâches non terminées et non archivées)
+        const tasksPending = await prisma.task.findMany({
+          where: {
+            status: {
+              not: "completed",
+            },
+            article: {
+              sector: {
+                object: {
+                  organizationId: user.Organization.id,
+                },
+              },
+            },
+            archived: false,
+          },
+          include: {
+            article: {
+              include: {
+                sector: {
+                  include: {
+                    object: true,
+                  },
+                },
+              },
+            },
+            assignedTo: {
+              select: {
+                name: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+        });
+
         console.log(
-          `User ${user.email}: ${tasksAdded.length} tasks added, ${tasksCompleted.length} tasks completed`
+          `User ${user.email}: ${tasksAdded.length} tasks added, ${tasksCompleted.length} tasks completed, ${tasksPending.length} tasks pending`
         );
 
         // Organiser par objet
@@ -151,6 +187,7 @@ export async function GET() {
               objectAddress: task.article.sector.object.adresse,
               tasksAdded: [],
               tasksCompleted: [],
+              tasksPending: [],
             });
           }
 
@@ -178,6 +215,7 @@ export async function GET() {
               objectAddress: task.article.sector.object.adresse,
               tasksAdded: [],
               tasksCompleted: [],
+              tasksPending: [],
             });
           }
 
@@ -195,6 +233,34 @@ export async function GET() {
           objectsMap.get(objectId)!.tasksCompleted.push(taskSummary);
         });
 
+        // Traiter les tâches en attente
+        tasksPending.forEach((task) => {
+          const objectId = task.article.sector.object.id;
+          if (!objectsMap.has(objectId)) {
+            objectsMap.set(objectId, {
+              objectId,
+              objectName: task.article.sector.object.nom,
+              objectAddress: task.article.sector.object.adresse,
+              tasksAdded: [],
+              tasksCompleted: [],
+              tasksPending: [],
+            });
+          }
+
+          const taskSummary: TaskSummary = {
+            id: task.id,
+            name: task.name,
+            description: task.description || undefined,
+            sectorName: task.article.sector.name,
+            articleTitle: task.article.title,
+            assignedToName: task.assignedTo?.name || undefined,
+            createdAt: task.createdAt.toISOString(),
+            taskType: task.taskType || undefined,
+          };
+
+          objectsMap.get(objectId)!.tasksPending.push(taskSummary);
+        });
+
         // Préparer les données pour l'email
         const summaryData: DailySummaryData = {
           userName: user.name || user.email.split("@")[0],
@@ -205,10 +271,14 @@ export async function GET() {
             day: "numeric",
           }),
           objectSummaries: Array.from(objectsMap.values()).filter(
-            (obj) => obj.tasksAdded.length > 0 || obj.tasksCompleted.length > 0
+            (obj) =>
+              obj.tasksAdded.length > 0 ||
+              obj.tasksCompleted.length > 0 ||
+              obj.tasksPending.length > 0
           ),
           totalTasksAdded: tasksAdded.length,
           totalTasksCompleted: tasksCompleted.length,
+          totalTasksPending: tasksPending.length,
         };
 
         // Envoyer l'email (même s'il n'y a pas d'activité, selon les préférences utilisateur)
@@ -223,6 +293,7 @@ export async function GET() {
           success: result.success,
           tasksAdded: tasksAdded.length,
           tasksCompleted: tasksCompleted.length,
+          tasksPending: tasksPending.length,
           objectsCount: summaryData.objectSummaries.length,
           error: result.success ? undefined : result.error,
         });
