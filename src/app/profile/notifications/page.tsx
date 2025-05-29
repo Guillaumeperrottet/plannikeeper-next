@@ -196,65 +196,6 @@ export default async function NotificationsPage() {
               </div>
             </div>
           </div>
-
-          {/* Stats compactes */}
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-            <div className="bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-[color:var(--primary)]">
-                {unreadCount}
-              </div>
-              <div className="text-xs text-[color:var(--muted-foreground)]">
-                Non lues
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-[color:var(--foreground)]">
-                {totalCount}
-              </div>
-              <div className="text-xs text-[color:var(--muted-foreground)]">
-                Total
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-[color:var(--foreground)]">
-                {totalCount > 0
-                  ? Math.round(((totalCount - unreadCount) / totalCount) * 100)
-                  : 0}
-                %
-              </div>
-              <div className="text-xs text-[color:var(--muted-foreground)]">
-                Lues
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-[color:var(--primary)]">
-                {Math.min(unreadCount + 3, totalCount)}
-              </div>
-              <div className="text-xs text-[color:var(--muted-foreground)]">
-                Semaine
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-[color:var(--foreground)]">
-                {totalCount}
-              </div>
-              <div className="text-xs text-[color:var(--muted-foreground)]">
-                Mois
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-[color:var(--card)] to-[color:var(--card)]/95 border border-[color:var(--border)] rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-[color:var(--primary)]">
-                {notificationsEnabled &&
-                emailNotificationsEnabled &&
-                dailySummaryEnabled
-                  ? "🔔"
-                  : "🔕"}
-              </div>
-              <div className="text-xs text-[color:var(--muted-foreground)]">
-                État
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Section historique - pleine largeur */}
