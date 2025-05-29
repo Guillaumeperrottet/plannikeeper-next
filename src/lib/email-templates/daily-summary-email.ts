@@ -87,15 +87,19 @@ export function getDailySummaryEmailTemplate({
           padding: 32px 24px;
         }
         .summary-stats {
-          display: flex;
-          justify-content: space-around;
+          width: 100%;
           background-color: #f8f9fa;
           border-radius: 8px;
           padding: 20px;
           margin-bottom: 24px;
         }
+        .summary-stats table {
+          width: 100%;
+          border-collapse: collapse;
+        }
         .stat-item {
           text-align: center;
+          vertical-align: top;
         }
         .stat-number {
           font-size: 28px;
@@ -187,16 +191,14 @@ export function getDailySummaryEmailTemplate({
           line-height: 1.4;
         }
         .task-meta {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 12px;
           font-size: 13px;
           color: #666;
+          margin-top: 8px;
         }
         .task-meta-item {
-          display: flex;
-          align-items: center;
-          gap: 4px;
+          display: inline-block;
+          margin-right: 12px;
+          margin-bottom: 4px;
         }
         .task-badge {
           background-color: #e9ecef;
@@ -261,32 +263,31 @@ export function getDailySummaryEmailTemplate({
           display: block;
         }
         
+        /* Outlook-specific fixes */
         @media screen and (max-width: 600px) {
-          .summary-stats {
-            flex-direction: column;
-            gap: 16px;
+          .summary-stats table {
+            width: 100% !important;
           }
           .stat-item {
+            display: block !important;
             padding: 12px 0;
             border-bottom: 1px solid #e9ecef;
           }
           .stat-item:last-child {
             border-bottom: none;
           }
-          .task-meta {
-            flex-direction: column;
-            gap: 8px;
+          .task-meta-item {
+            display: block !important;
+            margin-bottom: 8px;
           }
         }
         
         @media screen and (min-width: 601px) and (max-width: 768px) {
-          .summary-stats {
-            flex-wrap: wrap;
-            justify-content: center;
+          .summary-stats table {
+            width: 100% !important;
           }
           .stat-item {
-            flex: 1;
-            min-width: 150px;
+            width: 33.33% !important;
           }
         }
       </style>
@@ -305,21 +306,25 @@ export function getDailySummaryEmailTemplate({
           ${
             hasActivity
               ? `
-            <p>Voici le récapitulatif de l'activité d'hier sur vos objets :</p>
+            <p>Voici le récapitulatif de l'activité d'hier sur vos objets et vos tâches en cours :</p>
             
             <div class="summary-stats">
-              <div class="stat-item">
-                <span class="stat-number">${totalTasksAdded}</span>
-                <span class="stat-label">Tâche${totalTasksAdded > 1 ? "s" : ""} ajoutée${totalTasksAdded > 1 ? "s" : ""}</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-number">${totalTasksCompleted}</span>
-                <span class="stat-label">Tâche${totalTasksCompleted > 1 ? "s" : ""} terminée${totalTasksCompleted > 1 ? "s" : ""}</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-number">${totalTasksPending}</span>
-                <span class="stat-label">Tâche${totalTasksPending > 1 ? "s" : ""} à faire</span>
-              </div>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td class="stat-item">
+                    <span class="stat-number">${totalTasksAdded}</span>
+                    <span class="stat-label">Tâche${totalTasksAdded > 1 ? "s" : ""} ajoutée${totalTasksAdded > 1 ? "s" : ""}</span>
+                  </td>
+                  <td class="stat-item">
+                    <span class="stat-number">${totalTasksCompleted}</span>
+                    <span class="stat-label">Tâche${totalTasksCompleted > 1 ? "s" : ""} terminée${totalTasksCompleted > 1 ? "s" : ""}</span>
+                  </td>
+                  <td class="stat-item">
+                    <span class="stat-number">${totalTasksPending}</span>
+                    <span class="stat-label">Tâche${totalTasksPending > 1 ? "s" : ""} qui ${totalTasksPending > 1 ? "vous sont" : "vous est"} assignée${totalTasksPending > 1 ? "s" : ""}</span>
+                  </td>
+                </tr>
+              </table>
             </div>
             
             ${objectSummaries
@@ -332,6 +337,51 @@ export function getDailySummaryEmailTemplate({
                 </div>
                 
                 <div class="tasks-container">
+                  ${
+                    objectSummary.tasksPending.length > 0
+                      ? `
+                    <div class="task-category">
+                      <h4 class="category-title category-pending">
+                        📋 Vos tâches en cours (${objectSummary.tasksPending.length})
+                      </h4>
+                      <ul class="task-list">
+                        ${objectSummary.tasksPending
+                          .map(
+                            (task) => `
+                          <li class="task-item">
+                            <div class="task-name">${task.name}</div>
+                            ${task.description ? `<div class="task-description">${task.description}</div>` : ""}
+                            <div class="task-meta">
+                              <div class="task-meta-item">
+                                📍 ${task.sectorName} › ${task.articleTitle}
+                              </div>
+                              ${
+                                task.assignedToName
+                                  ? `
+                                <div class="task-meta-item">
+                                  👤 ${task.assignedToName}
+                                </div>
+                              `
+                                  : ""
+                              }
+                              ${
+                                task.taskType
+                                  ? `
+                                <span class="task-badge task-badge-pending">${task.taskType}</span>
+                              `
+                                  : ""
+                              }
+                            </div>
+                          </li>
+                        `
+                          )
+                          .join("")}
+                      </ul>
+                    </div>
+                  `
+                      : ""
+                  }
+                  
                   ${
                     objectSummary.tasksAdded.length > 0
                       ? `
@@ -408,51 +458,6 @@ export function getDailySummaryEmailTemplate({
                                 task.taskType
                                   ? `
                                 <span class="task-badge task-badge-completed">${task.taskType}</span>
-                              `
-                                  : ""
-                              }
-                            </div>
-                          </li>
-                        `
-                          )
-                          .join("")}
-                      </ul>
-                    </div>
-                  `
-                      : ""
-                  }
-                  
-                  ${
-                    objectSummary.tasksPending.length > 0
-                      ? `
-                    <div class="task-category">
-                      <h4 class="category-title category-pending">
-                        📋 Tâches à faire (${objectSummary.tasksPending.length})
-                      </h4>
-                      <ul class="task-list">
-                        ${objectSummary.tasksPending
-                          .map(
-                            (task) => `
-                          <li class="task-item">
-                            <div class="task-name">${task.name}</div>
-                            ${task.description ? `<div class="task-description">${task.description}</div>` : ""}
-                            <div class="task-meta">
-                              <div class="task-meta-item">
-                                📍 ${task.sectorName} › ${task.articleTitle}
-                              </div>
-                              ${
-                                task.assignedToName
-                                  ? `
-                                <div class="task-meta-item">
-                                  👤 ${task.assignedToName}
-                                </div>
-                              `
-                                  : ""
-                              }
-                              ${
-                                task.taskType
-                                  ? `
-                                <span class="task-badge task-badge-pending">${task.taskType}</span>
                               `
                                   : ""
                               }

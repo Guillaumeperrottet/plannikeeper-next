@@ -134,9 +134,10 @@ export async function GET() {
           },
         });
 
-        // Récupérer les tâches en attente (toutes les tâches non terminées et non archivées)
+        // Récupérer les tâches en attente (tâches assignées à l'utilisateur, non terminées et non archivées)
         const tasksPending = await prisma.task.findMany({
           where: {
+            assignedToId: user.id, // Seulement les tâches assignées à cet utilisateur
             status: {
               not: "completed",
             },
