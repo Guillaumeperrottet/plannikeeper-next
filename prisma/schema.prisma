@@ -18,10 +18,11 @@ model User {
   organizationId            String?
   notificationsEnabled      Boolean           @default(true)
   emailNotificationsEnabled Boolean           @default(true)
+  dailySummaryEnabled       Boolean           @default(false)
   metadata                  Json?
-  inviteCode        String?
-  planType          String?   @default("FREE")
-  tempOrganizationId String?
+  inviteCode                String?
+  planType                  String?           @default("FREE")
+  tempOrganizationId        String?
   comments                  Comment[]
   deviceTokens              DeviceToken[]
   notifications             Notification[]
@@ -32,6 +33,7 @@ model User {
   assignedTasks             Task[]
   Organization              Organization?     @relation(fields: [organizationId], references: [id])
 
+  @@index([inviteCode], map: "user_inviteCode_key")
   @@map("user")
 }
 
@@ -88,10 +90,9 @@ model Organization {
   invitationCodes  InvitationCode[]
   Objet            Objet[]
   OrganizationUser OrganizationUser[]
+  planChangeAudits PlanChangeAudit[]
   storageUsage     StorageUsage?
   users            User[]
-  planChangeAudits PlanChangeAudit[]
-
 
   @@map("organization")
 }
@@ -341,17 +342,17 @@ model Comment {
 }
 
 model PlanChangeAudit {
-  id              String        @id @default(uuid())
+  id              String       @id @default(uuid())
   organizationId  String
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   fromPlan        String?
   toPlan          String
-  initiatedBy     String        // userId de l'admin
-  initiatedAt     DateTime      @default(now())
+  initiatedBy     String
+  initiatedAt     DateTime     @default(now())
   completedAt     DateTime?
-  status          String        // pending, completed, failed
+  status          String
   stripeSessionId String?
   notes           String?
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([status])
@@ -359,16 +360,16 @@ model PlanChangeAudit {
 }
 
 model PendingUser {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  name        String?
-  password    String
-  token       String   @unique
-  expiresAt   DateTime
-  planType    String?
-  inviteCode  String?
-  image       String?
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  email      String   @unique
+  name       String?
+  password   String
+  token      String   @unique
+  expiresAt  DateTime
+  planType   String?
+  inviteCode String?
+  image      String?
+  createdAt  DateTime @default(now())
 
   @@index([token])
   @@index([email])

@@ -27,6 +27,10 @@ import { getWelcomeEmailTemplate } from "./email-templates/welcome-email";
 import { getTaskAssignmentEmailTemplate } from "./email-templates/task-assignement-email";
 import { getTasksReminderEmailTemplate } from "./email-templates/tasks-reminder-mail";
 import { getPlanChangeEmailTemplate } from "./email-templates/plan-change-email";
+import {
+  getDailySummaryEmailTemplate,
+  type DailySummaryData,
+} from "./email-templates/daily-summary-email";
 
 let resend: Resend | null = null;
 
@@ -291,6 +295,42 @@ export const EmailService = {
       return { success: true, data };
     } catch (error) {
       console.error("Error in email reminder service:", error);
+      return { success: false, error };
+    }
+  },
+
+  /**
+   * Envoie un email de récapitulatif quotidien
+   */
+  async sendDailySummaryEmail(to: string, summaryData: DailySummaryData) {
+    try {
+      const subject =
+        summaryData.totalTasksAdded + summaryData.totalTasksCompleted > 0
+          ? `Récapitulatif quotidien - ${summaryData.totalTasksAdded + summaryData.totalTasksCompleted} activité${summaryData.totalTasksAdded + summaryData.totalTasksCompleted > 1 ? "s" : ""} - ${summaryData.date}`
+          : `Récapitulatif quotidien - ${summaryData.date}`;
+
+      const { data, error } = await getResend().emails.send({
+        from:
+          process.env.RESEND_FROM_EMAIL ||
+          "PlanniKeeper <notifications@plannikeeper.ch>",
+        to: [to],
+        subject,
+        html: getDailySummaryEmailTemplate(summaryData),
+        replyTo: process.env.RESEND_REPLY_TO_EMAIL,
+        headers: {
+          "List-Unsubscribe": `<${process.env.NEXT_PUBLIC_APP_URL}/profile/notifications?unsubscribe=daily>`,
+          "X-Entity-Ref-ID": `daily-summary-${summaryData.date}-${Date.now()}`,
+        },
+      });
+
+      if (error) {
+        console.error("Error sending daily summary email:", error);
+        return { success: false, error };
+      }
+
+      return { success: true, data };
+    } catch (error) {
+      console.error("Error in daily summary email service:", error);
       return { success: false, error };
     }
   },

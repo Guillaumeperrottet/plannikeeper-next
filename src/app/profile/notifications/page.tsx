@@ -1,4 +1,3 @@
-// src/app/profile/notifications/page.tsx
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
@@ -6,6 +5,7 @@ import Link from "next/link";
 import { NotificationsList } from "@/app/profile/notifications/notifications-list";
 import { NotificationPreferences } from "@/app/profile/notifications/notification-preferences";
 import { EmailPreferences } from "@/app/profile/email-preferences";
+import { DailySummaryPreferences } from "@/app/profile/notifications/daily-summary-preferences"; // ⭐ NOUVEAU
 
 import { ArrowLeft } from "lucide-react";
 
@@ -20,21 +20,22 @@ export default async function NotificationsPage() {
     where: { userId: user.id },
     orderBy: { createdAt: "desc" },
     take: 30,
-    // Removed 'task' relation from include as it does not exist on the notification model
   });
 
-  // Récupérer les préférences de notifications
+  // Récupérer les préférences de notifications ⭐ MISE À JOUR
   const userWithPrefs = await prisma.user.findUnique({
     where: { id: user.id },
     select: {
       notificationsEnabled: true,
       emailNotificationsEnabled: true,
+      dailySummaryEnabled: true, // ⭐ NOUVEAU CHAMP
     },
   });
 
   const notificationsEnabled = userWithPrefs?.notificationsEnabled ?? true;
   const emailNotificationsEnabled =
     userWithPrefs?.emailNotificationsEnabled ?? true;
+  const dailySummaryEnabled = userWithPrefs?.dailySummaryEnabled ?? false; // ⭐ NOUVEAU
 
   const mappedNotifications = notifications.map((n) => ({
     id: typeof n.id === "string" ? parseInt(n.id, 10) : n.id,
@@ -46,12 +47,12 @@ export default async function NotificationsPage() {
     message: n.message,
     category: n.category,
     data: n.data,
-    // Map the fields correctly
     type: n.category ?? "default",
     content: n.message,
     isRead: n.read,
-    read: n.read, // Add this line to satisfy Notification type
+    read: n.read,
   }));
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
       <div className="mb-8">
@@ -75,13 +76,21 @@ export default async function NotificationsPage() {
                   Préférences
                 </h2>
               </div>
-              <div className="p-5">
+              <div className="p-5 space-y-8">
                 <NotificationPreferences
                   initialEnabled={notificationsEnabled}
                 />
-                <div className="mt-8 pt-8 border-t border-[color:var(--border)]">
+
+                <div className="pt-8 border-t border-[color:var(--border)]">
                   <EmailPreferences
                     initialEnabled={emailNotificationsEnabled}
+                  />
+                </div>
+
+                {/* ⭐ NOUVEAU SECTION */}
+                <div className="pt-8 border-t border-[color:var(--border)]">
+                  <DailySummaryPreferences
+                    initialEnabled={dailySummaryEnabled}
                   />
                 </div>
               </div>
