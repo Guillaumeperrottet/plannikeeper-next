@@ -1,13 +1,13 @@
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { NotificationsList } from "@/app/profile/notifications/notifications-list";
 import { NotificationPreferences } from "@/app/profile/notifications/notification-preferences";
 import { EmailPreferences } from "@/app/profile/email-preferences";
 import { DailySummaryPreferences } from "@/app/profile/notifications/daily-summary-preferences";
+import { BackButton } from "@/app/components/ui/BackButton";
 
-import { ArrowLeft, Bell, Settings, Sparkles, Zap } from "lucide-react";
+import { Bell, Settings, Sparkles, Zap } from "lucide-react";
 
 export default async function NotificationsPage() {
   const user = await getUser();
@@ -64,16 +64,11 @@ export default async function NotificationsPage() {
         <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[color:var(--primary)]/10 to-transparent rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-          <Link
+          <BackButton
             href="/profile"
-            className="group inline-flex items-center text-sm text-[color:var(--muted-foreground)] hover:text-[color:var(--primary)] mb-6 transition-all duration-300"
-          >
-            <ArrowLeft
-              size={16}
-              className="mr-1 transition-transform group-hover:-translate-x-1"
-            />
-            Retour au profil
-          </Link>
+            label="Retour au profil"
+            loadingMessage="Retour au profil..."
+          />
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
             <div className="relative">
