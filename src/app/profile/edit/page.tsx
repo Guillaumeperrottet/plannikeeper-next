@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { UsersTable } from "@/app/profile/edit/users-table";
 import { Button } from "@/app/components/ui/button";
-import { PlusCircle, Users, ArrowLeft } from "lucide-react";
+import { BackButton } from "@/app/components/ui/BackButton";
+import { PlusCircle, Users } from "lucide-react";
 
 export default async function ProfileEditPage() {
   const user = await getUser();
@@ -37,13 +38,11 @@ export default async function ProfileEditPage() {
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
       <div className="mb-8">
-        <Link
+        <BackButton
           href="/profile"
-          className="flex items-center text-sm text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)] mb-4 transition-colors"
-        >
-          <ArrowLeft size={16} className="mr-1" />
-          Retour au profil
-        </Link>
+          label="Retour au profil"
+          loadingMessage="Retour au profil..."
+        />
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -57,16 +56,6 @@ export default async function ProfileEditPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button
-              asChild
-              variant="outline"
-              className="bg-[color:var(--muted)] text-[color:var(--foreground)] border-[color:var(--border)] hover:bg-[color:var(--muted)]/80"
-            >
-              <Link href="/profile">
-                <ArrowLeft size={16} className="mr-2" />
-                Profil
-              </Link>
-            </Button>
             <Button
               asChild
               className="bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:bg-[color:var(--primary)]/90"
