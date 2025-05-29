@@ -33,6 +33,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/app/components/ui/dialog";
+import { BackButton } from "@/app/components/ui/BackButton";
 
 type Plan = {
   id: string;
@@ -570,347 +571,381 @@ export default function SubscriptionDashboard({
   };
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-8 text-[color:var(--foreground)]">
-        Gestion de l&apos;abonnement
-      </h1>
-
-      {/* Section abonnement actuel */}
-      <div className="mb-10">
-        <h2 className="text-xl font-semibold mb-4 text-[color:var(--foreground)]">
-          Abonnement actuel
-        </h2>
-
-        {subscription && (
-          <SubscriptionStatusBanner subscription={subscription} />
-        )}
-
-        <Card className="bg-[color:var(--card)] border-[color:var(--border)] shadow-sm">
-          <CardContent className="p-6">
-            {subscription ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-lg font-medium mb-2 text-[color:var(--foreground)]">
-                    Plan {subscription.plan.name}
-                  </h3>
-                  <p className="text-sm text-[color:var(--muted-foreground)] mb-4">
-                    {subscription.plan.hasCustomPricing
-                      ? "Prix personnalisé"
-                      : subscription.plan.price === 0
-                        ? "Gratuit"
-                        : `${subscription.plan.monthlyPrice}€/mois`}
-                  </p>
-                  {getStatusBadge(subscription.status)}
-
-                  {subscription.cancelAtPeriodEnd && (
-                    <div className="mt-2 p-2 bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 rounded-md text-sm">
-                      Cet abonnement sera annulé le{" "}
-                      {formatDate(subscription.currentPeriodEnd)}
-                    </div>
-                  )}
-
-                  <div className="mt-6">
-                    <h4 className="text-sm font-medium mb-2 text-[color:var(--foreground)]">
-                      Fonctionnalités incluses:
-                    </h4>
-                    <ul className="space-y-1">
-                      {subscription.plan.features.map((feature, index) => (
-                        <li key={index} className="flex items-start">
-                          <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400 mr-2 flex-shrink-0 mt-0.5" />
-                          <span className="text-sm text-[color:var(--foreground)]">
-                            {feature}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  {!isFreePlan && subscription.stripeSubscriptionId && (
-                    <>
-                      <SubscriptionTimeline subscription={subscription} />
-                      <BillingDetails subscription={subscription} />
-                      {/* Décommentez quand vous aurez l'API d'historique des factures */}
-                      {/* <InvoiceHistory /> */}
-                    </>
-                  )}
-
-                  {isAdmin && (
-                    <div className="flex flex-col gap-3">
-                      {!isFreePlan && subscription.stripeSubscriptionId ? (
-                        <>
-                          <Button
-                            onClick={handleManageSubscription}
-                            disabled={loading === "manage"}
-                            className="w-full bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:opacity-90 transition-all touch-target active:scale-95"
-                          >
-                            {loading === "manage" ? (
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                              <CreditCard className="mr-2 h-4 w-4" />
-                            )}
-                            Gérer le paiement
-                          </Button>
-
-                          {/* Bouton pour annuler l'abonnement */}
-                          <Button
-                            onClick={() => setShowCancelModal(true)}
-                            variant="outline"
-                            className="w-full text-red-500 dark:text-red-400 border-red-200 dark:border-red-700/50 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-300 transition-colors touch-target active:scale-95"
-                            disabled={
-                              loading !== null || subscription.cancelAtPeriodEnd
-                            }
-                          >
-                            <X className="mr-2 h-4 w-4" />
-                            {subscription.cancelAtPeriodEnd
-                              ? "Annulation programmée"
-                              : "Annuler l'abonnement"}
-                          </Button>
-                        </>
-                      ) : (
-                        <Button
-                          onClick={handleRenewFreePlan}
-                          disabled={loading === "renew"}
-                          className="w-full bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)] hover:bg-[color:var(--muted)] transition-colors touch-target active:scale-95"
-                          variant="outline"
-                        >
-                          {loading === "renew" ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          ) : (
-                            <Calendar className="mr-2 h-4 w-4" />
-                          )}
-                          Renouveler l&apos;abonnement gratuit
-                        </Button>
-                      )}
-
-                      <Button
-                        onClick={() => (window.location.href = "/pricing")}
-                        className={`w-full transition-colors touch-target active:scale-95 ${
-                          isFreePlan
-                            ? "bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:opacity-90"
-                            : "bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)] hover:bg-[color:var(--muted)]"
-                        }`}
-                        variant={isFreePlan ? "default" : "outline"}
-                      >
-                        <ArrowRight className="mr-2 h-4 w-4" />
-                        {isFreePlan
-                          ? "Passer à un forfait payant"
-                          : "Modifier mon forfait"}
-                      </Button>
-                    </div>
-                  )}
-                </div>
+    <div className="min-h-screen bg-[color:var(--background)]">
+      {/* Header avec navigation */}
+      <div className="bg-[color:var(--card)] border-b border-[color:var(--border)] sticky top-0 z-40">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-4">
+            <BackButton
+              href="/profile"
+              label="Retour au profil"
+              loadingMessage="Retour au profil..."
+            />
+            <div className="h-4 w-px bg-[color:var(--border)]"></div>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-[color:var(--primary)] rounded-lg flex items-center justify-center">
+                <CreditCard
+                  size={16}
+                  className="text-[color:var(--primary-foreground)]"
+                />
               </div>
-            ) : (
-              <div className="text-center py-6">
-                <Shield className="h-12 w-12 text-[color:var(--muted-foreground)] mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2 text-[color:var(--foreground)]">
-                  Aucun abonnement actif
-                </h3>
-                <p className="text-[color:var(--muted-foreground)] mb-4">
-                  Vous n&apos;avez pas d&apos;abonnement actif pour le moment.
+              <div>
+                <h1 className="text-xl font-bold text-[color:var(--foreground)]">
+                  Gestion de l&apos;abonnement
+                </h1>
+                <p className="text-xs text-[color:var(--muted-foreground)] hidden sm:block">
+                  Gérez votre abonnement et vos préférences de facturation
                 </p>
-                {isAdmin && (
-                  <Button
-                    onClick={() => (window.location.href = "/pricing")}
-                    className="bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:opacity-90 transition-colors touch-target active:scale-95"
-                  >
-                    Voir les forfaits disponibles
-                  </Button>
-                )}
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Nouvelle section avec UsageLimits */}
-      <div className="mb-10">
-        <h2 className="text-xl font-semibold mb-4 text-[color:var(--foreground)]">
-          Utilisation actuelle
-        </h2>
-        <UsageLimits />
-      </div>
-
-      {/* Section plans disponibles */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-          <h2 className="text-xl font-semibold text-[color:var(--foreground)]">
-            Plans disponibles
+      {/* Main content */}
+      <main className="container mx-auto py-8 px-4">
+        {/* Section abonnement actuel */}
+        <div className="mb-10">
+          <h2 className="text-xl font-semibold mb-4 text-[color:var(--foreground)]">
+            Abonnement actuel
           </h2>
 
-          <div className="flex items-center space-x-2 bg-[color:var(--muted)] rounded-lg p-1">
-            <button
-              onClick={() => setBillingCycle("monthly")}
-              className={`px-3 py-1 text-sm rounded-md transition-colors touch-target ${
-                billingCycle === "monthly"
-                  ? "bg-[color:var(--card)] text-[color:var(--foreground)] shadow-sm"
-                  : "text-[color:var(--muted-foreground)]"
-              }`}
-            >
-              Mensuel
-            </button>
-            <button
-              onClick={() => setBillingCycle("yearly")}
-              className={`px-3 py-1 text-sm rounded-md transition-colors touch-target ${
-                billingCycle === "yearly"
-                  ? "bg-[color:var(--card)] text-[color:var(--foreground)] shadow-sm"
-                  : "text-[color:var(--muted-foreground)]"
-              }`}
-            >
-              Annuel
-            </button>
-          </div>
-        </div>
+          {subscription && (
+            <SubscriptionStatusBanner subscription={subscription} />
+          )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {plans.map((plan) => (
-            <Card
-              key={plan.id}
-              className={`bg-[color:var(--card)] border-[color:var(--border)] overflow-hidden transition-all duration-300 ${
-                currentPlan?.id === plan.id
-                  ? "border-2 border-[color:var(--primary)] shadow-lg shadow-[color:var(--primary)]/10"
-                  : "shadow-sm"
-              }`}
-            >
-              <CardHeader className="pb-2">
-                <CardTitle className="text-[color:var(--foreground)]">
-                  {plan.name}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pb-6">
-                <div className="mb-6">
-                  {plan.hasCustomPricing ? (
-                    <div className="text-2xl font-bold text-[color:var(--foreground)]">
-                      Sur mesure
-                    </div>
-                  ) : (
-                    <div className="flex items-end">
-                      <span className="text-3xl font-bold text-[color:var(--foreground)]">
-                        {plan.price === 0
+          <Card className="bg-[color:var(--card)] border-[color:var(--border)] shadow-sm">
+            <CardContent className="p-6">
+              {subscription ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-lg font-medium mb-2 text-[color:var(--foreground)]">
+                      Plan {subscription.plan.name}
+                    </h3>
+                    <p className="text-sm text-[color:var(--muted-foreground)] mb-4">
+                      {subscription.plan.hasCustomPricing
+                        ? "Prix personnalisé"
+                        : subscription.plan.price === 0
                           ? "Gratuit"
-                          : billingCycle === "monthly"
-                            ? `${plan.monthlyPrice}€`
-                            : plan.yearlyPrice
-                              ? `${plan.yearlyPrice}€`
-                              : `${plan.monthlyPrice * 12}€`}
-                      </span>
-                      {plan.price > 0 && (
-                        <span className="text-[color:var(--muted-foreground)] ml-1">
-                          /{billingCycle === "monthly" ? "mois" : "an"}
-                        </span>
-                      )}
+                          : `${subscription.plan.monthlyPrice}€/mois`}
+                    </p>
+                    {getStatusBadge(subscription.status)}
+
+                    {subscription.cancelAtPeriodEnd && (
+                      <div className="mt-2 p-2 bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 rounded-md text-sm">
+                        Cet abonnement sera annulé le{" "}
+                        {formatDate(subscription.currentPeriodEnd)}
+                      </div>
+                    )}
+
+                    <div className="mt-6">
+                      <h4 className="text-sm font-medium mb-2 text-[color:var(--foreground)]">
+                        Fonctionnalités incluses:
+                      </h4>
+                      <ul className="space-y-1">
+                        {subscription.plan.features.map((feature, index) => (
+                          <li key={index} className="flex items-start">
+                            <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400 mr-2 flex-shrink-0 mt-0.5" />
+                            <span className="text-sm text-[color:var(--foreground)]">
+                              {feature}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {!isFreePlan && subscription.stripeSubscriptionId && (
+                      <>
+                        <SubscriptionTimeline subscription={subscription} />
+                        <BillingDetails subscription={subscription} />
+                        {/* Décommentez quand vous aurez l'API d'historique des factures */}
+                        {/* <InvoiceHistory /> */}
+                      </>
+                    )}
+
+                    {isAdmin && (
+                      <div className="flex flex-col gap-3">
+                        {!isFreePlan && subscription.stripeSubscriptionId ? (
+                          <>
+                            <Button
+                              onClick={handleManageSubscription}
+                              disabled={loading === "manage"}
+                              className="w-full bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:opacity-90 transition-all touch-target active:scale-95"
+                            >
+                              {loading === "manage" ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              ) : (
+                                <CreditCard className="mr-2 h-4 w-4" />
+                              )}
+                              Gérer le paiement
+                            </Button>
+
+                            {/* Bouton pour annuler l'abonnement */}
+                            <Button
+                              onClick={() => setShowCancelModal(true)}
+                              variant="outline"
+                              className="w-full text-red-500 dark:text-red-400 border-red-200 dark:border-red-700/50 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-300 transition-colors touch-target active:scale-95"
+                              disabled={
+                                loading !== null ||
+                                subscription.cancelAtPeriodEnd
+                              }
+                            >
+                              <X className="mr-2 h-4 w-4" />
+                              {subscription.cancelAtPeriodEnd
+                                ? "Annulation programmée"
+                                : "Annuler l'abonnement"}
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            onClick={handleRenewFreePlan}
+                            disabled={loading === "renew"}
+                            className="w-full bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)] hover:bg-[color:var(--muted)] transition-colors touch-target active:scale-95"
+                            variant="outline"
+                          >
+                            {loading === "renew" ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <Calendar className="mr-2 h-4 w-4" />
+                            )}
+                            Renouveler l&apos;abonnement gratuit
+                          </Button>
+                        )}
+
+                        <Button
+                          onClick={() => (window.location.href = "/pricing")}
+                          className={`w-full transition-colors touch-target active:scale-95 ${
+                            isFreePlan
+                              ? "bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:opacity-90"
+                              : "bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)] hover:bg-[color:var(--muted)]"
+                          }`}
+                          variant={isFreePlan ? "default" : "outline"}
+                        >
+                          <ArrowRight className="mr-2 h-4 w-4" />
+                          {isFreePlan
+                            ? "Passer à un forfait payant"
+                            : "Modifier mon forfait"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <Shield className="h-12 w-12 text-[color:var(--muted-foreground)] mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2 text-[color:var(--foreground)]">
+                    Aucun abonnement actif
+                  </h3>
+                  <p className="text-[color:var(--muted-foreground)] mb-4">
+                    Vous n&apos;avez pas d&apos;abonnement actif pour le moment.
+                  </p>
+                  {isAdmin && (
+                    <Button
+                      onClick={() => (window.location.href = "/pricing")}
+                      className="bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:opacity-90 transition-colors touch-target active:scale-95"
+                    >
+                      Voir les forfaits disponibles
+                    </Button>
                   )}
                 </div>
-
-                {billingCycle === "yearly" &&
-                  plan.yearlyPrice &&
-                  plan.monthlyPrice * 12 > plan.yearlyPrice && (
-                    <div className="bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 text-sm p-2 rounded-md mb-4 border border-green-200 dark:border-green-900/50">
-                      Économisez{" "}
-                      {Math.round(
-                        100 -
-                          (plan.yearlyPrice / (plan.monthlyPrice * 12)) * 100
-                      )}
-                      % avec le forfait annuel
-                    </div>
-                  )}
-
-                <ul className="space-y-3 mb-6">
-                  {plan.features.map((feature, index) => (
-                    <li key={index} className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400 mr-2 flex-shrink-0" />
-                      <span className="text-[color:var(--foreground)]">
-                        {feature}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-              <CardFooter>
-                <Button
-                  onClick={() => handleSelectPlan(plan)}
-                  className={`w-full touch-target active:scale-95 transition-transform ${
-                    currentPlan?.id === plan.id
-                      ? "bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)] hover:bg-[color:var(--muted)]"
-                      : "bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:opacity-90"
-                  }`}
-                  variant={currentPlan?.id === plan.id ? "outline" : "default"}
-                  disabled={
-                    loading !== null || !isAdmin || currentPlan?.id === plan.id
-                  }
-                >
-                  {loading === plan.id ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Chargement...
-                    </>
-                  ) : currentPlan?.id === plan.id ? (
-                    "Plan actuel"
-                  ) : (
-                    "Sélectionner ce plan"
-                  )}
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+              )}
+            </CardContent>
+          </Card>
         </div>
 
-        {!isAdmin && (
-          <div className="mt-4 p-4 bg-amber-100 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-md text-amber-700 dark:text-amber-400">
-            Seuls les administrateurs peuvent gérer les abonnements. Contactez
-            l&apos;administrateur de votre organisation pour modifier votre
-            abonnement.
+        {/* Nouvelle section avec UsageLimits */}
+        <div className="mb-10">
+          <h2 className="text-xl font-semibold mb-4 text-[color:var(--foreground)]">
+            Utilisation actuelle
+          </h2>
+          <UsageLimits />
+        </div>
+
+        {/* Section plans disponibles */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+            <h2 className="text-xl font-semibold text-[color:var(--foreground)]">
+              Plans disponibles
+            </h2>
+
+            <div className="flex items-center space-x-2 bg-[color:var(--muted)] rounded-lg p-1">
+              <button
+                onClick={() => setBillingCycle("monthly")}
+                className={`px-3 py-1 text-sm rounded-md transition-colors touch-target ${
+                  billingCycle === "monthly"
+                    ? "bg-[color:var(--card)] text-[color:var(--foreground)] shadow-sm"
+                    : "text-[color:var(--muted-foreground)]"
+                }`}
+              >
+                Mensuel
+              </button>
+              <button
+                onClick={() => setBillingCycle("yearly")}
+                className={`px-3 py-1 text-sm rounded-md transition-colors touch-target ${
+                  billingCycle === "yearly"
+                    ? "bg-[color:var(--card)] text-[color:var(--foreground)] shadow-sm"
+                    : "text-[color:var(--muted-foreground)]"
+                }`}
+              >
+                Annuel
+              </button>
+            </div>
           </div>
-        )}
-      </div>
 
-      {/* Section FAQ */}
-      <div className="mt-10">
-        <h2 className="text-xl font-semibold mb-4 text-[color:var(--foreground)]">
-          Questions fréquentes
-        </h2>
-        <Card className="bg-[color:var(--card)] border-[color:var(--border)] shadow-sm">
-          <CardContent className="p-6 space-y-4">
-            <div>
-              <h3 className="font-medium mb-2 text-[color:var(--foreground)]">
-                Comment fonctionne la facturation ?
-              </h3>
-              <p className="text-sm text-[color:var(--muted-foreground)]">
-                La facturation est mensuelle ou annuelle, selon le cycle que
-                vous choisissez. Vous pouvez changer de cycle à tout moment
-                depuis votre portail de paiement.
-              </p>
-            </div>
-            <div>
-              <h3 className="font-medium mb-2 text-[color:var(--foreground)]">
-                Puis-je annuler mon abonnement ?
-              </h3>
-              <p className="text-sm text-[color:var(--muted-foreground)]">
-                Oui, vous pouvez annuler votre abonnement à tout moment. Votre
-                abonnement restera actif jusqu&apos;à la fin de la période en
-                cours, puis basculera automatiquement vers le plan gratuit.
-              </p>
-            </div>
-            <div>
-              <h3 className="font-medium mb-2 text-[color:var(--foreground)]">
-                Que se passe-t-il si je dépasse les limites de mon forfait ?
-              </h3>
-              <p className="text-sm text-[color:var(--muted-foreground)]">
-                Vous serez notifié lorsque vous approchez des limites de votre
-                forfait. Si vous dépassez ces limites, vous devrez passer à un
-                forfait supérieur pour pouvoir continuer à ajouter de nouveaux
-                utilisateurs ou objets.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {plans.map((plan) => (
+              <Card
+                key={plan.id}
+                className={`bg-[color:var(--card)] border-[color:var(--border)] overflow-hidden transition-all duration-300 ${
+                  currentPlan?.id === plan.id
+                    ? "border-2 border-[color:var(--primary)] shadow-lg shadow-[color:var(--primary)]/10"
+                    : "shadow-sm"
+                }`}
+              >
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-[color:var(--foreground)]">
+                    {plan.name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pb-6">
+                  <div className="mb-6">
+                    {plan.hasCustomPricing ? (
+                      <div className="text-2xl font-bold text-[color:var(--foreground)]">
+                        Sur mesure
+                      </div>
+                    ) : (
+                      <div className="flex items-end">
+                        <span className="text-3xl font-bold text-[color:var(--foreground)]">
+                          {plan.price === 0
+                            ? "Gratuit"
+                            : billingCycle === "monthly"
+                              ? `${plan.monthlyPrice}€`
+                              : plan.yearlyPrice
+                                ? `${plan.yearlyPrice}€`
+                                : `${plan.monthlyPrice * 12}€`}
+                        </span>
+                        {plan.price > 0 && (
+                          <span className="text-[color:var(--muted-foreground)] ml-1">
+                            /{billingCycle === "monthly" ? "mois" : "an"}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
 
-      {/* Modal de confirmation d'annulation */}
-      <CancelModal />
+                  {billingCycle === "yearly" &&
+                    plan.yearlyPrice &&
+                    plan.monthlyPrice * 12 > plan.yearlyPrice && (
+                      <div className="bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 text-sm p-2 rounded-md mb-4 border border-green-200 dark:border-green-900/50">
+                        Économisez{" "}
+                        {Math.round(
+                          100 -
+                            (plan.yearlyPrice / (plan.monthlyPrice * 12)) * 100
+                        )}
+                        % avec le forfait annuel
+                      </div>
+                    )}
+
+                  <ul className="space-y-3 mb-6">
+                    {plan.features.map((feature, index) => (
+                      <li key={index} className="flex items-start">
+                        <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400 mr-2 flex-shrink-0" />
+                        <span className="text-[color:var(--foreground)]">
+                          {feature}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+                <CardFooter>
+                  <Button
+                    onClick={() => handleSelectPlan(plan)}
+                    className={`w-full touch-target active:scale-95 transition-transform ${
+                      currentPlan?.id === plan.id
+                        ? "bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)] hover:bg-[color:var(--muted)]"
+                        : "bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:opacity-90"
+                    }`}
+                    variant={
+                      currentPlan?.id === plan.id ? "outline" : "default"
+                    }
+                    disabled={
+                      loading !== null ||
+                      !isAdmin ||
+                      currentPlan?.id === plan.id
+                    }
+                  >
+                    {loading === plan.id ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Chargement...
+                      </>
+                    ) : currentPlan?.id === plan.id ? (
+                      "Plan actuel"
+                    ) : (
+                      "Sélectionner ce plan"
+                    )}
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+
+          {!isAdmin && (
+            <div className="mt-4 p-4 bg-amber-100 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-md text-amber-700 dark:text-amber-400">
+              Seuls les administrateurs peuvent gérer les abonnements. Contactez
+              l&apos;administrateur de votre organisation pour modifier votre
+              abonnement.
+            </div>
+          )}
+        </div>
+
+        {/* Section FAQ */}
+        <div className="mt-10">
+          <h2 className="text-xl font-semibold mb-4 text-[color:var(--foreground)]">
+            Questions fréquentes
+          </h2>
+          <Card className="bg-[color:var(--card)] border-[color:var(--border)] shadow-sm">
+            <CardContent className="p-6 space-y-4">
+              <div>
+                <h3 className="font-medium mb-2 text-[color:var(--foreground)]">
+                  Comment fonctionne la facturation ?
+                </h3>
+                <p className="text-sm text-[color:var(--muted-foreground)]">
+                  La facturation est mensuelle ou annuelle, selon le cycle que
+                  vous choisissez. Vous pouvez changer de cycle à tout moment
+                  depuis votre portail de paiement.
+                </p>
+              </div>
+              <div>
+                <h3 className="font-medium mb-2 text-[color:var(--foreground)]">
+                  Puis-je annuler mon abonnement ?
+                </h3>
+                <p className="text-sm text-[color:var(--muted-foreground)]">
+                  Oui, vous pouvez annuler votre abonnement à tout moment. Votre
+                  abonnement restera actif jusqu&apos;à la fin de la période en
+                  cours, puis basculera automatiquement vers le plan gratuit.
+                </p>
+              </div>
+              <div>
+                <h3 className="font-medium mb-2 text-[color:var(--foreground)]">
+                  Que se passe-t-il si je dépasse les limites de mon forfait ?
+                </h3>
+                <p className="text-sm text-[color:var(--muted-foreground)]">
+                  Vous serez notifié lorsque vous approchez des limites de votre
+                  forfait. Si vous dépassez ces limites, vous devrez passer à un
+                  forfait supérieur pour pouvoir continuer à ajouter de nouveaux
+                  utilisateurs ou objets.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Modal de confirmation d'annulation */}
+        <CancelModal />
+      </main>
     </div>
   );
 }
