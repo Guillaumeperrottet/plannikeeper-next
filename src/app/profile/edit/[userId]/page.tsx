@@ -198,6 +198,7 @@ export default async function EditUserPage({
                   userId={userToEdit.id}
                   objects={objects}
                   organizationId={currentUserOrg.organizationId}
+                  isTargetUserAdmin={userToEditOrg.role === "admin"}
                 />
               )}
             </div>

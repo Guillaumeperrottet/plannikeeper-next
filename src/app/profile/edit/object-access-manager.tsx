@@ -50,10 +50,12 @@ export function ObjectAccessManager({
   userId,
   objects,
   organizationId,
+  isTargetUserAdmin = false,
 }: {
   userId: string;
   objects: Objet[];
   organizationId: string;
+  isTargetUserAdmin?: boolean;
 }) {
   const [objectAccess, setObjectAccess] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState("");
@@ -89,7 +91,9 @@ export function ObjectAccessManager({
           // Définir une valeur par défaut pour tous les objets
           const allAccess: Record<string, string> = {};
           objects.forEach((obj) => {
-            allAccess[obj.id] = accessMap[obj.id] || "none";
+            // Si l'utilisateur est admin, définir "admin" par défaut, sinon "none"
+            const defaultAccess = isTargetUserAdmin ? "admin" : "none";
+            allAccess[obj.id] = accessMap[obj.id] || defaultAccess;
           });
 
           setObjectAccess(allAccess);
@@ -98,7 +102,8 @@ export function ObjectAccessManager({
           // Si aucun accès n'est trouvé, nous supposons qu'aucun accès n'est défini
           const defaultAccess: Record<string, string> = {};
           objects.forEach((obj) => {
-            defaultAccess[obj.id] = "none";
+            // Si l'utilisateur est admin, définir "admin" par défaut, sinon "none"
+            defaultAccess[obj.id] = isTargetUserAdmin ? "admin" : "none";
           });
           setObjectAccess(defaultAccess);
           setOriginalAccess({ ...defaultAccess });
@@ -115,7 +120,7 @@ export function ObjectAccessManager({
     };
 
     loadAccess();
-  }, [userId, objects]);
+  }, [userId, objects, isTargetUserAdmin]);
 
   // Vérifier s'il y a des changements non enregistrés
   useEffect(() => {
