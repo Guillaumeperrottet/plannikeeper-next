@@ -1,346 +1,457 @@
+// src/app/components/landing/Pricing.tsx - Version mise à jour
+"use client";
+
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { track } from "@vercel/analytics";
 import { Button } from "@/app/components/ui/button";
-import {
-  Check,
-  CheckCircle2,
-  Sparkles,
-  Users,
-  Building2,
-  Home,
-  Mail,
-} from "lucide-react";
+import { Check, Star, Sparkles, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { track } from "@vercel/analytics";
 
-export default function PricingSection() {
-  const [billingCycle, setBillingCycle] = useState("monthly");
+const plans = [
+  {
+    id: "FREE",
+    name: "Gratuit",
+    description: "Pour découvrir PlanniKeeper",
+    price: 0,
+    monthlyPrice: 0,
+    yearlyPrice: 0,
+    popular: false,
+    color: "gray",
+    features: [
+      "1 utilisateur",
+      "1 objet immobilier",
+      "1 secteur",
+      "10 articles maximum",
+      "50 tâches maximum",
+      "500MB de stockage",
+      "Support communauté",
+    ],
+    limitations: ["Fonctionnalités de base", "Stockage limité"],
+    ctaText: "Commencer gratuitement",
+    highlight: "Idéal pour découvrir",
+  },
+  {
+    id: "PERSONAL",
+    name: "Particulier",
+    description: "Pour la gestion personnelle",
+    price: 12,
+    monthlyPrice: 12,
+    yearlyPrice: 120,
+    popular: false,
+    color: "blue",
+    features: [
+      "1 utilisateur",
+      "1 objet immobilier",
+      "3 secteurs",
+      "200 articles maximum",
+      "500 tâches maximum",
+      "2GB de stockage",
+      "Support email",
+      "Toutes les fonctionnalités",
+      "Notifications par email",
+    ],
+    ctaText: "Choisir Particulier",
+    highlight: "Parfait pour les particuliers",
+    badge: "Recommandé pour les propriétaires",
+  },
+  {
+    id: "PROFESSIONAL",
+    name: "Professionnel",
+    description: "Pour les professionnels indépendants",
+    price: 50,
+    monthlyPrice: 50,
+    yearlyPrice: 500,
+    popular: true,
+    color: "orange",
+    features: [
+      "Jusqu'à 5 utilisateurs",
+      "3 objets immobiliers",
+      "30 secteurs",
+      "1000 articles maximum",
+      "2500 tâches maximum",
+      "10GB de stockage",
+      "Support prioritaire",
+      "Gestion des accès utilisateurs",
+      "Notifications avancées",
+      "Rapports détaillés",
+      "Collaboration d'équipe",
+    ],
+    ctaText: "Choisir Professionnel",
+    highlight: "Le plus populaire",
+    badge: "Meilleur rapport qualité-prix",
+  },
+  {
+    id: "ENTERPRISE",
+    name: "Entreprise",
+    description: "Pour les équipes et entreprises",
+    price: 90,
+    monthlyPrice: 90,
+    yearlyPrice: 850,
+    popular: false,
+    color: "purple",
+    features: [
+      "Jusqu'à 10 utilisateurs",
+      "5 objets immobiliers",
+      "Secteurs illimités",
+      "Articles illimités",
+      "Tâches illimitées",
+      "50GB de stockage",
+      "Support téléphone + email",
+      "Formation personnalisée",
+      "API d'intégration",
+      "Personnalisation avancée",
+      "Sauvegarde automatique",
+      "SLA garanti",
+    ],
+    ctaText: "Contacter les ventes",
+    highlight: "Solution complète",
+    badge: "Support premium inclus",
+  },
+];
 
-  // Fonction de tracking pour les interactions pricing
-  const handlePricingInteraction = (
-    action: string,
-    planName?: string,
-    additional?: Record<string, unknown>
-  ) => {
-    track("pricing_interaction", {
-      action,
-      plan: planName || "",
+const PricingSection = () => {
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">(
+    "monthly"
+  );
+
+  const handlePlanClick = (planId: string, source: string) => {
+    track("pricing_plan_clicked", {
+      plan: planId,
+      source: source,
       billing_cycle: billingCycle,
       timestamp: new Date().toISOString(),
-      ...additional,
     });
   };
 
-  const handleBillingToggle = (cycle: string) => {
-    setBillingCycle(cycle);
-    handlePricingInteraction("billing_cycle_changed", undefined, {
-      new_cycle: cycle,
-    });
+  const getColorClasses = (color: string, isPopular: boolean = false) => {
+    const colors = {
+      gray: {
+        gradient: "from-gray-500 to-gray-600",
+        button: "bg-gray-600 hover:bg-gray-700",
+        border: "border-gray-200 hover:border-gray-400",
+        accent: "text-gray-600",
+        bg: "bg-gray-50",
+      },
+      blue: {
+        gradient: "from-blue-500 to-blue-600",
+        button: "bg-blue-600 hover:bg-blue-700",
+        border: "border-blue-200 hover:border-blue-400",
+        accent: "text-blue-600",
+        bg: "bg-blue-50",
+      },
+      orange: {
+        gradient: "from-[#d9840d] to-[#e36002]",
+        button: "bg-[#d9840d] hover:bg-[#c6780c]",
+        border: isPopular
+          ? "border-[#d9840d] ring-2 ring-[#d9840d]/20"
+          : "border-[#ffedd5] hover:border-[#d9840d]",
+        accent: "text-[#d9840d]",
+        bg: "bg-[#fff7ed]",
+      },
+      purple: {
+        gradient: "from-purple-500 to-purple-600",
+        button: "bg-purple-600 hover:bg-purple-700",
+        border: "border-purple-200 hover:border-purple-400",
+        accent: "text-purple-600",
+        bg: "bg-purple-50",
+      },
+    };
+    return colors[color as keyof typeof colors] || colors.gray;
   };
-
-  const handlePlanClick = (planName: string, isContact = false) => {
-    if (isContact) {
-      handlePricingInteraction("contact_enterprise_clicked", planName);
-    } else {
-      handlePricingInteraction("plan_selected", planName);
-    }
-  };
-
-  const plans = [
-    {
-      name: "FREE",
-      displayName: "Gratuit",
-      icon: Home,
-      price: { monthly: "0CHF", yearly: "0CHF" },
-      description: "Pour découvrir PlanniKeeper",
-      features: [
-        "1 utilisateur",
-        "3 objets immobiliers",
-        "500MB de stockage",
-        "Support communauté",
-      ],
-      limitations: ["Fonctionnalités limitées", "Pas de support prioritaire"],
-      color: "from-gray-100 to-gray-200",
-      textColor: "text-gray-800",
-      borderColor: "border-gray-300",
-      buttonColor: "bg-gray-600 hover:bg-gray-700 text-white",
-      buttonVariant: "outline",
-    },
-    {
-      name: "PERSONAL",
-      displayName: "Privé",
-      icon: Home,
-      price: { monthly: "12CHF", yearly: "120CHF" },
-      description: "Pour la gestion de bien personnels",
-      features: [
-        "1 utilisateur",
-        "10 objets immobiliers",
-        "2GB de stockage",
-        "Support email",
-        "Toutes les fonctionnalités",
-      ],
-      highlight: billingCycle === "yearly" ? "Économisez 24CHF par an" : null,
-      color: "from-blue-50 to-blue-100",
-      textColor: "text-blue-900",
-      borderColor: "border-blue-200",
-      buttonColor: "bg-blue-600 hover:bg-blue-700 text-white",
-      buttonVariant: "default",
-    },
-    {
-      name: "PROFESSIONAL",
-      displayName: "Indépendant",
-      icon: Users,
-      popular: true,
-      price: { monthly: "35CHF", yearly: "350CHF" },
-      description: "Pour les professionnels indépendants",
-      features: [
-        "Jusqu'à 10 utilisateurs",
-        "50 objets immobiliers",
-        "10GB de stockage",
-        "Support prioritaire",
-        "Gestion des accès",
-      ],
-      highlight: billingCycle === "yearly" ? "Économisez 70CHF par an" : null,
-      color: "from-[#d9840d]/10 to-[#e36002]/10",
-      textColor: "text-[#d9840d]",
-      borderColor: "border-[#d9840d]",
-      buttonColor: "bg-[#d9840d] hover:bg-[#c6780c] text-white",
-      buttonVariant: "default",
-    },
-    {
-      name: "ENTERPRISE",
-      displayName: "Entreprise",
-      icon: Building2,
-      price: { monthly: "-", yearly: "-" },
-      description: "Pour les équipes et entreprises",
-      features: [
-        "Utilisateurs illimités",
-        "Objets illimités",
-        "50GB et + de stockage",
-        "Support téléphone + email",
-        "Formation",
-      ],
-      highlight: billingCycle === "yearly" ? "Économisez 170€ par an" : null,
-      color: "from-purple-50 to-purple-100",
-      textColor: "text-purple-900",
-      borderColor: "border-purple-200",
-      buttonColor: "bg-purple-600 hover:bg-purple-700 text-white",
-      buttonVariant: "default",
-      contactOnly: true,
-    },
-  ];
 
   return (
-    <section className="py-20 md:py-32 bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-16">
-          <div className="inline-block bg-[#e8ebe0] px-4 py-1 rounded-full mb-4 border border-[#beac93]">
-            <span className="text-[#62605d] font-medium text-sm">
-              Tarifs transparents
+    <section className="py-20 md:py-32 bg-gradient-to-b from-[#f9f3ec] to-[#f5f3ef] relative overflow-hidden">
+      {/* Éléments décoratifs */}
+      <div className="absolute -right-32 top-1/4 w-96 h-96 rounded-full bg-[#d9840d]/10 blur-3xl"></div>
+      <div className="absolute left-1/4 bottom-1/4 w-72 h-72 rounded-full bg-[#e8ebe0]/40 blur-2xl"></div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+        {/* En-tête de section */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true, amount: 0.3 }}
+          className="text-center mb-16"
+        >
+          <div className="inline-block bg-[#d9840d]/10 px-4 py-2 rounded-full mb-6 border border-[#d9840d]/20">
+            <span className="text-[#d9840d] font-medium text-sm">
+              Plans et tarifs
             </span>
           </div>
           <h2 className="text-3xl md:text-5xl font-bold mb-6 text-[#141313]">
-            Choisissez l&apos;offre qui vous convient
+            Choisissez votre plan
           </h2>
-          <p className="text-lg text-[#62605d] max-w-3xl mx-auto">
-            Des formules adaptées à tous les besoins, avec la possibilité
-            d&apos;évoluer à mesure que votre activité se développe.
+          <p className="text-lg text-[#62605d] max-w-3xl mx-auto mb-8">
+            Sélectionnez l&apos;offre qui correspond le mieux à vos besoins et
+            commencez à optimiser la gestion de vos projets immobiliers dès
+            aujourd&apos;hui.
           </p>
 
-          {/* Toggle Mensuel/Annuel */}
-          <div className="flex justify-center mt-8">
-            <div className="inline-flex items-center bg-gray-100 rounded-full p-1">
-              <button
-                onClick={() => handleBillingToggle("monthly")}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  billingCycle === "monthly"
-                    ? "bg-white text-[#d9840d] shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
+          {/* Toggle de facturation */}
+          <div className="inline-flex items-center justify-center gap-4 bg-white p-2 rounded-xl border border-[#beac93]">
+            <button
+              onClick={() => setBillingCycle("monthly")}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                billingCycle === "monthly"
+                  ? "bg-[#d9840d] text-white shadow-sm"
+                  : "text-[#62605d] hover:text-[#141313]"
+              }`}
+            >
+              Mensuel
+            </button>
+            <button
+              onClick={() => setBillingCycle("yearly")}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 relative ${
+                billingCycle === "yearly"
+                  ? "bg-[#d9840d] text-white shadow-sm"
+                  : "text-[#62605d] hover:text-[#141313]"
+              }`}
+            >
+              Annuel
+              <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+                -15%
+              </span>
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Grille des plans */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {plans.map((plan, index) => {
+            const colors = getColorClasses(plan.color, plan.popular);
+            const price =
+              billingCycle === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
+            const displayPrice = billingCycle === "yearly" ? price / 12 : price;
+
+            return (
+              <motion.div
+                key={plan.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                viewport={{ once: true, amount: 0.3 }}
+                whileHover={{ y: -10, scale: 1.02 }}
+                className={`relative bg-white rounded-2xl border-2 transition-all duration-300 shadow-lg hover:shadow-xl ${colors.border} ${
+                  plan.popular ? "transform scale-105" : ""
                 }`}
               >
-                Mensuel
-              </button>
-              <button
-                onClick={() => handleBillingToggle("yearly")}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-1 ${
-                  billingCycle === "yearly"
-                    ? "bg-white text-[#d9840d] shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                Annuel{" "}
-                <Sparkles
-                  size={12}
-                  className={
-                    billingCycle === "yearly"
-                      ? "text-[#d9840d]"
-                      : "text-gray-400"
-                  }
-                />
-              </button>
+                {/* Badge populaire */}
+                {plan.popular && (
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <div className="flex items-center gap-1 bg-gradient-to-r from-[#d9840d] to-[#e36002] text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
+                      <Sparkles className="w-4 h-4" />
+                      {plan.highlight}
+                    </div>
+                  </div>
+                )}
+
+                {/* Badge recommandé */}
+                {plan.badge && !plan.popular && (
+                  <div className="absolute -top-3 left-4 right-4">
+                    <div
+                      className={`${colors.bg} ${colors.accent} text-center text-xs font-medium py-2 rounded-lg border ${colors.border}`}
+                    >
+                      {plan.badge}
+                    </div>
+                  </div>
+                )}
+
+                <div className="p-8">
+                  {/* En-tête du plan */}
+                  <div className="text-center mb-6">
+                    <div
+                      className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${colors.gradient} flex items-center justify-center`}
+                    >
+                      {plan.id === "FREE" && (
+                        <Star className="w-8 h-8 text-white" />
+                      )}
+                      {plan.id === "PERSONAL" && (
+                        <Check className="w-8 h-8 text-white" />
+                      )}
+                      {plan.id === "PROFESSIONAL" && (
+                        <Sparkles className="w-8 h-8 text-white" />
+                      )}
+                      {plan.id === "ENTERPRISE" && (
+                        <Star className="w-8 h-8 text-white" />
+                      )}
+                    </div>
+
+                    <h3 className={`text-2xl font-bold ${colors.accent} mb-2`}>
+                      {plan.name}
+                    </h3>
+                    <p className="text-[#62605d] text-sm">{plan.description}</p>
+                  </div>
+
+                  {/* Prix */}
+                  <div className="text-center mb-8">
+                    {plan.price === 0 ? (
+                      <div className="text-4xl font-bold text-[#141313]">
+                        Gratuit
+                      </div>
+                    ) : (
+                      <div>
+                        <span className="text-4xl font-bold text-[#141313]">
+                          {Math.round(displayPrice)}€
+                        </span>
+                        <span className="text-[#62605d] ml-1">/mois</span>
+                        {billingCycle === "yearly" && (
+                          <div className="text-sm text-[#16a34a] mt-1">
+                            Facturé {plan.yearlyPrice}€/an
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Fonctionnalités */}
+                  <div className="space-y-4 mb-8">
+                    {plan.features.map((feature, featureIndex) => (
+                      <motion.div
+                        key={featureIndex}
+                        initial={{ opacity: 0, x: -10 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        transition={{
+                          duration: 0.3,
+                          delay: featureIndex * 0.05,
+                        }}
+                        viewport={{ once: true }}
+                        className="flex items-start gap-3"
+                      >
+                        <div
+                          className={`w-5 h-5 rounded-full bg-gradient-to-br ${colors.gradient} flex items-center justify-center mt-0.5 flex-shrink-0`}
+                        >
+                          <Check className="w-3 h-3 text-white" />
+                        </div>
+                        <span className="text-[#62605d] text-sm leading-relaxed">
+                          {feature}
+                        </span>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  {/* CTA */}
+                  <div className="space-y-3">
+                    <Link
+                      href={
+                        plan.id === "ENTERPRISE"
+                          ? "/contact?subject=Demande%20Plan%20Entreprise"
+                          : `/signup?plan=${plan.id}`
+                      }
+                      onClick={() =>
+                        handlePlanClick(plan.id, "pricing_section")
+                      }
+                    >
+                      <Button
+                        className={`w-full py-3 ${colors.button} text-white font-medium transition-all duration-200 hover:shadow-lg`}
+                      >
+                        {plan.ctaText}
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </Link>
+
+                    {plan.id !== "FREE" && (
+                      <p className="text-xs text-[#62605d] text-center">
+                        Essai gratuit de 7 jours
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Accent en bas */}
+                <div
+                  className={`h-1 bg-gradient-to-r ${colors.gradient} rounded-b-2xl`}
+                ></div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Section supplémentaire */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          viewport={{ once: true, amount: 0.3 }}
+          className="mt-20 text-center"
+        >
+          <div className="bg-white/50 backdrop-blur-sm border border-[#beac93]/30 rounded-2xl p-8 shadow-lg">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="text-left">
+                <h3 className="text-xl font-semibold text-[#141313] mb-2">
+                  Besoin d&apos;un plan sur mesure ?
+                </h3>
+                <p className="text-[#62605d]">
+                  Pour les besoins spécifiques ou les grandes équipes, nous
+                  proposons des solutions personnalisées avec un support dédié.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link href="/contact">
+                  <Button
+                    variant="outline"
+                    className="border-[#d9840d] text-[#d9840d] hover:bg-[#d9840d] hover:text-white"
+                    onClick={() => handlePlanClick("CUSTOM", "pricing_section")}
+                  >
+                    Nous contacter
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
+        </motion.div>
 
-          {billingCycle === "yearly" && (
-            <p className="mt-3 text-sm text-[#d9840d]">
-              Économisez jusqu&apos;à 16% avec nos formules annuelles
-            </p>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {plans.map((plan, index) => (
-            <motion.div
-              key={plan.name}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              viewport={{ once: true, amount: 0.3 }}
-              whileHover={{ y: -10, scale: 1.02 }}
-              className={`rounded-2xl overflow-hidden transition-all duration-300 relative cursor-pointer ${
-                plan.popular
-                  ? "border-2 border-[#d9840d] shadow-lg shadow-[#d9840d]/10"
-                  : "border border-[#beac93]"
-              }`}
-              onClick={() => {
-                handlePricingInteraction("plan_card_clicked", plan.name);
-              }}
-            >
-              {plan.popular && (
-                <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-[#d9840d] to-[#e36002]"></div>
-              )}
-
-              <div
-                className={`p-6 md:p-8 bg-gradient-to-br ${plan.color} ${plan.textColor}`}
-              >
-                {plan.popular && (
-                  <span className="absolute top-4 right-4 bg-[#d9840d] text-white text-xs font-bold px-3 py-1 rounded-full">
-                    POPULAIRE
-                  </span>
-                )}
-
-                <div className="flex items-center gap-3 mb-4">
-                  <div
-                    className={`w-10 h-10 rounded-full bg-white/80 flex items-center justify-center ${plan.textColor}`}
-                  >
-                    <plan.icon size={20} />
-                  </div>
-                  <h3 className="text-xl font-bold">{plan.displayName}</h3>
-                </div>
-
-                <p className="text-sm opacity-80 mb-6">{plan.description}</p>
-
-                <div className="flex items-end mb-6">
-                  <span className="text-3xl md:text-4xl font-bold">
-                    {plan.price[billingCycle as keyof typeof plan.price]}
-                  </span>
-                  {plan.price[billingCycle as keyof typeof plan.price] !==
-                    "Sur mesure" && (
-                    <span className="text-lg ml-1 opacity-80">
-                      {billingCycle === "monthly" ? "/mois" : "/an"}
-                    </span>
-                  )}
-                </div>
-
-                {plan.highlight && (
-                  <div className="bg-white/30 rounded-lg p-2 mb-6 text-sm font-medium text-center">
-                    {plan.highlight}
-                  </div>
-                )}
-
-                {plan.contactOnly ? (
-                  <Link
-                    href="/contact?subject=Demande%20Plan%20Entreprise"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePlanClick(plan.name, true);
-                    }}
-                  >
-                    <Button
-                      className={`w-full py-6 font-bold rounded-xl ${plan.buttonColor} transition-all`}
-                      variant={plan.buttonVariant as "default" | "outline"}
-                    >
-                      <Mail className="mr-2 h-4 w-4" />
-                      Nous contacter
-                    </Button>
-                  </Link>
-                ) : (
-                  <Button
-                    className={`w-full py-6 font-bold rounded-xl ${plan.buttonColor} transition-all`}
-                    variant={plan.buttonVariant as "default" | "outline"}
-                    asChild
-                  >
-                    <Link
-                      href={`/signup?plan=${encodeURIComponent(plan.name)}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePlanClick(plan.name);
-                      }}
-                    >
-                      Commencer maintenant
-                    </Link>
-                  </Button>
-                )}
-              </div>
-
-              <div className="p-6 md:p-8 bg-white border-t border-gray-100">
-                <h4 className="font-semibold mb-4 flex items-center gap-2">
-                  <CheckCircle2 size={16} className={plan.textColor} />
-                  <span>Fonctionnalités incluses</span>
-                </h4>
-                <ul className="space-y-3 mb-6">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <Check
-                        className={`w-5 h-5 mt-0.5 ${plan.textColor} flex-shrink-0`}
-                      />
-                      <span className="text-sm text-gray-700">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                {plan.limitations && (
-                  <>
-                    <div className="border-t border-gray-100 my-4"></div>
-                    <h4 className="text-sm text-gray-500 mb-3">
-                      Limitations :
-                    </h4>
-                    <ul className="space-y-2">
-                      {plan.limitations.map((limitation, i) => (
-                        <li
-                          key={i}
-                          className="text-sm text-gray-500 flex items-center gap-2"
-                        >
-                          <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
-                          {limitation}
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                )}
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        <div className="mt-16 text-center">
-          <div className="inline-flex items-center gap-3 bg-blue-50 px-6 py-3 rounded-full border border-blue-100">
-            <Sparkles size={16} className="text-blue-500" />
-            <p className="text-sm text-blue-700 font-medium">
-              Vous avez besoin d&apos;une solution sur mesure ?{" "}
-              <Link
-                href="/contact"
-                className="underline underline-offset-2 font-bold"
-                onClick={() => {
-                  handlePricingInteraction("custom_solution_clicked");
-                }}
-              >
-                Contactez-nous
-              </Link>
+        {/* FAQ rapide */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.7 }}
+          viewport={{ once: true, amount: 0.3 }}
+          className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8"
+        >
+          <div className="text-center">
+            <div className="w-12 h-12 bg-[#d9840d]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Check className="w-6 h-6 text-[#d9840d]" />
+            </div>
+            <h4 className="font-semibold text-[#141313] mb-2">
+              Changement de plan
+            </h4>
+            <p className="text-sm text-[#62605d]">
+              Changez de plan à tout moment selon vos besoins. Mise à niveau ou
+              rétrogradation instantanée.
             </p>
           </div>
-        </div>
+
+          <div className="text-center">
+            <div className="w-12 h-12 bg-[#d9840d]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Star className="w-6 h-6 text-[#d9840d]" />
+            </div>
+            <h4 className="font-semibold text-[#141313] mb-2">
+              Garantie 30 jours
+            </h4>
+            <p className="text-sm text-[#62605d]">
+              Pas satisfait ? Nous vous remboursons intégralement sous 30 jours,
+              sans question.
+            </p>
+          </div>
+
+          <div className="text-center">
+            <div className="w-12 h-12 bg-[#d9840d]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Sparkles className="w-6 h-6 text-[#d9840d]" />
+            </div>
+            <h4 className="font-semibold text-[#141313] mb-2">
+              Support inclus
+            </h4>
+            <p className="text-sm text-[#62605d]">
+              Notre équipe support est là pour vous accompagner dans votre
+              utilisation de PlanniKeeper.
+            </p>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
-}
+};
+
+export default PricingSection;
