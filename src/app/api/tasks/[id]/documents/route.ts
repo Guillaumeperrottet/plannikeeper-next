@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 import { CloudinaryService } from "@/lib/cloudinary";
 import { StorageService } from "@/lib/storage-service";
+import { NotificationService } from "@/lib/notification-serice";
 
 // Typage mis à jour : params est une Promise qui résout { id: string }
 type RouteParams = {
@@ -225,6 +226,14 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         taskId,
       },
     });
+
+    // 🆕 NOTIFICATION POUR LE DOCUMENT
+    await NotificationService.notifyDocumentUploaded(
+      taskId,
+      user.id,
+      user.name || "Utilisateur",
+      file.name
+    );
 
     // APRÈS UN UPLOAD RÉUSSI : Mettre à jour l'usage du stockage
     await StorageService.updateStorageUsage(organizationId);

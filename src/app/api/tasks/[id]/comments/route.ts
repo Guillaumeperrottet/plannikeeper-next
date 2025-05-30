@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
+import { NotificationService } from "@/lib/notification-serice";
 
 type RouteParams = {
   params: Promise<{ id: string }>;
@@ -79,6 +80,14 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         },
       },
     });
+
+    // 🆕 NOTIFICATION POUR LE COMMENTAIRE
+    await NotificationService.notifyCommentAdded(
+      taskId,
+      user.id,
+      user.name || "Utilisateur",
+      content
+    );
 
     return NextResponse.json(comment);
   } catch (error) {

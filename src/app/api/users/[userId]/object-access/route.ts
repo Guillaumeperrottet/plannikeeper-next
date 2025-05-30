@@ -2,6 +2,7 @@
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { NotificationService } from "@/lib/notification-serice";
 
 // Typage mis à jour : params est une Promise qui résout { userId: string }
 type RouteParams = {
@@ -112,7 +113,17 @@ export async function POST(req: Request, { params }: RouteParams) {
 
     // Pour chaque accès, créer, mettre à jour ou supprimer
     for (const item of access) {
+      const currentAccess = await prisma.objectAccess.findUnique({
+        where: {
+          userId_objectId: {
+            userId,
+            objectId: item.objectId,
+          },
+        },
+      });
+
       if (item.accessLevel === "none") {
+        // Suppression d'accès
         await prisma.objectAccess.deleteMany({
           where: {
             userId,
@@ -120,6 +131,9 @@ export async function POST(req: Request, { params }: RouteParams) {
           },
         });
       } else {
+        const isNewAccess =
+          !currentAccess || currentAccess.accessLevel === "none";
+
         await prisma.objectAccess.upsert({
           where: {
             userId_objectId: {
@@ -136,6 +150,16 @@ export async function POST(req: Request, { params }: RouteParams) {
             accessLevel: item.accessLevel,
           },
         });
+
+        // 🆕 NOTIFICATION POUR NOUVEL ACCÈS
+        if (isNewAccess) {
+          await NotificationService.notifyUserAddedToObject(
+            userId,
+            item.objectId,
+            item.accessLevel,
+            currentUser.name || "Administrateur"
+          );
+        }
       }
     }
 

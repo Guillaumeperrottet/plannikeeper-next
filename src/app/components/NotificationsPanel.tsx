@@ -237,16 +237,42 @@ export default function NotificationsPanel({
       case "TASK_ASSIGNED":
         return <span className="text-[color:var(--primary)]">📋</span>;
       case "TASK_COMPLETED":
-        return (
-          <span className="text-[color:var(--success-foreground)]">✅</span>
-        );
+        return <span className="text-green-500">✅</span>;
+      case "TASK_OVERDUE":
+        return <span className="text-red-500">⏰</span>;
+      case "TASK_DUE_SOON":
+        return <span className="text-orange-500">⚡</span>;
       case "COMMENT_ADDED":
-        return <span className="text-[color:var(--info-foreground)]">💬</span>;
+        return <span className="text-blue-500">💬</span>;
+      case "TASK_UPDATED":
+        return <span className="text-purple-500">✏️</span>;
+      case "DOCUMENT_UPLOADED":
+        return <span className="text-green-600">📎</span>;
+      case "USER_ADDED_TO_OBJECT":
+        return <span className="text-indigo-500">🔑</span>;
+      case "USER_REMOVED_FROM_OBJECT":
+        return <span className="text-red-400">🚫</span>;
       default:
         return (
           <Bell className="h-4 w-4 text-[color:var(--muted-foreground)]" />
         );
     }
+  };
+
+  // getNotificationTypeLabel en tant que fonction simple
+  const getNotificationTypeLabel = (type: string) => {
+    const labels = {
+      TASK_ASSIGNED: "Tâche assignée",
+      TASK_COMPLETED: "Tâche terminée",
+      TASK_OVERDUE: "Tâche en retard",
+      TASK_DUE_SOON: "Échéance proche",
+      COMMENT_ADDED: "Nouveau commentaire",
+      TASK_UPDATED: "Tâche modifiée",
+      DOCUMENT_UPLOADED: "Nouveau document",
+      USER_ADDED_TO_OBJECT: "Nouvel accès",
+      USER_REMOVED_FROM_OBJECT: "Accès retiré",
+    };
+    return labels[type as keyof typeof labels] || type;
   };
 
   // Le reste du code de rendu comme avant...
@@ -304,6 +330,11 @@ export default function NotificationsPanel({
                     {getNotificationIcon(notification.type)}
                   </div>
                   <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-medium text-[color:var(--muted-foreground)] bg-[color:var(--muted)] px-2 py-1 rounded">
+                        {getNotificationTypeLabel(notification.type)}
+                      </span>
+                    </div>
                     <p className="text-sm text-[color:var(--foreground)] mb-1">
                       {notification.content}
                     </p>

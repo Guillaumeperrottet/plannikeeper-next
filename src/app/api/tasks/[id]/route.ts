@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 import { checkTaskAccess } from "@/lib/auth-session";
 import { calculateReminderDate } from "@/lib/utils";
+import { NotificationService } from "@/lib/notification-serice";
 
 // Typage mis à jour : params est une Promise qui résout { id: string }
 type RouteParams = {
@@ -95,6 +96,19 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     );
   }
 
+  // Avant la mise à jour, récupérer l'état actuel
+  const currentTask = await prisma.task.findUnique({
+    where: { id: taskId },
+    select: {
+      name: true,
+      description: true,
+      status: true,
+      realizationDate: true,
+      assignedToId: true,
+      done: true,
+    },
+  });
+
   // Gérer la date de rappel pour les tâches récurrentes
   let reminderDate = recurrenceReminderDate;
 
@@ -150,6 +164,40 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       recurrenceReminderDate: reminderDate,
     },
   });
+
+  // 🆕 NOTIFICATIONS POUR LES MISES À JOUR
+  if (currentTask) {
+    const changes: string[] = [];
+
+    // Détecter les changements
+    if (currentTask.name !== name) changes.push("nom");
+    if (currentTask.description !== description) changes.push("description");
+    if (currentTask.status !== status) changes.push("statut");
+    if (
+      currentTask.realizationDate?.getTime() !==
+      new Date(realizationDate || "").getTime()
+    ) {
+      changes.push("date d'échéance");
+    }
+
+    // Si la tâche passe à "terminée"
+    if (!currentTask.done && status === "completed") {
+      await NotificationService.notifyTaskCompleted(
+        taskId,
+        user.id,
+        user.name || "Utilisateur"
+      );
+    }
+    // Sinon, si il y a d'autres changements
+    else if (changes.length > 0) {
+      await NotificationService.notifyTaskUpdated(
+        taskId,
+        user.id,
+        user.name || "Utilisateur",
+        changes
+      );
+    }
+  }
 
   // Stocker l'ID de l'objet et du secteur pour les invalidations de cache
   const objectId = task.article.sector.object.id;
