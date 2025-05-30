@@ -356,12 +356,6 @@ const PricingSection = () => {
                         )}
                       </Button>
                     </Link>
-
-                    {!plan.isCustom && plan.id !== "FREE" && (
-                      <p className="text-xs text-[#62605d] text-center mt-2">
-                        Essai gratuit de 7 jours
-                      </p>
-                    )}
                   </div>
                 </div>
 
