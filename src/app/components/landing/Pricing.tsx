@@ -1,10 +1,10 @@
-// src/app/components/landing/Pricing.tsx - Version mise à jour
+// src/app/components/landing/Pricing.tsx - Version simplifiée et uniforme
 "use client";
 
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/app/components/ui/button";
-import { Check, Star, Sparkles, ArrowRight } from "lucide-react";
+import { Check, Star, Sparkles, ArrowRight, Crown, Mail } from "lucide-react";
 import Link from "next/link";
 import { track } from "@vercel/analytics";
 
@@ -21,13 +21,9 @@ const plans = [
     features: [
       "1 utilisateur",
       "1 objet immobilier",
-      "1 secteur",
-      "10 articles maximum",
-      "50 tâches maximum",
       "500MB de stockage",
       "Support communauté",
     ],
-    limitations: ["Fonctionnalités de base", "Stockage limité"],
     ctaText: "Commencer gratuitement",
     highlight: "Idéal pour découvrir",
   },
@@ -43,17 +39,11 @@ const plans = [
     features: [
       "1 utilisateur",
       "1 objet immobilier",
-      "3 secteurs",
-      "200 articles maximum",
-      "500 tâches maximum",
       "2GB de stockage",
       "Support email",
-      "Toutes les fonctionnalités",
-      "Notifications par email",
     ],
     ctaText: "Choisir Particulier",
-    highlight: "Parfait pour les particuliers",
-    badge: "Recommandé pour les propriétaires",
+    highlight: "Pour les propriétaires",
   },
   {
     id: "PROFESSIONAL",
@@ -65,21 +55,13 @@ const plans = [
     popular: true,
     color: "orange",
     features: [
-      "Jusqu'à 5 utilisateurs",
+      "5 utilisateurs",
       "3 objets immobiliers",
-      "30 secteurs",
-      "1000 articles maximum",
-      "2500 tâches maximum",
       "10GB de stockage",
       "Support prioritaire",
-      "Gestion des accès utilisateurs",
-      "Notifications avancées",
-      "Rapports détaillés",
-      "Collaboration d'équipe",
     ],
     ctaText: "Choisir Professionnel",
     highlight: "Le plus populaire",
-    badge: "Meilleur rapport qualité-prix",
   },
   {
     id: "ENTERPRISE",
@@ -91,22 +73,32 @@ const plans = [
     popular: false,
     color: "purple",
     features: [
-      "Jusqu'à 10 utilisateurs",
+      "10 utilisateurs",
       "5 objets immobiliers",
-      "Secteurs illimités",
-      "Articles illimités",
-      "Tâches illimitées",
       "50GB de stockage",
-      "Support téléphone + email",
-      "Formation personnalisée",
-      "API d'intégration",
-      "Personnalisation avancée",
-      "Sauvegarde automatique",
-      "SLA garanti",
+      "Support premium",
     ],
-    ctaText: "Contacter les ventes",
+    ctaText: "Choisir Entreprise",
     highlight: "Solution complète",
-    badge: "Support premium inclus",
+  },
+  {
+    id: "SPECIAL",
+    name: "Sur mesure",
+    description: "Solution personnalisée",
+    price: null,
+    monthlyPrice: null,
+    yearlyPrice: null,
+    popular: false,
+    color: "gold",
+    isCustom: true,
+    features: [
+      "Utilisateurs illimités",
+      "Objets illimités",
+      "Stockage illimité",
+      "Support dédié",
+    ],
+    ctaText: "Nous contacter",
+    highlight: "Personnalisé",
   },
 ];
 
@@ -132,6 +124,7 @@ const PricingSection = () => {
         border: "border-gray-200 hover:border-gray-400",
         accent: "text-gray-600",
         bg: "bg-gray-50",
+        icon: <Star className="w-6 h-6 text-white" />,
       },
       blue: {
         gradient: "from-blue-500 to-blue-600",
@@ -139,6 +132,7 @@ const PricingSection = () => {
         border: "border-blue-200 hover:border-blue-400",
         accent: "text-blue-600",
         bg: "bg-blue-50",
+        icon: <Check className="w-6 h-6 text-white" />,
       },
       orange: {
         gradient: "from-[#d9840d] to-[#e36002]",
@@ -148,6 +142,7 @@ const PricingSection = () => {
           : "border-[#ffedd5] hover:border-[#d9840d]",
         accent: "text-[#d9840d]",
         bg: "bg-[#fff7ed]",
+        icon: <Sparkles className="w-6 h-6 text-white" />,
       },
       purple: {
         gradient: "from-purple-500 to-purple-600",
@@ -155,6 +150,15 @@ const PricingSection = () => {
         border: "border-purple-200 hover:border-purple-400",
         accent: "text-purple-600",
         bg: "bg-purple-50",
+        icon: <Star className="w-6 h-6 text-white" />,
+      },
+      gold: {
+        gradient: "from-amber-500 to-yellow-600",
+        button: "bg-amber-600 hover:bg-amber-700",
+        border: "border-amber-200 hover:border-amber-400",
+        accent: "text-amber-600",
+        bg: "bg-amber-50",
+        icon: <Crown className="w-6 h-6 text-white" />,
       },
     };
     return colors[color as keyof typeof colors] || colors.gray;
@@ -217,13 +221,22 @@ const PricingSection = () => {
           </div>
         </motion.div>
 
-        {/* Grille des plans */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        {/* Grille des plans - hauteur uniforme */}
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
           {plans.map((plan, index) => {
             const colors = getColorClasses(plan.color, plan.popular);
             const price =
-              billingCycle === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
-            const displayPrice = billingCycle === "yearly" ? price / 12 : price;
+              plan.price === null
+                ? null
+                : billingCycle === "yearly"
+                  ? plan.yearlyPrice
+                  : plan.monthlyPrice;
+            const displayPrice =
+              price === null
+                ? null
+                : billingCycle === "yearly"
+                  ? price / 12
+                  : price;
 
             return (
               <motion.div
@@ -233,71 +246,55 @@ const PricingSection = () => {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true, amount: 0.3 }}
                 whileHover={{ y: -10, scale: 1.02 }}
-                className={`relative bg-white rounded-2xl border-2 transition-all duration-300 shadow-lg hover:shadow-xl ${colors.border} ${
+                className={`relative bg-white rounded-2xl border-2 transition-all duration-300 shadow-lg hover:shadow-xl h-[480px] flex flex-col ${colors.border} ${
                   plan.popular ? "transform scale-105" : ""
                 }`}
               >
                 {/* Badge populaire */}
                 {plan.popular && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <div className="flex items-center gap-1 bg-gradient-to-r from-[#d9840d] to-[#e36002] text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
-                      <Sparkles className="w-4 h-4" />
+                    <div className="flex items-center gap-1 bg-gradient-to-r from-[#d9840d] to-[#e36002] text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg">
+                      <Sparkles className="w-3 h-3" />
                       {plan.highlight}
                     </div>
                   </div>
                 )}
 
-                {/* Badge recommandé */}
-                {plan.badge && !plan.popular && (
-                  <div className="absolute -top-3 left-4 right-4">
-                    <div
-                      className={`${colors.bg} ${colors.accent} text-center text-xs font-medium py-2 rounded-lg border ${colors.border}`}
-                    >
-                      {plan.badge}
-                    </div>
-                  </div>
-                )}
-
-                <div className="p-8">
+                <div className="p-6 flex flex-col h-full">
                   {/* En-tête du plan */}
                   <div className="text-center mb-6">
                     <div
-                      className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${colors.gradient} flex items-center justify-center`}
+                      className={`w-12 h-12 mx-auto mb-4 rounded-xl bg-gradient-to-br ${colors.gradient} flex items-center justify-center`}
                     >
-                      {plan.id === "FREE" && (
-                        <Star className="w-8 h-8 text-white" />
-                      )}
-                      {plan.id === "PERSONAL" && (
-                        <Check className="w-8 h-8 text-white" />
-                      )}
-                      {plan.id === "PROFESSIONAL" && (
-                        <Sparkles className="w-8 h-8 text-white" />
-                      )}
-                      {plan.id === "ENTERPRISE" && (
-                        <Star className="w-8 h-8 text-white" />
-                      )}
+                      {colors.icon}
                     </div>
 
-                    <h3 className={`text-2xl font-bold ${colors.accent} mb-2`}>
+                    <h3 className={`text-xl font-bold ${colors.accent} mb-2`}>
                       {plan.name}
                     </h3>
                     <p className="text-[#62605d] text-sm">{plan.description}</p>
                   </div>
 
                   {/* Prix */}
-                  <div className="text-center mb-8">
-                    {plan.price === 0 ? (
-                      <div className="text-4xl font-bold text-[#141313]">
+                  <div className="text-center mb-6">
+                    {plan.isCustom ? (
+                      <div className="text-2xl font-bold text-[#141313]">
+                        Sur devis
+                      </div>
+                    ) : plan.price === 0 ? (
+                      <div className="text-2xl font-bold text-[#141313]">
                         Gratuit
                       </div>
                     ) : (
                       <div>
-                        <span className="text-4xl font-bold text-[#141313]">
-                          {Math.round(displayPrice)}€
+                        <span className="text-2xl font-bold text-[#141313]">
+                          {Math.round(displayPrice!)}€
                         </span>
-                        <span className="text-[#62605d] ml-1">/mois</span>
+                        <span className="text-[#62605d] ml-1 text-sm">
+                          /mois
+                        </span>
                         {billingCycle === "yearly" && (
-                          <div className="text-sm text-[#16a34a] mt-1">
+                          <div className="text-xs text-[#16a34a] mt-1">
                             Facturé {plan.yearlyPrice}€/an
                           </div>
                         )}
@@ -305,8 +302,8 @@ const PricingSection = () => {
                     )}
                   </div>
 
-                  {/* Fonctionnalités */}
-                  <div className="space-y-4 mb-8">
+                  {/* Fonctionnalités - flex-grow pour occuper l'espace */}
+                  <div className="space-y-3 mb-6 flex-grow">
                     {plan.features.map((feature, featureIndex) => (
                       <motion.div
                         key={featureIndex}
@@ -320,9 +317,9 @@ const PricingSection = () => {
                         className="flex items-start gap-3"
                       >
                         <div
-                          className={`w-5 h-5 rounded-full bg-gradient-to-br ${colors.gradient} flex items-center justify-center mt-0.5 flex-shrink-0`}
+                          className={`w-4 h-4 rounded-full bg-gradient-to-br ${colors.gradient} flex items-center justify-center mt-0.5 flex-shrink-0`}
                         >
-                          <Check className="w-3 h-3 text-white" />
+                          <Check className="w-2.5 h-2.5 text-white" />
                         </div>
                         <span className="text-[#62605d] text-sm leading-relaxed">
                           {feature}
@@ -331,12 +328,12 @@ const PricingSection = () => {
                     ))}
                   </div>
 
-                  {/* CTA */}
-                  <div className="space-y-3">
+                  {/* CTA - toujours en bas */}
+                  <div className="mt-auto">
                     <Link
                       href={
-                        plan.id === "ENTERPRISE"
-                          ? "/contact?subject=Demande%20Plan%20Entreprise"
+                        plan.isCustom
+                          ? "/contact?subject=Demande%20Plan%20Sur%20Mesure"
                           : `/signup?plan=${plan.id}`
                       }
                       onClick={() =>
@@ -344,15 +341,24 @@ const PricingSection = () => {
                       }
                     >
                       <Button
-                        className={`w-full py-3 ${colors.button} text-white font-medium transition-all duration-200 hover:shadow-lg`}
+                        className={`w-full py-2.5 ${colors.button} text-white font-medium transition-all duration-200 hover:shadow-lg text-sm`}
                       >
-                        {plan.ctaText}
-                        <ArrowRight className="w-4 h-4 ml-2" />
+                        {plan.isCustom ? (
+                          <>
+                            <Mail className="w-4 h-4 mr-2" />
+                            {plan.ctaText}
+                          </>
+                        ) : (
+                          <>
+                            {plan.ctaText}
+                            <ArrowRight className="w-4 h-4 ml-2" />
+                          </>
+                        )}
                       </Button>
                     </Link>
 
-                    {plan.id !== "FREE" && (
-                      <p className="text-xs text-[#62605d] text-center">
+                    {!plan.isCustom && plan.id !== "FREE" && (
+                      <p className="text-xs text-[#62605d] text-center mt-2">
                         Essai gratuit de 7 jours
                       </p>
                     )}
@@ -368,85 +374,48 @@ const PricingSection = () => {
           })}
         </div>
 
-        {/* Section supplémentaire */}
+        {/* Section informative simplifiée */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.5 }}
           viewport={{ once: true, amount: 0.3 }}
-          className="mt-20 text-center"
+          className="mt-16 text-center"
         >
-          <div className="bg-white/50 backdrop-blur-sm border border-[#beac93]/30 rounded-2xl p-8 shadow-lg">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="text-left">
-                <h3 className="text-xl font-semibold text-[#141313] mb-2">
-                  Besoin d&apos;un plan sur mesure ?
+          <div className="bg-white/50 backdrop-blur-sm border border-[#beac93]/30 rounded-2xl p-6 shadow-lg">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="text-center md:text-left">
+                <h3 className="text-lg font-semibold text-[#141313] mb-2">
+                  Tous les plans incluent
                 </h3>
-                <p className="text-[#62605d]">
-                  Pour les besoins spécifiques ou les grandes équipes, nous
-                  proposons des solutions personnalisées avec un support dédié.
+                <p className="text-[#62605d] text-sm">
+                  Accès à toutes les fonctionnalités • Mises à jour gratuites •
+                  Support technique • Garantie 30 jours
                 </p>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Link href="/contact">
-                  <Button
-                    variant="outline"
-                    className="border-[#d9840d] text-[#d9840d] hover:bg-[#d9840d] hover:text-white"
-                    onClick={() => handlePlanClick("CUSTOM", "pricing_section")}
-                  >
-                    Nous contacter
-                  </Button>
-                </Link>
+              <div className="flex gap-3">
+                <div className="text-center">
+                  <div className="w-8 h-8 bg-[#d9840d]/10 rounded-full flex items-center justify-center mx-auto mb-1">
+                    <Check className="w-4 h-4 text-[#d9840d]" />
+                  </div>
+                  <span className="text-xs text-[#62605d]">
+                    Sans engagement
+                  </span>
+                </div>
+                <div className="text-center">
+                  <div className="w-8 h-8 bg-[#d9840d]/10 rounded-full flex items-center justify-center mx-auto mb-1">
+                    <Star className="w-4 h-4 text-[#d9840d]" />
+                  </div>
+                  <span className="text-xs text-[#62605d]">Support inclus</span>
+                </div>
+                <div className="text-center">
+                  <div className="w-8 h-8 bg-[#d9840d]/10 rounded-full flex items-center justify-center mx-auto mb-1">
+                    <Sparkles className="w-4 h-4 text-[#d9840d]" />
+                  </div>
+                  <span className="text-xs text-[#62605d]">Évolutif</span>
+                </div>
               </div>
             </div>
-          </div>
-        </motion.div>
-
-        {/* FAQ rapide */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.7 }}
-          viewport={{ once: true, amount: 0.3 }}
-          className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8"
-        >
-          <div className="text-center">
-            <div className="w-12 h-12 bg-[#d9840d]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Check className="w-6 h-6 text-[#d9840d]" />
-            </div>
-            <h4 className="font-semibold text-[#141313] mb-2">
-              Changement de plan
-            </h4>
-            <p className="text-sm text-[#62605d]">
-              Changez de plan à tout moment selon vos besoins. Mise à niveau ou
-              rétrogradation instantanée.
-            </p>
-          </div>
-
-          <div className="text-center">
-            <div className="w-12 h-12 bg-[#d9840d]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Star className="w-6 h-6 text-[#d9840d]" />
-            </div>
-            <h4 className="font-semibold text-[#141313] mb-2">
-              Garantie 30 jours
-            </h4>
-            <p className="text-sm text-[#62605d]">
-              Pas satisfait ? Nous vous remboursons intégralement sous 30 jours,
-              sans question.
-            </p>
-          </div>
-
-          <div className="text-center">
-            <div className="w-12 h-12 bg-[#d9840d]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-6 h-6 text-[#d9840d]" />
-            </div>
-            <h4 className="font-semibold text-[#141313] mb-2">
-              Support inclus
-            </h4>
-            <p className="text-sm text-[#62605d]">
-              Notre équipe support est là pour vous accompagner dans votre
-              utilisation de PlanniKeeper.
-            </p>
           </div>
         </motion.div>
       </div>
