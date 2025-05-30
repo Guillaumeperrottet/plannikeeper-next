@@ -90,22 +90,23 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Après avoir créé l'objet, créer des entrées d'accès pour tous les membres non-admin
-    const nonAdminUsers = await prisma.organizationUser.findMany({
+    // Après avoir créé l'objet, créer des entrées d'accès pour TOUS les membres
+    const allUsers = await prisma.organizationUser.findMany({
       where: {
         organizationId: userDb.Organization.id,
-        role: { not: "admin" },
       },
-      select: { userId: true },
+      select: { userId: true, role: true },
     });
 
-    if (nonAdminUsers.length > 0) {
+    if (allUsers.length > 0) {
+      const accessEntries = allUsers.map((ou) => ({
+        userId: ou.userId,
+        objectId: objet.id,
+        accessLevel: ou.role === "admin" ? "admin" : "none", // Admin = accès admin, autres = none par défaut
+      }));
+
       await prisma.objectAccess.createMany({
-        data: nonAdminUsers.map((ou) => ({
-          userId: ou.userId,
-          objectId: objet.id,
-          accessLevel: "none",
-        })),
+        data: accessEntries,
         skipDuplicates: true,
       });
     }
