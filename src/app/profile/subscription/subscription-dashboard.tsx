@@ -1045,12 +1045,6 @@ export default function SubscriptionDashboard({
                           </>
                         )}
                       </Button>
-
-                      {!isCurrentPlan && plan.name !== "FREE" && (
-                        <p className="text-xs text-[color:var(--muted-foreground)] text-center mt-2">
-                          Essai gratuit de 7 jours
-                        </p>
-                      )}
                     </div>
                   </div>
                 </Card>
