@@ -123,21 +123,21 @@ export const PLAN_DETAILS = {
     id: "ENTERPRISE",
     name: "Entreprise",
     description: "Pour les équipes et entreprises",
-    price: 85,
-    monthlyPrice: 85,
+    price: 90,
+    monthlyPrice: 90,
     yearlyPrice: 850,
-    maxUsers: null, // Illimité
-    maxObjects: null, // Illimité
+    maxUsers: 10,
+    maxObjects: 5,
     maxStorage: 51200, // 50GB
     maxSectors: null,
     maxArticles: null,
     maxTasks: null,
     features: [
-      "Utilisateurs illimités",
-      "Objets illimités",
+      "10 Utilisateurs",
+      "5 Objets",
       "50GB de stockage",
       "Support téléphone + email",
-      "Formation incluse",
+      "Formation",
     ],
     popular: false,
   },
