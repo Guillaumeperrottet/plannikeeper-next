@@ -137,6 +137,7 @@ export default async function EditUserPage({
                 <UserRoleSelector
                   userId={userToEdit.id}
                   currentRole={userToEditOrg.role}
+                  isCurrentUser={isCurrentUser}
                 />
                 <p className="mt-2 text-sm text-[color:var(--muted-foreground)]">
                   Les administrateurs peuvent gérer les membres et modifier les

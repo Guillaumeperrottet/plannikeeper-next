@@ -1,3 +1,5 @@
+// 3. Modifier src/app/api/users/update-role/route.ts pour ajouter la vérification côté serveur
+
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
@@ -39,6 +41,33 @@ export async function POST(req: Request) {
         { error: "Utilisateur non trouvé dans cette organisation" },
         { status: 404 }
       );
+    }
+
+    // 🚨 VÉRIFICATION DE SÉCURITÉ CRITIQUE
+    // Si l'utilisateur essaie de se retirer ses propres droits admin
+    if (
+      currentUser.id === userId &&
+      targetUserOrg.role === "admin" &&
+      role === "member"
+    ) {
+      // Compter le nombre d'admins dans l'organisation
+      const adminCount = await prisma.organizationUser.count({
+        where: {
+          organizationId: userOrg.organizationId,
+          role: "admin",
+        },
+      });
+
+      // Si c'est le seul admin, interdire
+      if (adminCount <= 1) {
+        return NextResponse.json(
+          {
+            error:
+              "Vous ne pouvez pas vous retirer les droits d'administrateur car vous êtes le seul admin de l'organisation. Nommez d'abord un autre administrateur.",
+          },
+          { status: 403 }
+        );
+      }
     }
 
     // Mettre à jour le rôle
