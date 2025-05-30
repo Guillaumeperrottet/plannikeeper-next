@@ -1,4 +1,3 @@
-// src/app/dashboard/subscription/page.tsx
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
@@ -32,7 +31,7 @@ export default async function SubscriptionPage() {
     },
   });
 
-  // Récupérer l'abonnement et les plans disponibles
+  // Récupérer l'abonnement et les plans disponibles (maintenant avec ENTERPRISE)
   const subscription = await prisma.subscription.findUnique({
     where: { organizationId },
     include: { plan: true },
@@ -41,7 +40,7 @@ export default async function SubscriptionPage() {
   const plans = await prisma.plan.findMany({
     where: {
       name: {
-        notIn: ["SUPER_ADMIN", "ILLIMITE", "CUSTOM", "ENTERPRISE"],
+        notIn: ["SUPER_ADMIN", "ILLIMITE", "CUSTOM"],
       },
     },
     orderBy: {

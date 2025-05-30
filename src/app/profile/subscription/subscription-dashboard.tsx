@@ -1,4 +1,4 @@
-// src/app/profile/subscription/subscription-dashboard.tsx
+// src/app/profile/subscription/subscription-dashboard.tsx - Version mise à jour
 "use client";
 
 import { useState } from "react";
@@ -14,17 +14,16 @@ import {
   AlertTriangle,
   Info,
   CalendarClock,
+  Star,
+  Sparkles,
+  Crown,
+  Mail,
+  Check,
 } from "lucide-react";
 import { Progress } from "@/app/components/ui/progress";
 import { Button } from "@/app/components/ui/button";
 import UsageLimits from "@/app/components/UsageLimits";
-import {
-  Card,
-  CardHeader,
-  CardContent,
-  CardFooter,
-  CardTitle,
-} from "@/app/components/ui/card";
+import { Card, CardContent } from "@/app/components/ui/card";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -34,6 +33,7 @@ import {
   DialogFooter,
 } from "@/app/components/ui/dialog";
 import { BackButton } from "@/app/components/ui/BackButton";
+import Link from "next/link";
 
 type Plan = {
   id: string;
@@ -85,6 +85,120 @@ export default function SubscriptionDashboard({
 
   const currentPlan = subscription?.plan;
   const isFreePlan = currentPlan?.name === "FREE";
+
+  // Fonction pour obtenir l'icône pour chaque plan
+  const getPlanIcon = (planName: string) => {
+    switch (planName) {
+      case "FREE":
+        return <Shield className="h-6 w-6 text-gray-500" />;
+      case "PERSONAL":
+        return <Check className="h-6 w-6 text-[#3b82f6]" />;
+      case "PROFESSIONAL":
+        return <Sparkles className="h-6 w-6 text-[#d9840d]" />;
+      case "ENTERPRISE":
+        return <Star className="h-6 w-6 text-[#8b5cf6]" />;
+      default:
+        return <CreditCard className="h-6 w-6 text-gray-500" />;
+    }
+  };
+
+  // Fonction pour obtenir la couleur du plan
+  const getPlanColor = (planName: string) => {
+    switch (planName) {
+      case "FREE":
+        return {
+          gradient: "from-gray-500 to-gray-600",
+          button: "bg-gray-600 hover:bg-gray-700",
+          border: "border-gray-200",
+          accent: "text-gray-600",
+          bg: "bg-gray-50 dark:bg-gray-900/20",
+        };
+      case "PERSONAL":
+        return {
+          gradient: "from-blue-500 to-blue-600",
+          button: "bg-blue-600 hover:bg-blue-700",
+          border: "border-blue-200",
+          accent: "text-blue-600",
+          bg: "bg-blue-50 dark:bg-blue-900/20",
+        };
+      case "PROFESSIONAL":
+        return {
+          gradient: "from-[#d9840d] to-[#e36002]",
+          button: "bg-[#d9840d] hover:bg-[#c6780c]",
+          border: "border-[#d9840d]",
+          accent: "text-[#d9840d]",
+          bg: "bg-[#fff7ed] dark:bg-orange-900/20",
+        };
+      case "ENTERPRISE":
+        return {
+          gradient: "from-purple-500 to-purple-600",
+          button: "bg-purple-600 hover:bg-purple-700",
+          border: "border-purple-200",
+          accent: "text-purple-600",
+          bg: "bg-purple-50 dark:bg-purple-900/20",
+        };
+      default:
+        return {
+          gradient: "from-gray-500 to-gray-600",
+          button: "bg-gray-600 hover:bg-gray-700",
+          border: "border-gray-200",
+          accent: "text-gray-600",
+          bg: "bg-gray-50 dark:bg-gray-900/20",
+        };
+    }
+  };
+
+  // Fonction pour obtenir le nom d'affichage du plan
+  const getPlanDisplayName = (planName: string) => {
+    switch (planName) {
+      case "FREE":
+        return "Gratuit";
+      case "PERSONAL":
+        return "Particulier";
+      case "PROFESSIONAL":
+        return "Professionnel";
+      case "ENTERPRISE":
+        return "Entreprise";
+      default:
+        return planName;
+    }
+  };
+
+  // Simplifier les features selon le plan
+  const getSimplifiedFeatures = (plan: Plan) => {
+    switch (plan.name) {
+      case "FREE":
+        return [
+          "1 utilisateur",
+          "1 objet immobilier",
+          "500MB de stockage",
+          "Support communauté",
+        ];
+      case "PERSONAL":
+        return [
+          "1 utilisateur",
+          "1 objet immobilier",
+          "2GB de stockage",
+          "Support email",
+        ];
+      case "PROFESSIONAL":
+        return [
+          "5 utilisateurs",
+          "3 objets immobiliers",
+          "10GB de stockage",
+          "Support prioritaire",
+        ];
+      case "ENTERPRISE":
+        return [
+          "10 utilisateurs",
+          "5 objets immobiliers",
+          "50GB de stockage",
+          "Support premium",
+        ];
+      default:
+        return plan.features.slice(0, 4);
+    }
+  };
 
   // Formater la date
   const formatDate = (date: Date | string) => {
@@ -570,6 +684,11 @@ export default function SubscriptionDashboard({
     );
   };
 
+  // Filtrer les plans pour séparer les standards du plan sur mesure
+  const standardPlans = plans.filter((plan) =>
+    ["FREE", "PERSONAL", "PROFESSIONAL", "ENTERPRISE"].includes(plan.name)
+  );
+
   return (
     <div className="min-h-screen bg-[color:var(--background)]">
       {/* Header avec navigation */}
@@ -620,7 +739,7 @@ export default function SubscriptionDashboard({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <h3 className="text-lg font-medium mb-2 text-[color:var(--foreground)]">
-                      Plan {subscription.plan.name}
+                      Plan {getPlanDisplayName(subscription.plan.name)}
                     </h3>
                     <p className="text-sm text-[color:var(--muted-foreground)] mb-4">
                       {subscription.plan.hasCustomPricing
@@ -643,14 +762,16 @@ export default function SubscriptionDashboard({
                         Fonctionnalités incluses:
                       </h4>
                       <ul className="space-y-1">
-                        {subscription.plan.features.map((feature, index) => (
-                          <li key={index} className="flex items-start">
-                            <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400 mr-2 flex-shrink-0 mt-0.5" />
-                            <span className="text-sm text-[color:var(--foreground)]">
-                              {feature}
-                            </span>
-                          </li>
-                        ))}
+                        {getSimplifiedFeatures(subscription.plan).map(
+                          (feature, index) => (
+                            <li key={index} className="flex items-start">
+                              <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400 mr-2 flex-shrink-0 mt-0.5" />
+                              <span className="text-sm text-[color:var(--foreground)]">
+                                {feature}
+                              </span>
+                            </li>
+                          )
+                        )}
                       </ul>
                     </div>
                   </div>
@@ -660,8 +781,6 @@ export default function SubscriptionDashboard({
                       <>
                         <SubscriptionTimeline subscription={subscription} />
                         <BillingDetails subscription={subscription} />
-                        {/* Décommentez quand vous aurez l'API d'historique des factures */}
-                        {/* <InvoiceHistory /> */}
                       </>
                     )}
 
@@ -763,7 +882,7 @@ export default function SubscriptionDashboard({
           <UsageLimits />
         </div>
 
-        {/* Section plans disponibles */}
+        {/* Section plans standards */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
             <h2 className="text-xl font-semibold text-[color:var(--foreground)]">
@@ -795,101 +914,148 @@ export default function SubscriptionDashboard({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {plans.map((plan) => (
-              <Card
-                key={plan.id}
-                className={`bg-[color:var(--card)] border-[color:var(--border)] overflow-hidden transition-all duration-300 ${
-                  currentPlan?.id === plan.id
-                    ? "border-2 border-[color:var(--primary)] shadow-lg shadow-[color:var(--primary)]/10"
-                    : "shadow-sm"
-                }`}
-              >
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-[color:var(--foreground)]">
-                    {plan.name}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pb-6">
-                  <div className="mb-6">
-                    {plan.hasCustomPricing ? (
-                      <div className="text-2xl font-bold text-[color:var(--foreground)]">
-                        Sur mesure
+            {standardPlans.map((plan) => {
+              const colors = getPlanColor(plan.name);
+              const isCurrentPlan = currentPlan?.id === plan.id;
+              const isPopular = plan.name === "PROFESSIONAL";
+              const simplifiedFeatures = getSimplifiedFeatures(plan);
+
+              return (
+                <Card
+                  key={plan.id}
+                  className={`bg-[color:var(--card)] border-[color:var(--border)] overflow-hidden transition-all duration-300 h-[480px] flex flex-col relative ${
+                    isCurrentPlan
+                      ? "border-2 border-[color:var(--primary)] shadow-lg shadow-[color:var(--primary)]/10"
+                      : "shadow-sm hover:shadow-md"
+                  }`}
+                >
+                  {/* Badge populaire */}
+                  {isPopular && (
+                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                      <div className="flex items-center gap-1 bg-gradient-to-r from-[#d9840d] to-[#e36002] text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg">
+                        <Sparkles className="w-3 h-3" />
+                        Populaire
                       </div>
-                    ) : (
-                      <div className="flex items-end">
-                        <span className="text-3xl font-bold text-[color:var(--foreground)]">
-                          {plan.price === 0
-                            ? "Gratuit"
-                            : billingCycle === "monthly"
-                              ? `${plan.monthlyPrice}€`
-                              : plan.yearlyPrice
-                                ? `${plan.yearlyPrice}€`
-                                : `${plan.monthlyPrice * 12}€`}
-                        </span>
-                        {plan.price > 0 && (
-                          <span className="text-[color:var(--muted-foreground)] ml-1">
-                            /{billingCycle === "monthly" ? "mois" : "an"}
+                    </div>
+                  )}
+
+                  {/* Badge plan actuel */}
+                  {isCurrentPlan && (
+                    <div className="absolute top-4 right-4 z-10">
+                      <div className="bg-[color:var(--primary)] text-[color:var(--primary-foreground)] px-2 py-1 rounded-full text-xs font-medium">
+                        Plan actuel
+                      </div>
+                    </div>
+                  )}
+
+                  {/* En-tête coloré */}
+                  <div
+                    className={`h-2 w-full bg-gradient-to-r ${colors.gradient}`}
+                  ></div>
+
+                  <div className="p-6 flex flex-col h-full">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className={`p-2 rounded-lg ${colors.bg}`}>
+                        {getPlanIcon(plan.name)}
+                      </div>
+                      <h3 className={`text-lg font-bold ${colors.accent}`}>
+                        {getPlanDisplayName(plan.name)}
+                      </h3>
+                    </div>
+
+                    <div className="mb-6">
+                      {plan.hasCustomPricing ? (
+                        <div className="text-2xl font-bold text-[color:var(--foreground)]">
+                          Sur mesure
+                        </div>
+                      ) : (
+                        <div className="flex items-end">
+                          <span className="text-2xl font-bold text-[color:var(--foreground)]">
+                            {plan.price === 0
+                              ? "Gratuit"
+                              : billingCycle === "monthly"
+                                ? `${plan.monthlyPrice}€`
+                                : plan.yearlyPrice
+                                  ? `${plan.yearlyPrice}€`
+                                  : `${plan.monthlyPrice * 12}€`}
                           </span>
+                          {plan.price > 0 && (
+                            <span className="text-[color:var(--muted-foreground)] ml-1 text-sm">
+                              /{billingCycle === "monthly" ? "mois" : "an"}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {billingCycle === "yearly" &&
+                      plan.yearlyPrice &&
+                      plan.monthlyPrice * 12 > plan.yearlyPrice && (
+                        <div className="bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 text-sm p-2 rounded-md mb-4 border border-green-200 dark:border-green-900/50">
+                          Économisez{" "}
+                          {Math.round(
+                            100 -
+                              (plan.yearlyPrice / (plan.monthlyPrice * 12)) *
+                                100
+                          )}
+                          % avec le forfait annuel
+                        </div>
+                      )}
+
+                    <ul className="space-y-3 mb-6 flex-grow">
+                      {simplifiedFeatures.map((feature, index) => (
+                        <li key={index} className="flex items-start">
+                          <div
+                            className={`w-4 h-4 rounded-full bg-gradient-to-br ${colors.gradient} flex items-center justify-center mt-0.5 flex-shrink-0 mr-3`}
+                          >
+                            <Check className="w-2.5 h-2.5 text-white" />
+                          </div>
+                          <span className="text-[color:var(--foreground)] text-sm leading-relaxed">
+                            {feature}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="mt-auto">
+                      <Button
+                        onClick={() => handleSelectPlan(plan)}
+                        className={`w-full touch-target active:scale-95 transition-transform ${
+                          isCurrentPlan
+                            ? "bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)] hover:bg-[color:var(--muted)]"
+                            : colors.button + " text-white hover:opacity-90"
+                        }`}
+                        variant={isCurrentPlan ? "outline" : "default"}
+                        disabled={loading !== null || !isAdmin || isCurrentPlan}
+                      >
+                        {loading === plan.id ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Chargement...
+                          </>
+                        ) : isCurrentPlan ? (
+                          <>
+                            <Check className="mr-2 h-4 w-4" />
+                            Plan actuel
+                          </>
+                        ) : (
+                          <>
+                            Sélectionner ce plan
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </>
                         )}
-                      </div>
-                    )}
+                      </Button>
+
+                      {!isCurrentPlan && plan.name !== "FREE" && (
+                        <p className="text-xs text-[color:var(--muted-foreground)] text-center mt-2">
+                          Essai gratuit de 7 jours
+                        </p>
+                      )}
+                    </div>
                   </div>
-
-                  {billingCycle === "yearly" &&
-                    plan.yearlyPrice &&
-                    plan.monthlyPrice * 12 > plan.yearlyPrice && (
-                      <div className="bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 text-sm p-2 rounded-md mb-4 border border-green-200 dark:border-green-900/50">
-                        Économisez{" "}
-                        {Math.round(
-                          100 -
-                            (plan.yearlyPrice / (plan.monthlyPrice * 12)) * 100
-                        )}
-                        % avec le forfait annuel
-                      </div>
-                    )}
-
-                  <ul className="space-y-3 mb-6">
-                    {plan.features.map((feature, index) => (
-                      <li key={index} className="flex items-start">
-                        <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400 mr-2 flex-shrink-0" />
-                        <span className="text-[color:var(--foreground)]">
-                          {feature}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-                <CardFooter>
-                  <Button
-                    onClick={() => handleSelectPlan(plan)}
-                    className={`w-full touch-target active:scale-95 transition-transform ${
-                      currentPlan?.id === plan.id
-                        ? "bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)] hover:bg-[color:var(--muted)]"
-                        : "bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:opacity-90"
-                    }`}
-                    variant={
-                      currentPlan?.id === plan.id ? "outline" : "default"
-                    }
-                    disabled={
-                      loading !== null ||
-                      !isAdmin ||
-                      currentPlan?.id === plan.id
-                    }
-                  >
-                    {loading === plan.id ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Chargement...
-                      </>
-                    ) : currentPlan?.id === plan.id ? (
-                      "Plan actuel"
-                    ) : (
-                      "Sélectionner ce plan"
-                    )}
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
           </div>
 
           {!isAdmin && (
@@ -899,6 +1065,57 @@ export default function SubscriptionDashboard({
               abonnement.
             </div>
           )}
+        </div>
+
+        {/* Plan Sur mesure séparé */}
+        <div className="mb-8">
+          <div className="text-center mb-6">
+            <h3 className="text-xl font-semibold text-[color:var(--foreground)] mb-2">
+              Besoin d&apos;un plan sur mesure ?
+            </h3>
+            <p className="text-[color:var(--muted-foreground)]">
+              Pour les besoins spécifiques ou les grandes équipes
+            </p>
+          </div>
+
+          <div className="max-w-md mx-auto">
+            <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20 border-2 border-amber-200 dark:border-amber-800 shadow-lg hover:shadow-xl transition-all duration-300">
+              <CardContent className="p-6 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center">
+                  <Crown className="w-8 h-8 text-white" />
+                </div>
+
+                <h4 className="text-xl font-bold text-amber-700 dark:text-amber-400 mb-2">
+                  Solution personnalisée
+                </h4>
+                <p className="text-amber-600 dark:text-amber-500 mb-4 text-sm">
+                  Fonctionnalités sur mesure pour votre organisation
+                </p>
+
+                <div className="space-y-2 mb-6">
+                  <div className="flex items-center justify-center gap-2 text-sm text-amber-700 dark:text-amber-400">
+                    <Check className="w-4 h-4" />
+                    <span>Utilisateurs illimités</span>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 text-sm text-amber-700 dark:text-amber-400">
+                    <Check className="w-4 h-4" />
+                    <span>Stockage illimité</span>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 text-sm text-amber-700 dark:text-amber-400">
+                    <Check className="w-4 h-4" />
+                    <span>Support dédié</span>
+                  </div>
+                </div>
+
+                <Link href="/contact?subject=Demande%20Plan%20Sur%20Mesure">
+                  <Button className="w-full bg-amber-600 hover:bg-amber-700 text-white">
+                    <Mail className="mr-2 h-4 w-4" />
+                    Nous contacter
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Section FAQ */}
