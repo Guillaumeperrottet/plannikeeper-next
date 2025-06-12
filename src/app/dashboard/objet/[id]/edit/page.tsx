@@ -3,9 +3,9 @@ import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ArrowLeft, Plus } from "lucide-react";
-import Image from "next/image";
 import DeleteObjectButton from "@/app/dashboard/objet/[id]/edit/delete-object-button";
 import EditableField from "@/app/components/ui/EditableField";
+import SectorCard from "./sector-card";
 
 export default async function ObjetEditPage({
   params,
@@ -164,33 +164,12 @@ export default async function ObjetEditPage({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {objet.sectors.map((sector) => (
-              <Link
+              <SectorCard
                 key={sector.id}
-                href={`/dashboard/objet/${objetId}/view`}
-                className="block bg-background rounded-lg border border-[color:var(--border)] overflow-hidden hover:shadow-md transition"
-              >
-                <div className="relative w-full h-40">
-                  <Image
-                    src={sector.image || "/placeholder-image.jpg"}
-                    alt={sector.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-lg mb-1 text-[color:var(--foreground)]">
-                    {sector.name}
-                  </h3>
-                  <div className="flex justify-between items-center mt-3">
-                    <span className="text-sm text-[color:var(--muted-foreground)]">
-                      {new Date(sector.createdAt).toLocaleDateString()}
-                    </span>
-                    <span className="text-[color:var(--primary)] text-sm font-medium">
-                      Voir détails
-                    </span>
-                  </div>
-                </div>
-              </Link>
+                sector={sector}
+                objetId={objetId}
+                isAdmin={!!isAdmin}
+              />
             ))}
           </div>
         )}
