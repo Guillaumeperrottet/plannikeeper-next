@@ -7,6 +7,11 @@ import { Upload, Trash, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { Button } from "@/app/components/ui/button";
+import {
+  compressImage,
+  validateImageFile,
+  formatFileSize,
+} from "@/lib/image-utils";
 
 export default function NewSectorForm({ objetId }: { objetId: string }) {
   const router = useRouter();
@@ -15,17 +20,52 @@ export default function NewSectorForm({ objetId }: { objetId: string }) {
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [isCompressing, setIsCompressing] = useState(false);
 
-  const handleImageChange = (file: File | null) => {
-    setImage(file);
-
+  const handleImageChange = async (file: File | null) => {
     if (file) {
-      const preview = URL.createObjectURL(file);
-      setImagePreview(preview);
+      // Validation initiale
+      const validation = validateImageFile(file, 10 * 1024 * 1024); // 10MB limite initiale
+      if (!validation.isValid) {
+        toast.error(validation.error);
+        return;
+      }
+
+      try {
+        setIsCompressing(true);
+        toast.info(`Compression de l'image (${formatFileSize(file.size)})...`);
+
+        // Compresser l'image pour qu'elle soit sous 2MB
+        const compressedFile = await compressImage(
+          file,
+          1920,
+          1080,
+          0.8,
+          2 * 1024 * 1024
+        );
+
+        const compressionRatio = (
+          ((file.size - compressedFile.size) / file.size) *
+          100
+        ).toFixed(1);
+        toast.success(
+          `Image compressée: ${formatFileSize(file.size)} → ${formatFileSize(compressedFile.size)} (-${compressionRatio}%)`
+        );
+
+        setImage(compressedFile);
+        const preview = URL.createObjectURL(compressedFile);
+        setImagePreview(preview);
+      } catch (error) {
+        console.error("Erreur lors de la compression:", error);
+        toast.error("Erreur lors de la compression de l'image");
+      } finally {
+        setIsCompressing(false);
+      }
     } else {
       if (imagePreview) {
         URL.revokeObjectURL(imagePreview);
       }
+      setImage(null);
       setImagePreview(null);
     }
   };
@@ -138,7 +178,7 @@ export default function NewSectorForm({ objetId }: { objetId: string }) {
                   type="button"
                   onClick={() => handleImageChange(null)}
                   className="absolute top-2 right-2 p-1 bg-[color:var(--destructive)] text-[color:var(--destructive-foreground)] rounded-full hover:bg-[color:var(--destructive)]/90 transition-colors"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isCompressing}
                 >
                   <Trash size={16} />
                 </button>
@@ -147,7 +187,9 @@ export default function NewSectorForm({ objetId }: { objetId: string }) {
               <label
                 htmlFor="image-upload"
                 className={`flex flex-col items-center justify-center w-48 h-48 border-2 border-dashed border-[color:var(--border)] rounded-lg cursor-pointer bg-[color:var(--muted)] hover:bg-[color:var(--muted)]/80 transition-colors ${
-                  isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+                  isSubmitting || isCompressing
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
                 }`}
               >
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -166,17 +208,29 @@ export default function NewSectorForm({ objetId }: { objetId: string }) {
                     handleImageChange(file);
                   }}
                   required
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isCompressing}
                 />
               </label>
             )}
           </div>
           <div className="flex-1">
             <p className="text-sm text-[color:var(--muted-foreground)]">
-              L&apos;image doit être au format JPG, PNG ou GIF et ne pas
-              dépasser 5 Mo. Choisissez une image qui représente bien le secteur
+              L&apos;image doit être au format JPG, PNG, GIF ou WebP. Les images
+              volumineuses seront automatiquement compressées pour optimiser
+              l&apos;upload. Choisissez une image qui représente bien le secteur
               pour faciliter son identification.
             </p>
+
+            {isCompressing && (
+              <div className="mt-3 p-3 bg-[color:var(--muted)] rounded-md">
+                <p className="text-sm text-[color:var(--foreground)] mb-2">
+                  Compression de l&apos;image en cours...
+                </p>
+                <div className="w-full bg-[color:var(--border)] rounded-full h-2">
+                  <div className="bg-[color:var(--primary)] h-2 rounded-full transition-all duration-300 animate-pulse w-1/2"></div>
+                </div>
+              </div>
+            )}
 
             {isSubmitting && (
               <div className="mt-4">

@@ -6,6 +6,11 @@ import { Upload, Trash, Loader2, Edit } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { Button } from "@/app/components/ui/button";
+import {
+  compressImage,
+  validateImageFile,
+  formatFileSize,
+} from "@/lib/image-utils";
 
 interface EditSectorModalProps {
   sector: {
@@ -31,14 +36,48 @@ export default function EditSectorModal({
   const [imagePreview, setImagePreview] = useState<string | null>(sector.image);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [shouldRemoveImage, setShouldRemoveImage] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
 
-  const handleImageChange = (file: File | null) => {
-    setImage(file);
-    setShouldRemoveImage(false);
-
+  const handleImageChange = async (file: File | null) => {
     if (file) {
-      const preview = URL.createObjectURL(file);
-      setImagePreview(preview);
+      // Validation initiale
+      const validation = validateImageFile(file, 10 * 1024 * 1024); // 10MB limite initiale
+      if (!validation.isValid) {
+        toast.error(validation.error);
+        return;
+      }
+
+      try {
+        setIsCompressing(true);
+        toast.info(`Compression de l'image (${formatFileSize(file.size)})...`);
+
+        // Compresser l'image pour qu'elle soit sous 2MB
+        const compressedFile = await compressImage(
+          file,
+          1920,
+          1080,
+          0.8,
+          2 * 1024 * 1024
+        );
+
+        const compressionRatio = (
+          ((file.size - compressedFile.size) / file.size) *
+          100
+        ).toFixed(1);
+        toast.success(
+          `Image compressée: ${formatFileSize(file.size)} → ${formatFileSize(compressedFile.size)} (-${compressionRatio}%)`
+        );
+
+        setImage(compressedFile);
+        setShouldRemoveImage(false);
+        const preview = URL.createObjectURL(compressedFile);
+        setImagePreview(preview);
+      } catch (error) {
+        console.error("Erreur lors de la compression:", error);
+        toast.error("Erreur lors de la compression de l'image");
+      } finally {
+        setIsCompressing(false);
+      }
     } else {
       // Si file est null et qu'on a cliqué sur supprimer, on veut supprimer l'image
       setShouldRemoveImage(true);
@@ -114,7 +153,7 @@ export default function EditSectorModal({
   };
 
   const handleClose = () => {
-    if (!isSubmitting) {
+    if (!isSubmitting && !isCompressing) {
       // Nettoyer l'aperçu de l'image si une nouvelle a été sélectionnée
       if (image && imagePreview && imagePreview !== sector.image) {
         URL.revokeObjectURL(imagePreview);
@@ -124,6 +163,7 @@ export default function EditSectorModal({
       setImagePreview(sector.image);
       setUploadProgress(0);
       setShouldRemoveImage(false);
+      setIsCompressing(false);
       onClose();
     }
   };
@@ -229,21 +269,33 @@ export default function EditSectorModal({
                         const file = e.target.files?.[0] || null;
                         handleImageChange(file);
                       }}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || isCompressing}
                     />
                   </label>
                 )}
               </div>
               <div className="flex-1">
                 <p className="text-sm text-[color:var(--muted-foreground)]">
-                  L&apos;image doit être au format JPG, PNG ou GIF et ne pas
-                  dépasser 5 Mo.
+                  L&apos;image doit être au format JPG, PNG, GIF ou WebP. Les
+                  images volumineuses seront automatiquement compressées pour
+                  optimiser l&apos;upload.
                   {shouldRemoveImage
                     ? " L'image actuelle sera supprimée lors de la sauvegarde."
                     : image
                       ? " Une nouvelle image remplacera l'actuelle."
                       : " Laissez vide pour conserver l'image actuelle."}
                 </p>
+
+                {isCompressing && (
+                  <div className="mt-3 p-3 bg-[color:var(--muted)] rounded-md">
+                    <p className="text-sm text-[color:var(--foreground)] mb-2">
+                      Compression de l&apos;image en cours...
+                    </p>
+                    <div className="w-full bg-[color:var(--border)] rounded-full h-2">
+                      <div className="bg-[color:var(--primary)] h-2 rounded-full transition-all duration-300 animate-pulse w-1/2"></div>
+                    </div>
+                  </div>
+                )}
 
                 {isSubmitting && (
                   <div className="mt-4">
