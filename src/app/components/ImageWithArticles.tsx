@@ -63,6 +63,7 @@ export default function ImageWithArticles({
       x: number;
       y: number;
     };
+    placement: "top" | "bottom" | "left" | "right";
     articleId: string | null;
   }>({
     visible: false,
@@ -74,6 +75,7 @@ export default function ImageWithArticles({
       x: 0,
       y: 0,
     },
+    placement: "top",
     articleId: null,
   });
 
@@ -251,6 +253,74 @@ export default function ImageWithArticles({
     if (onArticleHover) onArticleHover(null);
   };
 
+  // Fonction pour calculer la position optimale du tooltip
+  const calculateTooltipPosition = (
+    articleRect: DOMRect,
+    tooltipWidth: number = 250,
+    tooltipHeight: number = 120
+  ): {
+    x: number;
+    y: number;
+    placement: "top" | "bottom" | "left" | "right";
+  } => {
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const padding = 16; // Marge minimum par rapport aux bords
+
+    // Position de base : centré horizontalement au-dessus de l'article
+    const x = articleRect.left + articleRect.width / 2;
+    const y = articleRect.top;
+
+    // Variables pour déterminer la position finale
+    let finalX = x;
+    let finalY = y - tooltipHeight - 10; // 10px d'espacement
+    let placement: "top" | "bottom" | "left" | "right" = "top";
+
+    // Vérifier si le tooltip dépasse à droite
+    if (x + tooltipWidth / 2 > viewportWidth - padding) {
+      finalX = viewportWidth - tooltipWidth / 2 - padding;
+    }
+
+    // Vérifier si le tooltip dépasse à gauche
+    if (x - tooltipWidth / 2 < padding) {
+      finalX = tooltipWidth / 2 + padding;
+    }
+
+    // Vérifier si le tooltip dépasse en haut
+    if (finalY < padding) {
+      // Essayer de le placer en bas
+      finalY = articleRect.bottom + 10;
+      placement = "bottom";
+
+      // Si ça dépasse encore en bas, essayer à côté
+      if (finalY + tooltipHeight > viewportHeight - padding) {
+        // Essayer à droite
+        if (articleRect.right + tooltipWidth + 10 < viewportWidth - padding) {
+          finalX = articleRect.right + 10;
+          finalY = articleRect.top + articleRect.height / 2;
+          placement = "right";
+        }
+        // Essayer à gauche
+        else if (articleRect.left - tooltipWidth - 10 > padding) {
+          finalX = articleRect.left - 10;
+          finalY = articleRect.top + articleRect.height / 2;
+          placement = "left";
+        }
+        // En dernier recours, garder en bas mais ajuster la hauteur
+        else {
+          finalY = Math.max(padding, viewportHeight - tooltipHeight - padding);
+          placement = "bottom";
+        }
+      }
+    }
+
+    return {
+      x: finalX,
+      y: finalY,
+      placement,
+    };
+  };
+
   // Gérer le clic/toucher sur un article
   const handleArticleInteraction = (
     e: React.MouseEvent | React.TouchEvent,
@@ -268,15 +338,7 @@ export default function ImageWithArticles({
       }
       // Si c'est un nouvel article, afficher son tooltip
       else {
-        const viewportWidth = window.innerWidth;
-
-        // Calculer la position optimale pour le tooltip
-        let tooltipX = rect.left + rect.width / 2;
-        let tooltipY = rect.top;
-
-        // S'assurer que le tooltip reste dans les limites de l'écran
-        tooltipX = Math.max(125, Math.min(tooltipX, viewportWidth - 125));
-        tooltipY = Math.max(150, tooltipY);
+        const position = calculateTooltipPosition(rect);
 
         setTooltipInfo({
           visible: true,
@@ -285,9 +347,10 @@ export default function ImageWithArticles({
             description: article.description,
           },
           position: {
-            x: tooltipX,
-            y: tooltipY,
+            x: position.x,
+            y: position.y,
           },
+          placement: position.placement,
           articleId: article.id,
         });
         if (onArticleHover) onArticleHover(article.id);
@@ -309,6 +372,8 @@ export default function ImageWithArticles({
     if (isMobile) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
+    const position = calculateTooltipPosition(rect);
+
     setTooltipInfo({
       visible: true,
       content: {
@@ -316,9 +381,10 @@ export default function ImageWithArticles({
         description: article.description,
       },
       position: {
-        x: rect.left + rect.width / 2,
-        y: rect.top,
+        x: position.x,
+        y: position.y,
       },
+      placement: position.placement,
       articleId: article.id,
     });
     if (onArticleHover) onArticleHover(article.id);
@@ -350,7 +416,12 @@ export default function ImageWithArticles({
   useEffect(() => {
     const handleZoomChange = () => {
       if (tooltipInfo.visible) {
-        closeTooltip();
+        setTooltipInfo((prev) => ({
+          ...prev,
+          visible: false,
+          articleId: null,
+        }));
+        if (onArticleHover) onArticleHover(null);
       }
     };
 
@@ -370,7 +441,12 @@ export default function ImageWithArticles({
           Math.abs(touchDistance - lastTouchDistance) > 10
         ) {
           if (tooltipInfo.visible) {
-            closeTooltip();
+            setTooltipInfo((prev) => ({
+              ...prev,
+              visible: false,
+              articleId: null,
+            }));
+            if (onArticleHover) onArticleHover(null);
           }
         }
 
@@ -384,7 +460,7 @@ export default function ImageWithArticles({
       window.removeEventListener("resize", handleZoomChange);
       window.removeEventListener("touchmove", handleTouchMove);
     };
-  }, [tooltipInfo.visible]);
+  }, [tooltipInfo.visible, onArticleHover]);
 
   // Fermer le tooltip si on clique ailleurs sur l'image
   const handleBackgroundClick = () => {
@@ -453,9 +529,23 @@ export default function ImageWithArticles({
         <div
           className="fixed w-64 bg-black bg-opacity-90 text-white p-3 rounded-md shadow-lg"
           style={{
-            left: tooltipInfo.position.x,
-            top: tooltipInfo.position.y - 10,
-            transform: "translate(-50%, -100%)",
+            left:
+              tooltipInfo.placement === "left"
+                ? tooltipInfo.position.x - 250
+                : tooltipInfo.position.x,
+            top:
+              tooltipInfo.placement === "top"
+                ? tooltipInfo.position.y - 10
+                : tooltipInfo.placement === "bottom"
+                  ? tooltipInfo.position.y + 10
+                  : tooltipInfo.position.y,
+            transform:
+              tooltipInfo.placement === "left" ||
+              tooltipInfo.placement === "right"
+                ? "translateY(-50%)"
+                : tooltipInfo.placement === "top"
+                  ? "translate(-50%, -100%)"
+                  : "translate(-50%, 0%)",
             zIndex: 9999,
             pointerEvents: "auto",
             maxWidth: "250px",
@@ -509,19 +599,51 @@ export default function ImageWithArticles({
             )}
           </div>
 
-          {/* Flèche pointant vers l'élément - masquée sur mobile avec zoom */}
+          {/* Flèche pointant vers l'élément - s'ajuste selon le placement */}
           {!isMobile && (
             <div
               style={{
                 position: "absolute",
-                left: "50%",
-                bottom: "-8px",
-                transform: "translateX(-50%)",
-                width: 0,
-                height: 0,
-                borderLeft: "8px solid transparent",
-                borderRight: "8px solid transparent",
-                borderTop: "8px solid rgba(0, 0, 0, 0.9)",
+                ...(tooltipInfo.placement === "top" && {
+                  left: "50%",
+                  bottom: "-8px",
+                  transform: "translateX(-50%)",
+                  width: 0,
+                  height: 0,
+                  borderLeft: "8px solid transparent",
+                  borderRight: "8px solid transparent",
+                  borderTop: "8px solid rgba(0, 0, 0, 0.9)",
+                }),
+                ...(tooltipInfo.placement === "bottom" && {
+                  left: "50%",
+                  top: "-8px",
+                  transform: "translateX(-50%)",
+                  width: 0,
+                  height: 0,
+                  borderLeft: "8px solid transparent",
+                  borderRight: "8px solid transparent",
+                  borderBottom: "8px solid rgba(0, 0, 0, 0.9)",
+                }),
+                ...(tooltipInfo.placement === "left" && {
+                  right: "-8px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  width: 0,
+                  height: 0,
+                  borderTop: "8px solid transparent",
+                  borderBottom: "8px solid transparent",
+                  borderLeft: "8px solid rgba(0, 0, 0, 0.9)",
+                }),
+                ...(tooltipInfo.placement === "right" && {
+                  left: "-8px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  width: 0,
+                  height: 0,
+                  borderTop: "8px solid transparent",
+                  borderBottom: "8px solid transparent",
+                  borderRight: "8px solid rgba(0, 0, 0, 0.9)",
+                }),
               }}
             ></div>
           )}
