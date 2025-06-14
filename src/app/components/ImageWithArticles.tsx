@@ -266,7 +266,7 @@ export default function ImageWithArticles({
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     const padding = 16; // Marge minimum par rapport aux bords
-    const offset = 10; // Distance entre le tooltip et l'article
+    const offset = 5; // Distance entre le tooltip et l'article (réduite)
 
     // Position de base : centré sur l'article
     const articleCenterX = articleRect.left + articleRect.width / 2;
