@@ -266,51 +266,71 @@ export default function ImageWithArticles({
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     const padding = 16; // Marge minimum par rapport aux bords
+    const offset = 10; // Distance entre le tooltip et l'article
 
-    // Position de base : centré horizontalement au-dessus de l'article
-    const x = articleRect.left + articleRect.width / 2;
-    const y = articleRect.top;
+    // Position de base : centré sur l'article
+    const articleCenterX = articleRect.left + articleRect.width / 2;
+    const articleCenterY = articleRect.top + articleRect.height / 2;
 
-    // Variables pour déterminer la position finale
-    let finalX = x;
-    let finalY = y - tooltipHeight - 10; // 10px d'espacement
+    let finalX = articleCenterX;
+    let finalY = articleRect.top - tooltipHeight - offset;
     let placement: "top" | "bottom" | "left" | "right" = "top";
 
-    // Vérifier si le tooltip dépasse à droite
-    if (x + tooltipWidth / 2 > viewportWidth - padding) {
-      finalX = viewportWidth - tooltipWidth / 2 - padding;
-    }
-
-    // Vérifier si le tooltip dépasse à gauche
-    if (x - tooltipWidth / 2 < padding) {
-      finalX = tooltipWidth / 2 + padding;
-    }
-
-    // Vérifier si le tooltip dépasse en haut
+    // Vérifier si on peut placer le tooltip en haut
     if (finalY < padding) {
-      // Essayer de le placer en bas
-      finalY = articleRect.bottom + 10;
+      // Essayer en bas
+      finalY = articleRect.bottom + offset;
       placement = "bottom";
 
-      // Si ça dépasse encore en bas, essayer à côté
+      // Si ça dépasse en bas aussi
       if (finalY + tooltipHeight > viewportHeight - padding) {
         // Essayer à droite
-        if (articleRect.right + tooltipWidth + 10 < viewportWidth - padding) {
-          finalX = articleRect.right + 10;
-          finalY = articleRect.top + articleRect.height / 2;
+        if (
+          articleRect.right + tooltipWidth + offset <
+          viewportWidth - padding
+        ) {
+          finalX = articleRect.right + offset;
+          finalY = articleCenterY;
           placement = "right";
         }
         // Essayer à gauche
-        else if (articleRect.left - tooltipWidth - 10 > padding) {
-          finalX = articleRect.left - 10;
-          finalY = articleRect.top + articleRect.height / 2;
+        else if (articleRect.left - tooltipWidth - offset > padding) {
+          finalX = articleRect.left - offset;
+          finalY = articleCenterY;
           placement = "left";
         }
-        // En dernier recours, garder en bas mais ajuster la hauteur
+        // En dernier recours, forcer en bas avec ajustement
         else {
-          finalY = Math.max(padding, viewportHeight - tooltipHeight - padding);
+          finalY = Math.min(
+            articleRect.bottom + offset,
+            viewportHeight - tooltipHeight - padding
+          );
           placement = "bottom";
         }
+      }
+    }
+
+    // Ajuster la position horizontale pour éviter le débordement
+    if (placement === "top" || placement === "bottom") {
+      // S'assurer que le tooltip ne dépasse pas à droite
+      if (finalX + tooltipWidth / 2 > viewportWidth - padding) {
+        finalX = viewportWidth - tooltipWidth / 2 - padding;
+      }
+      // S'assurer que le tooltip ne dépasse pas à gauche
+      if (finalX - tooltipWidth / 2 < padding) {
+        finalX = tooltipWidth / 2 + padding;
+      }
+    }
+
+    // Ajuster la position verticale pour éviter le débordement (pour left/right)
+    if (placement === "left" || placement === "right") {
+      // S'assurer que le tooltip ne dépasse pas en bas
+      if (finalY + tooltipHeight / 2 > viewportHeight - padding) {
+        finalY = viewportHeight - tooltipHeight / 2 - padding;
+      }
+      // S'assurer que le tooltip ne dépasse pas en haut
+      if (finalY - tooltipHeight / 2 < padding) {
+        finalY = tooltipHeight / 2 + padding;
       }
     }
 
@@ -531,21 +551,16 @@ export default function ImageWithArticles({
           style={{
             left:
               tooltipInfo.placement === "left"
-                ? tooltipInfo.position.x - 250
-                : tooltipInfo.position.x,
+                ? tooltipInfo.position.x - 250 // Tooltip à gauche de l'article
+                : tooltipInfo.placement === "right"
+                  ? tooltipInfo.position.x // Tooltip à droite de l'article
+                  : tooltipInfo.position.x - 125, // Centré horizontalement (250/2 = 125)
             top:
               tooltipInfo.placement === "top"
-                ? tooltipInfo.position.y - 10
+                ? tooltipInfo.position.y // Position calculée (déjà ajustée)
                 : tooltipInfo.placement === "bottom"
-                  ? tooltipInfo.position.y + 10
-                  : tooltipInfo.position.y,
-            transform:
-              tooltipInfo.placement === "left" ||
-              tooltipInfo.placement === "right"
-                ? "translateY(-50%)"
-                : tooltipInfo.placement === "top"
-                  ? "translate(-50%, -100%)"
-                  : "translate(-50%, 0%)",
+                  ? tooltipInfo.position.y // Position calculée (déjà ajustée)
+                  : tooltipInfo.position.y - 60, // Centré verticalement (hauteur estimée / 2)
             zIndex: 9999,
             pointerEvents: "auto",
             maxWidth: "250px",
