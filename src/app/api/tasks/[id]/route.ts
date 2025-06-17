@@ -290,16 +290,47 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
   // Stocker l'ID de l'objet pour les invalidations de cache
   const objectId = task.article.sector.object.id;
 
-  await prisma.task.delete({ where: { id: taskId } });
+  try {
+    // Supprimer les notifications liées à cette tâche
+    const deletedNotifications = await prisma.notification.deleteMany({
+      where: {
+        data: {
+          path: ["taskId"],
+          equals: taskId,
+        },
+      },
+    });
 
-  // Inclure des métadonnées sur les données à rafraichir
-  // Ces informations seront utilisées côté client
-  const responseData = {
-    success: true,
-    deletedTaskId: taskId,
-    objectId: objectId,
-    refreshKeys: [`tasks_${objectId}`, "agenda_tasks"],
-  };
+    console.log(
+      `Suppression tâche ${taskId}: ${deletedNotifications.count} notification(s) supprimée(s)`
+    );
 
-  return NextResponse.json(responseData, { status: 200 });
+    // Supprimer la tâche
+    await prisma.task.delete({ where: { id: taskId } });
+
+    console.log(
+      `Tâche ${taskId} supprimée avec succès par l'utilisateur ${user.id}`
+    );
+
+    // Inclure des métadonnées sur les données à rafraichir
+    // Ces informations seront utilisées côté client
+    const responseData = {
+      success: true,
+      deletedTaskId: taskId,
+      objectId: objectId,
+      refreshKeys: [`tasks_${objectId}`, "agenda_tasks"],
+      notificationsDeleted: deletedNotifications.count,
+    };
+
+    return NextResponse.json(responseData, { status: 200 });
+  } catch (error) {
+    console.error(
+      `Erreur lors de la suppression de la tâche ${taskId}:`,
+      error
+    );
+    return NextResponse.json(
+      { error: "Erreur lors de la suppression de la tâche" },
+      { status: 500 }
+    );
+  }
 }

@@ -96,7 +96,7 @@ export default function ModernTasksPage({
   const [filterAssignee, setFilterAssignee] = useState<string | null>(null);
   const [filterTaskType, setFilterTaskType] = useState<string | null>(null);
   const [filterRecurring, setFilterRecurring] = useState<boolean | null>(null);
-  const [useOptimizedForm, setUseOptimizedForm] = useState(false);
+  const [useOptimizedForm] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -119,14 +119,25 @@ export default function ModernTasksPage({
   // Detect mobile view
   useEffect(() => {
     const checkMobile = () => {
-      const isMobile = window.innerWidth < 768;
-      setUseOptimizedForm(isMobile);
-      setIsMobileView(isMobile);
+      setIsMobileView(window.innerWidth <= 768);
     };
 
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Gérer le message d'information pour les tâches supprimées
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("taskDeleted") === "true") {
+      toast.info("La tâche que vous cherchiez a été supprimée.", {
+        duration: 5000,
+      });
+      // Nettoyer l'URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+    }
   }, []);
 
   // Fonction pour trier les tâches

@@ -191,7 +191,7 @@ export default function NotificationsPanel({
   // Localisez la fonction handleNotificationClick et vérifiez qu'elle ressemble à ceci:
 
   const handleNotificationClick = useCallback(
-    (notification: Notification) => {
+    async (notification: Notification) => {
       // Marquer comme lu si nécessaire
       if (!notification.read) {
         markAsRead(notification.id);
@@ -207,12 +207,29 @@ export default function NotificationsPanel({
         "taskId" in notification.data
       ) {
         const taskId = notification.data?.taskId;
-        const taskLink = `${baseLink}/task/${taskId}`;
 
-        console.log("Navigating to task:", taskLink);
+        try {
+          // Vérifier si la tâche existe encore
+          const response = await fetch(`/api/tasks/${taskId}/exists`);
+          const data = await response.json();
 
-        // Utiliser router.push pour la navigation
-        router.push(taskLink);
+          if (data.exists) {
+            // La tâche existe, naviguer normalement
+            const taskLink = `${baseLink}/task/${taskId}`;
+            console.log("Navigating to task:", taskLink);
+            router.push(taskLink);
+          } else {
+            // La tâche n'existe plus, naviguer vers l'article et afficher un message
+            console.log("Task no longer exists, redirecting to article");
+            router.push(`${baseLink}?taskDeleted=true`);
+          }
+        } catch (error) {
+          console.error("Error checking task existence:", error);
+          // En cas d'erreur, naviguer normalement (fallback)
+          const taskLink = `${baseLink}/task/${taskId}`;
+          router.push(taskLink);
+        }
+
         onClose();
       }
       // Sinon, utiliser le lien existant

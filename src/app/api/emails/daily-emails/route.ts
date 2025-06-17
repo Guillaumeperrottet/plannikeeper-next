@@ -98,11 +98,52 @@ export async function POST(req: NextRequest) {
     const emailResults = [];
     for (const userId in userNotifications) {
       const { user, taskIds } = userNotifications[userId];
+      console.log(`Processing user ${user.email} with ${taskIds.length} tasks`);
 
-      // Récupérer les détails des tâches
+      // Vérifier les accès aux objets pour cet utilisateur
+      const userObjectAccess = await prisma.objectAccess.findMany({
+        where: {
+          userId: userId,
+          NOT: { accessLevel: "none" },
+        },
+        select: { objectId: true },
+      });
+
+      // Vérifier si l'utilisateur est admin de l'organisation
+      const isOrgAdmin = await prisma.organizationUser.findFirst({
+        where: {
+          userId: userId,
+          role: "admin",
+        },
+      });
+
+      // Si l'utilisateur est admin, il a accès à tout
+      let accessibleObjectIds: string[];
+      if (isOrgAdmin) {
+        console.log(`User ${user.email} is admin - access to all objects`);
+        // Admin : récupérer tous les objets de l'organisation
+        const orgObjects = await prisma.objet.findMany({
+          where: { organizationId: isOrgAdmin.organizationId },
+          select: { id: true },
+        });
+        accessibleObjectIds = orgObjects.map((obj) => obj.id);
+      } else {
+        console.log(
+          `User ${user.email} is member - access to ${userObjectAccess.length} objects`
+        );
+        // Membre : seulement les objets avec accès explicite
+        accessibleObjectIds = userObjectAccess.map((access) => access.objectId);
+      }
+
+      // Récupérer les détails des tâches en filtrant par accès aux objets
       const tasks = (await prisma.task.findMany({
         where: {
           id: { in: taskIds },
+          article: {
+            sector: {
+              objectId: { in: accessibleObjectIds },
+            },
+          },
         },
         include: {
           article: {
@@ -123,19 +164,36 @@ export async function POST(req: NextRequest) {
         },
       })) as unknown as TaskWithDetails[];
 
-      // Envoyer l'email
-      const result = await EmailService.sendTaskAssignmentEmail(
-        user.email,
-        user.name,
-        tasks
+      console.log(
+        `User ${user.email}: filtered from ${taskIds.length} to ${tasks.length} accessible tasks`
       );
 
-      emailResults.push({
-        userId: user.id,
-        email: user.email,
-        success: result.success,
-        taskCount: tasks.length,
-      });
+      // Envoyer l'email seulement s'il y a des tâches accessibles
+      if (tasks.length > 0) {
+        const result = await EmailService.sendTaskAssignmentEmail(
+          user.email,
+          user.name,
+          tasks
+        );
+
+        emailResults.push({
+          userId: user.id,
+          email: user.email,
+          success: result.success,
+          taskCount: tasks.length,
+          filteredByAccess: taskIds.length - tasks.length > 0, // Indique si des tâches ont été filtrées
+        });
+      } else {
+        // Aucune tâche accessible, ne pas envoyer d'email
+        emailResults.push({
+          userId: user.id,
+          email: user.email,
+          success: true,
+          taskCount: 0,
+          filteredByAccess: true,
+          reason: "Aucune tâche accessible selon les permissions",
+        });
+      }
     }
 
     return NextResponse.json({

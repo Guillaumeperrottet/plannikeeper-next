@@ -36,8 +36,9 @@ export default async function TaskPage({
   });
 
   if (!task) {
+    // Rediriger avec un paramètre pour indiquer que la tâche a été supprimée
     redirect(
-      `/dashboard/objet/${objetId}/secteur/${sectorId}/article/${articleId}`
+      `/dashboard/objet/${objetId}/secteur/${sectorId}/article/${articleId}?taskDeleted=true`
     );
   }
 
