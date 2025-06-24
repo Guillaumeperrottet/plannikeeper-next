@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, Briefcase } from "lucide-react";
+import { MapPin } from "lucide-react";
 import Link from "next/link";
 import Editbutton from "./ui/edit-button";
 import { useRouter } from "@/lib/router-helper";
@@ -53,11 +53,6 @@ export default function ObjetCard({ objet }: ObjetCardProps) {
         <div className="flex items-center gap-2 text-[color:var(--muted-foreground)] mb-2">
           <MapPin size={16} />
           <span className="text-sm line-clamp-1">{objet.adresse}</span>
-        </div>
-
-        <div className="flex items-center gap-2 text-[color:var(--muted-foreground)]">
-          <Briefcase size={16} />
-          <span className="text-sm">{objet.secteur}</span>
         </div>
 
         <div className="mt-4 pt-3 border-t border-[color:var(--border)] flex justify-between items-center">
