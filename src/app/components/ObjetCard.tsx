@@ -12,7 +12,7 @@ interface ObjetCardProps {
     nom: string;
     adresse: string;
     secteur: string;
-    icon?: string;
+    icon?: string | null;
   };
 }
 
