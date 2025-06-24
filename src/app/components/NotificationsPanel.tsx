@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { formatDistanceToNow } from "date-fns/formatDistanceToNow";
 import { fr } from "date-fns/locale";
-import { Bell, Check, X } from "lucide-react";
+import { Bell, Check, X, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useNotifications } from "./notification-provider";
 
@@ -46,6 +46,9 @@ export default function NotificationsPanel({
 }: NotificationsPanelProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [navigatingNotificationId, setNavigatingNotificationId] = useState<
+    number | null
+  >(null);
   const router = useRouter();
   const panelRef = useRef<HTMLDivElement>(null);
   const { refreshUnreadCount } = useNotifications();
@@ -197,6 +200,9 @@ export default function NotificationsPanel({
         markAsRead(notification.id);
       }
 
+      // Activer le loader pour cette notification
+      setNavigatingNotificationId(notification.id);
+
       // Le chemin de base vers l'article
       const baseLink = notification.link;
 
@@ -237,6 +243,9 @@ export default function NotificationsPanel({
           if (baseLink) {
             router.push(baseLink);
           }
+        } finally {
+          // Désactiver le loader après un délai
+          setTimeout(() => setNavigatingNotificationId(null), 1000);
         }
 
         onClose();
@@ -245,10 +254,15 @@ export default function NotificationsPanel({
       else if (baseLink) {
         console.log("Navigating to link:", baseLink);
         router.push(baseLink);
+        // Désactiver le loader après un délai
+        setTimeout(() => setNavigatingNotificationId(null), 1000);
         onClose();
+      } else {
+        // Pas de lien valide, désactiver le loader
+        setNavigatingNotificationId(null);
       }
     },
-    [markAsRead, router, onClose]
+    [markAsRead, router, onClose, setNavigatingNotificationId]
   );
 
   // Fonction handleClosePanel
@@ -353,13 +367,22 @@ export default function NotificationsPanel({
                   onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-[color:var(--muted)]">
-                    {getNotificationIcon(notification.type)}
+                    {navigatingNotificationId === notification.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-[color:var(--primary)]" />
+                    ) : (
+                      getNotificationIcon(notification.type)
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs font-medium text-[color:var(--muted-foreground)] bg-[color:var(--muted)] px-2 py-1 rounded">
                         {getNotificationTypeLabel(notification.type)}
                       </span>
+                      {navigatingNotificationId === notification.id && (
+                        <span className="text-xs text-[color:var(--primary)] animate-pulse">
+                          Ouverture...
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm text-[color:var(--foreground)] mb-1">
                       {notification.content}
@@ -394,18 +417,19 @@ export default function NotificationsPanel({
                       })}
                     </p>
                   </div>
-                  {!notification.read && (
-                    <button
-                      className="flex-shrink-0 text-[color:var(--primary)]"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        markAsRead(notification.id);
-                      }}
-                      title="Marquer comme lu"
-                    >
-                      <Check size={16} />
-                    </button>
-                  )}
+                  {!notification.read &&
+                    navigatingNotificationId !== notification.id && (
+                      <button
+                        className="flex-shrink-0 text-[color:var(--primary)]"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          markAsRead(notification.id);
+                        }}
+                        title="Marquer comme lu"
+                      >
+                        <Check size={16} />
+                      </button>
+                    )}
                 </div>
               </li>
             ))}
