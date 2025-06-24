@@ -2,9 +2,9 @@
 
 import { MapPin, Briefcase } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 import Editbutton from "./ui/edit-button";
 import { useRouter } from "@/lib/router-helper";
+import ObjectIcon from "./ui/ObjectIcon";
 
 interface ObjetCardProps {
   objet: {
@@ -12,22 +12,12 @@ interface ObjetCardProps {
     nom: string;
     adresse: string;
     secteur: string;
+    icon?: string;
   };
 }
 
 export default function ObjetCard({ objet }: ObjetCardProps) {
   const router = useRouter();
-
-  const getSecteurIcon = (secteur: string) => {
-    switch (secteur.toLowerCase()) {
-      case "bureau":
-        return "/window.svg";
-      case "commercial":
-        return "/globe.svg";
-      default:
-        return "/file.svg";
-    }
-  };
 
   const handleCardClick = () => {
     router.navigateWithLoading(`/dashboard/objet/${objet.id}/view`, {
@@ -72,15 +62,11 @@ export default function ObjetCard({ objet }: ObjetCardProps) {
 
         <div className="mt-4 pt-3 border-t border-[color:var(--border)] flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 relative">
-              <Image
-                src={getSecteurIcon(objet.secteur)}
-                alt={objet.secteur}
-                width={24}
-                height={24}
-                className="object-contain"
-              />
-            </div>
+            <ObjectIcon
+              iconKey={objet.icon || "building"}
+              size={24}
+              className="text-[color:var(--muted-foreground)]"
+            />
             <span className="text-xs text-[color:var(--muted-foreground)] capitalize">
               {objet.secteur}
             </span>

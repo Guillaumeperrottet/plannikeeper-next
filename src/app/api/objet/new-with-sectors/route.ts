@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
     const nom = formData.get("nom") as string;
     const adresse = formData.get("adresse") as string;
     const secteur = formData.get("secteur") as string;
+    const icon = formData.get("icon") as string;
     const sectorsCount = parseInt(formData.get("sectorsCount") as string, 10);
 
     // Validation des données principales
@@ -86,6 +87,7 @@ export async function POST(req: NextRequest) {
         nom,
         adresse,
         secteur,
+        icon: icon || "building", // Utiliser "building" par défaut si aucune icône n'est fournie
         organizationId: userDb.Organization.id,
       },
     });

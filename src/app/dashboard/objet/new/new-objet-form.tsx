@@ -3,7 +3,26 @@
 import React, { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Plus, Trash, Upload, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Plus,
+  Trash,
+  Upload,
+  Loader2,
+  Building,
+  Tent,
+  Car,
+  Home,
+  MapPin,
+  Utensils,
+  Bed,
+  Waves,
+  TreePine,
+  Store,
+  Warehouse,
+  School,
+  Hospital,
+} from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { Input } from "@/app/components/ui/input";
@@ -17,12 +36,30 @@ interface SectorInput {
   compressProgress?: number;
 }
 
+// Configuration des icônes disponibles
+const AVAILABLE_ICONS = [
+  { key: "building", icon: Building, label: "Bâtiment" },
+  { key: "tent", icon: Tent, label: "Camping" },
+  { key: "bed", icon: Bed, label: "Hôtellerie" },
+  { key: "home", icon: Home, label: "Résidentiel" },
+  { key: "utensils", icon: Utensils, label: "Restaurant" },
+  { key: "store", icon: Store, label: "Commerce" },
+  { key: "warehouse", icon: Warehouse, label: "Entrepôt" },
+  { key: "car", icon: Car, label: "Automobile" },
+  { key: "waves", icon: Waves, label: "Aquatique" },
+  { key: "tree-pine", icon: TreePine, label: "Nature" },
+  { key: "map-pin", icon: MapPin, label: "Lieu" },
+  { key: "school", icon: School, label: "Éducation" },
+  { key: "hospital", icon: Hospital, label: "Santé" },
+] as const;
+
 export default function NewObjectForm() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [nom, setNom] = useState("");
   const [adresse, setAdresse] = useState("");
   const [secteurPrincipal, setSecteurPrincipal] = useState("");
+  const [selectedIcon, setSelectedIcon] = useState("building");
   const [sectors, setSectors] = useState<SectorInput[]>([
     { name: "", image: null },
   ]);
@@ -280,6 +317,7 @@ export default function NewObjectForm() {
       formData.append("nom", nom);
       formData.append("adresse", adresse);
       formData.append("secteur", secteurPrincipal);
+      formData.append("icon", selectedIcon);
 
       // Ajouter les informations des secteurs
       formData.append("sectorsCount", sectors.length.toString());
@@ -415,6 +453,48 @@ export default function NewObjectForm() {
               required
               disabled={isSubmitting}
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[color:var(--foreground)] mb-3">
+              Icône *
+            </label>
+            <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-3">
+              {AVAILABLE_ICONS.map((iconConfig) => {
+                const IconComponent = iconConfig.icon;
+                const isSelected = selectedIcon === iconConfig.key;
+
+                return (
+                  <button
+                    key={iconConfig.key}
+                    type="button"
+                    onClick={() => setSelectedIcon(iconConfig.key)}
+                    disabled={isSubmitting}
+                    className={`relative p-3 rounded-lg border-2 transition-all hover:scale-105 ${
+                      isSelected
+                        ? "border-[color:var(--primary)] bg-[color:var(--primary)]/10 shadow-md"
+                        : "border-[color:var(--border)] hover:border-[color:var(--primary)]/50 hover:bg-[color:var(--muted)]"
+                    } ${isSubmitting ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                    title={iconConfig.label}
+                  >
+                    <IconComponent
+                      size={24}
+                      className={`mx-auto ${
+                        isSelected
+                          ? "text-[color:var(--primary)]"
+                          : "text-[color:var(--muted-foreground)]"
+                      }`}
+                    />
+                    {isSelected && (
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-[color:var(--primary)] rounded-full border-2 border-white" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-[color:var(--muted-foreground)] mt-2">
+              Sélectionnez une icône qui représente le mieux votre objet
+            </p>
           </div>
         </div>
 
