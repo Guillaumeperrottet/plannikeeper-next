@@ -53,11 +53,29 @@ const AVAILABLE_ICONS = [
   { key: "hospital", icon: Hospital, label: "Santé" },
 ] as const;
 
+// Liste des pays les plus courants
+const COUNTRIES = [
+  "France",
+  "Belgique",
+  "Suisse",
+  "Luxembourg",
+  "Canada",
+  "Allemagne",
+  "Espagne",
+  "Italie",
+  "Portugal",
+  "Pays-Bas",
+  "Royaume-Uni",
+  "États-Unis",
+  "Autre",
+] as const;
+
 export default function NewObjectForm() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [nom, setNom] = useState("");
   const [adresse, setAdresse] = useState("");
+  const [pays, setPays] = useState("France");
   const [secteurPrincipal, setSecteurPrincipal] = useState("");
   const [selectedIcon, setSelectedIcon] = useState("building");
   const [sectors, setSectors] = useState<SectorInput[]>([
@@ -316,6 +334,7 @@ export default function NewObjectForm() {
       const formData = new FormData();
       formData.append("nom", nom);
       formData.append("adresse", adresse);
+      formData.append("pays", pays);
       formData.append("secteur", secteurPrincipal);
       formData.append("icon", selectedIcon);
 
@@ -434,6 +453,30 @@ export default function NewObjectForm() {
               required
               disabled={isSubmitting}
             />
+          </div>
+
+          <div>
+            <label
+              htmlFor="pays"
+              className="block text-sm font-medium text-[color:var(--foreground)] mb-1"
+            >
+              Pays *
+            </label>
+            <select
+              id="pays"
+              name="pays"
+              value={pays}
+              onChange={(e) => setPays(e.target.value)}
+              required
+              disabled={isSubmitting}
+              className="w-full px-4 py-2 border border-[color:var(--border)] rounded-md focus:outline-none focus:ring-2 focus:ring-[color:var(--primary)] bg-[color:var(--background)] text-[color:var(--foreground)]"
+            >
+              {COUNTRIES.map((country) => (
+                <option key={country} value={country}>
+                  {country}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>

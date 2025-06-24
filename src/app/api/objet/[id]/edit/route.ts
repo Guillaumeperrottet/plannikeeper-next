@@ -45,6 +45,7 @@ export async function PATCH(
     const updateData: {
       nom?: string;
       adresse?: string;
+      pays?: string;
       secteur?: string;
       icon?: string;
     } = {};
@@ -68,6 +69,16 @@ export async function PATCH(
         );
       }
       updateData.adresse = body.adresse.trim();
+    }
+
+    if (body.pays !== undefined) {
+      if (typeof body.pays !== "string" || !body.pays.trim()) {
+        return NextResponse.json(
+          { error: "Le pays est requis et doit être une chaîne non vide" },
+          { status: 400 }
+        );
+      }
+      updateData.pays = body.pays.trim();
     }
 
     if (body.secteur !== undefined) {

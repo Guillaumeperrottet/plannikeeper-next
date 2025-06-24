@@ -101,6 +101,7 @@ model Objet {
   id             String         @id @default(uuid())
   nom            String
   adresse        String
+  pays           String         @default("France")
   secteur        String
   icon           String?        @default("building")
   organizationId String

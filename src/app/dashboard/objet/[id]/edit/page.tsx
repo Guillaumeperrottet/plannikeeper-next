@@ -6,6 +6,7 @@ import { ArrowLeft, Plus } from "lucide-react";
 import DeleteObjectButton from "@/app/dashboard/objet/[id]/edit/delete-object-button";
 import EditableField from "@/app/components/ui/EditableField";
 import EditableIconField from "@/app/components/ui/EditableIconField";
+import EditableCountryField from "@/app/components/ui/EditableCountryField";
 import SectorCard from "./sector-card";
 
 export default async function ObjetEditPage({
@@ -101,6 +102,16 @@ export default async function ObjetEditPage({
                   initialValue={objet.adresse}
                   fieldName="adresse"
                   label="Adresse"
+                  objectId={objetId}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1 text-[color:var(--foreground)]">
+                  Pays
+                </label>
+                <EditableCountryField
+                  initialValue={objet.pays}
                   objectId={objetId}
                 />
               </div>

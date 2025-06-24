@@ -61,14 +61,18 @@ export async function POST(req: NextRequest) {
     // Extraire les données principales de l'objet
     const nom = formData.get("nom") as string;
     const adresse = formData.get("adresse") as string;
+    const pays = formData.get("pays") as string;
     const secteur = formData.get("secteur") as string;
     const icon = formData.get("icon") as string;
     const sectorsCount = parseInt(formData.get("sectorsCount") as string, 10);
 
     // Validation des données principales
-    if (!nom || !adresse || !secteur) {
+    if (!nom || !adresse || !pays || !secteur) {
       return NextResponse.json(
-        { error: "Données incomplètes: nom, adresse et secteur sont requis" },
+        {
+          error:
+            "Données incomplètes: nom, adresse, pays et secteur sont requis",
+        },
         { status: 400 }
       );
     }
@@ -86,6 +90,7 @@ export async function POST(req: NextRequest) {
       data: {
         nom,
         adresse,
+        pays: pays || "France", // Utiliser "France" par défaut si aucun pays n'est fourni
         secteur,
         icon: icon || "building", // Utiliser "building" par défaut si aucune icône n'est fournie
         organizationId: userDb.Organization.id,

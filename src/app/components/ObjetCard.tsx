@@ -11,6 +11,7 @@ interface ObjetCardProps {
     id: string;
     nom: string;
     adresse: string;
+    pays: string;
     secteur: string;
     icon?: string | null;
   };
@@ -52,7 +53,12 @@ export default function ObjetCard({ objet }: ObjetCardProps) {
 
         <div className="flex items-start gap-2 text-[color:var(--muted-foreground)] mb-2">
           <MapPin size={16} className="mt-0.5 flex-shrink-0" />
-          <span className="text-sm">{objet.adresse}</span>
+          <div className="text-sm">
+            <div>{objet.adresse}</div>
+            <div className="text-xs text-[color:var(--muted-foreground)] mt-1">
+              {objet.pays}
+            </div>
+          </div>
         </div>
 
         <div className="mt-4 pt-3 border-t border-[color:var(--border)] flex justify-between items-center">
