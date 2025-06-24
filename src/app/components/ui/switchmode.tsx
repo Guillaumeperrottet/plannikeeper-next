@@ -77,7 +77,7 @@ const StyledWrapper = styled.div`
   /*------ Settings ------*/
   .container {
     --color-light: #64748b; /* Couleur sobre pour le mode clair */
-    --color-dark: #94a3b8; /* Couleur sobre pour le mode sombre */
+    --color-dark: #e2e8f0; /* Couleur beaucoup plus claire pour le mode sombre */
     --size: 24px;
     display: flex;
     justify-content: center;
@@ -149,7 +149,7 @@ const StyledWrapper = styled.div`
   }
 
   .dark .container:hover {
-    fill: #cbd5e1; /* Couleur légèrement plus claire au survol en mode sombre */
+    fill: #f1f5f9; /* Couleur encore plus claire au survol en mode sombre */
   }
 
   /* Zone de touche agrandie pour mobile */
