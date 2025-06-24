@@ -50,9 +50,9 @@ export default function ObjetCard({ objet }: ObjetCardProps) {
           </Link>
         </div>
 
-        <div className="flex items-center gap-2 text-[color:var(--muted-foreground)] mb-2">
-          <MapPin size={16} />
-          <span className="text-sm line-clamp-1">{objet.adresse}</span>
+        <div className="flex items-start gap-2 text-[color:var(--muted-foreground)] mb-2">
+          <MapPin size={16} className="mt-0.5 flex-shrink-0" />
+          <span className="text-sm">{objet.adresse}</span>
         </div>
 
         <div className="mt-4 pt-3 border-t border-[color:var(--border)] flex justify-between items-center">
