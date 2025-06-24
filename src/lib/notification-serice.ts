@@ -184,7 +184,7 @@ export class NotificationService {
 
       // Notifier la personne assignée (si différente de l'auteur du commentaire)
       if (task.assignedToId && task.assignedToId !== commentAuthorId) {
-        const link = `/dashboard/objet/${task.article.sector.object.id}/secteur/${task.article.sector.id}/article/${task.article.id}/task/${task.id}`;
+        const link = `/dashboard/objet/${task.article.sector.object.id}/secteur/${task.article.sector.id}/article/${task.article.id}`;
 
         await this.createNotification({
           userId: task.assignedToId,
@@ -236,7 +236,7 @@ export class NotificationService {
 
       // Notifier la personne assignée (si différente de celle qui modifie)
       if (task.assignedToId && task.assignedToId !== updatedByUserId) {
-        const link = `/dashboard/objet/${task.article.sector.object.id}/secteur/${task.article.sector.id}/article/${task.article.id}/task/${task.id}`;
+        const link = `/dashboard/objet/${task.article.sector.object.id}/secteur/${task.article.sector.id}/article/${task.article.id}`;
 
         await this.createNotification({
           userId: task.assignedToId,
@@ -292,7 +292,7 @@ export class NotificationService {
       for (const task of overdueTasks) {
         if (!task.assignedTo) continue;
 
-        const link = `/dashboard/objet/${task.article.sector.object.id}/secteur/${task.article.sector.id}/article/${task.article.id}/task/${task.id}`;
+        const link = `/dashboard/objet/${task.article.sector.object.id}/secteur/${task.article.sector.id}/article/${task.article.id}`;
 
         // Vérifier si une notification de retard n'a pas déjà été envoyée dans les 24h
         const existingNotification = await prisma.notification.findFirst({
@@ -370,7 +370,7 @@ export class NotificationService {
       for (const task of tasksDueSoon) {
         if (!task.assignedTo) continue;
 
-        const link = `/dashboard/objet/${task.article.sector.object.id}/secteur/${task.article.sector.id}/article/${task.article.id}/task/${task.id}`;
+        const link = `/dashboard/objet/${task.article.sector.object.id}/secteur/${task.article.sector.id}/article/${task.article.id}`;
 
         // Vérifier si une notification n'a pas déjà été envoyée aujourd'hui
         const today = new Date();
@@ -441,7 +441,7 @@ export class NotificationService {
 
       // Notifier la personne assignée (si différente de celle qui upload)
       if (task.assignedToId && task.assignedToId !== uploadedByUserId) {
-        const link = `/dashboard/objet/${task.article.sector.object.id}/secteur/${task.article.sector.id}/article/${task.article.id}/task/${task.id}`;
+        const link = `/dashboard/objet/${task.article.sector.object.id}/secteur/${task.article.sector.id}/article/${task.article.id}`;
 
         await this.createNotification({
           userId: task.assignedToId,

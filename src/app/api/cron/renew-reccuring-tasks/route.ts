@@ -109,7 +109,7 @@ export async function GET() {
               title: "Nouvelle tâche récurrente",
               message: `Une nouvelle instance récurrente de la tâche "${task.name}" a été créée`,
               category: "TASK_RECURRING",
-              link: `/dashboard/objet/${task.article.sector.object.id}/secteur/${task.article.sector.id}/article/${task.article.id}/task/${newTask.id}`,
+              link: `/dashboard/objet/${task.article.sector.object.id}/secteur/${task.article.sector.id}/article/${task.article.id}`,
               data: {
                 taskId: newTask.id,
                 taskName: newTask.name,

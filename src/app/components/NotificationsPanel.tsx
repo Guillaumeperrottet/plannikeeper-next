@@ -214,7 +214,7 @@ export default function NotificationsPanel({
           const data = await response.json();
 
           if (data.exists) {
-            // La tâche existe, naviguer normalement
+            // La tâche existe, construire l'URL correcte
             const taskLink = `${baseLink}/task/${taskId}`;
             console.log("Navigating to task:", taskLink);
             router.push(taskLink);
@@ -225,9 +225,11 @@ export default function NotificationsPanel({
           }
         } catch (error) {
           console.error("Error checking task existence:", error);
-          // En cas d'erreur, naviguer normalement (fallback)
-          const taskLink = `${baseLink}/task/${taskId}`;
-          router.push(taskLink);
+          // En cas d'erreur, naviguer vers l'article (sans task ID pour éviter la duplication)
+          console.log("Error - redirecting to article");
+          if (baseLink) {
+            router.push(baseLink);
+          }
         }
 
         onClose();
