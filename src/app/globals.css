@@ -237,9 +237,9 @@ select:active {
   }
 
   .dark {
-    --background: #1f1b16; /* Background plus clair en mode sombre */
+    --background: #2a251e; /* Background encore plus clair en mode sombre */
     --foreground: #f3f2f2;
-    --card: #141210; /* Card légèrement plus claire aussi */
+    --card: #1e1a16; /* Card plus claire aussi */
     --card-foreground: #f3f2f2;
     --destructive-background: #450a0a;
     --destructive-foreground: #f87171;
@@ -267,7 +267,7 @@ select:active {
     --ring: #da850d;
     --radius: 0.5rem;
 
-    --sidebar-background: #252118; /* Sidebar légèrement plus claire */
+    --sidebar-background: #2e2820; /* Sidebar encore plus claire */
     --sidebar-foreground: #ffffff;
     --sidebar-primary: #ae690a;
     --sidebar-primary-foreground: #000000;
