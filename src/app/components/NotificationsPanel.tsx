@@ -214,8 +214,15 @@ export default function NotificationsPanel({
           const data = await response.json();
 
           if (data.exists) {
-            // La tâche existe, construire l'URL correcte
-            const taskLink = `${baseLink}/task/${taskId}`;
+            // Vérifier si le lien contient déjà /task/{taskId}
+            let taskLink;
+            if (baseLink?.includes(`/task/${taskId}`)) {
+              // Le lien contient déjà le segment de tâche, l'utiliser tel quel
+              taskLink = baseLink;
+            } else {
+              // Le lien ne contient pas le segment de tâche, l'ajouter
+              taskLink = `${baseLink}/task/${taskId}`;
+            }
             console.log("Navigating to task:", taskLink);
             router.push(taskLink);
           } else {
