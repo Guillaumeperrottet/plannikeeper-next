@@ -853,6 +853,17 @@ const ModernLandingPage = () => {
               &copy; {new Date().getFullYear()} PlanniKeeper. Tous droits
               réservés.
             </p>
+            <p className="text-gray-400 text-xs mt-2">
+              Create and Powered by{" "}
+              <a
+                href="https://www.webbing.ch"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[#d9840d]"
+              >
+                Webbing
+              </a>
+            </p>
           </div>
         </div>
       </footer>
