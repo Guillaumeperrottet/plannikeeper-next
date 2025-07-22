@@ -251,15 +251,15 @@ export default function CalendarView({
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
-        return "bg-[color:var(--warning-background)] text-[color:var(--warning-foreground)] border-[color:var(--warning-border)]";
+        return "bg-[#ffeab0] text-[#8b5a00] border-transparent hover:bg-[#ffdf91]";
       case "in_progress":
-        return "bg-[color:var(--info-background)] text-[color:var(--info-foreground)] border-[color:var(--info-border)]";
+        return "bg-blue-100 text-blue-900 border-transparent hover:bg-blue-200";
       case "completed":
-        return "bg-[color:var(--success-background)] text-[color:var(--success-foreground)] border-[color:var(--success-border)]";
+        return "bg-green-100 text-green-900 border-transparent hover:bg-green-200";
       case "cancelled":
-        return "bg-[color:var(--destructive-background)] text-[color:var(--destructive-foreground)] border-[color:var(--destructive-border)]";
+        return "bg-red-100 text-red-900 border-transparent hover:bg-red-200";
       default:
-        return "bg-[color:var(--muted)] text-[color:var(--muted-foreground)] border-[color:var(--border)]";
+        return "bg-secondary text-secondary-foreground border-transparent hover:bg-secondary/80";
     }
   };
 

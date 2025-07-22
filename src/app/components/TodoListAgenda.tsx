@@ -1047,7 +1047,7 @@ export default function TodoListAgenda({
                     {thisWeekTasks.map((task) => (
                       <motion.li key={task.id} whileTap={{ scale: 0.98 }}>
                         <Card
-                          className="cursor-pointer hover:shadow-md transition-all"
+                          className="cursor-pointer hover:shadow-md transition-all bg-stone-50/50 border-stone-200/60"
                           onClick={(e) => {
                             e.stopPropagation();
                             navigateToTask(task);
@@ -1057,7 +1057,9 @@ export default function TodoListAgenda({
                             <div className="flex flex-col">
                               <div className="flex justify-between items-start">
                                 <span className="font-medium">{task.name}</span>
-                                <Badge variant={getStatusBadgeVariant(task.status)}>
+                                <Badge
+                                  variant={getStatusBadgeVariant(task.status)}
+                                >
                                   {getStatusText(task.status)}
                                 </Badge>
                               </div>
@@ -1126,7 +1128,7 @@ export default function TodoListAgenda({
                     {upcomingTasks.map((task) => (
                       <motion.li key={task.id} whileTap={{ scale: 0.98 }}>
                         <Card
-                          className="cursor-pointer hover:shadow-md transition-all"
+                          className="cursor-pointer hover:shadow-md transition-all bg-stone-50/50 border-stone-200/60"
                           onClick={(e) => {
                             e.stopPropagation();
                             navigateToTask(task);
@@ -1136,7 +1138,9 @@ export default function TodoListAgenda({
                             <div className="flex flex-col">
                               <div className="flex justify-between items-start">
                                 <span className="font-medium">{task.name}</span>
-                                <Badge variant={getStatusBadgeVariant(task.status)}>
+                                <Badge
+                                  variant={getStatusBadgeVariant(task.status)}
+                                >
                                   {getStatusText(task.status)}
                                 </Badge>
                               </div>
