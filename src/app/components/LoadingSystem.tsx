@@ -239,7 +239,7 @@ export function LoadingSystemProvider({ children }: { children: ReactNode }) {
             transition={{ duration: 0.2 }}
             className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-[9999] flex items-center justify-center"
           >
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg flex flex-col items-center">
+            <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[color:var(--primary)] mb-4"></div>
               <p className="text-lg font-medium text-[color:var(--foreground)]">
                 {activeLoader.message}
@@ -264,7 +264,7 @@ export function withLoading<P extends object>(
         <Component {...(props as P)} />
         {isLoading && (
           <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-[9999] flex items-center justify-center">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg flex flex-col items-center">
+            <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[color:var(--primary)] mb-4"></div>
               <p className="text-lg font-medium text-[color:var(--foreground)]">
                 {currentMessage}

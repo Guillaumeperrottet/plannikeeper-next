@@ -89,7 +89,7 @@ export default function UserMenu({ user, isAdmin = false }: UserMenuProps) {
     <div ref={menuRef} className="relative">
       <button
         onClick={toggleMenu}
-        className="flex items-center gap-2 p-1.5 rounded-lg border border-transparent hover:bg-[color:var(--muted)] transition-colors duration-200 focus:outline-none"
+        className="flex items-center gap-2 p-1.5 rounded-lg border border-transparent hover:text-[#d9840c] transition-colors duration-200 focus:outline-none"
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
@@ -112,16 +112,16 @@ export default function UserMenu({ user, isAdmin = false }: UserMenuProps) {
           )}
         </div>
         <div className="hidden md:block text-left">
-          <p className="text-sm font-medium leading-none text-[color:var(--foreground)]">
+          <p className="text-sm font-medium leading-none text-stone-900">
             {user.name || "Utilisateur"}
           </p>
-          <p className="text-xs text-[color:var(--muted-foreground)] truncate max-w-[120px]">
+          <p className="text-xs text-stone-600 truncate max-w-[120px]">
             {user.email}
           </p>
         </div>
         <ChevronDown
           size={16}
-          className={`transition-transform duration-200 text-[color:var(--foreground)] ${
+          className={`transition-transform duration-200 text-stone-900 ${
             isOpen ? "rotate-180" : ""
           }`}
         />
@@ -134,25 +134,23 @@ export default function UserMenu({ user, isAdmin = false }: UserMenuProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 mt-2 w-56 rounded-md shadow-lg z-50 overflow-hidden bg-[color:var(--card)] border border-[color:var(--border)]"
+            className="absolute right-0 mt-2 w-56 rounded-md shadow-lg z-50 overflow-hidden bg-white border border-stone-200"
           >
-            <div className="p-3 border-b border-[color:var(--border)]">
-              <p className="text-sm font-medium text-[color:var(--foreground)]">
+            <div className="p-3 border-b border-stone-200">
+              <p className="text-sm font-medium text-stone-900">
                 {user.name || "Utilisateur"}
               </p>
-              <p className="text-xs text-[color:var(--muted-foreground)] truncate">
-                {user.email}
-              </p>
+              <p className="text-xs text-stone-600 truncate">{user.email}</p>
             </div>
             <div className="py-1">
               {menuItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex items-center gap-2 px-4 py-2 text-sm text-[color:var(--foreground)] hover:bg-[color:var(--accent)] transition-colors duration-150"
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-stone-900 hover:text-[#d9840c] hover:bg-transparent transition-colors duration-150 group"
                   onClick={() => setIsOpen(false)}
                 >
-                  <span className="text-[color:var(--foreground)]">
+                  <span className="text-stone-900 group-hover:text-[#d9840c] transition-colors duration-150">
                     {item.icon}
                   </span>
                   <span>{item.label}</span>

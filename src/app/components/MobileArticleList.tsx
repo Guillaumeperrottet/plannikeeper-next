@@ -173,7 +173,7 @@ const MobileArticleList: React.FC<MobileArticleListProps> = ({
               animate="visible"
               exit="hidden"
               onClick={togglePanel}
-              className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm z-40"
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
             />
 
             {/* Panneau animé */}

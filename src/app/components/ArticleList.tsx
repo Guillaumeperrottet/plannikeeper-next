@@ -256,7 +256,7 @@ const ArticleList: React.FC<ArticleListProps> = ({
                 animate="visible"
                 exit="hidden"
                 onClick={togglePanel}
-                className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm z-40"
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
               />
             )}
 
@@ -418,7 +418,7 @@ const ArticleList: React.FC<ArticleListProps> = ({
                         onMouseLeave={() => onArticleHover(null)}
                         className={`p-4 mb-3 rounded-lg border shadow-sm transition-all duration-200 article-list-item ${
                           hoveredArticleId === article.id
-                            ? "bg-[color:var(--primary)]/10 border-[color:var(--primary)]/30 dark:bg-[color:var(--primary)]/20"
+                            ? "bg-[color:var(--primary)]/10 border-[color:var(--primary)]/30"
                             : "bg-[color:var(--background)] border-[color:var(--border)] hover:bg-[color:var(--muted)]"
                         } cursor-pointer`}
                         whileTap={{ scale: 0.98 }}

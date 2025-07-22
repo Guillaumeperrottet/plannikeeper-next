@@ -67,14 +67,14 @@ export default function SubscriptionStatus() {
     switch (subscription.status) {
       case "ACTIVE":
         return (
-          <div className="flex items-center text-green-500 dark:text-green-400">
+          <div className="flex items-center text-green-500">
             <CheckCircle className="h-5 w-5 mr-2" />
             <span>Abonnement actif</span>
           </div>
         );
       case "PAST_DUE":
         return (
-          <div className="flex items-center text-amber-500 dark:text-amber-400">
+          <div className="flex items-center text-amber-500">
             <AlertCircle className="h-5 w-5 mr-2" />
             <span>Paiement en retard</span>
           </div>
@@ -102,7 +102,7 @@ export default function SubscriptionStatus() {
 
   if (error) {
     return (
-      <div className="p-4 border border-red-200 dark:border-red-900/50 rounded-lg bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400">
+      <div className="p-4 border border-red-200 rounded-lg bg-red-100 text-red-700">
         <p className="flex items-center">
           <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
           {error}
@@ -114,7 +114,7 @@ export default function SubscriptionStatus() {
   // Si aucun plan, on affiche un message d'erreur
   if (!plan) {
     return (
-      <div className="p-4 border border-amber-200 dark:border-amber-900/50 rounded-lg bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400">
+      <div className="p-4 border border-amber-200 rounded-lg bg-amber-100 text-amber-700">
         <p className="flex items-center">
           <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
           Impossible de récupérer les informations de votre plan

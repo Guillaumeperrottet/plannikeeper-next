@@ -47,7 +47,7 @@ const StyledWrapper = styled.div`
   .menu {
     font-size: 16px;
     line-height: 1.6;
-    color: var(--foreground);
+    color: hsl(20 14.3% 4.1%);
     width: fit-content;
     display: flex;
     list-style: none;
@@ -71,9 +71,9 @@ const StyledWrapper = styled.div`
     border-radius: 16px;
     overflow: hidden;
     transition: all 0.48s cubic-bezier(0.23, 1, 0.32, 1);
-    background: var(--background);
-    color: var(--foreground);
-    border: 1px solid var(--border);
+    background: hsl(0 0% 100%) !important;
+    color: hsl(20 14.3% 4.1%) !important;
+    border: 1px solid hsl(20 5.9% 90%) !important;
   }
 
   .menu .link::after {
@@ -83,7 +83,7 @@ const StyledWrapper = styled.div`
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: var(--primary);
+    background-color: hsl(24 9.8% 10%);
     z-index: -1;
     transform: scaleX(0);
     transform-origin: left;
@@ -93,7 +93,7 @@ const StyledWrapper = styled.div`
   .menu .link svg {
     width: 14px;
     height: 14px;
-    fill: var(--foreground);
+    fill: hsl(20 14.3% 4.1%);
     transition: all 0.48s cubic-bezier(0.23, 1, 0.32, 1);
   }
 
@@ -111,8 +111,8 @@ const StyledWrapper = styled.div`
     left: 0;
     width: 100%;
     overflow: hidden;
-    border: 1px solid var(--border);
-    background: var(--background);
+    border: 1px solid hsl(20 5.9% 90%) !important;
+    background: hsl(0 0% 100%) !important;
     opacity: 0;
     visibility: hidden;
     transform: translateY(-12px);
@@ -120,6 +120,7 @@ const StyledWrapper = styled.div`
     z-index: 1;
     pointer-events: none;
     list-style: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
   }
 
   .menu .item:hover .submenu {
@@ -128,12 +129,12 @@ const StyledWrapper = styled.div`
     transform: translateY(0);
     pointer-events: auto;
     border-top: transparent;
-    border-color: var(--primary);
+    border-color: hsl(24 9.8% 10%);
   }
 
   .menu .item:hover .link {
-    color: var(--primary-foreground);
-    background: var(--primary);
+    color: hsl(60 9.1% 97.8%) !important;
+    background: hsl(24 9.8% 10%) !important;
     border-radius: 16px 16px 0 0;
   }
 
@@ -143,7 +144,7 @@ const StyledWrapper = styled.div`
   }
 
   .menu .item:hover .link svg {
-    fill: var(--primary-foreground);
+    fill: hsl(60 9.1% 97.8%);
     transform: rotate(-180deg);
   }
 
@@ -158,8 +159,8 @@ const StyledWrapper = styled.div`
     width: 100%;
     position: relative;
     text-align: center;
-    background: var(--background);
-    color: var(--foreground);
+    background: hsl(0 0% 100%) !important;
+    color: hsl(20 14.3% 4.1%) !important;
     border: none;
     transition: all 0.48s cubic-bezier(0.23, 1, 0.32, 1);
   }
@@ -176,7 +177,7 @@ const StyledWrapper = styled.div`
     transform: scaleX(0);
     width: 100%;
     height: 100%;
-    background-color: var(--primary);
+    background-color: hsl(24 9.8% 10%);
     z-index: -1;
     transform-origin: left;
     transition: transform 0.48s cubic-bezier(0.23, 1, 0.32, 1);
@@ -188,8 +189,8 @@ const StyledWrapper = styled.div`
   }
 
   .submenu .submenu-link:hover {
-    color: var(--primary-foreground);
-    background: var(--primary);
+    color: hsl(60 9.1% 97.8%) !important;
+    background: hsl(24 9.8% 10%) !important;
   }
 `;
 
