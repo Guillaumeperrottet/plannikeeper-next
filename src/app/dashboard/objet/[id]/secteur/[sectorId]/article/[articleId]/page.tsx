@@ -2,7 +2,7 @@
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
-import TasksPage from "./tasks-page";
+import TasksPage from "./tasks-page-table";
 
 export default async function ArticleDetailPage({
   params,
