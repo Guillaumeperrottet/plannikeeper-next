@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
@@ -20,8 +19,16 @@ import {
   Save,
   RefreshCcw,
   Archive,
+  Check,
 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/app/components/ui/dropdown-menu";
 import DocumentsList from "@/app/dashboard/objet/[id]/secteur/[sectorId]/article/[articleId]/documents-list";
 import DocumentUpload from "@/app/dashboard/objet/[id]/secteur/[sectorId]/article/[articleId]/document-upload";
 import TaskComments from "@/app/dashboard/objet/[id]/secteur/[sectorId]/article/[articleId]/TaskComments";
@@ -88,8 +95,6 @@ export default function ModernTaskDetailPage({
   const [activeTab, setActiveTab] = useState<
     "details" | "documents" | "comments"
   >("details");
-  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
-  const [showActionMenu, setShowActionMenu] = useState(false);
 
   // Detect mobile screen size
   const isMobile =
@@ -110,42 +115,31 @@ export default function ModernTaskDetailPage({
         return {
           label: "À faire",
           icon: <Clock className="h-4 w-4" />,
-          color:
-            "bg-[color:var(--warning-background)] text-[color:var(--warning-foreground)] border-[color:var(--warning-border)]",
+          variant: "pending" as const,
         };
       case "in_progress":
         return {
           label: "En cours",
-          icon: (
-            <Clock className="h-4 w-4 text-[color:var(--info-foreground)]" />
-          ),
-          color:
-            "bg-[color:var(--info-background)] text-[color:var(--info-foreground)] border-[color:var(--info-border)]",
+          icon: <Clock className="h-4 w-4" />,
+          variant: "inProgress" as const,
         };
       case "completed":
         return {
           label: "Terminée",
-          icon: (
-            <CheckCircle2 className="h-4 w-4 text-[color:var(--success-foreground)]" />
-          ),
-          color:
-            "bg-[color:var(--success-background)] text-[color:var(--success-foreground)] border-[color:var(--success-border)]",
+          icon: <CheckCircle2 className="h-4 w-4" />,
+          variant: "completed" as const,
         };
       case "cancelled":
         return {
           label: "Annulée",
-          icon: (
-            <X className="h-4 w-4 text-[color:var(--destructive-foreground)]" />
-          ),
-          color:
-            "bg-[color:var(--destructive-background)] text-[color:var(--destructive-foreground)] border-[color:var(--destructive-border)]",
+          icon: <X className="h-4 w-4" />,
+          variant: "cancelled" as const,
         };
       default:
         return {
           label: status,
           icon: <AlertCircle className="h-4 w-4" />,
-          color:
-            "bg-[color:var(--muted)] text-[color:var(--muted-foreground)] border-[color:var(--border)]",
+          variant: "pending" as const,
         };
     }
   };
@@ -201,7 +195,6 @@ export default function ModernTaskDetailPage({
   // Handle status change
   const handleStatusChange = async (newStatus: string) => {
     setIsLoading(true);
-    setShowStatusDropdown(false);
 
     try {
       const response = await fetch(`/api/tasks/${task.id}`, {
@@ -248,13 +241,13 @@ export default function ModernTaskDetailPage({
   };
 
   return (
-    <div className="min-h-screen bg-[color:var(--background)] flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Fixed header with actions */}
-      <header className="sticky top-0 z-10 bg-[color:var(--card)] border-b border-[color:var(--border)] shadow-sm">
+      <header className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link
             href={`/dashboard/objet/${objetId}/secteur/${sectorId}/article/${articleId}`}
-            className="flex items-center gap-2 text-[color:var(--foreground)] hover:text-[color:var(--foreground)]/90"
+            className="flex items-center gap-2 text-gray-900 hover:text-gray-700 transition-colors"
           >
             <ArrowLeft size={20} />
             <span className="hidden sm:inline font-medium">Retour</span>
@@ -263,97 +256,38 @@ export default function ModernTaskDetailPage({
           <div className="flex items-center gap-2">
             {!isEditing ? (
               <>
-                <div className="relative">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                    className={`${getStatusInfo(task.status).color} border`}
-                  >
-                    <div className="flex items-center gap-1">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2">
                       {getStatusInfo(task.status).icon}
-                      <span className="ml-1">
-                        {getStatusInfo(task.status).label}
-                      </span>
-                    </div>
-                  </Button>
-
-                  {/* Status dropdown */}
-                  <AnimatePresence>
-                    {showStatusDropdown && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -5 }}
-                        className="absolute right-0 mt-1 w-40 bg-[color:var(--card)] rounded-md shadow-lg z-10 border border-[color:var(--border)] overflow-hidden"
-                      >
-                        {[
-                          "pending",
-                          "in_progress",
-                          "completed",
-                          "cancelled",
-                        ].map((status) => (
-                          <button
-                            key={status}
-                            onClick={() => handleStatusChange(status)}
-                            className={`w-full text-left px-3 py-2 text-sm hover:bg-[color:var(--muted)] flex items-center gap-1.5 ${
-                              task.status === status
-                                ? "font-medium bg-[color:var(--muted)]"
-                                : ""
-                            }`}
-                            disabled={isLoading}
-                          >
+                      <span>{getStatusInfo(task.status).label}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {["pending", "in_progress", "completed", "cancelled"].map(
+                      (status) => (
+                        <DropdownMenuItem
+                          key={status}
+                          onClick={() => handleStatusChange(status)}
+                          disabled={isLoading}
+                          className={
+                            task.status === status
+                              ? "bg-blue-50 text-blue-600"
+                              : ""
+                          }
+                        >
+                          <div className="flex items-center gap-2">
                             {getStatusInfo(status).icon}
                             <span>{getStatusInfo(status).label}</span>
-                          </button>
-                        ))}
-                      </motion.div>
+                            {task.status === status && (
+                              <Check className="w-4 h-4 ml-auto" />
+                            )}
+                          </div>
+                        </DropdownMenuItem>
+                      )
                     )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Action menu (mobile) */}
-                <div className="relative sm:hidden">
-                  <button
-                    onClick={() => setShowActionMenu(!showActionMenu)}
-                    className="p-2 rounded-full hover:bg-[color:var(--muted)]"
-                    aria-label="Plus d'options"
-                  >
-                    <MoreVertical size={20} />
-                  </button>
-
-                  <AnimatePresence>
-                    {showActionMenu && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -5 }}
-                        className="absolute right-0 mt-1 w-40 bg-[color:var(--card)] rounded-md shadow-lg z-10 border border-[color:var(--border)] overflow-hidden"
-                      >
-                        <button
-                          onClick={() => {
-                            setIsEditing(true);
-                            setShowActionMenu(false);
-                          }}
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-[color:var(--muted)] flex items-center gap-1.5 text-[color:var(--foreground)]"
-                        >
-                          <Edit size={16} />
-                          <span>Modifier</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            handleDelete();
-                            setShowActionMenu(false);
-                          }}
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-[color:var(--destructive-background)] text-[color:var(--destructive-foreground)] flex items-center gap-1.5"
-                        >
-                          <Trash2 size={16} />
-                          <span>Supprimer</span>
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
                 {/* Desktop action buttons */}
                 <div className="hidden sm:flex items-center gap-2">
@@ -369,12 +303,40 @@ export default function ModernTaskDetailPage({
                     variant="outline"
                     size="sm"
                     onClick={handleDelete}
-                    className="text-[color:var(--destructive-foreground)] border-[color:var(--destructive-border)] hover:bg-[color:var(--destructive-background)]"
+                    className="text-red-600 border-red-200 hover:bg-red-50"
                   >
                     <Trash2 size={16} className="mr-1" />
                     Supprimer
                   </Button>
                 </div>
+
+                {/* Mobile action menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="sm:hidden h-8 w-8 p-0"
+                      aria-label="Plus d'options"
+                    >
+                      <MoreVertical size={20} />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                      <Edit size={16} className="mr-2" />
+                      Modifier
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={handleDelete}
+                      className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                    >
+                      <Trash2 size={16} className="mr-2" />
+                      Supprimer
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             ) : (
               <>
@@ -399,14 +361,12 @@ export default function ModernTaskDetailPage({
 
       {/* Bannière pour tâches archivées */}
       {task.archived && (
-        <div className="bg-[color:var(--warning-background)] border-y border-[color:var(--warning-border)] py-3">
+        <div className="bg-yellow-50 border-y border-yellow-200 py-3">
           <div className="max-w-4xl mx-auto px-4 flex items-center gap-3">
-            <Archive className="h-5 w-5 text-[color:var(--warning-foreground)]" />
+            <Archive className="h-5 w-5 text-yellow-600" />
             <div>
-              <p className="text-[color:var(--warning-foreground)] font-medium">
-                Tâche archivée
-              </p>
-              <p className="text-[color:var(--warning-foreground)]/90 text-sm">
+              <p className="text-yellow-800 font-medium">Tâche archivée</p>
+              <p className="text-yellow-700 text-sm">
                 Cette tâche est archivée et n&apos;apparaît plus dans les listes
                 actives.
                 {task.status === "completed" &&
@@ -436,8 +396,8 @@ export default function ModernTaskDetailPage({
                       toast.error("Erreur lors de la désarchivation");
                     });
                 }}
-                className="px-3 py-1.5 text-xs rounded-md border border-[color:var(--warning-border)]
-                          bg-[color:var(--card)] text-[color:var(--warning-foreground)] hover:bg-[color:var(--warning-background)]/80 transition-colors"
+                className="px-3 py-1.5 text-xs rounded-md border border-yellow-300
+                          bg-white text-yellow-700 hover:bg-yellow-100 transition-colors"
               >
                 Désarchiver cette tâche
               </button>
@@ -452,32 +412,46 @@ export default function ModernTaskDetailPage({
           <div className="flex items-start gap-3 mb-2">
             <div
               className="w-3 h-3 rounded-full flex-shrink-0 mt-2"
-              style={{ backgroundColor: task.color || "var(--primary)" }}
+              style={{ backgroundColor: task.color || "#3b82f6" }}
             />
-            {isEditing ? (
-              <input
-                type="text"
-                value={editedTask.name}
-                onChange={(e) =>
-                  setEditedTask({ ...editedTask, name: e.target.value })
-                }
-                className="text-xl sm:text-2xl font-bold w-full bg-transparent border-b border-[color:var(--border)] focus:border-[color:var(--ring)] focus:ring-0 outline-none px-0 text-[color:var(--foreground)]"
-              />
-            ) : (
-              <h1 className="text-xl sm:text-2xl font-bold text-[color:var(--foreground)]">
-                {task.name}
-              </h1>
-            )}
+            <div className="flex-1 min-w-0">
+              {isEditing ? (
+                <span className="relative inline-block">
+                  <input
+                    type="text"
+                    value={editedTask.name}
+                    onChange={(e) =>
+                      setEditedTask({ ...editedTask, name: e.target.value })
+                    }
+                    className="text-xl sm:text-2xl font-bold bg-transparent border-b border-gray-300 focus:border-blue-500 focus:ring-0 outline-none px-0 text-gray-900"
+                    style={{
+                      width: `${Math.max(editedTask.name.length * 0.65 + 1, 5)}ch`,
+                    }}
+                    autoFocus
+                  />
+                  <span
+                    className="absolute invisible text-xl sm:text-2xl font-bold whitespace-pre"
+                    aria-hidden="true"
+                  >
+                    {editedTask.name}
+                  </span>
+                </span>
+              ) : (
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+                  {task.name}
+                </h1>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 ml-6">
             {task.taskType && (
-              <span className="px-2 py-0.5 text-xs sm:text-sm rounded-full bg-[color:var(--muted)] text-[color:var(--muted-foreground)]">
+              <span className="px-2 py-0.5 text-xs sm:text-sm rounded-full bg-gray-100 text-gray-700">
                 {task.taskType}
               </span>
             )}
             {task.recurring && (
-              <span className="px-2 py-0.5 text-xs sm:text-sm rounded-full bg-[color:var(--info-background)] text-[color:var(--info-foreground)] flex items-center gap-1">
+              <span className="px-2 py-0.5 text-xs sm:text-sm rounded-full bg-blue-50 text-blue-700 flex items-center gap-1">
                 <RefreshCcw size={12} />
                 <span>{getPeriodLabel(task.period)}</span>
               </span>
@@ -486,14 +460,14 @@ export default function ModernTaskDetailPage({
         </div>
 
         {/* Tab navigation for mobile */}
-        <div className="mb-6 border-b border-[color:var(--border)] sm:hidden">
+        <div className="mb-6 border-b border-gray-200 sm:hidden">
           <div className="flex">
             <button
               onClick={() => setActiveTab("details")}
               className={`flex-1 py-2 px-1 text-sm font-medium ${
                 activeTab === "details"
-                  ? "text-[color:var(--primary)] border-b-2 border-[color:var(--primary)]"
-                  : "text-[color:var(--muted-foreground)]"
+                  ? "text-blue-600 border-b-2 border-blue-600"
+                  : "text-gray-500"
               }`}
             >
               Détails
@@ -502,8 +476,8 @@ export default function ModernTaskDetailPage({
               onClick={() => setActiveTab("documents")}
               className={`flex-1 py-2 px-1 text-sm font-medium ${
                 activeTab === "documents"
-                  ? "text-[color:var(--primary)] border-b-2 border-[color:var(--primary)]"
-                  : "text-[color:var(--muted-foreground)]"
+                  ? "text-blue-600 border-b-2 border-blue-600"
+                  : "text-gray-500"
               }`}
             >
               Documents
@@ -512,8 +486,8 @@ export default function ModernTaskDetailPage({
               onClick={() => setActiveTab("comments")}
               className={`flex-1 py-2 px-1 text-sm font-medium ${
                 activeTab === "comments"
-                  ? "text-[color:var(--primary)] border-b-2 border-[color:var(--primary)]"
-                  : "text-[color:var(--muted-foreground)]"
+                  ? "text-blue-600 border-b-2 border-blue-600"
+                  : "text-gray-500"
               }`}
             >
               Commentaires
@@ -550,9 +524,9 @@ export default function ModernTaskDetailPage({
                     </label>
                   </div>
                   {editedTask.recurring && (
-                    <div className="ml-6 mt-2 space-y-3 bg-[color:var(--info-background)] p-3 rounded-lg border border-[color:var(--info-border)]">
+                    <div className="ml-6 mt-2 space-y-3 bg-blue-50 p-3 rounded-lg border border-blue-200">
                       <div>
-                        <label className="block text-sm font-medium mb-1 text-[color:var(--info-foreground)]">
+                        <label className="block text-sm font-medium mb-1 text-blue-700">
                           Périodicité
                         </label>
                         <select
@@ -563,7 +537,7 @@ export default function ModernTaskDetailPage({
                               period: e.target.value,
                             })
                           }
-                          className="w-full p-2 border border-[color:var(--border)] rounded-md text-sm bg-[color:var(--card)] text-[color:var(--foreground)]"
+                          className="w-full p-2 border border-gray-300 rounded-md text-sm bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                         >
                           <option value="daily">Quotidienne</option>
                           <option value="weekly">Hebdomadaire</option>
@@ -571,12 +545,12 @@ export default function ModernTaskDetailPage({
                           <option value="quarterly">Trimestrielle</option>
                           <option value="yearly">Annuelle</option>
                         </select>
-                        <p className="text-xs text-[color:var(--info-foreground)] mt-1">
+                        <p className="text-xs text-blue-600 mt-1">
                           Définit à quelle fréquence la tâche doit se répéter.
                         </p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1 text-[color:var(--info-foreground)]">
+                        <label className="block text-sm font-medium mb-1 text-blue-700">
                           Date de fin (optionnelle)
                         </label>
                         <input
@@ -600,9 +574,9 @@ export default function ModernTaskDetailPage({
                                 : null,
                             })
                           }
-                          className="w-full p-2 border border-[color:var(--border)] rounded-md text-sm bg-[color:var(--card)] text-[color:var(--foreground)]"
+                          className="w-full p-2 border border-gray-300 rounded-md text-sm bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                         />
-                        <p className="text-xs text-[color:var(--info-foreground)] mt-1">
+                        <p className="text-xs text-blue-600 mt-1">
                           Si définie, la tâche ne sera plus recréée après cette
                           date. Si non définie, la tâche se répétera
                           indéfiniment.
@@ -610,7 +584,7 @@ export default function ModernTaskDetailPage({
                       </div>
                       {(editedTask.period === "quarterly" ||
                         editedTask.period === "yearly") && (
-                        <div className="border-t border-[color:var(--info-border)] pt-3">
+                        <div className="border-t border-blue-200 pt-3">
                           <div className="flex items-start">
                             <input
                               type="checkbox"
@@ -641,16 +615,16 @@ export default function ModernTaskDetailPage({
                                   });
                                 }
                               }}
-                              className="w-4 h-4 mt-1 text-[color:var(--primary)] rounded focus:ring-[color:var(--ring)]"
+                              className="w-4 h-4 mt-1 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                             />
                             <div className="ml-2">
                               <label
                                 htmlFor="reminder-notification"
-                                className="text-sm font-medium text-[color:var(--info-foreground)]"
+                                className="text-sm font-medium text-blue-700"
                               >
                                 Activer la notification anticipée
                               </label>
-                              <p className="text-xs text-[color:var(--info-foreground)]">
+                              <p className="text-xs text-blue-600">
                                 Envoi d&apos;une notification 10 jours avant
                                 l&apos;échéance (recommandé pour les tâches peu
                                 fréquentes)

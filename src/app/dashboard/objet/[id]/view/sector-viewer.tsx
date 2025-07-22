@@ -1,8 +1,22 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import DropdownMenu from "@/app/components/ui/dropdownmenu";
 import { Button } from "@/app/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/app/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/app/components/ui/sheet";
 import { toast } from "sonner";
 import Link from "next/link";
 import {
@@ -12,7 +26,6 @@ import {
   Maximize2,
   Minimize2,
   ListFilter,
-  X,
   ExternalLink,
   Search,
   ArrowUp,
@@ -21,7 +34,6 @@ import {
 } from "lucide-react";
 import ImageWithArticles from "@/app/components/ImageWithArticles";
 import AccessControl from "@/app/components/AccessControl";
-import { motion, AnimatePresence } from "framer-motion";
 
 // Types définis comme dans votre code original
 type Sector = {
@@ -230,11 +242,6 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
     }
   }, [isFullscreen]);
 
-  // Fonction pour basculer la barre latérale d'articles
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
   // Fonction pour basculer la direction du tri
   const toggleSortDirection = () => {
     setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -296,49 +303,6 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
     };
   }, [isFullscreen]);
 
-  // Variables pour la navigation d'articles
-  const articleListVariants = {
-    hidden: { x: "100%", opacity: 0 },
-    visible: {
-      x: 0,
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 300,
-        damping: 30,
-      },
-    },
-    exit: {
-      x: "100%",
-      opacity: 0,
-      transition: {
-        type: "spring",
-        stiffness: 300,
-        damping: 30,
-      },
-    },
-  };
-
-  // Animation pour la barre de recherche
-  const searchBarVariants = {
-    hidden: { height: 0, opacity: 0, overflow: "hidden" },
-    visible: {
-      height: "auto",
-      opacity: 1,
-      transition: {
-        height: {
-          type: "spring",
-          stiffness: 400,
-          damping: 40,
-        },
-        opacity: {
-          duration: 0.3,
-          delay: 0.1,
-        },
-      },
-    },
-  };
-
   return (
     <div
       ref={viewerRef}
@@ -348,32 +312,163 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
     >
       {/* Header avec contrôles - caché en plein écran */}
       {!isFullscreen && (
-        <div className="p-2 md:p-4 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4 bg-transparent">
+        <div className="p-2 md:p-4 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
           {/* Interface de sélection de secteur */}
-          <div className="w-full sm:w-auto flex-1 flex items-center">
-            <DropdownMenu
-              items={sectors.map((s) => ({ id: s.id, label: s.name }))}
-              selectedId={selectedSector?.id}
-              onSelect={(id) => {
+          <div className="w-full sm:w-auto flex-1 flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Layers className="h-5 w-5 text-muted-foreground" />
+              <label className="text-sm font-medium text-foreground hidden sm:block">
+                Secteur :
+              </label>
+            </div>
+            <Select
+              value={selectedSector?.id}
+              onValueChange={(id: string) => {
                 const sector = sectors.find((s) => s.id === id);
                 if (sector) handleSectorChange(sector);
               }}
-              label={
-                selectedSector ? selectedSector.name : "Sélectionner un secteur"
-              }
-            />
+            >
+              <SelectTrigger className="w-full sm:w-[280px] bg-background border-input shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors">
+                <SelectValue
+                  placeholder="Sélectionner un secteur"
+                  className="text-foreground"
+                />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                {sectors.map((sector) => (
+                  <SelectItem
+                    key={sector.id}
+                    value={sector.id}
+                    className="cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-primary/60"></div>
+                      {sector.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             {/* Bouton Articles pour desktop - en dehors du flux normal */}
             {selectedSector && !isMobile && (
-              <Button
-                onClick={toggleSidebar}
-                variant="outline"
-                className="ml-4 flex items-center gap-2"
-                aria-expanded={sidebarOpen}
-              >
-                {sidebarOpen ? <X size={16} /> : <ListFilter size={16} />}
-                Articles
-              </Button>
+              <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="ml-4 flex items-center gap-2"
+                    aria-expanded={sidebarOpen}
+                  >
+                    <ListFilter size={16} />
+                    Articles
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[400px] sm:w-[540px]">
+                  <SheetHeader>
+                    <SheetTitle>
+                      Articles ({filteredArticles.length})
+                    </SheetTitle>
+                    <SheetDescription>
+                      Liste des articles du secteur &quot;{selectedSector.name}
+                      &quot;
+                    </SheetDescription>
+                  </SheetHeader>
+
+                  {/* Contenu de la Sheet */}
+                  <div className="flex flex-col h-full mt-6">
+                    {/* Barre de recherche et tri */}
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="relative flex-1">
+                        <Search
+                          size={16}
+                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+                        />
+                        <input
+                          ref={searchInputRef}
+                          type="text"
+                          placeholder="Rechercher un article..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="w-full py-2 pl-10 pr-8 border border-input rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-ring bg-background"
+                        />
+                        {searchTerm && (
+                          <button
+                            onClick={clearSearch}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
+                            <XCircle size={16} />
+                          </button>
+                        )}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={toggleSortDirection}
+                        className="flex items-center gap-1"
+                        title={sortDirection === "asc" ? "Tri A-Z" : "Tri Z-A"}
+                      >
+                        {sortDirection === "asc" ? (
+                          <ArrowUp size={16} />
+                        ) : (
+                          <ArrowDown size={16} />
+                        )}
+                      </Button>
+                    </div>
+
+                    {/* Liste des articles */}
+                    <div className="flex-1 overflow-y-auto">
+                      {filteredArticles.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          {articles.length === 0
+                            ? "Aucun article disponible pour ce secteur"
+                            : "Aucun article ne correspond à votre recherche"}
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {filteredArticles.map((article) => (
+                            <div
+                              key={article.id}
+                              className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                                hoveredArticleId === article.id ||
+                                selectedArticleId === article.id
+                                  ? "bg-amber-50 border-amber-200"
+                                  : "hover:bg-muted/50"
+                              }`}
+                              onClick={() => handleArticleClick(article.id)}
+                              onMouseEnter={() =>
+                                handleArticleHover(article.id)
+                              }
+                              onMouseLeave={() => handleArticleHover(null)}
+                            >
+                              <div className="flex justify-between items-start">
+                                <h4 className="font-medium mb-1">
+                                  {article.title}
+                                </h4>
+                                <ExternalLink
+                                  size={14}
+                                  className="text-muted-foreground mt-1"
+                                />
+                              </div>
+                              {article.description && (
+                                <p
+                                  className="text-sm text-muted-foreground overflow-hidden text-ellipsis"
+                                  style={{
+                                    display: "-webkit-box",
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: "vertical" as const,
+                                  }}
+                                >
+                                  {article.description}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
             )}
           </div>
 
@@ -496,252 +591,133 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 </button>
               </div>
 
-              {/* Liste des articles pour mobile uniquement - basée sur votre MobileArticleList existant */}
+              {/* Liste des articles pour mobile uniquement */}
               {selectedSector && !isFullscreen && isMobile && (
                 <div className="md:hidden">
-                  {/* Bouton flottant pour ouvrir la liste */}
-                  <button
-                    onClick={toggleSidebar}
-                    className="fixed bottom-20 left-4 z-[9] flex items-center gap-1 bg-primary text-primary-foreground rounded-full shadow-lg px-3 py-3"
-                    style={{
-                      position: "fixed",
-                      bottom: "80px",
-                      left: "16px",
-                      zIndex: 9,
-                      backgroundColor: "var(--primary)",
-                      color: "white",
-                      borderRadius: "9999px",
-                      padding: "12px",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-                    }}
-                  >
-                    {sidebarOpen ? <X size={18} /> : <ListFilter size={18} />}
-                    {!sidebarOpen && (
-                      <span className="ml-1 text-sm font-medium">
-                        {articles.length} Articles
-                      </span>
-                    )}
-                  </button>
+                  {/* Sheet pour mobile */}
+                  <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+                    {/* Bouton flottant pour ouvrir la liste */}
+                    <SheetTrigger asChild>
+                      <button className="fixed bottom-20 left-4 z-[9] flex items-center gap-1 bg-primary text-primary-foreground rounded-full shadow-lg px-3 py-3 hover:scale-105 transition-transform">
+                        <ListFilter size={18} />
+                        <span className="ml-1 text-sm font-medium">
+                          {articles.length} Articles
+                        </span>
+                      </button>
+                    </SheetTrigger>
 
-                  {/* Panel mobile pour articles - en bas de l'écran */}
-                  <AnimatePresence>
-                    {sidebarOpen && (
-                      <>
-                        {/* Overlay animé */}
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          onClick={toggleSidebar}
-                          style={{
-                            position: "fixed",
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            backgroundColor: "rgba(0,0,0,0.5)",
-                            zIndex: 9,
-                          }}
-                        />
+                    <SheetContent
+                      side="bottom"
+                      className="h-[80vh] rounded-t-2xl"
+                    >
+                      {/* Indicateur de défilement (handle) */}
+                      <div className="w-10 h-1 bg-muted rounded-full mx-auto mb-4 opacity-60" />
 
-                        {/* Panneau animé */}
-                        <motion.div
-                          initial={{ y: "100%" }}
-                          animate={{ y: 0 }}
-                          exit={{ y: "100%" }}
-                          transition={{
-                            type: "spring",
-                            damping: 30,
-                            stiffness: 300,
-                          }}
-                          style={{
-                            position: "fixed",
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            backgroundColor: "white",
-                            borderTopLeftRadius: "16px",
-                            borderTopRightRadius: "16px",
-                            boxShadow: "0 -4px 20px rgba(0,0,0,0.2)",
-                            zIndex: 995,
-                            maxHeight: "80vh",
-                            display: "flex",
-                            flexDirection: "column",
-                          }}
-                        >
-                          {/* Indicateur de défilement (handle) */}
-                          <div
-                            style={{
-                              width: "40px",
-                              height: "4px",
-                              backgroundColor: "#ccc",
-                              borderRadius: "4px",
-                              margin: "10px auto 5px",
-                              opacity: 0.6,
-                            }}
+                      <SheetHeader className="pb-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <SheetTitle className="text-left">
+                              Articles de &quot;{selectedSector.name}&quot;
+                            </SheetTitle>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={toggleSortDirection}
+                              className="flex items-center gap-1"
+                              title={
+                                sortDirection === "asc" ? "Tri A-Z" : "Tri Z-A"
+                              }
+                            >
+                              {sortDirection === "asc" ? (
+                                <ArrowUp size={16} />
+                              ) : (
+                                <ArrowDown size={16} />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </SheetHeader>
+
+                      {/* Contenu de la Sheet mobile */}
+                      <div className="flex flex-col h-full">
+                        {/* Barre de recherche */}
+                        <div className="relative mb-4">
+                          <Search
+                            size={16}
+                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
                           />
+                          <input
+                            ref={searchInputRef}
+                            type="text"
+                            placeholder="Rechercher un article..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full py-2 pl-10 pr-8 border border-input rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-ring bg-background"
+                          />
+                          {searchTerm && (
+                            <button
+                              onClick={clearSearch}
+                              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            >
+                              <XCircle size={16} />
+                            </button>
+                          )}
+                        </div>
 
-                          {/* En-tête du panneau avec barre de recherche */}
-                          <div className="border-b border-gray-200">
-                            <div className="flex justify-between items-center p-3">
-                              <div className="flex items-center">
-                                <h3 className="font-medium">
-                                  Articles de &quot;{selectedSector.name}&quot;
-                                </h3>
-                                <button
-                                  onClick={toggleSortDirection}
-                                  className="ml-2 p-1 rounded hover:bg-gray-100"
-                                  title={
-                                    sortDirection === "asc"
-                                      ? "Tri A-Z"
-                                      : "Tri Z-A"
+                        {/* Liste d'articles filtrée */}
+                        <div className="flex-1 overflow-y-auto">
+                          {filteredArticles.length === 0 ? (
+                            <div className="text-center py-10 px-5 text-muted-foreground">
+                              {articles.length === 0
+                                ? "Aucun article disponible pour ce secteur"
+                                : "Aucun article ne correspond à votre recherche"}
+                            </div>
+                          ) : (
+                            <div className="space-y-3 pb-5">
+                              {filteredArticles.map((article) => (
+                                <div
+                                  key={article.id}
+                                  onClick={() => handleArticleClick(article.id)}
+                                  onMouseEnter={() =>
+                                    handleArticleHover(article.id)
                                   }
+                                  onMouseLeave={() => handleArticleHover(null)}
+                                  className={`p-4 rounded-xl border cursor-pointer shadow-sm transition-colors ${
+                                    hoveredArticleId === article.id
+                                      ? "bg-amber-50 border-amber-200"
+                                      : "bg-background hover:bg-muted/50"
+                                  }`}
                                 >
-                                  {sortDirection === "asc" ? (
-                                    <ArrowUp
-                                      size={16}
-                                      className="text-gray-500"
+                                  <div className="flex justify-between items-start">
+                                    <h4 className="font-medium mb-2 text-base">
+                                      {article.title}
+                                    </h4>
+                                    <ExternalLink
+                                      size={14}
+                                      className="text-muted-foreground mt-1"
                                     />
-                                  ) : (
-                                    <ArrowDown
-                                      size={16}
-                                      className="text-gray-500"
-                                    />
-                                  )}
-                                </button>
-                              </div>
-                              <button
-                                onClick={toggleSidebar}
-                                className="p-2 rounded-full hover:bg-gray-100"
-                              >
-                                <X size={18} />
-                              </button>
-                            </div>
-
-                            {/* Barre de recherche */}
-                            <div className="px-3 pb-3">
-                              <div className="relative">
-                                <Search
-                                  size={16}
-                                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                                />
-                                <input
-                                  ref={searchInputRef}
-                                  type="text"
-                                  placeholder="Rechercher un article..."
-                                  value={searchTerm}
-                                  onChange={(e) =>
-                                    setSearchTerm(e.target.value)
-                                  }
-                                  className="w-full py-2 pl-10 pr-8 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                                />
-                                {searchTerm && (
-                                  <button
-                                    onClick={clearSearch}
-                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                  >
-                                    <XCircle size={16} />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Liste d'articles filtrée */}
-                          <div
-                            style={{
-                              overflowY: "auto",
-                              maxHeight: "calc(80vh - 100px)",
-                              WebkitOverflowScrolling: "touch",
-                              paddingBottom:
-                                "env(safe-area-inset-bottom, 16px)",
-                            }}
-                          >
-                            {filteredArticles.length === 0 ? (
-                              <div
-                                style={{
-                                  textAlign: "center",
-                                  padding: "40px 20px",
-                                  color: "#666",
-                                }}
-                              >
-                                {articles.length === 0
-                                  ? "Aucun article disponible pour ce secteur"
-                                  : "Aucun article ne correspond à votre recherche"}
-                              </div>
-                            ) : (
-                              <div style={{ padding: "12px 16px" }}>
-                                {filteredArticles.map((article) => (
-                                  <div
-                                    key={article.id}
-                                    onClick={() =>
-                                      handleArticleClick(article.id)
-                                    }
-                                    onMouseEnter={() =>
-                                      handleArticleHover(article.id)
-                                    }
-                                    onMouseLeave={() =>
-                                      handleArticleHover(null)
-                                    }
-                                    style={{
-                                      padding: "16px",
-                                      marginBottom: "12px",
-                                      borderRadius: "12px",
-                                      border: "1px solid #e0e0e0",
-                                      backgroundColor:
-                                        hoveredArticleId === article.id
-                                          ? "rgba(217, 132, 13, 0.1)"
-                                          : "white",
-                                      cursor: "pointer",
-                                      boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-                                    }}
-                                  >
-                                    <div className="flex justify-between items-start">
-                                      <h4
-                                        style={{
-                                          fontWeight: 500,
-                                          marginBottom: "8px",
-                                          fontSize: "16px",
-                                        }}
-                                      >
-                                        {article.title}
-                                      </h4>
-                                      <ExternalLink
-                                        size={14}
-                                        style={{
-                                          color: "var(--muted-foreground)",
-                                          marginTop: "4px",
-                                        }}
-                                      />
-                                    </div>
-
-                                    {article.description && (
-                                      <p
-                                        style={{
-                                          fontSize: "14px",
-                                          color: "var(--muted-foreground)",
-                                          lineHeight: 1.4,
-                                          display: "-webkit-box",
-                                          WebkitLineClamp: 2,
-                                          WebkitBoxOrient: "vertical",
-                                          overflow: "hidden",
-                                          textOverflow: "ellipsis",
-                                          margin: 0,
-                                        }}
-                                      >
-                                        {article.description}
-                                      </p>
-                                    )}
                                   </div>
-                                ))}
-                                <div style={{ height: "20px" }}></div>
-                              </div>
-                            )}
-                          </div>
-                        </motion.div>
-                      </>
-                    )}
-                  </AnimatePresence>
+
+                                  {article.description && (
+                                    <p
+                                      className="text-sm text-muted-foreground leading-relaxed overflow-hidden text-ellipsis"
+                                      style={{
+                                        display: "-webkit-box",
+                                        WebkitLineClamp: 2,
+                                        WebkitBoxOrient: "vertical" as const,
+                                      }}
+                                    >
+                                      {article.description}
+                                    </p>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </SheetContent>
+                  </Sheet>
                 </div>
               )}
             </div>
@@ -751,137 +727,6 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
             </div>
           )}
         </div>
-
-        {/* Barre latérale d'articles pour desktop avec barre de recherche - position fixe à droite */}
-        <AnimatePresence>
-          {sidebarOpen && !isMobile && selectedSector && (
-            <>
-              {/* Overlay semi-transparent pour cliquer en dehors */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="fixed inset-0 bg-black/30 z-20"
-                onClick={toggleSidebar}
-                style={{ top: 0, bottom: 0 }} // Assurez-vous qu'il couvre toute la page
-              />
-
-              {/* Panneau latéral */}
-              <motion.div
-                variants={articleListVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                className="fixed right-0 h-full w-[300px] bg-white shadow-lg z-30 flex flex-col"
-                style={{
-                  top: 0, // Commencer depuis le haut de la page
-                  height: "100vh", // Hauteur pleine page
-                  borderLeft: "1px solid #eee",
-                }}
-              >
-                {/* En-tête de la barre latérale avec options de tri */}
-                <div
-                  className="flex justify-between items-center p-3 border-b"
-                  style={{ marginTop: "64px" }}
-                >
-                  <div className="flex items-center">
-                    <h3 className="font-medium truncate max-w-[200px]">
-                      Articles ({filteredArticles.length})
-                    </h3>
-                    <button
-                      onClick={toggleSortDirection}
-                      className="ml-2 p-1 rounded hover:bg-gray-100"
-                      title={sortDirection === "asc" ? "Tri A-Z" : "Tri Z-A"}
-                    >
-                      {sortDirection === "asc" ? (
-                        <ArrowUp size={16} className="text-gray-500" />
-                      ) : (
-                        <ArrowDown size={16} className="text-gray-500" />
-                      )}
-                    </button>
-                  </div>
-                  <button
-                    onClick={toggleSidebar}
-                    className="p-1 hover:bg-gray-100 rounded-full"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-
-                {/* Barre de recherche */}
-                <motion.div
-                  variants={searchBarVariants}
-                  initial="visible"
-                  animate="visible"
-                  className="border-b border-gray-200 p-3"
-                >
-                  <div className="relative">
-                    <Search
-                      size={16}
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                    />
-                    <input
-                      ref={searchInputRef}
-                      type="text"
-                      placeholder="Rechercher un article..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full py-2 pl-10 pr-8 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
-                    {searchTerm && (
-                      <button
-                        onClick={clearSearch}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        <XCircle size={16} />
-                      </button>
-                    )}
-                  </div>
-                </motion.div>
-
-                {/* Liste des articles filtrée */}
-                <div className="flex-1 overflow-y-auto p-3">
-                  {filteredArticles.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      {articles.length === 0
-                        ? "Aucun article disponible pour ce secteur"
-                        : "Aucun article ne correspond à votre recherche"}
-                    </div>
-                  ) : (
-                    filteredArticles.map((article) => (
-                      <div
-                        key={article.id}
-                        className={`mb-3 p-4 border rounded-lg cursor-pointer transition-colors ${
-                          hoveredArticleId === article.id ||
-                          selectedArticleId === article.id
-                            ? "bg-amber-50 border-amber-200"
-                            : "hover:bg-gray-50"
-                        }`}
-                        onClick={() => handleArticleClick(article.id)}
-                        onMouseEnter={() => handleArticleHover(article.id)}
-                        onMouseLeave={() => handleArticleHover(null)}
-                      >
-                        <div className="flex justify-between items-start">
-                          <h4 className="font-medium mb-1">{article.title}</h4>
-                          <ExternalLink
-                            size={14}
-                            className="text-gray-400 mt-1"
-                          />
-                        </div>
-                        {article.description && (
-                          <p className="text-sm text-gray-500 line-clamp-2">
-                            {article.description}
-                          </p>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
       </div>
     </div>
   );
