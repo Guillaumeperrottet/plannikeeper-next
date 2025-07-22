@@ -94,17 +94,11 @@ function TaskTypeSelect({
   return (
     <div className={`relative ${className}`}>
       <div
-        className="flex items-center justify-between w-full px-3 py-2 border border-[color:var(--border)] rounded-lg cursor-pointer bg-[color:var(--background)]"
+        className="flex items-center justify-between w-full px-3 py-2 border border-input rounded-lg cursor-pointer bg-background"
         onClick={() => setOpen(!open)}
       >
         {!customMode ? (
-          <span
-            className={
-              value
-                ? "text-[color:var(--foreground)]"
-                : "text-[color:var(--muted-foreground)]"
-            }
-          >
+          <span className={value ? "text-foreground" : "text-muted-foreground"}>
             {value || "Sélectionner ou saisir un type"}
           </span>
         ) : (
@@ -125,12 +119,12 @@ function TaskTypeSelect({
       </div>
 
       {open && (
-        <div className="absolute z-10 w-full mt-1 bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg shadow-lg">
+        <div className="absolute z-10 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg">
           <div className="max-h-60 overflow-y-auto">
             <div className="p-1">
               {/* Option pour basculer en mode personnalisé */}
               <div
-                className="flex items-center px-3 py-2 hover:bg-[color:var(--muted)] rounded cursor-pointer"
+                className="flex items-center px-3 py-2 hover:bg-accent rounded cursor-pointer"
                 onClick={() => {
                   setCustomMode(true);
                   setOpen(false);
@@ -140,7 +134,7 @@ function TaskTypeSelect({
                   }, 10);
                 }}
               >
-                <span className="text-[color:var(--primary)]">
+                <span className="text-primary">
                   + Saisir un type personnalisé
                 </span>
               </div>
@@ -150,7 +144,7 @@ function TaskTypeSelect({
                 ? filteredTypes.map((type) => (
                     <div
                       key={type}
-                      className="flex items-center px-3 py-2 hover:bg-[color:var(--muted)] rounded cursor-pointer"
+                      className="flex items-center px-3 py-2 hover:bg-accent rounded cursor-pointer"
                       onClick={() => {
                         onChange(type);
                         setCustomMode(false);
@@ -163,7 +157,7 @@ function TaskTypeSelect({
                 : PREDEFINED_TASK_TYPES.map((type) => (
                     <div
                       key={type}
-                      className="flex items-center justify-between px-3 py-2 hover:bg-[color:var(--muted)] rounded cursor-pointer"
+                      className="flex items-center justify-between px-3 py-2 hover:bg-accent rounded cursor-pointer"
                       onClick={() => {
                         onChange(type);
                         setOpen(false);
@@ -171,10 +165,7 @@ function TaskTypeSelect({
                     >
                       <span>{type}</span>
                       {type === value && (
-                        <Check
-                          size={16}
-                          className="text-[color:var(--primary)]"
-                        />
+                        <Check size={16} className="text-primary" />
                       )}
                     </div>
                   ))}
@@ -198,8 +189,6 @@ export default function TaskFormWithDocuments({
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const defaultColor = "#d9840d";
-
   const [formData, setFormData] = useState<
     Omit<Task, "id" | "assignedTo" | "createdAt" | "updatedAt">
   >({
@@ -210,7 +199,7 @@ export default function TaskFormWithDocuments({
     realizationDate: task?.realizationDate || null,
     status: task?.status || "pending",
     taskType: task?.taskType || "",
-    color: task?.color || defaultColor,
+    color: task?.color || "#d9840d",
     recurring: task?.recurring || false,
     period: task?.period || "weekly",
     endDate: task?.endDate || null,
@@ -230,10 +219,6 @@ export default function TaskFormWithDocuments({
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
     setFormData((prev) => ({ ...prev, [name]: checked }));
-  };
-
-  const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({ ...prev, color: e.target.value }));
   };
 
   // Gestion des documents
@@ -345,20 +330,20 @@ export default function TaskFormWithDocuments({
 
   return (
     <motion.div
-      className="w-full max-w-3xl mx-auto bg-[color:var(--card)] rounded-lg overflow-hidden shadow-lg border border-[color:var(--border)]"
+      className="w-full max-w-3xl mx-auto bg-card rounded-lg overflow-hidden shadow-lg border border-border"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="flex justify-between items-center bg-[color:var(--muted)] px-3 sm:px-6 py-3 sm:py-4 border-b border-[color:var(--border)]">
-        <h2 className="text-base sm:text-xl font-semibold text-[color:var(--foreground)]">
+      <div className="flex justify-between items-center bg-muted px-3 sm:px-6 py-3 sm:py-4 border-b border-border">
+        <h2 className="text-base sm:text-xl font-semibold text-foreground">
           {task?.id ? "Modifier la tâche" : "Nouvelle tâche"}
         </h2>
         <button
           type="button"
           onClick={onCancel}
-          className="text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)] transition-colors"
+          className="text-muted-foreground hover:text-foreground transition-colors"
         >
           <X size={20} />
         </button>
@@ -369,7 +354,7 @@ export default function TaskFormWithDocuments({
         className="p-3 sm:p-6 overflow-y-auto max-h-[calc(100vh-8rem)] sm:max-h-none"
       >
         {formError && (
-          <div className="mb-4 flex items-center gap-2 p-2 sm:p-3 bg-[color:var(--destructive-background)] border border-[color:var(--destructive-border)] rounded-lg text-[color:var(--destructive-foreground)] text-xs sm:text-sm">
+          <div className="mb-4 flex items-center gap-2 p-2 sm:p-3 bg-destructive/15 border border-destructive/20 rounded-lg text-destructive text-xs sm:text-sm">
             <AlertCircle size={14} className="sm:w-4 sm:h-4" />
             <span>{formError}</span>
           </div>
@@ -379,7 +364,7 @@ export default function TaskFormWithDocuments({
           <div>
             <label
               htmlFor="name"
-              className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-[color:var(--foreground)]"
+              className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-foreground"
             >
               Nom de la tâche *
             </label>
@@ -390,7 +375,7 @@ export default function TaskFormWithDocuments({
               value={formData.name}
               onChange={handleChange}
               placeholder="Saisir le nom de la tâche"
-              className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
+              className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
               required
             />
           </div>
@@ -398,7 +383,7 @@ export default function TaskFormWithDocuments({
           <div>
             <label
               htmlFor="description"
-              className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-[color:var(--foreground)]"
+              className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-foreground"
             >
               Description
             </label>
@@ -408,7 +393,7 @@ export default function TaskFormWithDocuments({
               value={formData.description || ""}
               onChange={handleChange}
               placeholder="Description détaillée (optionnelle)"
-              className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
+              className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
               rows={3}
             />
           </div>
@@ -417,7 +402,7 @@ export default function TaskFormWithDocuments({
             <div>
               <label
                 htmlFor="status"
-                className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-[color:var(--foreground)]"
+                className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-foreground"
               >
                 Statut
               </label>
@@ -426,7 +411,7 @@ export default function TaskFormWithDocuments({
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
-                className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
+                className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
               >
                 <option value="pending">À faire</option>
                 <option value="in_progress">En cours</option>
@@ -438,7 +423,7 @@ export default function TaskFormWithDocuments({
             <div>
               <label
                 htmlFor="taskType"
-                className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-[color:var(--foreground)]"
+                className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-foreground"
               >
                 Type de tâche
               </label>
@@ -455,7 +440,7 @@ export default function TaskFormWithDocuments({
             <div>
               <label
                 htmlFor="realizationDate"
-                className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-[color:var(--foreground)]"
+                className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-foreground"
               >
                 Date de réalisation prévue
               </label>
@@ -472,11 +457,11 @@ export default function TaskFormWithDocuments({
                       : ""
                   }
                   onChange={handleChange}
-                  className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
+                  className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
                 />
                 <Calendar
                   size={14}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[color:var(--muted-foreground)] pointer-events-none sm:w-4 sm:h-4"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none sm:w-4 sm:h-4"
                 />
               </div>
             </div>
@@ -484,7 +469,7 @@ export default function TaskFormWithDocuments({
             <div>
               <label
                 htmlFor="assignedToId"
-                className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-[color:var(--foreground)]"
+                className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-foreground"
               >
                 Attribuer à
               </label>
@@ -493,7 +478,7 @@ export default function TaskFormWithDocuments({
                 name="assignedToId"
                 value={formData.assignedToId || ""}
                 onChange={handleChange}
-                className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
+                className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
               >
                 <option value="">Non assignée</option>
                 {users.map((user) => (
@@ -502,31 +487,6 @@ export default function TaskFormWithDocuments({
                   </option>
                 ))}
               </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6 items-end">
-            <div>
-              <label
-                htmlFor="color"
-                className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-[color:var(--foreground)]"
-              >
-                Couleur
-              </label>
-              <div className="flex items-center gap-2 sm:gap-3">
-                <input
-                  type="color"
-                  id="color"
-                  name="color"
-                  value={formData.color || defaultColor}
-                  onChange={handleColorChange}
-                  className="w-10 h-10 sm:w-12 sm:h-12 p-1 border-0 rounded-md cursor-pointer"
-                />
-                <div
-                  className="w-10 h-6 sm:w-12 sm:h-8 rounded border border-[color:var(--border)]"
-                  style={{ backgroundColor: formData.color || defaultColor }}
-                />
-              </div>
             </div>
           </div>
 
@@ -540,9 +500,12 @@ export default function TaskFormWithDocuments({
                 id="recurring"
                 checked={formData.recurring}
                 onChange={handleCheckboxChange}
-                className="w-5 h-5 text-[color:var(--primary)] rounded focus:ring-[color:var(--ring)]"
+                className="w-5 h-5 text-primary border-input rounded focus:ring-2 focus:ring-ring focus:ring-offset-2"
               />
-              <label htmlFor="recurring" className="ml-3 text-sm font-medium">
+              <label
+                htmlFor="recurring"
+                className="ml-3 text-sm font-medium text-foreground"
+              >
                 Tâche récurrente
               </label>
             </div>
@@ -566,7 +529,7 @@ export default function TaskFormWithDocuments({
                       name="period"
                       value={formData.period || "weekly"}
                       onChange={handleChange}
-                      className="w-full px-3 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)]"
+                      className="w-full px-3 py-2.5 rounded-lg border border-input focus:ring-2 focus:ring-ring bg-background text-foreground"
                     >
                       <option value="daily">Quotidienne</option>
                       <option value="weekly">Hebdomadaire</option>
@@ -594,7 +557,7 @@ export default function TaskFormWithDocuments({
                           : ""
                       }
                       onChange={handleChange}
-                      className="w-full px-3 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)]"
+                      className="w-full px-3 py-2.5 rounded-lg border border-input focus:ring-2 focus:ring-ring bg-background text-foreground"
                     />
                   </div>
 
@@ -621,7 +584,7 @@ export default function TaskFormWithDocuments({
                                   : null,
                             });
                           }}
-                          className="w-4 h-4 mt-1 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          className="w-4 h-4 mt-1 text-primary border-input rounded focus:ring-2 focus:ring-ring focus:ring-offset-2"
                         />
                         <div className="ml-2">
                           <label
@@ -648,7 +611,7 @@ export default function TaskFormWithDocuments({
             <div>
               <label
                 htmlFor="executantComment"
-                className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-[color:var(--foreground)]"
+                className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-foreground"
               >
                 Commentaire d&apos;exécution
               </label>
@@ -658,7 +621,7 @@ export default function TaskFormWithDocuments({
                 value={formData.executantComment || ""}
                 onChange={handleChange}
                 placeholder="Commentaires sur l'exécution de la tâche"
-                className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)] focus:border-transparent bg-[color:var(--background)] text-[color:var(--foreground)]"
+                className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
                 rows={2}
               />
             </div>
@@ -666,14 +629,12 @@ export default function TaskFormWithDocuments({
 
           {/* Section pour l'upload de documents */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-[color:var(--foreground)]">
+            <label className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-foreground">
               Documents
             </label>
             <div
               className={`border-2 border-dashed rounded-lg p-3 sm:p-4 text-center transition-colors ${
-                isDragging
-                  ? "border-blue-500 bg-blue-50 bg-opacity-30"
-                  : "border-[color:var(--border)]"
+                isDragging ? "border-primary bg-primary/5" : "border-border"
               }`}
               onDragEnter={handleDragEnter}
               onDragLeave={handleDragLeave}
@@ -690,18 +651,18 @@ export default function TaskFormWithDocuments({
               />
 
               <div className="flex flex-col items-center justify-center py-2 sm:py-4">
-                <Paperclip className="h-8 w-8 sm:h-10 sm:w-10 text-[color:var(--muted-foreground)] mb-2" />
-                <p className="text-xs sm:text-sm text-[color:var(--muted-foreground)] mb-2">
+                <Paperclip className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground mb-2" />
+                <p className="text-xs sm:text-sm text-muted-foreground mb-2">
                   Glissez-déposez des fichiers ici, ou
                 </p>
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                  className="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors"
                 >
                   Sélectionnez des fichiers
                 </button>
-                <p className="text-[10px] sm:text-xs text-[color:var(--muted-foreground)] mt-2">
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-2">
                   PDF, JPG, PNG, GIF (max. 10MB)
                 </p>
               </div>
@@ -717,18 +678,18 @@ export default function TaskFormWithDocuments({
                   {documents.map((file, index) => (
                     <div
                       key={`${file.name}-${index}`}
-                      className="flex items-center justify-between p-2 bg-[color:var(--background)] border rounded mb-2"
+                      className="flex items-center justify-between p-2 bg-background border border-border rounded mb-2"
                     >
                       <div className="flex items-center gap-2 truncate">
                         {file.type.startsWith("image/") ? (
                           <ImageIcon
                             size={14}
-                            className="text-blue-500 sm:w-4 sm:h-4"
+                            className="text-primary sm:w-4 sm:h-4"
                           />
                         ) : (
                           <FileText
                             size={14}
-                            className="text-red-500 sm:w-4 sm:h-4"
+                            className="text-destructive sm:w-4 sm:h-4"
                           />
                         )}
                         <span className="text-xs sm:text-sm truncate max-w-[180px] sm:max-w-[250px]">
@@ -738,7 +699,7 @@ export default function TaskFormWithDocuments({
                       <button
                         type="button"
                         onClick={() => removeDocument(index)}
-                        className="text-red-500 hover:text-red-700"
+                        className="text-destructive hover:text-destructive/80"
                       >
                         <X size={14} className="sm:w-4 sm:h-4" />
                       </button>
@@ -749,11 +710,11 @@ export default function TaskFormWithDocuments({
             )}
           </div>
 
-          <div className="flex justify-end gap-2 sm:gap-3 pt-4 border-t border-[color:var(--border)]">
+          <div className="flex justify-end gap-2 sm:gap-3 pt-4 border-t border-border">
             <button
               type="button"
               onClick={onCancel}
-              className="px-3 py-2 sm:px-4 sm:py-2.5 border border-[color:var(--border)] rounded-lg text-xs sm:text-sm font-medium hover:bg-[color:var(--muted)] transition-colors text-[color:var(--foreground)]"
+              className="px-3 py-2 sm:px-4 sm:py-2.5 border border-input rounded-lg text-xs sm:text-sm font-medium hover:bg-accent transition-colors text-foreground"
               disabled={isLoading}
             >
               Annuler
@@ -762,7 +723,7 @@ export default function TaskFormWithDocuments({
             <button
               type="submit"
               disabled={isLoading}
-              className="px-3 py-2 sm:px-4 sm:py-2.5 bg-[color:var(--primary)] hover:bg-opacity-90 text-[color:var(--primary-foreground)] rounded-lg text-xs sm:text-sm font-medium transition-colors disabled:opacity-50"
+              className="px-3 py-2 sm:px-4 sm:py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-xs sm:text-sm font-medium transition-colors disabled:opacity-50"
             >
               {isLoading
                 ? task?.id

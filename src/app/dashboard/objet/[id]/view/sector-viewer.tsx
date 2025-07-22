@@ -1,8 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import DropdownMenu from "@/app/components/ui/dropdownmenu";
 import { Button } from "@/app/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/app/components/ui/select";
 import { toast } from "sonner";
 import Link from "next/link";
 import {
@@ -21,7 +27,7 @@ import {
 } from "lucide-react";
 import ImageWithArticles from "@/app/components/ImageWithArticles";
 import AccessControl from "@/app/components/AccessControl";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 
 // Types définis comme dans votre code original
 type Sector = {
@@ -297,13 +303,13 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
   }, [isFullscreen]);
 
   // Variables pour la navigation d'articles
-  const articleListVariants = {
+  const articleListVariants: Variants = {
     hidden: { x: "100%", opacity: 0 },
     visible: {
       x: 0,
       opacity: 1,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         stiffness: 300,
         damping: 30,
       },
@@ -312,7 +318,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
       x: "100%",
       opacity: 0,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         stiffness: 300,
         damping: 30,
       },
@@ -320,14 +326,14 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
   };
 
   // Animation pour la barre de recherche
-  const searchBarVariants = {
+  const searchBarVariants: Variants = {
     hidden: { height: 0, opacity: 0, overflow: "hidden" },
     visible: {
       height: "auto",
       opacity: 1,
       transition: {
         height: {
-          type: "spring",
+          type: "spring" as const,
           stiffness: 400,
           damping: 40,
         },
@@ -348,20 +354,43 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
     >
       {/* Header avec contrôles - caché en plein écran */}
       {!isFullscreen && (
-        <div className="p-2 md:p-4 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4 bg-transparent">
+        <div className="p-2 md:p-4 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
           {/* Interface de sélection de secteur */}
-          <div className="w-full sm:w-auto flex-1 flex items-center">
-            <DropdownMenu
-              items={sectors.map((s) => ({ id: s.id, label: s.name }))}
-              selectedId={selectedSector?.id}
-              onSelect={(id) => {
+          <div className="w-full sm:w-auto flex-1 flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Layers className="h-5 w-5 text-muted-foreground" />
+              <label className="text-sm font-medium text-foreground hidden sm:block">
+                Secteur :
+              </label>
+            </div>
+            <Select
+              value={selectedSector?.id}
+              onValueChange={(id: string) => {
                 const sector = sectors.find((s) => s.id === id);
                 if (sector) handleSectorChange(sector);
               }}
-              label={
-                selectedSector ? selectedSector.name : "Sélectionner un secteur"
-              }
-            />
+            >
+              <SelectTrigger className="w-full sm:w-[280px] bg-background border-input shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors">
+                <SelectValue
+                  placeholder="Sélectionner un secteur"
+                  className="text-foreground"
+                />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                {sectors.map((sector) => (
+                  <SelectItem
+                    key={sector.id}
+                    value={sector.id}
+                    className="cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-primary/60"></div>
+                      {sector.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             {/* Bouton Articles pour desktop - en dehors du flux normal */}
             {selectedSector && !isMobile && (
@@ -502,18 +531,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                   {/* Bouton flottant pour ouvrir la liste */}
                   <button
                     onClick={toggleSidebar}
-                    className="fixed bottom-20 left-4 z-[9] flex items-center gap-1 bg-primary text-primary-foreground rounded-full shadow-lg px-3 py-3"
-                    style={{
-                      position: "fixed",
-                      bottom: "80px",
-                      left: "16px",
-                      zIndex: 9,
-                      backgroundColor: "var(--primary)",
-                      color: "white",
-                      borderRadius: "9999px",
-                      padding: "12px",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-                    }}
+                    className="fixed bottom-20 left-4 z-[9] flex items-center gap-1 bg-primary text-primary-foreground rounded-full shadow-lg px-3 py-3 hover:scale-105 transition-transform"
                   >
                     {sidebarOpen ? <X size={18} /> : <ListFilter size={18} />}
                     {!sidebarOpen && (
@@ -533,15 +551,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
                           onClick={toggleSidebar}
-                          style={{
-                            position: "fixed",
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            backgroundColor: "rgba(0,0,0,0.5)",
-                            zIndex: 9,
-                          }}
+                          className="fixed inset-0 bg-black/50 z-[9]"
                         />
 
                         {/* Panneau animé */}
@@ -554,35 +564,13 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                             damping: 30,
                             stiffness: 300,
                           }}
-                          style={{
-                            position: "fixed",
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            backgroundColor: "white",
-                            borderTopLeftRadius: "16px",
-                            borderTopRightRadius: "16px",
-                            boxShadow: "0 -4px 20px rgba(0,0,0,0.2)",
-                            zIndex: 995,
-                            maxHeight: "80vh",
-                            display: "flex",
-                            flexDirection: "column",
-                          }}
+                          className="fixed bottom-0 left-0 right-0 bg-background border-t rounded-t-2xl shadow-2xl z-[995] max-h-[80vh] flex flex-col"
                         >
                           {/* Indicateur de défilement (handle) */}
-                          <div
-                            style={{
-                              width: "40px",
-                              height: "4px",
-                              backgroundColor: "#ccc",
-                              borderRadius: "4px",
-                              margin: "10px auto 5px",
-                              opacity: 0.6,
-                            }}
-                          />
+                          <div className="w-10 h-1 bg-muted rounded-full mx-auto my-2.5 opacity-60" />
 
                           {/* En-tête du panneau avec barre de recherche */}
-                          <div className="border-b border-gray-200">
+                          <div className="border-b border-border">
                             <div className="flex justify-between items-center p-3">
                               <div className="flex items-center">
                                 <h3 className="font-medium">
@@ -590,7 +578,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                                 </h3>
                                 <button
                                   onClick={toggleSortDirection}
-                                  className="ml-2 p-1 rounded hover:bg-gray-100"
+                                  className="ml-2 p-1 rounded hover:bg-muted"
                                   title={
                                     sortDirection === "asc"
                                       ? "Tri A-Z"
@@ -600,19 +588,19 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                                   {sortDirection === "asc" ? (
                                     <ArrowUp
                                       size={16}
-                                      className="text-gray-500"
+                                      className="text-muted-foreground"
                                     />
                                   ) : (
                                     <ArrowDown
                                       size={16}
-                                      className="text-gray-500"
+                                      className="text-muted-foreground"
                                     />
                                   )}
                                 </button>
                               </div>
                               <button
                                 onClick={toggleSidebar}
-                                className="p-2 rounded-full hover:bg-gray-100"
+                                className="p-2 rounded-full hover:bg-muted"
                               >
                                 <X size={18} />
                               </button>
@@ -623,7 +611,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                               <div className="relative">
                                 <Search
                                   size={16}
-                                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
                                 />
                                 <input
                                   ref={searchInputRef}
@@ -633,12 +621,12 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                                   onChange={(e) =>
                                     setSearchTerm(e.target.value)
                                   }
-                                  className="w-full py-2 pl-10 pr-8 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                                  className="w-full py-2 pl-10 pr-8 border border-input rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-ring bg-background"
                                 />
                                 {searchTerm && (
                                   <button
                                     onClick={clearSearch}
-                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
                                   >
                                     <XCircle size={16} />
                                   </button>
@@ -648,29 +636,15 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                           </div>
 
                           {/* Liste d'articles filtrée */}
-                          <div
-                            style={{
-                              overflowY: "auto",
-                              maxHeight: "calc(80vh - 100px)",
-                              WebkitOverflowScrolling: "touch",
-                              paddingBottom:
-                                "env(safe-area-inset-bottom, 16px)",
-                            }}
-                          >
+                          <div className="overflow-y-auto max-h-[calc(80vh-100px)] pb-[env(safe-area-inset-bottom,16px)]">
                             {filteredArticles.length === 0 ? (
-                              <div
-                                style={{
-                                  textAlign: "center",
-                                  padding: "40px 20px",
-                                  color: "#666",
-                                }}
-                              >
+                              <div className="text-center py-10 px-5 text-muted-foreground">
                                 {articles.length === 0
                                   ? "Aucun article disponible pour ce secteur"
                                   : "Aucun article ne correspond à votre recherche"}
                               </div>
                             ) : (
-                              <div style={{ padding: "12px 16px" }}>
+                              <div className="p-3 pb-5">
                                 {filteredArticles.map((article) => (
                                   <div
                                     key={article.id}
@@ -683,58 +657,29 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                                     onMouseLeave={() =>
                                       handleArticleHover(null)
                                     }
-                                    style={{
-                                      padding: "16px",
-                                      marginBottom: "12px",
-                                      borderRadius: "12px",
-                                      border: "1px solid #e0e0e0",
-                                      backgroundColor:
-                                        hoveredArticleId === article.id
-                                          ? "rgba(217, 132, 13, 0.1)"
-                                          : "white",
-                                      cursor: "pointer",
-                                      boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-                                    }}
+                                    className={`p-4 mb-3 rounded-xl border cursor-pointer shadow-sm transition-colors ${
+                                      hoveredArticleId === article.id
+                                        ? "bg-amber-50 border-amber-200"
+                                        : "bg-background hover:bg-muted/50"
+                                    }`}
                                   >
                                     <div className="flex justify-between items-start">
-                                      <h4
-                                        style={{
-                                          fontWeight: 500,
-                                          marginBottom: "8px",
-                                          fontSize: "16px",
-                                        }}
-                                      >
+                                      <h4 className="font-medium mb-2 text-base">
                                         {article.title}
                                       </h4>
                                       <ExternalLink
                                         size={14}
-                                        style={{
-                                          color: "var(--muted-foreground)",
-                                          marginTop: "4px",
-                                        }}
+                                        className="text-muted-foreground mt-1"
                                       />
                                     </div>
 
                                     {article.description && (
-                                      <p
-                                        style={{
-                                          fontSize: "14px",
-                                          color: "var(--muted-foreground)",
-                                          lineHeight: 1.4,
-                                          display: "-webkit-box",
-                                          WebkitLineClamp: 2,
-                                          WebkitBoxOrient: "vertical",
-                                          overflow: "hidden",
-                                          textOverflow: "ellipsis",
-                                          margin: 0,
-                                        }}
-                                      >
+                                      <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
                                         {article.description}
                                       </p>
                                     )}
                                   </div>
                                 ))}
-                                <div style={{ height: "20px" }}></div>
                               </div>
                             )}
                           </div>
@@ -764,7 +709,6 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 transition={{ duration: 0.2 }}
                 className="fixed inset-0 bg-black/30 z-20"
                 onClick={toggleSidebar}
-                style={{ top: 0, bottom: 0 }} // Assurez-vous qu'il couvre toute la page
               />
 
               {/* Panneau latéral */}
@@ -773,37 +717,36 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 initial="hidden"
                 animate="visible"
                 exit="exit"
-                className="fixed right-0 h-full w-[300px] bg-white shadow-lg z-30 flex flex-col"
+                className="fixed right-0 h-full w-[300px] bg-background shadow-xl z-30 flex flex-col border-l"
                 style={{
-                  top: 0, // Commencer depuis le haut de la page
-                  height: "100vh", // Hauteur pleine page
-                  borderLeft: "1px solid #eee",
+                  top: 0,
+                  height: "100vh",
                 }}
               >
                 {/* En-tête de la barre latérale avec options de tri */}
-                <div
-                  className="flex justify-between items-center p-3 border-b"
-                  style={{ marginTop: "64px" }}
-                >
+                <div className="flex justify-between items-center p-3 border-b mt-16">
                   <div className="flex items-center">
                     <h3 className="font-medium truncate max-w-[200px]">
                       Articles ({filteredArticles.length})
                     </h3>
                     <button
                       onClick={toggleSortDirection}
-                      className="ml-2 p-1 rounded hover:bg-gray-100"
+                      className="ml-2 p-1 rounded hover:bg-muted"
                       title={sortDirection === "asc" ? "Tri A-Z" : "Tri Z-A"}
                     >
                       {sortDirection === "asc" ? (
-                        <ArrowUp size={16} className="text-gray-500" />
+                        <ArrowUp size={16} className="text-muted-foreground" />
                       ) : (
-                        <ArrowDown size={16} className="text-gray-500" />
+                        <ArrowDown
+                          size={16}
+                          className="text-muted-foreground"
+                        />
                       )}
                     </button>
                   </div>
                   <button
                     onClick={toggleSidebar}
-                    className="p-1 hover:bg-gray-100 rounded-full"
+                    className="p-1 hover:bg-muted rounded-full"
                   >
                     <X size={18} />
                   </button>
@@ -814,12 +757,12 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                   variants={searchBarVariants}
                   initial="visible"
                   animate="visible"
-                  className="border-b border-gray-200 p-3"
+                  className="border-b border-border p-3"
                 >
                   <div className="relative">
                     <Search
                       size={16}
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
                     />
                     <input
                       ref={searchInputRef}
@@ -827,12 +770,12 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                       placeholder="Rechercher un article..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full py-2 pl-10 pr-8 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="w-full py-2 pl-10 pr-8 border border-input rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-ring bg-background"
                     />
                     {searchTerm && (
                       <button
                         onClick={clearSearch}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       >
                         <XCircle size={16} />
                       </button>
@@ -843,7 +786,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 {/* Liste des articles filtrée */}
                 <div className="flex-1 overflow-y-auto p-3">
                   {filteredArticles.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-muted-foreground">
                       {articles.length === 0
                         ? "Aucun article disponible pour ce secteur"
                         : "Aucun article ne correspond à votre recherche"}
@@ -856,7 +799,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                           hoveredArticleId === article.id ||
                           selectedArticleId === article.id
                             ? "bg-amber-50 border-amber-200"
-                            : "hover:bg-gray-50"
+                            : "hover:bg-muted/50"
                         }`}
                         onClick={() => handleArticleClick(article.id)}
                         onMouseEnter={() => handleArticleHover(article.id)}
@@ -866,11 +809,11 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                           <h4 className="font-medium mb-1">{article.title}</h4>
                           <ExternalLink
                             size={14}
-                            className="text-gray-400 mt-1"
+                            className="text-muted-foreground mt-1"
                           />
                         </div>
                         {article.description && (
-                          <p className="text-sm text-gray-500 line-clamp-2">
+                          <p className="text-sm text-muted-foreground line-clamp-2">
                             {article.description}
                           </p>
                         )}
