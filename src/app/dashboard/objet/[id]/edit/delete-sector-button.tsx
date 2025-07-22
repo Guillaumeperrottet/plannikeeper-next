@@ -79,35 +79,35 @@ export default function DeleteSectorButton({
 
       {showConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[color:var(--background)] rounded-lg border border-[color:var(--border)] p-6 w-full max-w-md">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border shadow-lg p-6 w-full max-w-md">
             <div className="flex items-center gap-3 mb-4">
-              <div className="flex-shrink-0 w-10 h-10 bg-[color:var(--destructive)]/10 rounded-full flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-[color:var(--destructive)]" />
+              <div className="flex-shrink-0 w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-[color:var(--foreground)]">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   Supprimer le secteur
                 </h3>
-                <p className="text-sm text-[color:var(--muted-foreground)]">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Cette action est irréversible
                 </p>
               </div>
             </div>
 
             <div className="mb-6">
-              <p className="text-[color:var(--foreground)]">
+              <p className="text-gray-900 dark:text-gray-100">
                 Êtes-vous sûr de vouloir supprimer le secteur{" "}
                 <span className="font-semibold">
                   &ldquo;{sectorName}&rdquo;
                 </span>{" "}
                 ?
               </p>
-              <div className="mt-3 p-3 bg-[color:var(--destructive)]/5 border border-[color:var(--destructive)]/20 rounded-md">
-                <p className="text-sm text-[color:var(--destructive)]">
+              <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                <p className="text-sm text-red-800 dark:text-red-200">
                   <strong>Attention :</strong> Cette action supprimera
                   définitivement :
                 </p>
-                <ul className="text-sm text-[color:var(--destructive)] mt-2 ml-4 list-disc">
+                <ul className="text-sm text-red-800 dark:text-red-200 mt-2 ml-4 list-disc">
                   <li>Le secteur et son image</li>
                   <li>Tous les articles du secteur</li>
                   <li>Toutes les tâches associées</li>

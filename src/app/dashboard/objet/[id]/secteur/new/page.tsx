@@ -5,6 +5,13 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import NewSectorForm from "@/app/dashboard/objet/[id]/secteur/new/new-sector-form";
+import { Button } from "@/app/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/app/components/ui/card";
 
 export default async function NewSectorPage({
   params,
@@ -44,19 +51,25 @@ export default async function NewSectorPage({
     <div className="max-w-3xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-3">
-          <Link
-            href={`/dashboard/objet/${objetId}/edit`}
-            className="p-2 rounded-full hover:bg-gray-100"
-          >
-            <ArrowLeft size={20} />
-          </Link>
-          <h1 className="text-2xl font-bold">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href={`/dashboard/objet/${objetId}/edit`}>
+              <ArrowLeft size={20} />
+            </Link>
+          </Button>
+          <h1 className="text-2xl font-bold text-foreground">
             Ajouter un secteur à {objet.nom}
           </h1>
         </div>
       </div>
 
-      <NewSectorForm objetId={objetId} />
+      <Card>
+        <CardHeader>
+          <CardTitle>Nouveau secteur</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <NewSectorForm objetId={objetId} />
+        </CardContent>
+      </Card>
     </div>
   );
 }

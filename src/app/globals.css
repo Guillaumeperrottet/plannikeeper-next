@@ -466,10 +466,10 @@ select:active {
 }
 
 /* Liens et éléments interactifs - EXCLUSIONS pour préserver l'identité */
-a:hover:not(.logo):not(.brand):not(.navbar-brand),
+a:hover:not(.logo):not(.brand):not(.navbar-brand):not([href="/dashboard"]),
 button:hover:not(.bg-primary):not(.bg-destructive):not(.bg-success):not(
     .logo
-  ):not(.brand) {
+  ):not(.brand):not(.navbar-brand) {
   color: hsl(var(--brand-orange) / 0.8) !important;
 }
 
@@ -478,6 +478,7 @@ button:hover:not(.bg-primary):not(.bg-destructive):not(.bg-success):not(
 .navbar-brand,
 .brand,
 [class*="logo"],
+a[href="/dashboard"],
 h1:first-child {
   color: inherit !important;
 }
@@ -485,8 +486,24 @@ h1:first-child {
 .logo *,
 .navbar-brand *,
 .brand *,
-[class*="logo"] * {
+[class*="logo"] *,
+a[href="/dashboard"] * {
   color: inherit !important;
+}
+
+/* Forcer l'arrière-plan transparent pour le logo mais permettre le texte orange */
+a[href="/dashboard"]:hover,
+.navbar-brand:hover {
+  background-color: transparent !important;
+  color: hsl(var(--brand-orange)) !important;
+}
+
+/* Forcer l'arrière-plan transparent pour tous les éléments du menu utilisateur */
+[data-user-menu] a:hover,
+[data-user-menu] .group:hover,
+.user-menu-item:hover {
+  background-color: transparent !important;
+  color: hsl(var(--brand-orange)) !important;
 }
 
 /* Bordures d'accent discrètes - uniquement pour les éléments spécifiques */

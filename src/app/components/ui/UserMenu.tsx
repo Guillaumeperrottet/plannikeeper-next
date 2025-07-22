@@ -89,7 +89,7 @@ export default function UserMenu({ user, isAdmin = false }: UserMenuProps) {
     <div ref={menuRef} className="relative">
       <button
         onClick={toggleMenu}
-        className="flex items-center gap-2 p-1.5 rounded-lg border border-transparent hover:text-[#d9840c] transition-colors duration-200 focus:outline-none"
+        className="flex items-center gap-2 p-1.5 rounded-lg border border-transparent hover:text-[#d9840c] hover:bg-transparent transition-colors duration-200 focus:outline-none group"
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
@@ -112,16 +112,16 @@ export default function UserMenu({ user, isAdmin = false }: UserMenuProps) {
           )}
         </div>
         <div className="hidden md:block text-left">
-          <p className="text-sm font-medium leading-none text-stone-900">
+          <p className="text-sm font-medium leading-none text-stone-900 group-hover:text-[#d9840c] transition-colors duration-200">
             {user.name || "Utilisateur"}
           </p>
-          <p className="text-xs text-stone-600 truncate max-w-[120px]">
+          <p className="text-xs text-stone-600 truncate max-w-[120px] group-hover:text-[#d9840c] transition-colors duration-200">
             {user.email}
           </p>
         </div>
         <ChevronDown
           size={16}
-          className={`transition-transform duration-200 text-stone-900 ${
+          className={`transition-transform duration-200 text-stone-900 group-hover:text-[#d9840c] ${
             isOpen ? "rotate-180" : ""
           }`}
         />
@@ -135,6 +135,7 @@ export default function UserMenu({ user, isAdmin = false }: UserMenuProps) {
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
             className="absolute right-0 mt-2 w-56 rounded-md shadow-lg z-50 overflow-hidden bg-white border border-stone-200"
+            data-user-menu
           >
             <div className="p-3 border-b border-stone-200">
               <p className="text-sm font-medium text-stone-900">
@@ -147,7 +148,7 @@ export default function UserMenu({ user, isAdmin = false }: UserMenuProps) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex items-center gap-2 px-4 py-2 text-sm text-stone-900 hover:text-[#d9840c] hover:bg-transparent transition-colors duration-150 group"
+                  className="user-menu-item flex items-center gap-2 px-4 py-2 text-sm text-stone-900 hover:text-[#d9840c] hover:bg-transparent transition-colors duration-150 group"
                   onClick={() => setIsOpen(false)}
                 >
                   <span className="text-stone-900 group-hover:text-[#d9840c] transition-colors duration-150">

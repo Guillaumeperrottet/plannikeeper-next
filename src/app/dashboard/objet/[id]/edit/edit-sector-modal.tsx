@@ -172,15 +172,15 @@ export default function EditSectorModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-[color:var(--background)] rounded-lg border border-[color:var(--border)] p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-900 rounded-lg border shadow-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-[color:var(--foreground)]">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
             Modifier le secteur
           </h2>
           <button
             onClick={handleClose}
             disabled={isSubmitting}
-            className="text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)] transition-colors disabled:opacity-50"
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors disabled:opacity-50"
           >
             ✕
           </button>
@@ -190,7 +190,7 @@ export default function EditSectorModal({
           <div>
             <label
               htmlFor="name"
-              className="block text-sm font-medium text-[color:var(--foreground)] mb-1"
+              className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-1"
             >
               Nom du secteur *
             </label>
@@ -200,14 +200,14 @@ export default function EditSectorModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ex: Cuisine, Salle de bain..."
-              className="w-full px-4 py-2 border border-[color:var(--border)] rounded-md focus:outline-none focus:ring-2 focus:ring-[color:var(--primary)] bg-[color:var(--background)] text-[color:var(--foreground)]"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               required
               disabled={isSubmitting}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[color:var(--foreground)] mb-1">
+            <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
               Image du secteur
             </label>
             <div className="mt-2 flex items-start space-x-4">

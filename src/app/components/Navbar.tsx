@@ -72,7 +72,7 @@ export default function Navbar({ user }: { user: User }) {
       <a
         href="/dashboard"
         onClick={handleLogoClick}
-        className={`text-2xl md:text-4xl font-bold text-[color:var(--foreground)] hover:text-[#d9840c] transition-transform active:scale-95 ${vt323.className}`}
+        className={`navbar-brand text-2xl md:text-4xl font-bold text-[color:var(--foreground)] transition-transform active:scale-95 ${vt323.className}`}
         style={{
           transition: "color 0.3s, transform 0.1s",
         }}
