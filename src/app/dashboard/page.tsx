@@ -5,6 +5,13 @@ import Link from "next/link";
 import { PlusCircle } from "lucide-react";
 import ObjetCard from "@/app/components/ObjetCard";
 import { Button } from "@/app/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/app/components/ui/card";
 import { getAccessibleObjects } from "@/lib/auth-session";
 import OrganizationRecovery from "./OrganizationRecovery";
 
@@ -71,20 +78,25 @@ export default async function DashboardPage() {
       </div>
 
       {objets.length === 0 ? (
-        <div className="text-center py-12 bg-card rounded-lg border border-border">
-          <h2 className="text-xl font-medium text-muted-foreground mb-2">
-            Aucun objet trouvé
-          </h2>
-          <p className="text-muted-foreground mb-6">
-            Commencez par créer votre premier objet pour le voir apparaître ici.
-          </p>
-          <Button asChild>
-            <Link href="/dashboard/objet/new">
-              <PlusCircle size={18} className="mr-2" />
-              Créer un objet
-            </Link>
-          </Button>
-        </div>
+        <Card className="text-center py-12">
+          <CardHeader>
+            <CardTitle className="text-xl text-muted-foreground">
+              Aucun objet trouvé
+            </CardTitle>
+            <CardDescription>
+              Commencez par créer votre premier objet pour le voir apparaître
+              ici.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link href="/dashboard/objet/new">
+                <PlusCircle size={18} className="mr-2" />
+                Créer un objet
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {objets.map((objet) => (

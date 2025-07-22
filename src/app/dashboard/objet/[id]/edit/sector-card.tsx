@@ -6,6 +6,8 @@ import Image from "next/image";
 import { Edit, MoreVertical } from "lucide-react";
 import EditSectorModal from "./edit-sector-modal";
 import DeleteSectorButton from "./delete-sector-button";
+import { Card, CardContent } from "@/app/components/ui/card";
+import { Button } from "@/app/components/ui/button";
 
 interface SectorCardProps {
   sector: {
@@ -33,7 +35,7 @@ export default function SectorCard({
 
   return (
     <>
-      <div className="bg-background rounded-lg border border-[color:var(--border)] overflow-hidden hover:shadow-md transition group">
+      <Card className="overflow-hidden hover:shadow-md transition group">
         {/* Image et bouton menu */}
         <div className="relative w-full h-40">
           <Image
@@ -46,7 +48,9 @@ export default function SectorCard({
           {/* Bouton menu - visible au survol */}
           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <div className="relative">
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={(e) => {
                   e.preventDefault();
                   setShowMenu(!showMenu);
@@ -54,22 +58,24 @@ export default function SectorCard({
                 className="p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors shadow-sm"
               >
                 <MoreVertical size={16} className="text-gray-700" />
-              </button>
+              </Button>
 
               {/* Menu déroulant */}
               {showMenu && (
-                <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[120px] z-10">
-                  <button
+                <div className="absolute right-0 top-full mt-1 bg-background rounded-lg shadow-lg border py-1 min-w-[120px] z-10">
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={(e) => {
                       e.preventDefault();
                       setShowEditModal(true);
                       setShowMenu(false);
                     }}
-                    className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    className="w-full justify-start px-3 py-2 text-sm h-auto"
                   >
-                    <Edit size={14} />
+                    <Edit size={14} className="mr-2" />
                     Modifier
-                  </button>
+                  </Button>
 
                   {isAdmin && (
                     <div className="px-3 py-1">
@@ -95,23 +101,25 @@ export default function SectorCard({
         </div>
 
         {/* Contenu - cliquable pour aller vers la vue */}
-        <Link
-          href={`/dashboard/objet/${objetId}/view`}
-          className="block p-4 hover:bg-[color:var(--muted)]/50 transition-colors"
-        >
-          <h3 className="font-semibold text-lg mb-1 text-[color:var(--foreground)]">
-            {sector.name}
-          </h3>
-          <div className="flex justify-between items-center mt-3">
-            <span className="text-sm text-[color:var(--muted-foreground)]">
-              {new Date(sector.createdAt).toLocaleDateString()}
-            </span>
-            <span className="text-[color:var(--primary)] text-sm font-medium">
-              Voir détails
-            </span>
-          </div>
-        </Link>
-      </div>
+        <CardContent className="p-0">
+          <Link
+            href={`/dashboard/objet/${objetId}/view`}
+            className="block p-4 hover:bg-muted/50 transition-colors"
+          >
+            <h3 className="font-semibold text-lg mb-1 text-foreground">
+              {sector.name}
+            </h3>
+            <div className="flex justify-between items-center mt-3">
+              <span className="text-sm text-muted-foreground">
+                {new Date(sector.createdAt).toLocaleDateString()}
+              </span>
+              <span className="text-primary text-sm font-medium">
+                Voir détails
+              </span>
+            </div>
+          </Link>
+        </CardContent>
+      </Card>
 
       {/* Modal d'édition */}
       <EditSectorModal

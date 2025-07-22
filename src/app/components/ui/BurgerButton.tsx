@@ -7,7 +7,7 @@ interface PremiumBurgerButtonProps {
   isOpen: boolean;
   onClick: () => void;
   className?: string;
-  variant?: "light" | "dark" | "primary";
+  variant?: "light" | "primary";
 }
 
 const PremiumBurgerButton: React.FC<PremiumBurgerButtonProps> = ({
@@ -33,12 +33,6 @@ const PremiumBurgerButton: React.FC<PremiumBurgerButtonProps> = ({
       border: "border-[#beac93]",
       lines: "bg-[#141313]",
       shadow: "shadow-md",
-    },
-    dark: {
-      button: "bg-[#19140d] hover:bg-[#211b12]",
-      border: "border-[#6c5a41]",
-      lines: "bg-white",
-      shadow: "shadow-lg",
     },
     primary: {
       button: "bg-[#d9840d] hover:bg-[#c6780c]",

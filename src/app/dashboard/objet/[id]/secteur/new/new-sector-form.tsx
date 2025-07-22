@@ -7,6 +7,8 @@ import { Upload, Trash, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { Button } from "@/app/components/ui/button";
+import { Label } from "@/app/components/ui/label";
+import { Input } from "@/app/components/ui/input";
 import {
   compressImage,
   validateImageFile,
@@ -137,33 +139,25 @@ export default function NewSectorForm({ objetId }: { objetId: string }) {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-6 bg-[color:var(--background)] rounded-lg border border-[color:var(--border)] p-6"
-    >
+    <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label
-          htmlFor="name"
-          className="block text-sm font-medium text-[color:var(--foreground)] mb-1"
-        >
-          Nom du secteur *
-        </label>
-        <input
+        <Label htmlFor="name">Nom du secteur *</Label>
+        <Input
           type="text"
           id="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Ex: Cuisine, Salle de bain..."
-          className="w-full px-4 py-2 border border-[color:var(--border)] rounded-md focus:outline-none focus:ring-2 focus:ring-[color:var(--primary)] bg-[color:var(--background)] text-[color:var(--foreground)]"
           required
           disabled={isSubmitting}
+          className="mt-1"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-[color:var(--foreground)] mb-1">
+        <Label className="block text-sm font-medium mb-1">
           Image du secteur *
-        </label>
+        </Label>
         <div className="mt-2 flex items-start space-x-4">
           <div className="flex-shrink-0">
             {imagePreview ? (
@@ -174,27 +168,29 @@ export default function NewSectorForm({ objetId }: { objetId: string }) {
                   fill
                   className="object-cover"
                 />
-                <button
+                <Button
                   type="button"
+                  variant="destructive"
+                  size="sm"
                   onClick={() => handleImageChange(null)}
-                  className="absolute top-2 right-2 p-1 bg-[color:var(--destructive)] text-[color:var(--destructive-foreground)] rounded-full hover:bg-[color:var(--destructive)]/90 transition-colors"
+                  className="absolute top-2 right-2 p-1 h-8 w-8"
                   disabled={isSubmitting || isCompressing}
                 >
                   <Trash size={16} />
-                </button>
+                </Button>
               </div>
             ) : (
               <label
                 htmlFor="image-upload"
-                className={`flex flex-col items-center justify-center w-48 h-48 border-2 border-dashed border-[color:var(--border)] rounded-lg cursor-pointer bg-[color:var(--muted)] hover:bg-[color:var(--muted)]/80 transition-colors ${
+                className={`flex flex-col items-center justify-center w-48 h-48 border-2 border-dashed border-border rounded-lg cursor-pointer bg-muted hover:bg-muted/80 transition-colors ${
                   isSubmitting || isCompressing
                     ? "opacity-50 cursor-not-allowed"
                     : ""
                 }`}
               >
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  <Upload className="w-10 h-10 text-[color:var(--muted-foreground)]" />
-                  <p className="mt-2 text-sm text-[color:var(--muted-foreground)]">
+                  <Upload className="w-10 h-10 text-muted-foreground" />
+                  <p className="mt-2 text-sm text-muted-foreground">
                     Cliquez pour sélectionner une image
                   </p>
                 </div>
@@ -222,24 +218,24 @@ export default function NewSectorForm({ objetId }: { objetId: string }) {
             </p>
 
             {isCompressing && (
-              <div className="mt-3 p-3 bg-[color:var(--muted)] rounded-md">
-                <p className="text-sm text-[color:var(--foreground)] mb-2">
+              <div className="mt-3 p-3 bg-muted rounded-md">
+                <p className="text-sm text-foreground mb-2">
                   Compression de l&apos;image en cours...
                 </p>
-                <div className="w-full bg-[color:var(--border)] rounded-full h-2">
-                  <div className="bg-[color:var(--primary)] h-2 rounded-full transition-all duration-300 animate-pulse w-1/2"></div>
+                <div className="w-full bg-border rounded-full h-2">
+                  <div className="bg-primary h-2 rounded-full transition-all duration-300 animate-pulse w-1/2"></div>
                 </div>
               </div>
             )}
 
             {isSubmitting && (
               <div className="mt-4">
-                <p className="text-sm text-[color:var(--muted-foreground)] mb-1">
+                <p className="text-sm text-muted-foreground mb-1">
                   Téléchargement en cours...
                 </p>
-                <div className="w-full bg-[color:var(--muted)] rounded-full h-2">
+                <div className="w-full bg-muted rounded-full h-2">
                   <div
-                    className="bg-[color:var(--primary)] h-2 rounded-full transition-all duration-300"
+                    className="bg-primary h-2 rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   ></div>
                 </div>
@@ -249,16 +245,17 @@ export default function NewSectorForm({ objetId }: { objetId: string }) {
         </div>
       </div>
 
-      <div className="flex justify-end gap-3 pt-6 border-t border-[color:var(--border)]">
-        <Link
-          href={`/dashboard/objet/${objetId}/edit`}
-          className="px-4 py-2 border border-[color:var(--border)] rounded-md hover:bg-[color:var(--muted)] transition-colors disabled:opacity-50"
-          aria-disabled={isSubmitting}
-          tabIndex={isSubmitting ? -1 : undefined}
-          onClick={(e) => isSubmitting && e.preventDefault()}
-        >
-          Annuler
-        </Link>
+      <div className="flex justify-end gap-3 pt-6 border-t">
+        <Button variant="outline" asChild>
+          <Link
+            href={`/dashboard/objet/${objetId}/edit`}
+            aria-disabled={isSubmitting}
+            tabIndex={isSubmitting ? -1 : undefined}
+            onClick={(e) => isSubmitting && e.preventDefault()}
+          >
+            Annuler
+          </Link>
+        </Button>
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? (
             <>

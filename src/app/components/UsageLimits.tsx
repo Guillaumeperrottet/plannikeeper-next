@@ -66,8 +66,8 @@ export default function UsageLimits() {
 
   if (error) {
     return (
-      <div className="p-4 border border-red-200 dark:border-red-900/50 rounded-lg bg-red-100 dark:bg-red-950/30">
-        <p className="text-red-700 dark:text-red-400 flex items-center">
+      <div className="p-4 border border-red-200 rounded-lg bg-red-100">
+        <p className="text-red-700 flex items-center">
           <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
           {error}
         </p>
@@ -92,13 +92,13 @@ export default function UsageLimits() {
     let textColorClass = "text-[color:var(--foreground)]";
 
     if (isAtLimit) {
-      progressBgClass = "bg-red-200 dark:bg-red-900/30";
-      progressIndicatorClass = "bg-red-500 dark:bg-red-600";
-      textColorClass = "text-red-600 dark:text-red-400";
+      progressBgClass = "bg-red-200";
+      progressIndicatorClass = "bg-red-500";
+      textColorClass = "text-red-600";
     } else if (isNearLimit) {
-      progressBgClass = "bg-amber-200 dark:bg-amber-900/30";
-      progressIndicatorClass = "bg-amber-500 dark:bg-amber-600";
-      textColorClass = "text-amber-600 dark:text-amber-400";
+      progressBgClass = "bg-amber-200";
+      progressIndicatorClass = "bg-amber-500";
+      textColorClass = "text-amber-600";
     }
 
     return (
@@ -116,9 +116,7 @@ export default function UsageLimits() {
           </div>
           <div className="text-sm">
             {data.unlimited ? (
-              <span className="text-green-500 dark:text-green-400">
-                Illimité
-              </span>
+              <span className="text-green-500">Illimité</span>
             ) : (
               <span className={textColorClass}>
                 {data.current} / {data.limit}

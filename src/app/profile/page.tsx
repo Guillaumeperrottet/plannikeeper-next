@@ -91,7 +91,7 @@ export default async function ProfilePage() {
           >
             <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--primary)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-[color:var(--primary)]/10 text-[color:var(--primary)] group-hover:bg-[color:var(--primary)]/20 transition-colors">
+              <div className="p-2 rounded-lg bg-[color:var(--primary)]/10 text-[color:var(--primary)] transition-colors">
                 <Users size={20} />
               </div>
               <div>
@@ -115,7 +115,7 @@ export default async function ProfilePage() {
           >
             <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--primary)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-[color:var(--primary)]/10 text-[color:var(--primary)] group-hover:bg-[color:var(--primary)]/20 transition-colors">
+              <div className="p-2 rounded-lg bg-[color:var(--primary)]/10 text-[color:var(--primary)] transition-colors">
                 <Bell size={20} />
               </div>
               <div>
@@ -139,7 +139,7 @@ export default async function ProfilePage() {
           >
             <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--primary)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-[color:var(--primary)]/10 text-[color:var(--primary)] group-hover:bg-[color:var(--primary)]/20 transition-colors">
+              <div className="p-2 rounded-lg bg-[color:var(--primary)]/10 text-[color:var(--primary)] transition-colors">
                 <Sparkles size={20} />
               </div>
               <div>
@@ -163,7 +163,7 @@ export default async function ProfilePage() {
           >
             <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--primary)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <div className="relative flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-[color:var(--primary)]/10 text-[color:var(--primary)] group-hover:bg-[color:var(--primary)]/20 transition-colors">
+              <div className="p-2 rounded-lg bg-[color:var(--primary)]/10 text-[color:var(--primary)] transition-colors">
                 <Settings size={20} />
               </div>
               <div>
