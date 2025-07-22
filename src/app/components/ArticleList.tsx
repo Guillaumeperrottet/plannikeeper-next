@@ -14,7 +14,7 @@ import {
   ArrowUp,
   ArrowDown,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 
 type Article = {
   id: string;
@@ -165,19 +165,19 @@ const ArticleList: React.FC<ArticleListProps> = ({
   };
 
   // Animations
-  const overlayVariants = {
+  const overlayVariants: Variants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { duration: 0.3 } },
   };
 
   // Différentes animations selon mobile ou desktop
-  const panelVariants = isMobile
+  const panelVariants: Variants = isMobile
     ? {
         hidden: { y: "100%" },
         visible: {
           y: 0,
           transition: {
-            type: "spring",
+            type: "spring" as const,
             damping: 30,
             stiffness: 300,
           },
@@ -188,14 +188,14 @@ const ArticleList: React.FC<ArticleListProps> = ({
         visible: {
           x: 0,
           transition: {
-            type: "spring",
+            type: "spring" as const,
             damping: 30,
             stiffness: 300,
           },
         },
       };
 
-  const listItemVariants = {
+  const listItemVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: (i: number) => ({
       opacity: 1,
@@ -207,14 +207,14 @@ const ArticleList: React.FC<ArticleListProps> = ({
     }),
   };
 
-  const filterBarVariants = {
+  const filterBarVariants: Variants = {
     hidden: { height: 0, opacity: 0 },
     visible: {
       height: "auto",
       opacity: 1,
       transition: {
         height: {
-          type: "spring",
+          type: "spring" as const,
           stiffness: 400,
           damping: 40,
         },
