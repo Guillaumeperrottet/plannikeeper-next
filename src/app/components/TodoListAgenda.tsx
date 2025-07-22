@@ -19,6 +19,10 @@ import PrintButton from "./ui/PrintButton";
 import { useLoadingSystem } from "@/app/components/LoadingSystem";
 import { motion, AnimatePresence, useSpring } from "framer-motion";
 import { useRouter as useCustomRouter } from "@/lib/router-helper";
+import { Button } from "@/app/components/ui/button";
+import { Input } from "@/app/components/ui/input";
+import { Card, CardContent } from "@/app/components/ui/card";
+import { Badge } from "@/app/components/ui/badge";
 
 // Import dynamique de CalendarView pour permettre un rafraîchissement efficace
 const CalendarView = dynamic(() => import("./CalendarView"), { ssr: false });
@@ -655,19 +659,35 @@ export default function TodoListAgenda({
     else upcomingTasks.push(task);
   });
 
-  // Fonction pour obtenir la couleur de statut
-  const getStatusColor = (status: string) => {
+  // Fonction pour obtenir la variante de badge selon le statut
+  const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case "pending":
-        return "bg-warning text-warning-foreground border-warning/20";
+        return "warning";
       case "in_progress":
-        return "bg-info text-info-foreground border-info/20";
+        return "info";
       case "completed":
-        return "bg-success text-success-foreground border-success/20";
+        return "success";
       case "cancelled":
-        return "bg-destructive text-destructive-foreground border-destructive/20";
+        return "destructive";
       default:
-        return "bg-muted text-muted-foreground border-border";
+        return "secondary";
+    }
+  };
+
+  // Fonction pour obtenir le texte du statut
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "À faire";
+      case "in_progress":
+        return "En cours";
+      case "completed":
+        return "Terminée";
+      case "cancelled":
+        return "Annulée";
+      default:
+        return status;
     }
   };
 
@@ -819,28 +839,26 @@ export default function TodoListAgenda({
               <div className="flex items-center justify-between px-4 py-2">
                 {/* Contrôles de vue (gauche) */}
                 <div className="flex items-center gap-1">
-                  <button
+                  <Button
                     onClick={toggleViewMode}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs ${
-                      viewMode === ViewMode.LIST
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-background text-foreground"
-                    }`}
+                    variant={viewMode === ViewMode.LIST ? "default" : "outline"}
+                    size="sm"
+                    className="h-7 px-2.5 text-xs"
                   >
                     <ListIcon size={12} />
-                    {!isMobile && <span>Liste</span>}
-                  </button>
-                  <button
+                    {!isMobile && <span className="ml-1">Liste</span>}
+                  </Button>
+                  <Button
                     onClick={toggleViewMode}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs ${
-                      viewMode === ViewMode.CALENDAR
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-background text-foreground"
-                    }`}
+                    variant={
+                      viewMode === ViewMode.CALENDAR ? "default" : "outline"
+                    }
+                    size="sm"
+                    className="h-7 px-2.5 text-xs"
                   >
                     <CalendarIcon size={12} />
-                    {!isMobile && <span>Agenda</span>}
-                  </button>
+                    {!isMobile && <span className="ml-1">Agenda</span>}
+                  </Button>
                 </div>
 
                 {/* Filtre d'assignation (centre) */}
@@ -866,28 +884,28 @@ export default function TodoListAgenda({
                 {/* Actions (droite) */}
                 <div className="flex items-center gap-1">
                   {viewMode === ViewMode.LIST && (
-                    <button
+                    <Button
                       onClick={() => setShowFiltersPanel(!showFiltersPanel)}
-                      className={`p-1.5 rounded-full ${
-                        showFiltersPanel
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-background text-foreground"
-                      }`}
+                      variant={showFiltersPanel ? "default" : "outline"}
+                      size="sm"
+                      className="h-7 w-7 p-0"
                     >
                       <Filter size={14} />
-                    </button>
+                    </Button>
                   )}
                   {onRefresh && (
-                    <button
+                    <Button
                       onClick={handleManualRefresh}
-                      className="p-1.5 rounded-full bg-background text-foreground"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 w-7 p-0"
                       disabled={isRefreshingLocal}
                     >
                       <RefreshCcw
                         size={14}
                         className={isRefreshingLocal ? "animate-spin" : ""}
                       />
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -907,20 +925,22 @@ export default function TodoListAgenda({
                         size={12}
                         className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground"
                       />
-                      <input
+                      <Input
                         type="text"
                         placeholder="Rechercher..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full py-1.5 pl-7 pr-7 text-xs rounded-full border border-border bg-background"
+                        className="w-full h-7 pl-7 pr-7 text-xs rounded-full"
                       />
                       {searchTerm && (
-                        <button
+                        <Button
                           onClick={() => setSearchTerm("")}
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-1 top-1/2 transform -translate-y-1/2 h-5 w-5 p-0"
                         >
                           <X size={12} />
-                        </button>
+                        </Button>
                       )}
                     </div>
 
@@ -1025,68 +1045,62 @@ export default function TodoListAgenda({
                 ) : (
                   <ul className="space-y-2 pb-4">
                     {thisWeekTasks.map((task) => (
-                      <motion.li
-                        key={task.id}
-                        whileTap={{ scale: 0.98 }}
-                        className={`cursor-pointer hover:bg-muted rounded-lg p-3 text-foreground active:bg-muted/80 transition-colors shadow-sm border ${getStatusColor(task.status)}`}
-                        onClick={(e) => {
-                          e.stopPropagation(); // Empêcher la propagation ici aussi
-                          navigateToTask(task);
-                        }}
-                      >
-                        <div className="flex flex-col">
-                          <div className="flex justify-between items-start">
-                            <span className="font-medium">{task.name}</span>
-                            <span className="text-xs py-0.5 px-2 rounded-full bg-muted text-muted-foreground">
-                              {task.status === "pending"
-                                ? "A faire"
-                                : task.status === "in_progress"
-                                  ? "En cours"
-                                  : task.status === "completed"
-                                    ? "Terminée"
-                                    : task.status === "cancelled"
-                                      ? "Annulée"
-                                      : task.status}
-                            </span>
-                          </div>
+                      <motion.li key={task.id} whileTap={{ scale: 0.98 }}>
+                        <Card
+                          className="cursor-pointer hover:shadow-md transition-all"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigateToTask(task);
+                          }}
+                        >
+                          <CardContent className="p-3">
+                            <div className="flex flex-col">
+                              <div className="flex justify-between items-start">
+                                <span className="font-medium">{task.name}</span>
+                                <Badge variant={getStatusBadgeVariant(task.status)}>
+                                  {getStatusText(task.status)}
+                                </Badge>
+                              </div>
 
-                          {task.description && (
-                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                              {task.description}
-                            </p>
-                          )}
-
-                          <div className="flex items-center justify-between mt-2">
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              {task.realizationDate && (
-                                <span className="bg-muted/40 py-0.5 px-1.5 rounded">
-                                  {formatDate(task.realizationDate)}
-                                </span>
+                              {task.description && (
+                                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                                  {task.description}
+                                </p>
                               )}
-                              <span>• {task.article.sector.name}</span>
-                            </div>
 
-                            <div className="flex items-center gap-1">
-                              {task.assignedTo && (
+                              <div className="flex items-center justify-between mt-2">
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  {task.realizationDate && (
+                                    <span className="bg-muted/40 py-0.5 px-1.5 rounded">
+                                      {formatDate(task.realizationDate)}
+                                    </span>
+                                  )}
+                                  <span>• {task.article.sector.name}</span>
+                                </div>
+
+                                <div className="flex items-center gap-1">
+                                  {task.assignedTo && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {task.assignedTo.name}
+                                    </span>
+                                  )}
+
+                                  <ExternalLink
+                                    size={14}
+                                    className="text-muted-foreground ml-1"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Titre de l'article */}
+                              <div className="mt-1 pt-1 border-t border-border/30">
                                 <span className="text-xs text-muted-foreground">
-                                  {task.assignedTo.name}
+                                  Article: {task.article.title}
                                 </span>
-                              )}
-
-                              <ExternalLink
-                                size={14}
-                                className="text-muted-foreground ml-1"
-                              />
+                              </div>
                             </div>
-                          </div>
-
-                          {/* Titre de l'article */}
-                          <div className="mt-1 pt-1 border-t border-border/30">
-                            <span className="text-xs text-muted-foreground">
-                              Article: {task.article.title}
-                            </span>
-                          </div>
-                        </div>
+                          </CardContent>
+                        </Card>
                       </motion.li>
                     ))}
                   </ul>
@@ -1110,68 +1124,62 @@ export default function TodoListAgenda({
                 ) : (
                   <ul className="space-y-2 pb-4">
                     {upcomingTasks.map((task) => (
-                      <motion.li
-                        key={task.id}
-                        whileTap={{ scale: 0.98 }}
-                        className={`cursor-pointer hover:bg-muted rounded-lg p-3 text-foreground active:bg-muted/80 transition-colors shadow-sm border ${getStatusColor(task.status)}`}
-                        onClick={(e) => {
-                          e.stopPropagation(); // Empêcher la propagation ici aussi
-                          navigateToTask(task);
-                        }}
-                      >
-                        <div className="flex flex-col">
-                          <div className="flex justify-between items-start">
-                            <span className="font-medium">{task.name}</span>
-                            <span className="text-xs py-0.5 px-2 rounded-full bg-muted text-muted-foreground">
-                              {task.status === "pending"
-                                ? "A faire"
-                                : task.status === "in_progress"
-                                  ? "En cours"
-                                  : task.status === "completed"
-                                    ? "Terminée"
-                                    : task.status === "cancelled"
-                                      ? "Annulée"
-                                      : task.status}
-                            </span>
-                          </div>
+                      <motion.li key={task.id} whileTap={{ scale: 0.98 }}>
+                        <Card
+                          className="cursor-pointer hover:shadow-md transition-all"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigateToTask(task);
+                          }}
+                        >
+                          <CardContent className="p-3">
+                            <div className="flex flex-col">
+                              <div className="flex justify-between items-start">
+                                <span className="font-medium">{task.name}</span>
+                                <Badge variant={getStatusBadgeVariant(task.status)}>
+                                  {getStatusText(task.status)}
+                                </Badge>
+                              </div>
 
-                          {task.description && (
-                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                              {task.description}
-                            </p>
-                          )}
-
-                          <div className="flex items-center justify-between mt-2">
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              {task.realizationDate && (
-                                <span className="bg-muted/40 py-0.5 px-1.5 rounded">
-                                  {formatDate(task.realizationDate)}
-                                </span>
+                              {task.description && (
+                                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                                  {task.description}
+                                </p>
                               )}
-                              <span>• {task.article.sector.name}</span>
-                            </div>
 
-                            <div className="flex items-center gap-1">
-                              {task.assignedTo && (
+                              <div className="flex items-center justify-between mt-2">
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  {task.realizationDate && (
+                                    <span className="bg-muted/40 py-0.5 px-1.5 rounded">
+                                      {formatDate(task.realizationDate)}
+                                    </span>
+                                  )}
+                                  <span>• {task.article.sector.name}</span>
+                                </div>
+
+                                <div className="flex items-center gap-1">
+                                  {task.assignedTo && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {task.assignedTo.name}
+                                    </span>
+                                  )}
+
+                                  <ExternalLink
+                                    size={14}
+                                    className="text-muted-foreground ml-1"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Titre de l'article */}
+                              <div className="mt-1 pt-1 border-t border-border/30">
                                 <span className="text-xs text-muted-foreground">
-                                  {task.assignedTo.name}
+                                  Article: {task.article.title}
                                 </span>
-                              )}
-
-                              <ExternalLink
-                                size={14}
-                                className="text-muted-foreground ml-1"
-                              />
+                              </div>
                             </div>
-                          </div>
-
-                          {/* Titre de l'article */}
-                          <div className="mt-1 pt-1 border-t border-border/30">
-                            <span className="text-xs text-muted-foreground">
-                              Article: {task.article.title}
-                            </span>
-                          </div>
-                        </div>
+                          </CardContent>
+                        </Card>
                       </motion.li>
                     ))}
                   </ul>
@@ -1185,17 +1193,22 @@ export default function TodoListAgenda({
       {/* Bouton flottant d'expansion moderne sur mobile - affiché uniquement quand l'agenda est fermé */}
       <AnimatePresence>
         {!isExpanded && isMobile && (
-          <motion.button
+          <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             whileTap={{ scale: 0.95 }}
-            className="fixed bottom-20 right-4 w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg z-50"
-            onClick={toggleExpanded}
-            aria-label="Ouvrir l'agenda"
+            className="fixed bottom-20 right-4 z-50"
           >
-            <ArrowUp size={28} />
-          </motion.button>
+            <Button
+              onClick={toggleExpanded}
+              size="lg"
+              className="w-14 h-14 rounded-full shadow-lg"
+              aria-label="Ouvrir l'agenda"
+            >
+              <ArrowUp size={28} />
+            </Button>
+          </motion.div>
         )}
       </AnimatePresence>
 
