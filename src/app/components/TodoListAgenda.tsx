@@ -695,7 +695,9 @@ export default function TodoListAgenda({
     <>
       <motion.div
         ref={agendaRef}
-        className={`fixed bottom-0 left-0 right-0 bg-background shadow-lg print:shadow-none print:relative print:h-auto border-t border-border rounded-t-xl overflow-hidden z-40 ${isExpanded ? "expanded touch-none" : ""}`}
+        className={`fixed bottom-0 left-0 right-0 bg-background shadow-lg print:shadow-none print:relative print:h-auto border-t border-border rounded-t-xl overflow-hidden z-40 ${
+          isExpanded ? "expanded touch-none" : ""
+        }`}
         style={{
           height: springHeight,
           position: "fixed",
@@ -766,7 +768,9 @@ export default function TodoListAgenda({
               </div>
             ) : (
               <h2
-                className={`text-base sm:text-xl font-semibold ${isMobile ? "" : "hidden sm:block"}`}
+                className={`text-base sm:text-xl font-semibold ${
+                  isMobile ? "" : "hidden sm:block"
+                }`}
               >
                 {isMobile ? "Agenda" : "Agenda todo list"}
               </h2>
@@ -1026,7 +1030,9 @@ export default function TodoListAgenda({
             />
           ) : (
             <div
-              className={`grid grid-cols-1 ${isMobile ? "" : "md:grid-cols-2"} gap-4 p-4`}
+              className={`grid grid-cols-1 ${
+                isMobile ? "" : "md:grid-cols-2"
+              } gap-4 p-4`}
             >
               {/* Cette semaine */}
               <div ref={thisWeekRef}>

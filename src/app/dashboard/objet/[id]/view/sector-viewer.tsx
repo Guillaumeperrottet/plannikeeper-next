@@ -491,9 +491,9 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                   </SheetTrigger>
                 <SheetContent side="right" className="w-[400px] sm:w-[540px]">
                   <SheetHeader>
-                    <div className="text-lg font-semibold">
+                    <h2 className="text-lg font-semibold">
                       Articles ({filteredArticles.length})
-                    </div>
+                    </h2>
                     <div className="text-sm text-muted-foreground">
                       Liste des articles du secteur &quot;{selectedSector.name}
                       &quot;
@@ -728,9 +728,9 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                       <SheetHeader className="pb-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <div className="text-lg font-semibold text-left">
+                            <h2 className="text-lg font-semibold text-left">
                               Articles de &quot;{selectedSector.name}&quot;
-                            </div>
+                            </h2>
                             <Button
                               variant="outline"
                               size="sm"

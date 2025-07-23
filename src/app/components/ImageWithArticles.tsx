@@ -1229,87 +1229,89 @@ export default function ImageWithArticles({
                     )}
                   </div>
 
-                  {/* Boutons d'action */}
-                  <div className="grid grid-cols-2 gap-2">
-                    {onArticleMove && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          if (onArticlePositionUpdate) {
-                            // Activer le mode déplacement intégré
-                            setDragMode(true);
-                            setOpenPopoverId(null);
-                          } else {
-                            // Fallback vers la fonction externe (redirection)
-                            onArticleMove(article.id);
-                            setOpenPopoverId(null);
-                          }
-                        }}
-                        className="flex items-center gap-2"
-                      >
-                        <Move size={16} />
-                        {dragMode ? "Mode déplacement actif" : "Déplacer"}
-                      </Button>
-                    )}
+                  {/* Boutons d'action - seulement sur desktop */}
+                  {!isMobile && (
+                    <div className="grid grid-cols-2 gap-2">
+                      {onArticleMove && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (onArticlePositionUpdate) {
+                              // Activer le mode déplacement intégré
+                              setDragMode(true);
+                              setOpenPopoverId(null);
+                            } else {
+                              // Fallback vers la fonction externe (redirection)
+                              onArticleMove(article.id);
+                              setOpenPopoverId(null);
+                            }
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <Move size={16} />
+                          {dragMode ? "Mode déplacement actif" : "Déplacer"}
+                        </Button>
+                      )}
 
-                    {onArticleResize && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          if (onArticlePositionUpdate) {
-                            // Activer le mode redimensionnement intégré
-                            setResizeMode(true);
-                            setOpenPopoverId(null);
-                          } else {
-                            // Fallback vers la fonction externe (redirection)
-                            onArticleResize(article.id);
-                            setOpenPopoverId(null);
-                          }
-                        }}
-                        className="flex items-center gap-2"
-                      >
-                        <Square size={16} />
-                        {resizeMode ? "Mode redimensionnement actif" : "Redimensionner"}
-                      </Button>
-                    )}
+                      {onArticleResize && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (onArticlePositionUpdate) {
+                              // Activer le mode redimensionnement intégré
+                              setResizeMode(true);
+                              setOpenPopoverId(null);
+                            } else {
+                              // Fallback vers la fonction externe (redirection)
+                              onArticleResize(article.id);
+                              setOpenPopoverId(null);
+                            }
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <Square size={16} />
+                          {resizeMode ? "Mode redimensionnement actif" : "Redimensionner"}
+                        </Button>
+                      )}
 
-                    {onArticleEdit && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          if (onArticleUpdate) {
-                            // Utiliser le modal d'édition intégré
-                            handleEditArticle(article);
-                          } else {
-                            // Fallback vers la fonction externe (redirection)
-                            onArticleEdit(article.id);
-                            setOpenPopoverId(null);
-                          }
-                        }}
-                        className="flex items-center gap-2"
-                      >
-                        <Edit size={16} />
-                        Modifier
-                      </Button>
-                    )}
+                      {onArticleEdit && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (onArticleUpdate) {
+                              // Utiliser le modal d'édition intégré
+                              handleEditArticle(article);
+                            } else {
+                              // Fallback vers la fonction externe (redirection)
+                              onArticleEdit(article.id);
+                              setOpenPopoverId(null);
+                            }
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <Edit size={16} />
+                          Modifier
+                        </Button>
+                      )}
 
-                    {onArticleDelete && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          handleDeleteArticle(article);
-                        }}
-                        className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash size={16} />
-                        Supprimer
-                      </Button>
-                    )}
-                  </div>
+                      {onArticleDelete && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            handleDeleteArticle(article);
+                          }}
+                          className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash size={16} />
+                          Supprimer
+                        </Button>
+                      )}
+                    </div>
+                  )}
 
 
 
