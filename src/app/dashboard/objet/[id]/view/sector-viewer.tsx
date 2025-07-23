@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/app/components/ui/button";
 import {
@@ -462,23 +463,15 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 if (sector) handleSectorChange(sector);
               }}
             >
-              {/* @ts-expect-error - Types issue with shadcn/ui SelectTrigger children prop */}
-              <SelectTrigger className="w-full sm:w-[280px] bg-background border-input shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors">
+              <SelectTrigger {...({ className: "w-full sm:w-[280px] bg-background border-input shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors" } as React.ComponentProps<typeof SelectTrigger>)}>
                 <SelectValue placeholder="Sélectionner un secteur" />
               </SelectTrigger>
-              {/* @ts-expect-error - Types issue with shadcn/ui SelectContent children prop */}
+              {/* @ts-expect-error - Ignore shadcn/ui SelectContent type issues */}
               <SelectContent className="max-h-[300px]">
                 {sectors.map((sector) => (
-                  // @ts-expect-error - Types issue with shadcn/ui SelectItem children prop
-                  <SelectItem
-                    key={sector.id}
-                    value={sector.id}
-                    className="cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-primary/60"></div>
-                      {sector.name}
-                    </div>
+                  /* @ts-expect-error - Ignore shadcn/ui SelectItem type issues */
+                  <SelectItem key={sector.id} value={sector.id}>
+                    {sector.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -502,10 +495,11 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 </Button>
                 
                 <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                  {/* @ts-expect-error - Types issue with shadcn/ui SheetTrigger children prop */}
-                  <SheetTrigger className="flex items-center gap-2 px-3 py-2 border border-input rounded-md hover:bg-accent hover:text-accent-foreground">
-                    <ListFilter size={16} />
-                    Articles
+                  <SheetTrigger {...({ asChild: true } as React.ComponentProps<typeof SheetTrigger>)}>
+                    <button className="flex items-center gap-2 px-3 py-2 border border-input rounded-md hover:bg-accent hover:text-accent-foreground">
+                      <ListFilter size={16} />
+                      Articles
+                    </button>
                   </SheetTrigger>
                 <SheetContent side="right" className="w-[400px] sm:w-[540px]">
                   <SheetHeader>
@@ -727,12 +721,13 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                   {/* Sheet pour mobile */}
                   <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
                     {/* Bouton flottant pour ouvrir la liste */}
-                    {/* @ts-expect-error - Types issue with shadcn/ui SheetTrigger children prop */}
-                    <SheetTrigger className="fixed bottom-20 left-4 z-[9] flex items-center gap-1 bg-primary text-primary-foreground rounded-full shadow-lg px-3 py-3 hover:scale-105 transition-transform">
-                      <ListFilter size={18} />
-                      <span className="ml-1 text-sm font-medium">
-                        {articles.length} Articles
-                      </span>
+                    <SheetTrigger {...({ asChild: true } as React.ComponentProps<typeof SheetTrigger>)}>
+                      <button className="fixed bottom-20 left-4 z-[9] flex items-center gap-1 bg-primary text-primary-foreground rounded-full shadow-lg px-3 py-3 hover:scale-105 transition-transform">
+                        <ListFilter size={18} />
+                        <span className="ml-1 text-sm font-medium">
+                          {articles.length} Articles
+                        </span>
+                      </button>
                     </SheetTrigger>
 
                     <SheetContent
