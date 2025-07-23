@@ -9,13 +9,11 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Move, Square, Edit, Trash } from "lucide-react";
 
 type Article = {
@@ -1374,12 +1372,11 @@ export default function ImageWithArticles({
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Modifier l&apos;article</DialogTitle>
+            <h2 className="text-lg font-semibold">Modifier l&apos;article</h2>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              {/* @ts-expect-error - shadcn/ui Label component type issue */}
-              <Label htmlFor="title">Titre</Label>
+              <label htmlFor="title" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Titre</label>
               <Input
                 id="title"
                 value={editForm.title}
@@ -1390,8 +1387,7 @@ export default function ImageWithArticles({
               />
             </div>
             <div>
-              {/* @ts-expect-error - shadcn/ui Label component type issue */}
-              <Label htmlFor="description">Description</Label>
+              <label htmlFor="description" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Description</label>
               <Textarea
                 id="description"
                 value={editForm.description}
@@ -1418,8 +1414,7 @@ export default function ImageWithArticles({
       <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
         <DialogContent>
           <DialogHeader>
-            {/* @ts-expect-error - shadcn/ui DialogTitle component type issue */}
-            <DialogTitle className="text-red-600">Supprimer l&apos;article</DialogTitle>
+            <h2 className="text-lg font-semibold text-red-600">Supprimer l&apos;article</h2>
           </DialogHeader>
           <div className="space-y-4">
             <div className="p-4 bg-red-50 border border-red-200 rounded-md">
@@ -1451,10 +1446,9 @@ export default function ImageWithArticles({
             </div>
 
             <div>
-              {/* @ts-expect-error - shadcn/ui Label component type issue */}
-              <Label htmlFor="deleteConfirm" className="text-sm font-medium">
+              <label htmlFor="deleteConfirm" className="text-sm font-medium">
                 Pour confirmer la suppression, tapez le nom exact de l&apos;article :
-              </Label>
+              </label>
               <div className="mt-2 space-y-2">
                 <div className="text-sm text-gray-600 bg-gray-100 p-2 rounded border">
                   {deletingArticle?.title}
@@ -1492,12 +1486,11 @@ export default function ImageWithArticles({
       <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Créer un nouvel article</DialogTitle>
+            <h2 className="text-lg font-semibold">Créer un nouvel article</h2>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              {/* @ts-expect-error - shadcn/ui Label component type issue */}
-              <Label htmlFor="createTitle">Titre</Label>
+              <label htmlFor="createTitle" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Titre</label>
               <Input
                 id="createTitle"
                 value={createForm.title}
@@ -1508,8 +1501,7 @@ export default function ImageWithArticles({
               />
             </div>
             <div>
-              {/* @ts-expect-error - shadcn/ui Label component type issue */}
-              <Label htmlFor="createDescription">Description</Label>
+              <label htmlFor="createDescription" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Description</label>
               <Textarea
                 id="createDescription"
                 value={createForm.description}
@@ -1522,8 +1514,7 @@ export default function ImageWithArticles({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                {/* @ts-expect-error - shadcn/ui Label component type issue */}
-                <Label htmlFor="createPositionX">Position X (%)</Label>
+                <label htmlFor="createPositionX" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Position X (%)</label>
                 <Input
                   id="createPositionX"
                   type="number"
@@ -1536,8 +1527,7 @@ export default function ImageWithArticles({
                 />
               </div>
               <div>
-                {/* @ts-expect-error - shadcn/ui Label component type issue */}
-                <Label htmlFor="createPositionY">Position Y (%)</Label>
+                <label htmlFor="createPositionY" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Position Y (%)</label>
                 <Input
                   id="createPositionY"
                   type="number"
@@ -1552,8 +1542,7 @@ export default function ImageWithArticles({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                {/* @ts-expect-error - shadcn/ui Label component type issue */}
-                <Label htmlFor="createWidth">Largeur (%)</Label>
+                <label htmlFor="createWidth" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Largeur (%)</label>
                 <Input
                   id="createWidth"
                   type="number"
@@ -1566,8 +1555,7 @@ export default function ImageWithArticles({
                 />
               </div>
               <div>
-                {/* @ts-expect-error - shadcn/ui Label component type issue */}
-                <Label htmlFor="createHeight">Hauteur (%)</Label>
+                <label htmlFor="createHeight" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Hauteur (%)</label>
                 <Input
                   id="createHeight"
                   type="number"
