@@ -1115,7 +1115,7 @@ export default function ImageWithArticles({
                 }
               }}
             >
-              {/* @ts-expect-error - PopoverTrigger asChild prop requirement */}
+              {/* @ts-expect-error - PopoverTrigger asChild requires children */}
               <PopoverTrigger asChild>
                 <div
                   className={`absolute border ${
