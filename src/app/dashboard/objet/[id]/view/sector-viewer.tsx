@@ -16,7 +16,6 @@ import {
   SheetTrigger,
 } from "@/app/components/ui/sheet";
 import { toast } from "sonner";
-import Link from "next/link";
 import {
   ChevronLeft,
   ChevronRight,
@@ -29,9 +28,9 @@ import {
   ArrowUp,
   ArrowDown,
   XCircle,
+  Plus,
 } from "lucide-react";
 import ImageWithArticles from "@/app/components/ImageWithArticles";
-import AccessControl from "@/app/components/AccessControl";
 
 // Types définis comme dans votre code original
 type Sector = {
@@ -73,6 +72,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [createMode, setCreateMode] = useState(false);
   const viewerRef = useRef<HTMLDivElement>(null);
   const mainContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -321,6 +321,44 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
     }
   };
 
+  const handleArticleCreate = async (articleData: { title: string; description: string; positionX: number; positionY: number; width: number; height: number }) => {
+    try {
+      if (!selectedSector) {
+        throw new Error('Aucun secteur sélectionné');
+      }
+
+      const response = await fetch('/api/articles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: articleData.title,
+          description: articleData.description,
+          positionX: articleData.positionX,
+          positionY: articleData.positionY,
+          width: articleData.width,
+          height: articleData.height,
+          sectorId: selectedSector.id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la création de l\'article');
+      }
+
+      // Recharger les articles pour refléter les changements
+      await fetchArticles(selectedSector.id);
+
+      // Afficher un message de succès
+      toast.success('Article créé avec succès');
+    } catch (error) {
+      console.error('Erreur lors de la création de l\'article:', error);
+      toast.error('Erreur lors de la création de l\'article');
+      throw error; // Re-throw pour que le composant puisse gérer l'erreur
+    }
+  };
+
   const toggleFullscreen = useCallback(() => {
     setIsFullscreen(!isFullscreen);
 
@@ -446,14 +484,29 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
               </SelectContent>
             </Select>
 
-            {/* Bouton Articles pour desktop - en dehors du flux normal */}
+            {/* Boutons Articles et Créer un article pour desktop */}
             {selectedSector && !isMobile && (
-              <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                {/* @ts-expect-error - Types issue with shadcn/ui SheetTrigger children prop */}
-                <SheetTrigger className="ml-4 flex items-center gap-2 px-3 py-2 border border-input rounded-md hover:bg-accent hover:text-accent-foreground">
-                  <ListFilter size={16} />
-                  Articles
-                </SheetTrigger>
+              <div className="flex items-center gap-2 ml-4">
+                <Button
+                  onClick={() => setCreateMode(!createMode)}
+                  className={`flex items-center gap-2 px-3 py-2 ${
+                    createMode 
+                      ? "bg-purple-600 hover:bg-purple-700 text-white" 
+                      : "border border-input hover:bg-accent hover:text-accent-foreground"
+                  }`}
+                  variant={createMode ? "default" : "outline"}
+                  size="sm"
+                >
+                  <Plus size={16} />
+                  Créer un article
+                </Button>
+                
+                <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+                  {/* @ts-expect-error - Types issue with shadcn/ui SheetTrigger children prop */}
+                  <SheetTrigger className="flex items-center gap-2 px-3 py-2 border border-input rounded-md hover:bg-accent hover:text-accent-foreground">
+                    <ListFilter size={16} />
+                    Articles
+                  </SheetTrigger>
                 <SheetContent side="right" className="w-[400px] sm:w-[540px]">
                   <SheetHeader>
                     <div className="text-lg font-semibold">
@@ -560,44 +613,12 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                   </div>
                 </SheetContent>
               </Sheet>
+              </div>
             )}
           </div>
 
           {/* Bouton pour ajouter/modifier un article */}
-          {selectedSector && (
-            <div className="w-full sm:w-auto">
-              <AccessControl
-                entityType="sector"
-                entityId={selectedSector.id}
-                requiredLevel="write"
-                fallback={
-                  <Button
-                    variant="outline"
-                    className="w-full sm:w-auto opacity-60"
-                    onClick={() =>
-                      toast.info(
-                        "Vous n'avez pas les droits pour modifier ce secteur"
-                      )
-                    }
-                  >
-                    {isMobile
-                      ? "Modifier/Créer un article"
-                      : "Modifier ou créer un article"}
-                  </Button>
-                }
-              >
-                <Button asChild variant="outline" className="w-full sm:w-auto">
-                  <Link
-                    href={`/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?addArticle=1`}
-                  >
-                    {isMobile
-                      ? "Modifier/Créer un article"
-                      : "Modifier ou créer un article"}
-                  </Link>
-                </Button>
-              </AccessControl>
-            </div>
-          )}
+          {/* Supprimé - remplacé par le bouton flottant dans ImageWithArticles */}
         </div>
       )}
 
@@ -664,6 +685,9 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                     onArticleDelete={handleArticleDelete}
                     onArticleUpdate={handleArticleUpdate}
                     onArticlePositionUpdate={handleArticlePositionUpdate}
+                    onArticleCreate={handleArticleCreate}
+                    createMode={createMode}
+                    onCreateModeChange={setCreateMode}
                     className={`${
                       isFullscreen
                         ? "max-h-screen"

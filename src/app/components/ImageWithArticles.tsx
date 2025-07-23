@@ -49,6 +49,11 @@ type ImageWithArticlesProps = {
   onArticleUpdate?: (articleId: string, updates: { title: string; description: string }) => Promise<void>;
   // Nouvelle prop pour la mise à jour de position
   onArticlePositionUpdate?: (articleId: string, updates: { positionX: number; positionY: number; width: number; height: number }) => Promise<void>;
+  // Nouvelle prop pour créer un article
+  onArticleCreate?: (articleData: { title: string; description: string; positionX: number; positionY: number; width: number; height: number }) => Promise<void>;
+  // Nouvelle prop pour activer le mode création depuis l'extérieur
+  createMode?: boolean;
+  onCreateModeChange?: (createMode: boolean) => void;
 };
 
 export default function ImageWithArticles({
@@ -72,6 +77,11 @@ export default function ImageWithArticles({
   onArticleUpdate,
   // Nouvelle prop pour la mise à jour de position
   onArticlePositionUpdate,
+  // Nouvelle prop pour créer un article
+  onArticleCreate,
+  // Nouvelles props pour le mode création
+  createMode: externalCreateMode,
+  onCreateModeChange,
 }: ImageWithArticlesProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -104,6 +114,47 @@ export default function ImageWithArticles({
   const [deletingArticle, setDeletingArticle] = useState<Article | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // États pour le modal de création d'article
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    title: "",
+    description: "",
+    positionX: 50,
+    positionY: 50,
+    width: 20,
+    height: 15,
+  });
+  const [isCreating, setIsCreating] = useState(false);
+
+  // États pour le mode création interactive
+  const [createMode, setCreateMode] = useState(false);
+  const [isDrawingNew, setIsDrawingNew] = useState(false);
+  const [newArticleStart, setNewArticleStart] = useState({ x: 0, y: 0 });
+  const [newArticleEnd, setNewArticleEnd] = useState({ x: 0, y: 0 });
+  const [newArticleSize, setNewArticleSize] = useState({ width: 0, height: 0 });
+
+  // Synchroniser le mode création avec la prop externe
+  useEffect(() => {
+    if (externalCreateMode !== undefined && createMode !== externalCreateMode) {
+      setCreateMode(externalCreateMode);
+      if (!externalCreateMode) {
+        // Réinitialiser les états de dessin quand on sort du mode création
+        setIsDrawingNew(false);
+        setNewArticleStart({ x: 0, y: 0 });
+        setNewArticleEnd({ x: 0, y: 0 });
+        setNewArticleSize({ width: 0, height: 0 });
+      }
+    }
+  }, [externalCreateMode, createMode]);
+
+  // Notifier le changement de mode création
+  const updateCreateMode = useCallback((newMode: boolean) => {
+    setCreateMode(newMode);
+    if (onCreateModeChange) {
+      onCreateModeChange(newMode);
+    }
+  }, [onCreateModeChange]);
 
   // États pour le mode déplacement
   const [isDragging, setIsDragging] = useState(false);
@@ -172,15 +223,6 @@ export default function ImageWithArticles({
       scaleY,
       aspectRatio: originalAspectRatio,
     });
-
-    if (process.env.NODE_ENV !== "production") {
-      console.log("Image dimensions updated:", {
-        display: { width: displayWidth, height: displayHeight },
-        effective: { width: effectiveWidth, height: effectiveHeight },
-        original: { width: originalWidth, height: originalHeight },
-        scales: { x: scaleX, y: scaleY },
-      });
-    }
   }, [originalWidth, originalHeight]);
 
   // Gérer le redimensionnement et le montage initial
@@ -338,6 +380,31 @@ export default function ImageWithArticles({
     };
   }, [imageSize]);
 
+  // Fonction pour vérifier si un point est dans les limites de l'image
+  const isInImageBounds = useCallback((x: number, y: number) => {
+    if (!imageSize.displayWidth || !imageSize.displayHeight) return false;
+
+    // Calculer les décalages pour centrer l'image
+    const unusedWidth = containerRef.current?.clientWidth
+      ? containerRef.current.clientWidth - imageSize.displayWidth
+      : 0;
+    const unusedHeight = containerRef.current?.clientHeight
+      ? containerRef.current.clientHeight - imageSize.displayHeight
+      : 0;
+    const offsetX = unusedWidth / 2;
+    const offsetY = unusedHeight / 2;
+
+    // Vérifier si le point (x, y) est à l'intérieur de l'image (en tenant compte du décalage)
+    const imageLeft = offsetX;
+    const imageRight = offsetX + imageSize.displayWidth;
+    const imageTop = offsetY;
+    const imageBottom = offsetY + imageSize.displayHeight;
+
+    return (
+      x >= imageLeft && x <= imageRight && y >= imageTop && y <= imageBottom
+    );
+  }, [imageSize]);
+
   const handleDragStart = (e: React.MouseEvent, article: Article) => {
     e.stopPropagation();
     setDragMode(true);
@@ -410,8 +477,8 @@ export default function ImageWithArticles({
         width: article.width || 20,
         height: article.height || 20,
       });
-    } catch (error) {
-      console.error("Erreur lors du déplacement de l'article:", error);
+    } catch {
+      // TODO: Afficher un toast d'erreur
     } finally {
       // Réinitialiser les états
       setIsDragging(false);
@@ -556,8 +623,8 @@ export default function ImageWithArticles({
         width: constrainedWidth,
         height: constrainedHeight,
       });
-    } catch (error) {
-      console.error("Erreur lors du redimensionnement de l'article:", error);
+    } catch {
+      // TODO: Afficher un toast d'erreur
     } finally {
       // Réinitialiser les états
       setIsResizing(false);
@@ -572,94 +639,13 @@ export default function ImageWithArticles({
     }
   }, [isResizing, resizingArticleId, tempResizeSize, articles, imageSize, onArticlePositionUpdate]);
 
-  // Fonction pour centrer un article au milieu de l'image
-  const centerArticle = useCallback(async (articleId: string) => {
-    if (!onArticlePositionUpdate) return;
 
-    const article = articles.find(a => a.id === articleId);
-    if (!article) return;
 
-    try {
-      // Centrer l'article à 50%, 50% avec des dimensions par défaut si nécessaire
-      await onArticlePositionUpdate(articleId, {
-        positionX: 50, // Centre horizontal
-        positionY: 50, // Centre vertical
-        width: article.width || 20, // Garder la taille existante ou 20% par défaut
-        height: article.height || 20, // Garder la taille existante ou 20% par défaut
-      });
-      
-      console.log(`Article "${article.title}" repositionné au centre de l'image`);
-    } catch (error) {
-      console.error(`Erreur lors du centrage de l'article "${article.title}":`, error);
-    }
-  }, [articles, onArticlePositionUpdate]);
 
-  // Fonction pour corriger un article avec des dimensions invalides
-  const fixArticleDimensions = useCallback(async (articleId: string) => {
-    if (!onArticlePositionUpdate) return;
 
-    const article = articles.find(a => a.id === articleId);
-    if (!article) return;
 
-    try {
-      // Corriger les dimensions et la position
-      const correctedWidth = article.width && article.width > 100 ? 20 : (article.width || 20);
-      const correctedHeight = article.height && article.height > 100 ? 15 : (article.height || 15);
-      const correctedX = (article.positionX === 0 || !article.positionX) ? 50 : Math.max(5, Math.min(95, article.positionX));
-      const correctedY = (article.positionY === 0 || !article.positionY) ? 50 : Math.max(5, Math.min(95, article.positionY));
 
-      await onArticlePositionUpdate(articleId, {
-        positionX: correctedX,
-        positionY: correctedY,
-        width: correctedWidth,
-        height: correctedHeight,
-      });
-      
-      console.log(`Article "${article.title}" corrigé:`, {
-        ancien: { positionX: article.positionX, positionY: article.positionY, width: article.width, height: article.height },
-        nouveau: { positionX: correctedX, positionY: correctedY, width: correctedWidth, height: correctedHeight }
-      });
-    } catch (error) {
-      console.error(`Erreur lors de la correction de l'article "${article.title}":`, error);
-    }
-  }, [articles, onArticlePositionUpdate]);
 
-  // Fonction de debug pour afficher les positions des articles
-  const debugArticlePositions = useCallback(() => {
-    console.log("=== DEBUG: Positions des articles ===");
-    const outOfBounds: Article[] = [];
-    articles.forEach((article) => {
-      const isOutOfBounds = article.positionX && article.positionY && 
-        (article.positionX < 0 || article.positionX > 100 || 
-         article.positionY < 0 || article.positionY > 100);
-      
-      if (isOutOfBounds) {
-        outOfBounds.push(article);
-      }
-      
-      console.log(`Article: "${article.title}"`, {
-        id: article.id,
-        positionX: article.positionX,
-        positionY: article.positionY,
-        width: article.width,
-        height: article.height,
-        visible: article.positionX !== null && article.positionY !== null,
-        outOfBounds: isOutOfBounds
-      });
-    });
-    
-    if (outOfBounds.length > 0) {
-      console.warn("⚠️ Articles hors limites (0-100%) :", outOfBounds.map(a => a.title));
-    }
-    console.log("=====================================");
-  }, [articles]);
-
-  // Debug automatique quand les articles changent (en dev uniquement)
-  useEffect(() => {
-    if (process.env.NODE_ENV !== "production") {
-      debugArticlePositions();
-    }
-  }, [articles, debugArticlePositions]);
 
   // Gérer le clic/toucher sur un article
   const handleArticleInteraction = (
@@ -719,8 +705,7 @@ export default function ImageWithArticles({
       setEditModalOpen(false);
       setEditingArticle(null);
       setEditForm({ title: "", description: "" });
-    } catch (error) {
-      console.error("Erreur lors de la mise à jour de l'article:", error);
+    } catch {
       // TODO: Afficher un toast d'erreur
     } finally {
       setIsLoading(false);
@@ -755,8 +740,7 @@ export default function ImageWithArticles({
       setDeleteModalOpen(false);
       setDeletingArticle(null);
       setDeleteConfirmText("");
-    } catch (error) {
-      console.error("Erreur lors de la suppression de l'article:", error);
+    } catch {
       // TODO: Afficher un toast d'erreur
     } finally {
       setIsDeleting(false);
@@ -769,10 +753,83 @@ export default function ImageWithArticles({
     setDeleteConfirmText("");
   };
 
+  const openCreateModal = useCallback((positionX: number, positionY: number, width: number, height: number) => {
+    setCreateForm({
+      title: "",
+      description: "",
+      positionX,
+      positionY,
+      width,
+      height,
+    });
+    setCreateModalOpen(true);
+    updateCreateMode(false); // Sortir du mode création
+  }, [updateCreateMode]);
+
+  const handleSaveCreate = async () => {
+    if (!createForm.title.trim()) {
+      return; // Ne pas procéder si le titre est vide
+    }
+
+    if (!onArticleCreate) return;
+
+    setIsCreating(true);
+    try {
+      await onArticleCreate(createForm);
+      setCreateModalOpen(false);
+      setCreateForm({
+        title: "",
+        description: "",
+        positionX: 50,
+        positionY: 50,
+        width: 20,
+        height: 15,
+      });
+    } catch {
+      // TODO: Afficher un toast d'erreur
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleCancelCreate = () => {
+    setCreateModalOpen(false);
+    setCreateForm({
+      title: "",
+      description: "",
+      positionX: 50,
+      positionY: 50,
+      width: 20,
+      height: 15,
+    });
+  };
+
   // Fermer le popover quand on clique ailleurs
   const handleBackgroundClick = () => {
     setOpenPopoverId(null);
     if (onArticleHover) onArticleHover(null);
+  };
+
+  // Gérer le début du dessin (mousedown)
+  const handleBackgroundMouseDown = (e: React.MouseEvent) => {
+    // Si on est en mode création
+    if (createMode && !isDrawingNew && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      // Vérifier si le clic est dans les limites de l'image
+      if (!isInImageBounds(x, y)) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      
+      setNewArticleStart({ x, y });
+      setNewArticleEnd({ x, y });
+      setNewArticleSize({ width: 0, height: 0 });
+      setIsDrawingNew(true);
+      return;
+    }
   };
 
   // Gestion des événements de zoom pour fermer le popover
@@ -820,6 +877,20 @@ export default function ImageWithArticles({
         handleDragMove(e.clientX, e.clientY);
       } else if (isResizing) {
         handleResizeMove(e.clientX, e.clientY);
+      } else if (isDrawingNew && containerRef.current) {
+        // Gestion du dessin de nouvel article
+        const rect = containerRef.current.getBoundingClientRect();
+        const currentX = e.clientX - rect.left;
+        const currentY = e.clientY - rect.top;
+
+        // Mettre à jour la position de fin
+        setNewArticleEnd({ x: currentX, y: currentY });
+
+        // Calculer la taille du rectangle en cours de dessin
+        const width = Math.abs(currentX - newArticleStart.x);
+        const height = Math.abs(currentY - newArticleStart.y);
+
+        setNewArticleSize({ width, height });
       }
     };
 
@@ -828,6 +899,52 @@ export default function ImageWithArticles({
         handleDragEnd(e.clientX, e.clientY);
       } else if (isResizing) {
         handleResizeEnd();
+      } else if (isDrawingNew && containerRef.current) {
+        // Terminer le dessin de nouvel article  
+        const rect = containerRef.current.getBoundingClientRect();
+        const endX = e.clientX - rect.left;
+        const endY = e.clientY - rect.top;
+
+        const width = Math.abs(endX - newArticleStart.x);
+        const height = Math.abs(endY - newArticleStart.y);
+
+        // Vérifier que le rectangle a une taille minimale
+        if (width > 15 && height > 10) {
+          // Calculer la position du centre du rectangle
+          const centerX = (Math.min(newArticleStart.x, endX) + width / 2);
+          const centerY = (Math.min(newArticleStart.y, endY) + height / 2);
+
+          // Calculer les décalages pour centrer l'image
+          const unusedWidth = containerRef.current?.clientWidth
+            ? containerRef.current.clientWidth - imageSize.displayWidth
+            : 0;
+          const unusedHeight = containerRef.current?.clientHeight
+            ? containerRef.current.clientHeight - imageSize.displayHeight
+            : 0;
+          const offsetX = unusedWidth / 2;
+          const offsetY = unusedHeight / 2;
+
+          // Convertir en pourcentages
+          const positionXPercent = ((centerX - offsetX) / imageSize.displayWidth) * 100;
+          const positionYPercent = ((centerY - offsetY) / imageSize.displayHeight) * 100;
+          const widthPercent = (width / imageSize.displayWidth) * 100;
+          const heightPercent = (height / imageSize.displayHeight) * 100;
+
+          // Limiter les valeurs
+          const constrainedX = Math.max(5, Math.min(95, positionXPercent));
+          const constrainedY = Math.max(5, Math.min(95, positionYPercent));
+          const constrainedWidth = Math.max(5, Math.min(50, widthPercent));
+          const constrainedHeight = Math.max(3, Math.min(30, heightPercent));
+
+          // Ouvrir le modal avec les dimensions calculées
+          openCreateModal(constrainedX, constrainedY, constrainedWidth, constrainedHeight);
+        }
+
+        // Réinitialiser les états de dessin
+        setIsDrawingNew(false);
+        setNewArticleStart({ x: 0, y: 0 });
+        setNewArticleEnd({ x: 0, y: 0 });
+        setNewArticleSize({ width: 0, height: 0 });
       }
     };
 
@@ -851,6 +968,13 @@ export default function ImageWithArticles({
 
     const handleEscapeKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        if (createMode) {
+          updateCreateMode(false);
+          setIsDrawingNew(false);
+          setNewArticleStart({ x: 0, y: 0 });
+          setNewArticleEnd({ x: 0, y: 0 });
+          setNewArticleSize({ width: 0, height: 0 });
+        }
         if (dragMode) {
           setDragMode(false);
           setIsDragging(false);
@@ -868,7 +992,7 @@ export default function ImageWithArticles({
       }
     };
 
-    if (isDragging || isResizing) {
+    if (isDragging || isResizing || isDrawingNew) {
       document.addEventListener('mousemove', handleGlobalMouseMove);
       document.addEventListener('mouseup', handleGlobalMouseUp);
       document.addEventListener('mouseleave', handleMouseLeave);
@@ -884,7 +1008,7 @@ export default function ImageWithArticles({
       window.removeEventListener('blur', handleMouseLeave);
       document.removeEventListener('keydown', handleEscapeKey);
     };
-  }, [isDragging, isResizing, handleDragMove, handleDragEnd, handleResizeMove, handleResizeEnd, dragMode, resizeMode]);
+  }, [isDragging, isResizing, isDrawingNew, handleDragMove, handleDragEnd, handleResizeMove, handleResizeEnd, dragMode, resizeMode, createMode, newArticleStart, imageSize, openCreateModal, updateCreateMode]);
 
   // Ne rien afficher pendant le premier rendu côté client
   if (!mounted) {
@@ -894,8 +1018,14 @@ export default function ImageWithArticles({
   return (
     <div
       ref={containerRef}
-      className={`relative overflow-hidden ${className}`}
-      style={{ width: "100%", position: "relative" }}
+      className={`relative overflow-hidden ${className} ${createMode ? 'cursor-crosshair' : ''}`}
+      style={{ 
+        width: "100%", 
+        position: "relative",
+        // @ts-expect-error - CSS custom properties
+        '--tooltip-delay': '100ms'
+      }}
+      onMouseDown={handleBackgroundMouseDown}
       onClick={handleBackgroundClick}
     >
       {/* Indicateur du mode déplacement */}
@@ -924,54 +1054,26 @@ export default function ImageWithArticles({
         </div>
       )}
 
-      {/* Bouton de debug en mode développement */}
-      {process.env.NODE_ENV !== "production" && (
-        <div className="absolute top-2 right-2 z-30 space-y-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={debugArticlePositions}
-            className="bg-white/90 text-xs"
-          >
-            Debug positions
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
+      {/* Indicateur du mode création */}
+      {createMode && (
+        <div className="absolute top-2 left-2 z-30 bg-purple-500 text-white px-3 py-1 rounded-md text-sm font-medium">
+          Mode création actif - Cliquez et glissez pour dessiner un article
+          <button
             onClick={() => {
-              const lostArticle = articles.find(a => a.title.includes("Place de jeux"));
-              if (lostArticle) {
-                centerArticle(lostArticle.id);
-              }
+              updateCreateMode(false);
+              setIsDrawingNew(false);
+              setNewArticleStart({ x: 0, y: 0 });
+              setNewArticleEnd({ x: 0, y: 0 });
+              setNewArticleSize({ width: 0, height: 0 });
             }}
-            className="bg-yellow-100 text-yellow-800 text-xs"
+            className="ml-2 text-purple-200 hover:text-white"
           >
-            Retrouver &quot;Place de jeux&quot;
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              // Centrer l'article "Grand sanitaire" avec des dimensions correctes
-              centerArticle('f50402ca-ef55-465f-a413-4995664576d3');
-            }}
-            className="bg-red-100 text-red-800 text-xs"
-          >
-            Centrer &quot;Grand sanitaire&quot;
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              // Corriger les dimensions de l'article "Grand sanitaire"
-              fixArticleDimensions('f50402ca-ef55-465f-a413-4995664576d3');
-            }}
-            className="bg-orange-100 text-orange-800 text-xs"
-          >
-            Corriger dimensions
-          </Button>
+            ✕
+          </button>
         </div>
       )}
+
+
 
       <Image
         ref={imageRef as React.Ref<HTMLImageElement>}
@@ -1027,7 +1129,7 @@ export default function ImageWithArticles({
                     isEditable ? "z-10" : ""
                   } ${isDragging && draggingArticleId === article.id ? "opacity-75 z-20" : ""} ${
                     isResizing && resizingArticleId === article.id ? "opacity-75 z-20" : ""
-                  }`}
+                  } fast-tooltip`}
                   style={{
                     ...articleStyle,
                     zIndex: (isDragging && draggingArticleId === article.id) || (isResizing && resizingArticleId === article.id) ? 20 : (isActive ? 10 : 5),
@@ -1035,6 +1137,10 @@ export default function ImageWithArticles({
                                    resizeMode ? "rgba(34, 197, 94, 0.3)" : "rgba(0, 0, 0, 0.2)",
                   }}
                   onClick={(e: React.MouseEvent) => {
+                    if (createMode) {
+                      e.stopPropagation();
+                      return; // En mode création, ne pas interagir avec les articles existants
+                    }
                     if (dragMode || resizeMode) {
                       e.stopPropagation();
                       return; // En mode déplacement ou redimensionnement, ne pas ouvrir le popover au clic
@@ -1046,6 +1152,10 @@ export default function ImageWithArticles({
                     handleArticleInteraction(e, article);
                   }}
                   onMouseDown={(e: React.MouseEvent) => {
+                    if (createMode) {
+                      e.stopPropagation();
+                      return; // En mode création, ne pas permettre le drag/resize
+                    }
                     if (dragMode && onArticlePositionUpdate && !resizeMode) {
                       // Ne déclencher le drag que si on n'est pas en train de redimensionner
                       const target = e.target as HTMLElement;
@@ -1206,23 +1316,7 @@ export default function ImageWithArticles({
                     )}
                   </div>
 
-                  {/* Bouton pour centrer l'article si la fonction de mise à jour de position est disponible */}
-                  {onArticlePositionUpdate && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        centerArticle(article.id);
-                        setOpenPopoverId(null);
-                      }}
-                      className="w-full flex items-center gap-2"
-                    >
-                      <div className="w-4 h-4 border border-current rounded-sm flex items-center justify-center">
-                        <div className="w-1 h-1 bg-current rounded-full"></div>
-                      </div>
-                      Centrer l&apos;article
-                    </Button>
-                  )}
+
 
                   {/* Bouton pour voir/gérer les tâches si pas d'actions spécifiques */}
                   {onArticleClick && (
@@ -1250,7 +1344,7 @@ export default function ImageWithArticles({
               isActive ? "border-blue-500" : "border-white"
             } rounded-md shadow-md overflow-hidden cursor-pointer pointer-events-auto ${
               isEditable ? "z-10" : ""
-            }`}
+            } fast-tooltip`}
             style={{
               ...articleStyle,
               zIndex: isActive ? 10 : 5,
@@ -1265,6 +1359,19 @@ export default function ImageWithArticles({
           </div>
         );
       })}
+
+      {/* Rectangle de dessin pour le nouvel article */}
+      {isDrawingNew && newArticleSize.width > 0 && newArticleSize.height > 0 && (
+        <div
+          className="absolute border-2 border-purple-500 border-dashed bg-purple-500 bg-opacity-20 pointer-events-none z-20"
+          style={{
+            left: `${Math.min(newArticleStart.x, newArticleEnd.x)}px`,
+            top: `${Math.min(newArticleStart.y, newArticleEnd.y)}px`,
+            width: `${newArticleSize.width}px`,
+            height: `${newArticleSize.height}px`,
+          }}
+        />
+      )}
 
       {/* Modal d'édition */}
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
@@ -1379,6 +1486,110 @@ export default function ImageWithArticles({
               }
             >
               {isDeleting ? "Suppression..." : "Supprimer définitivement"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de création d'article */}
+      <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Créer un nouvel article</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              {/* @ts-expect-error - Types issue with shadcn/ui Label children prop */}
+              <Label htmlFor="createTitle">Titre</Label>
+              <Input
+                id="createTitle"
+                value={createForm.title}
+                onChange={(e) =>
+                  setCreateForm({ ...createForm, title: e.target.value })
+                }
+                placeholder="Titre de l'article"
+              />
+            </div>
+            <div>
+              {/* @ts-expect-error - Types issue with shadcn/ui Label children prop */}
+              <Label htmlFor="createDescription">Description</Label>
+              <Textarea
+                id="createDescription"
+                value={createForm.description}
+                onChange={(e) =>
+                  setCreateForm({ ...createForm, description: e.target.value })
+                }
+                placeholder="Description de l'article (optionnelle)"
+                rows={3}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                {/* @ts-expect-error - Types issue with shadcn/ui Label children prop */}
+                <Label htmlFor="createPositionX">Position X (%)</Label>
+                <Input
+                  id="createPositionX"
+                  type="number"
+                  min={5}
+                  max={95}
+                  value={createForm.positionX}
+                  onChange={(e) =>
+                    setCreateForm({ ...createForm, positionX: Number(e.target.value) })
+                  }
+                />
+              </div>
+              <div>
+                {/* @ts-expect-error - Types issue with shadcn/ui Label children prop */}
+                <Label htmlFor="createPositionY">Position Y (%)</Label>
+                <Input
+                  id="createPositionY"
+                  type="number"
+                  min={5}
+                  max={95}
+                  value={createForm.positionY}
+                  onChange={(e) =>
+                    setCreateForm({ ...createForm, positionY: Number(e.target.value) })
+                  }
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                {/* @ts-expect-error - Types issue with shadcn/ui Label children prop */}
+                <Label htmlFor="createWidth">Largeur (%)</Label>
+                <Input
+                  id="createWidth"
+                  type="number"
+                  min={5}
+                  max={50}
+                  value={createForm.width}
+                  onChange={(e) =>
+                    setCreateForm({ ...createForm, width: Number(e.target.value) })
+                  }
+                />
+              </div>
+              <div>
+                {/* @ts-expect-error - Types issue with shadcn/ui Label children prop */}
+                <Label htmlFor="createHeight">Hauteur (%)</Label>
+                <Input
+                  id="createHeight"
+                  type="number"
+                  min={3}
+                  max={30}
+                  value={createForm.height}
+                  onChange={(e) =>
+                    setCreateForm({ ...createForm, height: Number(e.target.value) })
+                  }
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancelCreate}>
+              Annuler
+            </Button>
+            <Button onClick={handleSaveCreate} disabled={isCreating || !createForm.title.trim()}>
+              {isCreating ? "Création..." : "Créer l'article"}
             </Button>
           </DialogFooter>
         </DialogContent>
