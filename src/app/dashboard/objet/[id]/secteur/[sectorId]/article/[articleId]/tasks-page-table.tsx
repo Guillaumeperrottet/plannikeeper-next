@@ -470,10 +470,78 @@ export default function TasksPage({
         ) : (
           <div className="flex-1 flex flex-col">
             {/* Clean header like dashboard */}
-            <div className="px-6 py-4">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex-1">
-                  <h1 className="text-2xl font-semibold text-gray-900">
+            <div className="px-4 md:px-6 py-4">
+              {/* Desktop layout - original design */}
+              <div className="hidden md:block">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex-1">
+                    <h1 className="text-2xl font-semibold text-gray-900">
+                      {articleTitle}
+                    </h1>
+                    {isEditingDescription ? (
+                      <div className="mt-1 max-w-sm">
+                        <Input
+                          ref={descriptionInputRef}
+                          value={editedDescription}
+                          onChange={(e) => setEditedDescription(e.target.value)}
+                          onKeyDown={handleDescriptionKeyDown}
+                          onBlur={handleDescriptionSave}
+                          placeholder="Ajouter une description..."
+                          className="text-sm border-gray-200 focus:border-gray-400"
+                        />
+                      </div>
+                    ) : (
+                      <p
+                        className="text-sm text-gray-500 mt-1 cursor-pointer hover:text-gray-700 transition-colors"
+                        onClick={handleDescriptionEdit}
+                        title="Cliquer pour modifier"
+                      >
+                        {articleDescription || "Ajouter une description..."}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="relative inline-block">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <Input
+                        ref={searchInputRef}
+                        type="text"
+                        placeholder="Rechercher par nom, statut ou autre..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10 pr-8 border-gray-200"
+                        style={{
+                          width: searchQuery
+                            ? `${Math.max(200, (searchQuery.length + 5) * 8)}px`
+                            : "280px",
+                        }}
+                      />
+                      {searchQuery && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSearchQuery("")}
+                          className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                    <Button
+                      onClick={handleNewTask}
+                      className="gap-2 bg-gray-900 hover:bg-gray-800 text-white"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Nouvelle tâche
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mobile layout - responsive design */}
+              <div className="md:hidden">
+                <div className="mb-4">
+                  <h1 className="text-xl font-semibold text-gray-900">
                     {articleTitle}
                   </h1>
                   {isEditingDescription ? (
@@ -498,8 +566,9 @@ export default function TasksPage({
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="relative inline-block">
+
+                <div className="flex flex-col gap-3 mb-4">
+                  <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <Input
                       ref={searchInputRef}
@@ -507,12 +576,7 @@ export default function TasksPage({
                       placeholder="Rechercher par nom, statut ou autre..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 pr-8 border-gray-200"
-                      style={{
-                        width: searchQuery
-                          ? `${Math.max(200, (searchQuery.length + 5) * 8)}px`
-                          : "280px",
-                      }}
+                      className="pl-10 pr-8 border-gray-200 w-full"
                     />
                     {searchQuery && (
                       <Button
@@ -530,13 +594,13 @@ export default function TasksPage({
                     className="gap-2 bg-gray-900 hover:bg-gray-800 text-white"
                   >
                     <Plus className="w-4 h-4" />
-                    Nouvelle tâche
+                    Nouvelle
                   </Button>
                 </div>
               </div>
 
               {/* Filter buttons like dashboard */}
-              <div className="flex items-center gap-2">
+              <div className="hidden md:flex items-center gap-2">
                 <button
                   onClick={() => setActiveFilter("all")}
                   className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
@@ -601,6 +665,83 @@ export default function TasksPage({
                 )}
 
                 <div className="ml-auto text-sm text-gray-500">
+                  {filteredTasks.length} résultats
+                </div>
+              </div>
+
+              {/* Mobile filter buttons - responsive scroll */}
+              <div className="md:hidden">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
+                    <button
+                      onClick={() => setActiveFilter("all")}
+                      className={`px-3 py-1.5 text-sm font-medium rounded transition-colors whitespace-nowrap ${
+                        activeFilter === "all"
+                          ? "bg-gray-900 text-white"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      Toutes
+                    </button>
+                    <button
+                      onClick={() => setActiveFilter("pending")}
+                      className={`px-3 py-1.5 text-sm font-medium rounded transition-colors whitespace-nowrap ${
+                        activeFilter === "pending"
+                          ? "bg-gray-900 text-white"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      À faire
+                    </button>
+                    <button
+                      onClick={() => setActiveFilter("in_progress")}
+                      className={`px-3 py-1.5 text-sm font-medium rounded transition-colors whitespace-nowrap ${
+                        activeFilter === "in_progress"
+                          ? "bg-gray-900 text-white"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      En cours
+                    </button>
+                    <button
+                      onClick={() => setActiveFilter("completed")}
+                      className={`px-3 py-1.5 text-sm font-medium rounded transition-colors whitespace-nowrap ${
+                        activeFilter === "completed"
+                          ? "bg-gray-900 text-white"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      Terminées
+                    </button>
+                    <button
+                      onClick={() => setActiveFilter("cancelled")}
+                      className={`px-3 py-1.5 text-sm font-medium rounded transition-colors whitespace-nowrap ${
+                        activeFilter === "cancelled"
+                          ? "bg-gray-900 text-white"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      Annulées
+                    </button>
+
+                    {/* Archive button for completed tasks */}
+                    {filteredTasks.some(
+                      (task) => task.status === "completed"
+                    ) && (
+                      <div className="ml-2 pl-2 border-l border-gray-300">
+                        <ArchiveCompletedButton
+                          completedTasks={filteredTasks.filter(
+                            (task) => task.status === "completed"
+                          )}
+                          onArchiveCompleted={handleBulkArchiveCompleted}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Results count for mobile */}
+                <div className="text-sm text-gray-500 mb-2">
                   {filteredTasks.length} résultats
                 </div>
               </div>
