@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import TaskFormMobileOptimized from "./TaskFormMobileOptimized";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import TaskForm from "./task-form";
 import ArchiveCompletedButton from "./ArchiveCompletedButton";
 import {
@@ -37,6 +38,8 @@ import {
   ArrowDown,
   ArrowUpDown,
   Check,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 type User = {
@@ -64,6 +67,13 @@ type Task = {
   createdAt: Date;
   updatedAt: Date;
   archived?: boolean;
+  documents?: {
+    id: string;
+    name: string;
+    filePath: string;
+    fileSize: number;
+    fileType: string;
+  }[]; // Documents attachés à la tâche (incluant les images)
 };
 
 export default function TasksPage({
@@ -72,6 +82,8 @@ export default function TasksPage({
   articleId,
   articleTitle,
   articleDescription,
+  objetId,
+  sectorId,
 }: {
   initialTasks: Task[];
   users: User[];
@@ -81,21 +93,28 @@ export default function TasksPage({
   objetId: string;
   sectorId: string;
 }) {
+  const router = useRouter();
   const [tasks, setTasks] = useState<Task[]>(
     initialTasks.filter((task) => !task.archived)
   );
+
   const [filteredTasks, setFilteredTasks] = useState<Task[]>(initialTasks);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [useOptimizedForm] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [editedDescription, setEditedDescription] = useState(
     articleDescription || ""
   );
+  const [selectedImage, setSelectedImage] = useState<{
+    src: string;
+    alt: string;
+    images: string[];
+    currentIndex: number;
+  } | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const descriptionInputRef = useRef<HTMLInputElement>(null);
@@ -136,13 +155,54 @@ export default function TasksPage({
   };
 
   const handleTaskClick = (taskId: string) => {
-    setSelectedTaskId(taskId);
-    setShowAddForm(true);
+    router.push(
+      `/dashboard/objet/${objetId}/secteur/${sectorId}/article/${articleId}/task/${taskId}`
+    );
   };
 
+  const handleImageClick = (
+    imageSrc: string,
+    taskName: string,
+    e: React.MouseEvent,
+    allImages: string[],
+    currentIndex: number = 0
+  ) => {
+    e.stopPropagation(); // Empêcher l'ouverture du formulaire de tâche
+    setSelectedImage({
+      src: imageSrc,
+      alt: `Image de la tâche: ${taskName}`,
+      images: allImages,
+      currentIndex,
+    });
+  };
+
+  const closeImageModal = () => {
+    setSelectedImage(null);
+  };
+
+  const navigateImage = useCallback(
+    (direction: "prev" | "next") => {
+      if (!selectedImage || selectedImage.images.length <= 1) return;
+
+      const newIndex =
+        direction === "next"
+          ? (selectedImage.currentIndex + 1) % selectedImage.images.length
+          : (selectedImage.currentIndex - 1 + selectedImage.images.length) %
+            selectedImage.images.length;
+
+      setSelectedImage({
+        ...selectedImage,
+        src: selectedImage.images[newIndex],
+        currentIndex: newIndex,
+      });
+    },
+    [selectedImage]
+  );
+
   const handleEditTask = (taskId: string) => {
-    setSelectedTaskId(taskId);
-    setShowAddForm(true);
+    router.push(
+      `/dashboard/objet/${objetId}/secteur/${sectorId}/article/${articleId}/task/${taskId}`
+    );
   };
 
   const handleNewTask = () => {
@@ -392,6 +452,34 @@ export default function TasksPage({
     }
   }, [isEditingDescription]);
 
+  // Handle keyboard events for image modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (selectedImage) {
+        if (e.key === "Escape") {
+          closeImageModal();
+        } else if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          navigateImage("prev");
+        } else if (e.key === "ArrowRight") {
+          e.preventDefault();
+          navigateImage("next");
+        }
+      }
+    };
+
+    if (selectedImage) {
+      document.addEventListener("keydown", handleKeyDown);
+      // Empêcher le scroll de la page quand la modal est ouverte
+      document.body.style.overflow = "hidden";
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "unset";
+    };
+  }, [selectedImage, navigateImage]);
+
   const getSelectedTask = () => {
     if (!selectedTaskId) return undefined;
     return tasks.find((task) => task.id === selectedTaskId) || undefined;
@@ -442,8 +530,8 @@ export default function TasksPage({
         className="flex-1 overflow-hidden flex flex-col md:flex-row"
       >
         {showAddForm ? (
-          useOptimizedForm ? (
-            <TaskFormMobileOptimized
+          <div className="flex-1 overflow-auto p-6">
+            <TaskForm
               task={getSelectedTask()}
               users={users}
               articleId={articleId}
@@ -453,20 +541,7 @@ export default function TasksPage({
                 setSelectedTaskId(null);
               }}
             />
-          ) : (
-            <div className="flex-1 overflow-auto p-6">
-              <TaskForm
-                task={getSelectedTask()}
-                users={users}
-                articleId={articleId}
-                onSave={handleTaskSave}
-                onCancel={() => {
-                  setShowAddForm(false);
-                  setSelectedTaskId(null);
-                }}
-              />
-            </div>
-          )
+          </div>
         ) : (
           <div className="flex-1 flex flex-col">
             {/* Clean header like dashboard */}
@@ -501,7 +576,7 @@ export default function TasksPage({
                     )}
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="relative inline-block">
+                    <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <Input
                         ref={searchInputRef}
@@ -509,12 +584,13 @@ export default function TasksPage({
                         placeholder="Rechercher par nom, statut ou autre..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10 pr-8 border-gray-200"
-                        style={{
-                          width: searchQuery
-                            ? `${Math.max(200, (searchQuery.length + 5) * 8)}px`
-                            : "280px",
-                        }}
+                        className={`pl-10 pr-8 border-gray-200 transition-all duration-200 ${
+                          searchQuery && searchQuery.length > 20
+                            ? "w-96"
+                            : searchQuery && searchQuery.length > 10
+                            ? "w-80"
+                            : "w-72"
+                        }`}
                       />
                       {searchQuery && (
                         <Button
@@ -752,7 +828,7 @@ export default function TasksPage({
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent border-b">
-                    <TableHead className="text-xs font-medium text-gray-500 py-3 px-6">
+                    <TableHead className="w-[120px] text-xs font-medium text-gray-500 py-3 px-6">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -763,7 +839,7 @@ export default function TasksPage({
                         {getSortIcon("status")}
                       </Button>
                     </TableHead>
-                    <TableHead className="text-xs font-medium text-gray-500 py-3">
+                    <TableHead className="w-[280px] text-xs font-medium text-gray-500 py-3">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -773,6 +849,9 @@ export default function TasksPage({
                         TÂCHE
                         {getSortIcon("name")}
                       </Button>
+                    </TableHead>
+                    <TableHead className="w-[100px] text-xs font-medium text-gray-500 py-3">
+                      IMAGE
                     </TableHead>
                     <TableHead className="w-[140px] text-xs font-medium text-gray-500 py-3">
                       <Button
@@ -825,7 +904,7 @@ export default function TasksPage({
                 <TableBody>
                   {filteredTasks.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-12">
+                      <TableCell colSpan={8} className="text-center py-12">
                         <div className="flex flex-col items-center justify-center text-gray-500 space-y-2">
                           <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
                             <Search className="w-6 h-6" />
@@ -850,22 +929,85 @@ export default function TasksPage({
                         className="hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100"
                         onClick={() => handleTaskClick(task.id)}
                       >
-                        <TableCell className="py-3 px-6">
+                        <TableCell className="py-3 px-6 w-[120px]">
                           <StatusBadge status={task.status} />
                         </TableCell>
-                        <TableCell className="py-3">
+                        <TableCell className="py-3 w-[280px] max-w-[280px]">
                           <div className="space-y-1">
                             <div className="font-medium text-sm text-gray-900 flex items-center gap-2">
-                              {task.name}
+                              <span className="truncate" title={task.name}>
+                                {task.name}
+                              </span>
                               {task.recurring && (
-                                <RefreshCcw className="w-3 h-3 text-gray-400" />
+                                <RefreshCcw className="w-3 h-3 text-gray-400 flex-shrink-0" />
                               )}
                             </div>
                             {task.description && (
-                              <div className="text-xs text-gray-500 line-clamp-1">
+                              <div
+                                className="text-xs text-gray-500 line-clamp-2 truncate"
+                                title={task.description}
+                              >
                                 {task.description}
                               </div>
                             )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-3 w-[100px]">
+                          <div className="flex items-center">
+                            {(() => {
+                              // Filtrer les documents qui sont des images
+                              const imageDocuments =
+                                task.documents?.filter((doc) =>
+                                  doc.fileType.startsWith("image/")
+                                ) || [];
+
+                              if (imageDocuments.length > 0) {
+                                const imageUrls = imageDocuments.map(
+                                  (doc) => doc.filePath
+                                );
+                                return (
+                                  <div className="relative">
+                                    <div
+                                      className="cursor-pointer hover:opacity-80 transition-opacity"
+                                      onClick={(e) =>
+                                        handleImageClick(
+                                          imageDocuments[0].filePath,
+                                          task.name,
+                                          e,
+                                          imageUrls,
+                                          0
+                                        )
+                                      }
+                                    >
+                                      <Image
+                                        src={imageDocuments[0].filePath}
+                                        alt="Task preview"
+                                        width={32}
+                                        height={32}
+                                        className="w-8 h-8 object-cover rounded border border-gray-200"
+                                        onError={() => {
+                                          console.log(
+                                            "Image failed to load:",
+                                            imageDocuments[0].filePath
+                                          );
+                                        }}
+                                      />
+                                    </div>
+                                    {imageDocuments.length > 1 && (
+                                      <span className="absolute -top-1 -right-1 bg-gray-800 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                                        +{imageDocuments.length - 1}
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              } else {
+                                return (
+                                  <span className="text-sm text-gray-400">
+                                    -
+                                  </span>
+                                );
+                              }
+                            })()}
                           </div>
                         </TableCell>
                         <TableCell className="py-3">
@@ -1017,6 +1159,63 @@ export default function TasksPage({
           </div>
         )}
       </div>
+
+      {/* Image Modal */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
+          onClick={closeImageModal}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] w-full h-full flex items-center justify-center">
+            <Image
+              src={selectedImage.src}
+              alt={selectedImage.alt}
+              width={800}
+              height={600}
+              className="max-w-full max-h-full object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+
+            {/* Navigation buttons - only show if there are multiple images */}
+            {selectedImage.images.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateImage("prev");
+                  }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black bg-opacity-50 hover:bg-opacity-75 rounded-full p-3 transition-colors"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateImage("next");
+                  }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black bg-opacity-50 hover:bg-opacity-75 rounded-full p-3 transition-colors"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+
+                {/* Image counter */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white bg-black bg-opacity-50 px-3 py-1 rounded-full text-sm">
+                  {selectedImage.currentIndex + 1} /{" "}
+                  {selectedImage.images.length}
+                </div>
+              </>
+            )}
+
+            {/* Close button */}
+            <button
+              onClick={closeImageModal}
+              className="absolute top-4 right-4 text-white bg-black bg-opacity-50 hover:bg-opacity-75 rounded-full p-2 transition-all"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

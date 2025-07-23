@@ -1,13 +1,12 @@
-// src/app/dashboard/objet/[id]/sector/[sectorId]/article/[articleId]/page.tsx
+// src/app/dashboard/objet/[id]/secteur/[sectorId]/article/[articleId]/task/new/page.tsx
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
-import TasksPage from "./tasks-page-table";
+import TaskForm from "../../task-form";
 
-export default async function ArticleDetailPage({
+export default async function NewTaskPage({
   params,
 }: {
-  // params is now a Promise resolving the dynamic route params
   params: Promise<{ id: string; sectorId: string; articleId: string }>;
 }) {
   const session = await getUser();
@@ -15,23 +14,12 @@ export default async function ArticleDetailPage({
     redirect("/signin");
   }
 
-  // await the params promise and destructure the values
   const { id: objetId, sectorId, articleId } = await params;
 
-  // Récupérer l'article avec ses tâches et le secteur parent
+  // Vérifier que l'article existe et que l'utilisateur a accès
   const article = await prisma.article.findUnique({
     where: { id: articleId },
     include: {
-      tasks: {
-        where: {
-          archived: false, // Filtrer les tâches archivées ici
-        },
-        include: {
-          assignedTo: true,
-          documents: true,
-        },
-        orderBy: { createdAt: "desc" },
-      },
       sector: { include: { object: true } },
     },
   });
@@ -40,11 +28,12 @@ export default async function ArticleDetailPage({
     redirect(`/dashboard/objet/${objetId}/view`);
   }
 
-  // Vérifier que l'utilisateur appartient à la même organisation que l'objet
+  // Vérifier que l'utilisateur appartient à la même organisation
   const userWithOrg = await prisma.user.findUnique({
     where: { id: session.id },
     include: { Organization: true },
   });
+
   if (
     !userWithOrg?.Organization ||
     userWithOrg.Organization.id !== article.sector.object.organizationId
@@ -66,14 +55,20 @@ export default async function ArticleDetailPage({
   }));
 
   return (
-    <TasksPage
-      initialTasks={article.tasks}
-      users={users}
-      articleId={article.id}
-      articleTitle={article.title}
-      articleDescription={article.description}
-      objetId={objetId}
-      sectorId={sectorId}
-    />
+    <div className="flex-1 overflow-auto p-6">
+      <TaskForm
+        task={undefined}
+        users={users}
+        articleId={articleId}
+        onSave={async (taskData) => {
+          "use server";
+          // Cette fonction sera appelée côté serveur pour créer la tâche
+          // Rediriger vers la liste des tâches après création
+        }}
+        onCancel={() => {
+          // Cette fonction redirigera vers la liste des tâches
+        }}
+      />
+    </div>
   );
 }
