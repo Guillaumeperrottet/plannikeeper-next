@@ -73,7 +73,7 @@ export default async function RootLayout({
         {/* Favicon et icônes */}
         <link rel="icon" href="/icons/favicon.ico" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-        {/* Google tag (gtag.js) - Chargement différé */}
+        {/* Google tag (gtag.js) */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-291XG7LXT7"
           strategy="afterInteractive"
@@ -83,10 +83,7 @@ export default async function RootLayout({
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-    gtag('config', 'G-291XG7LXT7', {
-      page_title: document.title,
-      page_location: window.location.href
-    });
+    gtag('config', 'G-291XG7LXT7');
   `}
         </Script>
         <Analytics />
