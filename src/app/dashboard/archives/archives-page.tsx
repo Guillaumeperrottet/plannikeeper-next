@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Search,
   Calendar,
@@ -20,9 +20,13 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Badge } from "@/app/components/ui/badge";
@@ -72,6 +76,13 @@ type Task = {
       };
     };
   };
+  documents?: {
+    id: string;
+    name: string;
+    filePath: string;
+    fileSize: number;
+    fileType: string;
+  }[];
 };
 
 type Object = {
@@ -108,12 +119,18 @@ export default function ArchivesPage() {
   const [sortField, setSortField] = useState<string>("archivedAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
+  // États pour la gestion des images
+  const [selectedImage, setSelectedImage] = useState<{
+    src: string;
+    alt: string;
+    images: string[];
+    currentIndex: number;
+  } | null>(null);
+
   // Métadonnées pour les filtres
   const [taskTypes, setTaskTypes] = useState<string[]>([]);
   const [articles, setArticles] = useState<ArticleOption[]>([]);
   const [assignees, setAssignees] = useState<AssigneeOption[]>([]);
-
-  const printRef = useRef<HTMLDivElement>(null);
 
   // Récupération des tâches archivées avec filtres
   const fetchArchivedTasks = useCallback(async () => {
@@ -272,6 +289,73 @@ export default function ArchivesPage() {
     return new Date(dateString).toLocaleDateString();
   };
 
+  // Fonctions de gestion des images
+  const handleImageClick = (
+    imageSrc: string,
+    taskName: string,
+    e: React.MouseEvent,
+    allImages: string[],
+    currentIndex: number = 0
+  ) => {
+    e.stopPropagation();
+    setSelectedImage({
+      src: imageSrc,
+      alt: `Image de la tâche: ${taskName}`,
+      images: allImages,
+      currentIndex,
+    });
+  };
+
+  const closeImageModal = () => {
+    setSelectedImage(null);
+  };
+
+  const navigateImage = useCallback(
+    (direction: "prev" | "next") => {
+      if (!selectedImage || selectedImage.images.length <= 1) return;
+
+      const newIndex =
+        direction === "next"
+          ? (selectedImage.currentIndex + 1) % selectedImage.images.length
+          : (selectedImage.currentIndex - 1 + selectedImage.images.length) %
+            selectedImage.images.length;
+
+      setSelectedImage({
+        ...selectedImage,
+        src: selectedImage.images[newIndex],
+        currentIndex: newIndex,
+      });
+    },
+    [selectedImage]
+  );
+
+  // Handle keyboard events for image modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (selectedImage) {
+        if (e.key === "Escape") {
+          closeImageModal();
+        } else if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          navigateImage("prev");
+        } else if (e.key === "ArrowRight") {
+          e.preventDefault();
+          navigateImage("next");
+        }
+      }
+    };
+
+    if (selectedImage) {
+      document.addEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "hidden";
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "unset";
+    };
+  }, [selectedImage, navigateImage]);
+
   // Gestionnaire d'archive
   const handleArchiveToggle = (taskId: string, newArchiveState: boolean) => {
     if (!newArchiveState) {
@@ -289,8 +373,6 @@ export default function ArchivesPage() {
 
   // Impression
   const handlePrint = () => {
-    if (!printRef.current) return;
-
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       toast.error("Impossible d'ouvrir la fenêtre d'impression");
@@ -410,7 +492,7 @@ export default function ArchivesPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Zone de contenu principal unifiée */}
-      <main className="max-w-[1400px] mx-auto px-4 py-4">
+      <main className="max-w-[1600px] mx-auto px-4 py-4">
         <Card className="w-full">
           <CardHeader className="space-y-4 pb-4">
             {/* En-tête avec titre et bouton d'impression */}
@@ -688,6 +770,9 @@ export default function ArchivesPage() {
                             {getSortIcon("taskType")}
                           </Button>
                         </TableHead>
+                        <TableHead className="hidden md:table-cell w-[100px] text-xs font-medium text-gray-500 py-3">
+                          IMAGE
+                        </TableHead>
                         <TableHead className="hidden sm:table-cell text-xs font-medium text-gray-500 py-3">
                           OBJET
                         </TableHead>
@@ -763,6 +848,64 @@ export default function ArchivesPage() {
                                 Non défini
                               </span>
                             )}
+                          </TableCell>
+
+                          <TableCell className="hidden md:table-cell">
+                            <div className="flex items-center gap-1">
+                              {task.documents && task.documents.length > 0 ? (
+                                (() => {
+                                  const imageDocuments = task.documents.filter(
+                                    (doc) => doc.fileType.startsWith("image/")
+                                  );
+
+                                  if (imageDocuments.length === 0) {
+                                    return (
+                                      <span className="text-xs text-muted-foreground">
+                                        Aucune image
+                                      </span>
+                                    );
+                                  }
+
+                                  const allImages = imageDocuments.map(
+                                    (doc) => doc.filePath
+                                  );
+
+                                  return (
+                                    <div className="flex items-center gap-1">
+                                      <div
+                                        className="w-8 h-8 rounded border border-gray-200 overflow-hidden cursor-pointer hover:border-gray-300 transition-colors"
+                                        onClick={(e) =>
+                                          handleImageClick(
+                                            imageDocuments[0].filePath,
+                                            task.name,
+                                            e,
+                                            allImages,
+                                            0
+                                          )
+                                        }
+                                      >
+                                        <Image
+                                          src={imageDocuments[0].filePath}
+                                          alt={`Image ${task.name}`}
+                                          width={32}
+                                          height={32}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      </div>
+                                      {imageDocuments.length > 1 && (
+                                        <span className="text-xs text-muted-foreground">
+                                          +{imageDocuments.length - 1}
+                                        </span>
+                                      )}
+                                    </div>
+                                  );
+                                })()
+                              ) : (
+                                <span className="text-xs text-muted-foreground">
+                                  Aucune image
+                                </span>
+                              )}
+                            </div>
                           </TableCell>
 
                           <TableCell className="hidden sm:table-cell">
@@ -853,6 +996,63 @@ export default function ArchivesPage() {
           </CardContent>
         </Card>
       </main>
+
+      {/* Image Modal */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
+          onClick={closeImageModal}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] w-full h-full flex items-center justify-center">
+            <Image
+              src={selectedImage.src}
+              alt={selectedImage.alt}
+              width={800}
+              height={600}
+              className="max-w-full max-h-full object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+
+            {/* Navigation buttons - only show if there are multiple images */}
+            {selectedImage.images.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateImage("prev");
+                  }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black bg-opacity-50 hover:bg-opacity-75 rounded-full p-3 transition-colors"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateImage("next");
+                  }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black bg-opacity-50 hover:bg-opacity-75 rounded-full p-3 transition-colors"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+
+                {/* Image counter */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white bg-black bg-opacity-50 px-3 py-1 rounded-full text-sm">
+                  {selectedImage.currentIndex + 1} /{" "}
+                  {selectedImage.images.length}
+                </div>
+              </>
+            )}
+
+            {/* Close button */}
+            <button
+              onClick={closeImageModal}
+              className="absolute top-4 right-4 text-white bg-black bg-opacity-50 hover:bg-opacity-75 rounded-full p-2 transition-all"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
