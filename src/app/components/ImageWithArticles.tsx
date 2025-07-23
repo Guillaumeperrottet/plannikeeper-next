@@ -1,5 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Move, Square, Edit, Trash } from "lucide-react";
 
 type Article = {
   id: string;
@@ -23,6 +30,11 @@ type ImageWithArticlesProps = {
   selectedArticleId?: string | null;
   isEditable?: boolean;
   className?: string;
+  // Nouvelles props pour les actions
+  onArticleMove?: (articleId: string) => void;
+  onArticleResize?: (articleId: string) => void;
+  onArticleEdit?: (articleId: string) => void;
+  onArticleDelete?: (articleId: string) => void;
 };
 
 export default function ImageWithArticles({
@@ -37,6 +49,11 @@ export default function ImageWithArticles({
   selectedArticleId,
   isEditable = false,
   className = "",
+  // Nouvelles props pour les actions
+  onArticleMove,
+  onArticleResize,
+  onArticleEdit,
+  onArticleDelete,
 }: ImageWithArticlesProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -52,32 +69,8 @@ export default function ImageWithArticles({
   // État pour détecter si l'utilisateur est sur mobile
   const [isMobile, setIsMobile] = useState(false);
 
-  // État pour le tooltip
-  const [tooltipInfo, setTooltipInfo] = useState<{
-    visible: boolean;
-    content: {
-      title: string;
-      description: string | null;
-    };
-    position: {
-      x: number;
-      y: number;
-    };
-    placement: "top" | "bottom" | "left" | "right";
-    articleId: string | null;
-  }>({
-    visible: false,
-    content: {
-      title: "",
-      description: null,
-    },
-    position: {
-      x: 0,
-      y: 0,
-    },
-    placement: "top",
-    articleId: null,
-  });
+  // État pour gérer le popover ouvert
+  const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
 
   // Détecter si l'appareil est mobile
   useEffect(() => {
@@ -247,100 +240,6 @@ export default function ImageWithArticles({
     [imageSize]
   );
 
-  // Fermer le tooltip
-  const closeTooltip = () => {
-    setTooltipInfo((prev) => ({ ...prev, visible: false, articleId: null }));
-    if (onArticleHover) onArticleHover(null);
-  };
-
-  // Fonction pour calculer la position optimale du tooltip
-  const calculateTooltipPosition = (
-    articleRect: DOMRect,
-    tooltipWidth: number = 250,
-    tooltipHeight: number = 120
-  ): {
-    x: number;
-    y: number;
-    placement: "top" | "bottom" | "left" | "right";
-  } => {
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const padding = 16; // Marge minimum par rapport aux bords
-    const offset = 5; // Distance entre le tooltip et l'article (réduite)
-
-    // Position de base : centré sur l'article
-    const articleCenterX = articleRect.left + articleRect.width / 2;
-    const articleCenterY = articleRect.top + articleRect.height / 2;
-
-    let finalX = articleCenterX;
-    let finalY = articleRect.top - tooltipHeight - offset;
-    let placement: "top" | "bottom" | "left" | "right" = "top";
-
-    // Vérifier si on peut placer le tooltip en haut
-    if (finalY < padding) {
-      // Essayer en bas
-      finalY = articleRect.bottom + offset;
-      placement = "bottom";
-
-      // Si ça dépasse en bas aussi
-      if (finalY + tooltipHeight > viewportHeight - padding) {
-        // Essayer à droite
-        if (
-          articleRect.right + tooltipWidth + offset <
-          viewportWidth - padding
-        ) {
-          finalX = articleRect.right + offset;
-          finalY = articleCenterY;
-          placement = "right";
-        }
-        // Essayer à gauche
-        else if (articleRect.left - tooltipWidth - offset > padding) {
-          finalX = articleRect.left - offset;
-          finalY = articleCenterY;
-          placement = "left";
-        }
-        // En dernier recours, forcer en bas avec ajustement
-        else {
-          finalY = Math.min(
-            articleRect.bottom + offset,
-            viewportHeight - tooltipHeight - padding
-          );
-          placement = "bottom";
-        }
-      }
-    }
-
-    // Ajuster la position horizontale pour éviter le débordement
-    if (placement === "top" || placement === "bottom") {
-      // S'assurer que le tooltip ne dépasse pas à droite
-      if (finalX + tooltipWidth / 2 > viewportWidth - padding) {
-        finalX = viewportWidth - tooltipWidth / 2 - padding;
-      }
-      // S'assurer que le tooltip ne dépasse pas à gauche
-      if (finalX - tooltipWidth / 2 < padding) {
-        finalX = tooltipWidth / 2 + padding;
-      }
-    }
-
-    // Ajuster la position verticale pour éviter le débordement (pour left/right)
-    if (placement === "left" || placement === "right") {
-      // S'assurer que le tooltip ne dépasse pas en bas
-      if (finalY + tooltipHeight / 2 > viewportHeight - padding) {
-        finalY = viewportHeight - tooltipHeight / 2 - padding;
-      }
-      // S'assurer que le tooltip ne dépasse pas en haut
-      if (finalY - tooltipHeight / 2 < padding) {
-        finalY = tooltipHeight / 2 + padding;
-      }
-    }
-
-    return {
-      x: finalX,
-      y: finalY,
-      placement,
-    };
-  };
-
   // Gérer le clic/toucher sur un article
   const handleArticleInteraction = (
     e: React.MouseEvent | React.TouchEvent,
@@ -348,41 +247,22 @@ export default function ImageWithArticles({
   ) => {
     e.stopPropagation(); // Empêcher la propagation aux éléments parents
 
-    const rect = e.currentTarget.getBoundingClientRect();
-
-    // Si on est sur mobile, afficher/masquer le tooltip au lieu de naviguer immédiatement
-    if (isMobile) {
-      // Si le tooltip est déjà visible pour cet article, le fermer
-      if (tooltipInfo.visible && tooltipInfo.articleId === article.id) {
-        closeTooltip();
-      }
-      // Si c'est un nouvel article, afficher son tooltip
-      else {
-        const position = calculateTooltipPosition(rect);
-
-        setTooltipInfo({
-          visible: true,
-          content: {
-            title: article.title,
-            description: article.description,
-          },
-          position: {
-            x: position.x,
-            y: position.y,
-          },
-          placement: position.placement,
-          articleId: article.id,
-        });
-        if (onArticleHover) onArticleHover(article.id);
-
-        // Feedback haptique (vibration légère)
-        if ("vibrate" in navigator) {
-          navigator.vibrate(10);
-        }
-      }
+    // Sur mobile ou si les actions sont disponibles, ouvrir le popover
+    if (
+      isMobile ||
+      onArticleMove ||
+      onArticleResize ||
+      onArticleEdit ||
+      onArticleDelete
+    ) {
+      // Ouvrir le popover pour cet article
+      setOpenPopoverId(article.id);
+      if (onArticleHover) onArticleHover(article.id);
+      return;
     }
-    // Sur desktop, comportement de clic standard
-    else if (onArticleClick) {
+
+    // Sur desktop sans actions, comportement de clic standard
+    if (onArticleClick) {
       onArticleClick(article.id);
     }
   };
@@ -390,59 +270,25 @@ export default function ImageWithArticles({
   // Gérer le survol d'un article (uniquement sur desktop)
   const handleArticleMouseEnter = (e: React.MouseEvent, article: Article) => {
     if (isMobile) return;
-
-    const rect = e.currentTarget.getBoundingClientRect();
-    const position = calculateTooltipPosition(rect);
-
-    setTooltipInfo({
-      visible: true,
-      content: {
-        title: article.title,
-        description: article.description,
-      },
-      position: {
-        x: position.x,
-        y: position.y,
-      },
-      placement: position.placement,
-      articleId: article.id,
-    });
     if (onArticleHover) onArticleHover(article.id);
   };
 
   const handleArticleMouseLeave = () => {
     if (isMobile) return;
-    closeTooltip();
+    if (onArticleHover) onArticleHover(null);
   };
 
-  // Gérer le clic sur le bouton "Gérer les tâches" dans le tooltip mobile
-  const handleViewTasksClick = () => {
-    if (tooltipInfo.articleId && onArticleClick) {
-      // Feedback haptique avant la navigation
-      if ("vibrate" in navigator) {
-        navigator.vibrate([15, 30, 15]);
-      }
-
-      // Petit délai avant la navigation
-      setTimeout(() => {
-        if (tooltipInfo.articleId && onArticleClick) {
-          onArticleClick(tooltipInfo.articleId);
-        }
-      }, 50);
-    }
+  // Fermer le popover quand on clique ailleurs
+  const handleBackgroundClick = () => {
+    setOpenPopoverId(null);
+    if (onArticleHover) onArticleHover(null);
   };
 
-  // Gestion du zoom et des événements tactiles
+  // Gestion des événements de zoom pour fermer le popover
   useEffect(() => {
     const handleZoomChange = () => {
-      if (tooltipInfo.visible) {
-        setTooltipInfo((prev) => ({
-          ...prev,
-          visible: false,
-          articleId: null,
-        }));
-        if (onArticleHover) onArticleHover(null);
-      }
+      setOpenPopoverId(null);
+      if (onArticleHover) onArticleHover(null);
     };
 
     window.addEventListener("resize", handleZoomChange);
@@ -460,14 +306,8 @@ export default function ImageWithArticles({
           lastTouchDistance &&
           Math.abs(touchDistance - lastTouchDistance) > 10
         ) {
-          if (tooltipInfo.visible) {
-            setTooltipInfo((prev) => ({
-              ...prev,
-              visible: false,
-              articleId: null,
-            }));
-            if (onArticleHover) onArticleHover(null);
-          }
+          setOpenPopoverId(null);
+          if (onArticleHover) onArticleHover(null);
         }
 
         lastTouchDistance = touchDistance;
@@ -480,14 +320,7 @@ export default function ImageWithArticles({
       window.removeEventListener("resize", handleZoomChange);
       window.removeEventListener("touchmove", handleTouchMove);
     };
-  }, [tooltipInfo.visible, onArticleHover]);
-
-  // Fermer le tooltip si on clique ailleurs sur l'image
-  const handleBackgroundClick = () => {
-    if (tooltipInfo.visible) {
-      closeTooltip();
-    }
-  };
+  }, [onArticleHover]);
 
   // Ne rien afficher pendant le premier rendu côté client
   if (!mounted) {
@@ -520,8 +353,145 @@ export default function ImageWithArticles({
         const isActive =
           hoveredArticleId === article.id ||
           selectedArticleId === article.id ||
-          tooltipInfo.articleId === article.id;
+          openPopoverId === article.id;
 
+        // Si les actions sont disponibles, utiliser le popover
+        if (
+          onArticleMove ||
+          onArticleResize ||
+          onArticleEdit ||
+          onArticleDelete
+        ) {
+          return (
+            <Popover
+              key={article.id}
+              open={openPopoverId === article.id}
+              onOpenChange={(open) => {
+                if (open) {
+                  setOpenPopoverId(article.id);
+                  if (onArticleHover) onArticleHover(article.id);
+                } else {
+                  setOpenPopoverId(null);
+                  if (onArticleHover) onArticleHover(null);
+                }
+              }}
+            >
+              {/* @ts-expect-error - Types issue with shadcn/ui PopoverTrigger children prop */}
+              <PopoverTrigger asChild>
+                <div
+                  className={`absolute border ${
+                    isActive ? "border-blue-500" : "border-white"
+                  } rounded-md shadow-md overflow-hidden cursor-pointer pointer-events-auto ${
+                    isEditable ? "z-10" : ""
+                  }`}
+                  style={{
+                    ...articleStyle,
+                    zIndex: isActive ? 10 : 5,
+                    backgroundColor: "rgba(0, 0, 0, 0.2)",
+                  }}
+                  onClick={(e: React.MouseEvent) => handleArticleInteraction(e, article)}
+                  onMouseEnter={(e: React.MouseEvent) => handleArticleMouseEnter(e, article)}
+                  onMouseLeave={handleArticleMouseLeave}
+                >
+                  {/* Zone cliquable/survolable pour chaque article positionné */}
+                </div>
+              </PopoverTrigger>
+              <PopoverContent className="w-80" side="top" align="center">
+                <div className="space-y-4">
+                  {/* En-tête avec titre et description */}
+                  <div>
+                    <h4 className="font-medium leading-none">
+                      {article.title}
+                    </h4>
+                    {article.description && (
+                      <p className="text-sm text-muted-foreground mt-2">
+                        {article.description}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Boutons d'action */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {onArticleMove && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          onArticleMove(article.id);
+                          setOpenPopoverId(null);
+                        }}
+                        className="flex items-center gap-2"
+                      >
+                        <Move size={16} />
+                        Déplacer
+                      </Button>
+                    )}
+
+                    {onArticleResize && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          onArticleResize(article.id);
+                          setOpenPopoverId(null);
+                        }}
+                        className="flex items-center gap-2"
+                      >
+                        <Square size={16} />
+                        Redimensionner
+                      </Button>
+                    )}
+
+                    {onArticleEdit && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          onArticleEdit(article.id);
+                          setOpenPopoverId(null);
+                        }}
+                        className="flex items-center gap-2"
+                      >
+                        <Edit size={16} />
+                        Modifier
+                      </Button>
+                    )}
+
+                    {onArticleDelete && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          onArticleDelete(article.id);
+                          setOpenPopoverId(null);
+                        }}
+                        className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash size={16} />
+                        Supprimer
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Bouton pour voir/gérer les tâches si pas d'actions spécifiques */}
+                  {onArticleClick && (
+                    <Button
+                      className="w-full"
+                      onClick={() => {
+                        onArticleClick(article.id);
+                        setOpenPopoverId(null);
+                      }}
+                    >
+                      Gérer les tâches
+                    </Button>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+          );
+        }
+
+        // Rendu simple sans popover si pas d'actions
         return (
           <div
             key={article.id}
@@ -543,127 +513,6 @@ export default function ImageWithArticles({
           </div>
         );
       })}
-
-      {/* Tooltip détaché pour les infos d'article */}
-      {tooltipInfo.visible && (
-        <div
-          className="fixed w-64 bg-black bg-opacity-90 text-white p-3 rounded-md shadow-lg"
-          style={{
-            left:
-              tooltipInfo.placement === "left"
-                ? tooltipInfo.position.x - 250 // Tooltip à gauche de l'article
-                : tooltipInfo.placement === "right"
-                  ? tooltipInfo.position.x // Tooltip à droite de l'article
-                  : tooltipInfo.position.x - 125, // Centré horizontalement (250/2 = 125)
-            top:
-              tooltipInfo.placement === "top"
-                ? tooltipInfo.position.y // Position calculée (déjà ajustée)
-                : tooltipInfo.placement === "bottom"
-                  ? tooltipInfo.position.y // Position calculée (déjà ajustée)
-                  : tooltipInfo.position.y - 60, // Centré verticalement (hauteur estimée / 2)
-            zIndex: 9999,
-            pointerEvents: "auto",
-            maxWidth: "250px",
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Bouton de fermeture du tooltip */}
-          <button
-            className="absolute top-1 right-1 text-gray-300 hover:text-white"
-            onClick={closeTooltip}
-            aria-label="Fermer"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-
-          <div className="font-bold text-sm truncate pr-5">
-            {tooltipInfo.content.title}
-          </div>
-
-          {tooltipInfo.content.description && (
-            <div className="text-xs mt-1 text-gray-300 max-h-20 overflow-auto">
-              {tooltipInfo.content.description}
-            </div>
-          )}
-
-          <div className="mt-3 flex justify-center">
-            {isMobile ? (
-              <button
-                onClick={handleViewTasksClick}
-                className="text-xs bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded transition-colors w-full"
-              >
-                Gérer les tâches
-              </button>
-            ) : (
-              <span className="text-xs text-center text-blue-300">
-                Cliquez pour gérer les tâches
-              </span>
-            )}
-          </div>
-
-          {/* Flèche pointant vers l'élément - s'ajuste selon le placement */}
-          {!isMobile && (
-            <div
-              style={{
-                position: "absolute",
-                ...(tooltipInfo.placement === "top" && {
-                  left: "50%",
-                  bottom: "-8px",
-                  transform: "translateX(-50%)",
-                  width: 0,
-                  height: 0,
-                  borderLeft: "8px solid transparent",
-                  borderRight: "8px solid transparent",
-                  borderTop: "8px solid rgba(0, 0, 0, 0.9)",
-                }),
-                ...(tooltipInfo.placement === "bottom" && {
-                  left: "50%",
-                  top: "-8px",
-                  transform: "translateX(-50%)",
-                  width: 0,
-                  height: 0,
-                  borderLeft: "8px solid transparent",
-                  borderRight: "8px solid transparent",
-                  borderBottom: "8px solid rgba(0, 0, 0, 0.9)",
-                }),
-                ...(tooltipInfo.placement === "left" && {
-                  right: "-8px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  width: 0,
-                  height: 0,
-                  borderTop: "8px solid transparent",
-                  borderBottom: "8px solid transparent",
-                  borderLeft: "8px solid rgba(0, 0, 0, 0.9)",
-                }),
-                ...(tooltipInfo.placement === "right" && {
-                  left: "-8px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  width: 0,
-                  height: 0,
-                  borderTop: "8px solid transparent",
-                  borderBottom: "8px solid transparent",
-                  borderRight: "8px solid rgba(0, 0, 0, 0.9)",
-                }),
-              }}
-            ></div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

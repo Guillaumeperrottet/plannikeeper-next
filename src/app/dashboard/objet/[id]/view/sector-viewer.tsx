@@ -12,9 +12,7 @@ import {
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
-  SheetTitle,
   SheetTrigger,
 } from "@/app/components/ui/sheet";
 import { toast } from "sonner";
@@ -328,14 +326,14 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 if (sector) handleSectorChange(sector);
               }}
             >
+              {/* @ts-expect-error - Types issue with shadcn/ui SelectTrigger children prop */}
               <SelectTrigger className="w-full sm:w-[280px] bg-background border-input shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors">
-                <SelectValue
-                  placeholder="Sélectionner un secteur"
-                  className="text-foreground"
-                />
+                <SelectValue placeholder="Sélectionner un secteur" />
               </SelectTrigger>
+              {/* @ts-expect-error - Types issue with shadcn/ui SelectContent children prop */}
               <SelectContent className="max-h-[300px]">
                 {sectors.map((sector) => (
+                  // @ts-expect-error - Types issue with shadcn/ui SelectItem children prop
                   <SelectItem
                     key={sector.id}
                     value={sector.id}
@@ -353,25 +351,20 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
             {/* Bouton Articles pour desktop - en dehors du flux normal */}
             {selectedSector && !isMobile && (
               <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="ml-4 flex items-center gap-2"
-                    aria-expanded={sidebarOpen}
-                  >
-                    <ListFilter size={16} />
-                    Articles
-                  </Button>
+                {/* @ts-expect-error - Types issue with shadcn/ui SheetTrigger children prop */}
+                <SheetTrigger className="ml-4 flex items-center gap-2 px-3 py-2 border border-input rounded-md hover:bg-accent hover:text-accent-foreground">
+                  <ListFilter size={16} />
+                  Articles
                 </SheetTrigger>
                 <SheetContent side="right" className="w-[400px] sm:w-[540px]">
                   <SheetHeader>
-                    <SheetTitle>
+                    <div className="text-lg font-semibold">
                       Articles ({filteredArticles.length})
-                    </SheetTitle>
-                    <SheetDescription>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
                       Liste des articles du secteur &quot;{selectedSector.name}
                       &quot;
-                    </SheetDescription>
+                    </div>
                   </SheetHeader>
 
                   {/* Contenu de la Sheet */}
@@ -558,6 +551,22 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                     onArticleHover={handleArticleHover}
                     hoveredArticleId={hoveredArticleId}
                     selectedArticleId={selectedArticleId}
+                    onArticleMove={(articleId: string) => {
+                      // Rediriger vers la page d'édition avec l'article sélectionné
+                      window.location.href = `/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?selectedArticle=${articleId}&mode=move`;
+                    }}
+                    onArticleResize={(articleId: string) => {
+                      // Rediriger vers la page d'édition avec l'article sélectionné
+                      window.location.href = `/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?selectedArticle=${articleId}&mode=resize`;
+                    }}
+                    onArticleEdit={(articleId: string) => {
+                      // Rediriger vers la page d'édition avec l'article sélectionné
+                      window.location.href = `/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?selectedArticle=${articleId}&mode=edit`;
+                    }}
+                    onArticleDelete={(articleId: string) => {
+                      // Rediriger vers la page d'édition avec l'article sélectionné
+                      window.location.href = `/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?selectedArticle=${articleId}&mode=delete`;
+                    }}
                     className={`${
                       isFullscreen
                         ? "max-h-screen"
@@ -597,13 +606,12 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                   {/* Sheet pour mobile */}
                   <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
                     {/* Bouton flottant pour ouvrir la liste */}
-                    <SheetTrigger asChild>
-                      <button className="fixed bottom-20 left-4 z-[9] flex items-center gap-1 bg-primary text-primary-foreground rounded-full shadow-lg px-3 py-3 hover:scale-105 transition-transform">
-                        <ListFilter size={18} />
-                        <span className="ml-1 text-sm font-medium">
-                          {articles.length} Articles
-                        </span>
-                      </button>
+                    {/* @ts-expect-error - Types issue with shadcn/ui SheetTrigger children prop */}
+                    <SheetTrigger className="fixed bottom-20 left-4 z-[9] flex items-center gap-1 bg-primary text-primary-foreground rounded-full shadow-lg px-3 py-3 hover:scale-105 transition-transform">
+                      <ListFilter size={18} />
+                      <span className="ml-1 text-sm font-medium">
+                        {articles.length} Articles
+                      </span>
                     </SheetTrigger>
 
                     <SheetContent
@@ -616,9 +624,9 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                       <SheetHeader className="pb-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <SheetTitle className="text-left">
+                            <div className="text-lg font-semibold text-left">
                               Articles de &quot;{selectedSector.name}&quot;
-                            </SheetTitle>
+                            </div>
                             <Button
                               variant="outline"
                               size="sm"
