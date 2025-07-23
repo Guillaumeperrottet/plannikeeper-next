@@ -4,13 +4,6 @@ import React from "react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/app/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/app/components/ui/select";
-import {
   Sheet,
   SheetContent,
   SheetHeader,
@@ -456,26 +449,21 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 Secteur :
               </label>
             </div>
-            <Select
-              value={selectedSector?.id}
-              onValueChange={(id: string) => {
-                const sector = sectors.find((s) => s.id === id);
+            <select
+              value={selectedSector?.id || ""}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                const sector = sectors.find((s) => s.id === e.target.value);
                 if (sector) handleSectorChange(sector);
               }}
+              className="w-full sm:w-[280px] bg-background border border-input shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
             >
-              <SelectTrigger {...({ className: "w-full sm:w-[280px] bg-background border-input shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors" } as React.ComponentProps<typeof SelectTrigger>)}>
-                <SelectValue placeholder="Sélectionner un secteur" />
-              </SelectTrigger>
-              {/* @ts-expect-error - Ignore shadcn/ui SelectContent type issues */}
-              <SelectContent className="max-h-[300px]">
-                {sectors.map((sector) => (
-                  /* @ts-expect-error - Ignore shadcn/ui SelectItem type issues */
-                  <SelectItem key={sector.id} value={sector.id}>
-                    {sector.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <option value="" disabled>Sélectionner un secteur</option>
+              {sectors.map((sector) => (
+                <option key={sector.id} value={sector.id}>
+                  {sector.name}
+                </option>
+              ))}
+            </select>
 
             {/* Boutons Articles et Créer un article pour desktop */}
             {selectedSector && !isMobile && (
