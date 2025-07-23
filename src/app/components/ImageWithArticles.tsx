@@ -1021,10 +1021,8 @@ export default function ImageWithArticles({
       className={`relative overflow-hidden ${className} ${createMode ? 'cursor-crosshair' : ''}`}
       style={{ 
         width: "100%", 
-        position: "relative",
-        // @ts-expect-error - CSS custom properties
-        '--tooltip-delay': '100ms'
-      }}
+        position: "relative"
+      } as React.CSSProperties & { '--tooltip-delay': string }}
       onMouseDown={handleBackgroundMouseDown}
       onClick={handleBackgroundClick}
     >
@@ -1117,7 +1115,7 @@ export default function ImageWithArticles({
                 }
               }}
             >
-              {/* @ts-expect-error - Types issue with shadcn/ui PopoverTrigger children prop */}
+              {/* @ts-expect-error - PopoverTrigger asChild prop requirement */}
               <PopoverTrigger asChild>
                 <div
                   className={`absolute border ${
@@ -1381,7 +1379,7 @@ export default function ImageWithArticles({
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              {/* @ts-expect-error - Types issue with shadcn/ui Label children prop */}
+              {/* @ts-expect-error - shadcn/ui Label component type issue */}
               <Label htmlFor="title">Titre</Label>
               <Input
                 id="title"
@@ -1393,7 +1391,7 @@ export default function ImageWithArticles({
               />
             </div>
             <div>
-              {/* @ts-expect-error - Types issue with shadcn/ui Label children prop */}
+              {/* @ts-expect-error - shadcn/ui Label component type issue */}
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
@@ -1421,7 +1419,7 @@ export default function ImageWithArticles({
       <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
         <DialogContent>
           <DialogHeader>
-            {/* @ts-expect-error - Types issue with shadcn/ui DialogTitle children prop */}
+            {/* @ts-expect-error - shadcn/ui DialogTitle component type issue */}
             <DialogTitle className="text-red-600">Supprimer l&apos;article</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
@@ -1454,7 +1452,7 @@ export default function ImageWithArticles({
             </div>
 
             <div>
-              {/* @ts-expect-error - Types issue with shadcn/ui Label children prop */}
+              {/* @ts-expect-error - shadcn/ui Label component type issue */}
               <Label htmlFor="deleteConfirm" className="text-sm font-medium">
                 Pour confirmer la suppression, tapez le nom exact de l&apos;article :
               </Label>
@@ -1499,7 +1497,7 @@ export default function ImageWithArticles({
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              {/* @ts-expect-error - Types issue with shadcn/ui Label children prop */}
+              {/* @ts-expect-error - shadcn/ui Label component type issue */}
               <Label htmlFor="createTitle">Titre</Label>
               <Input
                 id="createTitle"
@@ -1511,7 +1509,7 @@ export default function ImageWithArticles({
               />
             </div>
             <div>
-              {/* @ts-expect-error - Types issue with shadcn/ui Label children prop */}
+              {/* @ts-expect-error - shadcn/ui Label component type issue */}
               <Label htmlFor="createDescription">Description</Label>
               <Textarea
                 id="createDescription"
@@ -1525,7 +1523,7 @@ export default function ImageWithArticles({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                {/* @ts-expect-error - Types issue with shadcn/ui Label children prop */}
+                {/* @ts-expect-error - shadcn/ui Label component type issue */}
                 <Label htmlFor="createPositionX">Position X (%)</Label>
                 <Input
                   id="createPositionX"
@@ -1539,7 +1537,7 @@ export default function ImageWithArticles({
                 />
               </div>
               <div>
-                {/* @ts-expect-error - Types issue with shadcn/ui Label children prop */}
+                {/* @ts-expect-error - shadcn/ui Label component type issue */}
                 <Label htmlFor="createPositionY">Position Y (%)</Label>
                 <Input
                   id="createPositionY"
@@ -1555,7 +1553,7 @@ export default function ImageWithArticles({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                {/* @ts-expect-error - Types issue with shadcn/ui Label children prop */}
+                {/* @ts-expect-error - shadcn/ui Label component type issue */}
                 <Label htmlFor="createWidth">Largeur (%)</Label>
                 <Input
                   id="createWidth"
@@ -1569,7 +1567,7 @@ export default function ImageWithArticles({
                 />
               </div>
               <div>
-                {/* @ts-expect-error - Types issue with shadcn/ui Label children prop */}
+                {/* @ts-expect-error - shadcn/ui Label component type issue */}
                 <Label htmlFor="createHeight">Hauteur (%)</Label>
                 <Input
                   id="createHeight"
