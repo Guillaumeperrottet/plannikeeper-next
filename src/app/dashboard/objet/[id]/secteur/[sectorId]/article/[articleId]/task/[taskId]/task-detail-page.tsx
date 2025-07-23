@@ -19,7 +19,6 @@ import {
   Save,
   RefreshCcw,
   Archive,
-  Check,
 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Badge } from "@/app/components/ui/badge";
@@ -462,49 +461,74 @@ export default function ModernTaskDetailPage({
                         <div className="flex items-center gap-2 shrink-0">
                           {!isEditing ? (
                             <>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="gap-1.5 h-8 text-xs"
-                                  >
-                                    {getStatusInfo(task.status).icon}
-                                    <span className="hidden sm:inline">
-                                      {getStatusInfo(task.status).label}
-                                    </span>
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  {[
-                                    "pending",
-                                    "in_progress",
-                                    "completed",
-                                    "cancelled",
-                                  ].map((status) => (
-                                    <DropdownMenuItem
-                                      key={status}
-                                      onClick={() => handleStatusChange(status)}
-                                      disabled={isLoading}
-                                      className={
-                                        task.status === status
-                                          ? "bg-accent text-accent-foreground"
-                                          : ""
-                                      }
-                                    >
-                                      <div className="flex items-center gap-2">
-                                        {getStatusInfo(status).icon}
-                                        <span>
-                                          {getStatusInfo(status).label}
-                                        </span>
-                                        {task.status === status && (
-                                          <Check className="w-4 h-4 ml-auto" />
-                                        )}
-                                      </div>
-                                    </DropdownMenuItem>
-                                  ))}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                              {/* Quick status change button */}
+                              {task.status === "pending" && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleStatusChange("completed")
+                                  }
+                                  disabled={isLoading}
+                                  className="gap-1.5 h-8 text-xs"
+                                >
+                                  <CheckCircle2 className="h-4 w-4" />
+                                  <span className="hidden sm:inline">
+                                    Marquer comme terminée
+                                  </span>
+                                  <span className="sm:hidden">Terminée</span>
+                                </Button>
+                              )}
+
+                              {task.status === "in_progress" && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleStatusChange("completed")
+                                  }
+                                  disabled={isLoading}
+                                  className="gap-1.5 h-8 text-xs"
+                                >
+                                  <CheckCircle2 className="h-4 w-4" />
+                                  <span className="hidden sm:inline">
+                                    Marquer comme terminée
+                                  </span>
+                                  <span className="sm:hidden">Terminée</span>
+                                </Button>
+                              )}
+
+                              {task.status === "completed" && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleStatusChange("pending")}
+                                  disabled={isLoading}
+                                  className="gap-1.5 h-8 text-xs"
+                                >
+                                  <Clock className="h-4 w-4" />
+                                  <span className="hidden sm:inline">
+                                    Remettre à faire
+                                  </span>
+                                  <span className="sm:hidden">À faire</span>
+                                </Button>
+                              )}
+
+                              {task.status === "cancelled" && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleStatusChange("pending")}
+                                  disabled={isLoading}
+                                  className="gap-1.5 h-8 text-xs"
+                                >
+                                  <Clock className="h-4 w-4" />
+                                  <span className="hidden sm:inline">
+                                    Remettre à faire
+                                  </span>
+                                  <span className="sm:hidden">À faire</span>
+                                </Button>
+                              )}
 
                               {/* Desktop action buttons */}
                               <div className="hidden sm:flex items-center gap-1.5">
@@ -556,6 +580,61 @@ export default function ModernTaskDetailPage({
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
+                                  {/* Quick status actions */}
+                                  {task.status === "pending" && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleStatusChange("completed")
+                                      }
+                                      disabled={isLoading}
+                                    >
+                                      <CheckCircle2
+                                        size={14}
+                                        className="mr-2"
+                                      />
+                                      Marquer comme terminée
+                                    </DropdownMenuItem>
+                                  )}
+
+                                  {task.status === "in_progress" && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleStatusChange("completed")
+                                      }
+                                      disabled={isLoading}
+                                    >
+                                      <CheckCircle2
+                                        size={14}
+                                        className="mr-2"
+                                      />
+                                      Marquer comme terminée
+                                    </DropdownMenuItem>
+                                  )}
+
+                                  {task.status === "completed" && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleStatusChange("pending")
+                                      }
+                                      disabled={isLoading}
+                                    >
+                                      <Clock size={14} className="mr-2" />
+                                      Remettre à faire
+                                    </DropdownMenuItem>
+                                  )}
+
+                                  {task.status === "cancelled" && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleStatusChange("pending")
+                                      }
+                                      disabled={isLoading}
+                                    >
+                                      <Clock size={14} className="mr-2" />
+                                      Remettre à faire
+                                    </DropdownMenuItem>
+                                  )}
+
                                   <DropdownMenuItem
                                     onClick={() => setIsEditing(true)}
                                   >
@@ -660,11 +739,12 @@ export default function ModernTaskDetailPage({
                             </Label>
                             {isEditing ? (
                               <Select
-                                value={editedTask.assignedToId || ""}
+                                value={editedTask.assignedToId || "unassigned"}
                                 onValueChange={(value) =>
                                   setEditedTask({
                                     ...editedTask,
-                                    assignedToId: value || null,
+                                    assignedToId:
+                                      value === "unassigned" ? null : value,
                                   })
                                 }
                               >
@@ -672,7 +752,9 @@ export default function ModernTaskDetailPage({
                                   <SelectValue placeholder="Sélectionner" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="">Non assigné</SelectItem>
+                                  <SelectItem value="unassigned">
+                                    Non assigné
+                                  </SelectItem>
                                   {users.map((user) => (
                                     <SelectItem key={user.id} value={user.id}>
                                       {user.name}

@@ -1,8 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Archive, Loader2 } from "lucide-react";
+import { Archive, Loader2, ChevronDown, ArchiveRestore } from "lucide-react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/app/components/ui/dropdown-menu";
 
 interface ArchiveCompletedButtonProps {
   completedTasks: { id: string }[];
@@ -14,6 +21,7 @@ export default function ArchiveCompletedButton({
   onArchiveCompleted,
 }: ArchiveCompletedButtonProps) {
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleArchiveCompleted = async () => {
     // Vérifier s'il y a des tâches à archiver
@@ -65,18 +73,44 @@ export default function ArchiveCompletedButton({
     }
   };
 
+  const handleViewArchives = () => {
+    router.push("/dashboard/archives");
+  };
+
   return (
-    <button
-      onClick={handleArchiveCompleted}
-      className="ml-1 p-1 rounded-full hover:bg-[color:var(--accent)] hover:text-[color:var(--accent-foreground)] text-[color:var(--primary)] transition-colors"
-      title="Archiver toutes les tâches terminées"
-      disabled={loading || completedTasks.length === 0}
-    >
-      {loading ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-      ) : (
-        <Archive className="h-3.5 w-3.5" />
-      )}
-    </button>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+          disabled={loading}
+        >
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Archive className="h-4 w-4" />
+          )}
+          Archives
+          <ChevronDown className="h-3 w-3" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuItem
+          onClick={handleArchiveCompleted}
+          disabled={loading || completedTasks.length === 0}
+        >
+          <Archive className="w-4 h-4 mr-2" />
+          Archiver toutes les terminées
+          {completedTasks.length > 0 && (
+            <span className="ml-auto text-xs text-gray-500">
+              ({completedTasks.length})
+            </span>
+          )}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleViewArchives}>
+          <ArchiveRestore className="w-4 h-4 mr-2" />
+          Voir les archives
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
