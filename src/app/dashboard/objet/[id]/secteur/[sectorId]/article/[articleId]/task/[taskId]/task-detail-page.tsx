@@ -101,6 +101,7 @@ interface ModernTaskDetailPageProps {
   objetId: string;
   sectorId: string;
   articleId: string;
+  readonly?: boolean;
 }
 
 export default function ModernTaskDetailPage({
@@ -109,10 +110,11 @@ export default function ModernTaskDetailPage({
   objetId,
   sectorId,
   articleId,
+  readonly = false,
 }: ModernTaskDetailPageProps) {
   const router = useRouter();
   const [task, setTask] = useState(initialTask);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(false && !readonly);
   const [isLoading, setIsLoading] = useState(false);
   const [editedTask, setEditedTask] = useState(task);
   const [activeTab, setActiveTab] = useState<
@@ -266,8 +268,26 @@ export default function ModernTaskDetailPage({
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-background">
+        {/* Bannière pour mode lecture seule */}
+        {readonly && (
+          <div className="bg-blue-50 dark:bg-blue-950 border-y border-blue-200 dark:border-blue-800 py-3">
+            <div className="max-w-7xl mx-auto px-4 flex items-center gap-4">
+              <Archive className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+              <div className="flex-1">
+                <p className="text-blue-800 dark:text-blue-200 font-medium text-sm">
+                  Mode consultation - Tâche archivée
+                </p>
+                <p className="text-blue-600 dark:text-blue-400 text-xs">
+                  Cette tâche est archivée et ne peut pas être modifiée. Pour la
+                  modifier, veuillez d&apos;abord la désarchiver.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Bannière pour tâches archivées */}
-        {task.archived && (
+        {task.archived && !readonly && (
           <div className="bg-warning/10 border-y border-warning/20 py-3">
             <div className="max-w-7xl mx-auto px-4 flex items-center gap-4">
               <Archive className="h-4 w-4 text-warning shrink-0" />
@@ -459,7 +479,14 @@ export default function ModernTaskDetailPage({
 
                         {/* Actions côté droit */}
                         <div className="flex items-center gap-2 shrink-0">
-                          {!isEditing ? (
+                          {readonly ? (
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Archive className="h-4 w-4" />
+                              <span className="text-sm font-medium">
+                                Tâche archivée - Lecture seule
+                              </span>
+                            </div>
+                          ) : !isEditing ? (
                             <>
                               {/* Quick status change button */}
                               {task.status === "pending" && (
@@ -652,7 +679,7 @@ export default function ModernTaskDetailPage({
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </>
-                          ) : (
+                          ) : readonly ? null : (
                             <>
                               <Button
                                 variant="outline"
@@ -1032,12 +1059,14 @@ export default function ModernTaskDetailPage({
                             taskId={task.id}
                             onDocumentsChange={() => {}}
                           />
-                          <div className="border-t border-border pt-4">
-                            <DocumentUpload
-                              taskId={task.id}
-                              onUploadSuccess={() => {}}
-                            />
-                          </div>
+                          {!readonly && (
+                            <div className="border-t border-border pt-4">
+                              <DocumentUpload
+                                taskId={task.id}
+                                onUploadSuccess={() => {}}
+                              />
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>

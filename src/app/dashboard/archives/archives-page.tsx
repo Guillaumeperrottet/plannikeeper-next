@@ -6,8 +6,6 @@ import {
   Calendar,
   Archive,
   Building,
-  SortAsc,
-  SortDesc,
   RefreshCcw,
   User,
   Filter as FilterIcon,
@@ -19,6 +17,9 @@ import {
   RotateCcw,
   Eye,
   Home,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -104,8 +105,8 @@ export default function ArchivesPage() {
   const [selectedAssignee, setSelectedAssignee] = useState<string | null>(null);
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
-  const [sortBy, setSortBy] = useState<string>("archivedAt");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [sortField, setSortField] = useState<string>("archivedAt");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   // Métadonnées pour les filtres
   const [taskTypes, setTaskTypes] = useState<string[]>([]);
@@ -129,8 +130,8 @@ export default function ArchivesPage() {
       if (selectedAssignee) params.append("assigneeId", selectedAssignee);
       if (fromDate) params.append("fromDate", fromDate);
       if (toDate) params.append("toDate", toDate);
-      params.append("sortBy", sortBy);
-      params.append("sortOrder", sortOrder);
+      params.append("sortBy", sortField);
+      params.append("sortOrder", sortDirection);
 
       url += params.toString();
 
@@ -162,8 +163,8 @@ export default function ArchivesPage() {
     selectedAssignee,
     fromDate,
     toDate,
-    sortBy,
-    sortOrder,
+    sortField,
+    sortDirection,
   ]);
 
   // Chargement initial des données
@@ -187,6 +188,13 @@ export default function ArchivesPage() {
   useEffect(() => {
     fetchArchivedTasks();
   }, [fetchArchivedTasks]);
+
+  // Surveiller les changements de tri et appliquer automatiquement
+  useEffect(() => {
+    if (sortField && sortDirection) {
+      fetchArchivedTasks();
+    }
+  }, [sortField, sortDirection, fetchArchivedTasks]);
 
   // Filtres actifs
   const activeFiltersCount = useMemo(() => {
@@ -223,8 +231,8 @@ export default function ArchivesPage() {
     setSelectedAssignee(null);
     setFromDate("");
     setToDate("");
-    setSortBy("archivedAt");
-    setSortOrder("desc");
+    setSortField("archivedAt");
+    setSortDirection("desc");
 
     // Réinitialiser également le formulaire de recherche
     const searchInput = document.getElementById(
@@ -234,6 +242,28 @@ export default function ArchivesPage() {
 
     // Puis refaire la recherche
     setTimeout(fetchArchivedTasks, 0);
+  };
+
+  // Gestion du tri
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const getSortIcon = (field: string) => {
+    if (sortField === field) {
+      return sortDirection === "asc" ? (
+        <ArrowUp className="w-4 h-4" />
+      ) : (
+        <ArrowDown className="w-4 h-4" />
+      );
+    }
+    // Utiliser l'icône de tri bidirectionnel par défaut
+    return <ArrowUpDown className="w-4 h-4 text-gray-300" />;
   };
 
   // Formater les dates pour l'affichage
@@ -581,47 +611,6 @@ export default function ArchivesPage() {
                   />
                 </div>
               </div>
-
-              {/* Deuxième ligne : Tri et ordre */}
-              <div className="flex flex-wrap items-center gap-3 pt-2 border-t">
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                    Trier par:
-                  </Label>
-                  <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="h-8 w-36 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="archivedAt">
-                        Date d&apos;archivage
-                      </SelectItem>
-                      <SelectItem value="name">Nom</SelectItem>
-                      <SelectItem value="realizationDate">
-                        Date d&apos;échéance
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                  }
-                  className="gap-2 h-8"
-                >
-                  {sortOrder === "asc" ? (
-                    <SortAsc className="h-3 w-3" />
-                  ) : (
-                    <SortDesc className="h-3 w-3" />
-                  )}
-                  <span className="text-xs">
-                    {sortOrder === "asc" ? "Croissant" : "Décroissant"}
-                  </span>
-                </Button>
-              </div>
             </div>
           </CardHeader>
 
@@ -677,23 +666,58 @@ export default function ArchivesPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[300px]">Tâche</TableHead>
-                        <TableHead className="hidden md:table-cell">
-                          Type
+                        <TableHead className="w-[300px] text-xs font-medium text-gray-500 py-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSort("name")}
+                            className="h-auto p-0 font-medium text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                          >
+                            TÂCHE
+                            {getSortIcon("name")}
+                          </Button>
                         </TableHead>
-                        <TableHead className="hidden sm:table-cell">
-                          Objet
+                        <TableHead className="hidden md:table-cell text-xs font-medium text-gray-500 py-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSort("taskType")}
+                            className="h-auto p-0 font-medium text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                          >
+                            TYPE
+                            {getSortIcon("taskType")}
+                          </Button>
                         </TableHead>
-                        <TableHead className="hidden lg:table-cell">
-                          Secteur / Article
+                        <TableHead className="hidden sm:table-cell text-xs font-medium text-gray-500 py-3">
+                          OBJET
                         </TableHead>
-                        <TableHead className="hidden lg:table-cell">
-                          Date d&apos;archivage
+                        <TableHead className="hidden lg:table-cell text-xs font-medium text-gray-500 py-3">
+                          SECTEUR / ARTICLE
                         </TableHead>
-                        <TableHead className="hidden lg:table-cell">
-                          Assigné à
+                        <TableHead className="hidden lg:table-cell text-xs font-medium text-gray-500 py-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSort("archivedAt")}
+                            className="h-auto p-0 font-medium text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                          >
+                            DATE D&apos;ARCHIVAGE
+                            {getSortIcon("archivedAt")}
+                          </Button>
                         </TableHead>
-                        <TableHead className="w-[120px]">Actions</TableHead>
+                        <TableHead className="hidden lg:table-cell text-xs font-medium text-gray-500 py-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSort("assignedTo")}
+                            className="h-auto p-0 font-medium text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                          >
+                            ASSIGNÉ À{getSortIcon("assignedTo")}
+                          </Button>
+                        </TableHead>
+                        <TableHead className="w-[120px] text-xs font-medium text-gray-500 py-3">
+                          ACTIONS
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -793,6 +817,7 @@ export default function ArchivesPage() {
                                   handleArchiveToggle(task.id, false)
                                 }
                                 className="gap-1 h-8 text-xs"
+                                title="Désarchiver cette tâche pour pouvoir la modifier"
                               >
                                 <RotateCcw className="w-3 h-3" />
                                 <span className="hidden sm:inline">
@@ -805,13 +830,14 @@ export default function ArchivesPage() {
                                 size="sm"
                                 asChild
                                 className="gap-1 h-8 text-xs"
+                                title="Consulter les détails (lecture seule)"
                               >
                                 <Link
-                                  href={`/dashboard/objet/${task.article.sector.object.id}/secteur/${task.article.sector.id}/article/${task.article.id}/task/${task.id}`}
+                                  href={`/dashboard/objet/${task.article.sector.object.id}/secteur/${task.article.sector.id}/article/${task.article.id}/task/${task.id}?readonly=true`}
                                 >
                                   <Eye className="w-3 h-3" />
                                   <span className="hidden sm:inline">
-                                    Détails
+                                    Consulter
                                   </span>
                                 </Link>
                               </Button>
