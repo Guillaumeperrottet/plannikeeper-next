@@ -223,6 +223,80 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
     setHoveredArticleId(articleId);
   };
 
+  const handleArticleUpdate = async (articleId: string, updates: { title: string; description: string }) => {
+    try {
+      // Trouver l'article existant pour conserver ses autres propriétés
+      const existingArticle = articles.find(a => a.id === articleId);
+      if (!existingArticle) {
+        throw new Error('Article non trouvé');
+      }
+
+      const response = await fetch(`/api/articles/${articleId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: updates.title,
+          description: updates.description,
+          positionX: existingArticle.positionX,
+          positionY: existingArticle.positionY,
+          width: existingArticle.width,
+          height: existingArticle.height,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la mise à jour de l\'article');
+      }
+
+      // Recharger les articles pour refléter les changements
+      if (selectedSector) {
+        await fetchArticles(selectedSector.id);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de l\'article:', error);
+      throw error; // Re-throw pour que le composant puisse gérer l'erreur
+    }
+  };
+
+  const handleArticlePositionUpdate = async (articleId: string, updates: { positionX: number; positionY: number; width: number; height: number }) => {
+    try {
+      // Trouver l'article existant pour conserver ses autres propriétés
+      const existingArticle = articles.find(a => a.id === articleId);
+      if (!existingArticle) {
+        throw new Error('Article non trouvé');
+      }
+
+      const response = await fetch(`/api/articles/${articleId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: existingArticle.title,
+          description: existingArticle.description,
+          positionX: updates.positionX,
+          positionY: updates.positionY,
+          width: updates.width,
+          height: updates.height,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la mise à jour de la position de l\'article');
+      }
+
+      // Recharger les articles pour refléter les changements
+      if (selectedSector) {
+        await fetchArticles(selectedSector.id);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la position de l\'article:', error);
+      throw error; // Re-throw pour que le composant puisse gérer l'erreur
+    }
+  };
+
   const toggleFullscreen = useCallback(() => {
     setIsFullscreen(!isFullscreen);
 
@@ -567,6 +641,8 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                       // Rediriger vers la page d'édition avec l'article sélectionné
                       window.location.href = `/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?selectedArticle=${articleId}&mode=delete`;
                     }}
+                    onArticleUpdate={handleArticleUpdate}
+                    onArticlePositionUpdate={handleArticlePositionUpdate}
                     className={`${
                       isFullscreen
                         ? "max-h-screen"

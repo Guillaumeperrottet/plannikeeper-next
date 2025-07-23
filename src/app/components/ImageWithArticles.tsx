@@ -5,7 +5,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Move, Square, Edit, Trash } from "lucide-react";
 
 type Article = {
@@ -35,6 +45,10 @@ type ImageWithArticlesProps = {
   onArticleResize?: (articleId: string) => void;
   onArticleEdit?: (articleId: string) => void;
   onArticleDelete?: (articleId: string) => void;
+  // Nouvelle prop pour la mise à jour des articles
+  onArticleUpdate?: (articleId: string, updates: { title: string; description: string }) => Promise<void>;
+  // Nouvelle prop pour la mise à jour de position
+  onArticlePositionUpdate?: (articleId: string, updates: { positionX: number; positionY: number; width: number; height: number }) => Promise<void>;
 };
 
 export default function ImageWithArticles({
@@ -54,6 +68,10 @@ export default function ImageWithArticles({
   onArticleResize,
   onArticleEdit,
   onArticleDelete,
+  // Nouvelle prop pour la mise à jour
+  onArticleUpdate,
+  // Nouvelle prop pour la mise à jour de position
+  onArticlePositionUpdate,
 }: ImageWithArticlesProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -71,6 +89,22 @@ export default function ImageWithArticles({
 
   // État pour gérer le popover ouvert
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
+
+  // États pour le modal d'édition
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingArticle, setEditingArticle] = useState<Article | null>(null);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    description: "",
+  });
+  const [isLoading, setIsLoading] = useState(false);
+
+  // États pour le mode déplacement
+  const [isDragging, setIsDragging] = useState(false);
+  const [draggingArticleId, setDraggingArticleId] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [dragMode, setDragMode] = useState(false);
+  const [tempDragPosition, setTempDragPosition] = useState<{ x: number; y: number } | null>(null);
 
   // Détecter si l'appareil est mobile
   useEffect(() => {
@@ -210,6 +244,20 @@ export default function ImageWithArticles({
         return {};
       }
 
+      // Si cet article est en cours de déplacement, utiliser la position temporaire
+      if (isDragging && draggingArticleId === article.id && tempDragPosition) {
+        const width = ((article.width || 20) / 100) * imageSize.displayWidth;
+        const height = ((article.height || 20) / 100) * imageSize.displayHeight;
+
+        return {
+          left: `${tempDragPosition.x}px`,
+          top: `${tempDragPosition.y}px`,
+          width: `${width}px`,
+          height: `${height}px`,
+          transform: "translate(-50%, -50%)",
+        };
+      }
+
       // Espace potentiellement non utilisé à cause du maintien du ratio d'aspect
       const unusedWidth = containerRef.current?.clientWidth
         ? containerRef.current.clientWidth - imageSize.displayWidth
@@ -237,8 +285,113 @@ export default function ImageWithArticles({
         transform: "translate(-50%, -50%)",
       };
     },
-    [imageSize]
+    [imageSize, isDragging, draggingArticleId, tempDragPosition]
   );
+
+  // Fonctions utilitaires pour le drag & drop
+  const pixelsToPercent = useCallback((position: { x: number; y: number; width: number; height: number }) => {
+    // Calculer les décalages pour centrer l'image
+    const unusedWidth = containerRef.current?.clientWidth
+      ? containerRef.current.clientWidth - imageSize.displayWidth
+      : 0;
+    const unusedHeight = containerRef.current?.clientHeight
+      ? containerRef.current.clientHeight - imageSize.displayHeight
+      : 0;
+    const offsetX = unusedWidth / 2;
+    const offsetY = unusedHeight / 2;
+
+    // Convertir les coordonnées pixels en pourcentages
+    const percentX = ((position.x - offsetX) / imageSize.displayWidth) * 100;
+    const percentY = ((position.y - offsetY) / imageSize.displayHeight) * 100;
+
+    return {
+      positionX: percentX,
+      positionY: percentY,
+    };
+  }, [imageSize]);
+
+  const handleDragStart = (e: React.MouseEvent, article: Article) => {
+    e.stopPropagation();
+    setDragMode(true);
+    setDraggingArticleId(article.id);
+    setIsDragging(true);
+    setOpenPopoverId(null); // Fermer le popover
+
+    if (!containerRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const articleStyle = calculateArticleStyle(article);
+    
+    // Calculer l'offset du clic par rapport au centre de l'article
+    const articleCenterX = parseFloat(articleStyle.left?.toString() || '0');
+    const articleCenterY = parseFloat(articleStyle.top?.toString() || '0');
+    
+    setDragOffset({
+      x: x - articleCenterX,
+      y: y - articleCenterY,
+    });
+  };
+
+  const handleDragMove = useCallback((clientX: number, clientY: number) => {
+    if (!isDragging || !draggingArticleId || !containerRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+
+    // Calculer la nouvelle position en tenant compte de l'offset
+    const newX = x - dragOffset.x;
+    const newY = y - dragOffset.y;
+
+    // Mettre à jour la position temporaire pour l'affichage en temps réel
+    setTempDragPosition({ x: newX, y: newY });
+  }, [isDragging, draggingArticleId, dragOffset]);
+
+  const handleDragEnd = useCallback(async (clientX: number, clientY: number) => {
+    if (!isDragging || !draggingArticleId || !onArticlePositionUpdate || !containerRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    
+    const article = articles.find(a => a.id === draggingArticleId);
+    if (!article) return;
+
+    const newX = x - dragOffset.x;
+    const newY = y - dragOffset.y;
+
+    const percentPosition = pixelsToPercent({
+      x: newX,
+      y: newY,
+      width: ((article.width || 20) / 100) * imageSize.displayWidth,
+      height: ((article.height || 20) / 100) * imageSize.displayHeight,
+    });
+
+    const constrainedX = Math.max(0, Math.min(100, percentPosition.positionX));
+    const constrainedY = Math.max(0, Math.min(100, percentPosition.positionY));
+
+    try {
+      // Sauvegarder la nouvelle position
+      await onArticlePositionUpdate(draggingArticleId, {
+        positionX: constrainedX,
+        positionY: constrainedY,
+        width: article.width || 20,
+        height: article.height || 20,
+      });
+    } catch (error) {
+      console.error("Erreur lors du déplacement de l'article:", error);
+    } finally {
+      // Réinitialiser les états
+      setIsDragging(false);
+      setDraggingArticleId(null);
+      setDragMode(false);
+      setDragOffset({ x: 0, y: 0 });
+      setTempDragPosition(null);
+    }
+  }, [isDragging, draggingArticleId, dragOffset, articles, imageSize, onArticlePositionUpdate, pixelsToPercent]);
 
   // Gérer le clic/toucher sur un article
   const handleArticleInteraction = (
@@ -276,6 +429,40 @@ export default function ImageWithArticles({
   const handleArticleMouseLeave = () => {
     if (isMobile) return;
     if (onArticleHover) onArticleHover(null);
+  };
+
+  // Fonctions pour gérer l'édition d'articles
+  const handleEditArticle = (article: Article) => {
+    setEditingArticle(article);
+    setEditForm({
+      title: article.title,
+      description: article.description || "",
+    });
+    setEditModalOpen(true);
+    setOpenPopoverId(null); // Fermer le popover
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingArticle || !onArticleUpdate) return;
+
+    setIsLoading(true);
+    try {
+      await onArticleUpdate(editingArticle.id, editForm);
+      setEditModalOpen(false);
+      setEditingArticle(null);
+      setEditForm({ title: "", description: "" });
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour de l'article:", error);
+      // TODO: Afficher un toast d'erreur
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditModalOpen(false);
+    setEditingArticle(null);
+    setEditForm({ title: "", description: "" });
   };
 
   // Fermer le popover quand on clique ailleurs
@@ -322,6 +509,43 @@ export default function ImageWithArticles({
     };
   }, [onArticleHover]);
 
+  // Gestion globale des événements de drag
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        handleDragMove(e.clientX, e.clientY);
+      }
+    };
+
+    const handleGlobalMouseUp = (e: MouseEvent) => {
+      if (isDragging) {
+        handleDragEnd(e.clientX, e.clientY);
+      }
+    };
+
+    const handleEscapeKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && dragMode) {
+        setDragMode(false);
+        setIsDragging(false);
+        setDraggingArticleId(null);
+        setTempDragPosition(null);
+      }
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleGlobalMouseMove);
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+    }
+
+    document.addEventListener('keydown', handleEscapeKey);
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [isDragging, handleDragMove, handleDragEnd, dragMode]);
+
   // Ne rien afficher pendant le premier rendu côté client
   if (!mounted) {
     return null;
@@ -334,6 +558,19 @@ export default function ImageWithArticles({
       style={{ width: "100%", position: "relative" }}
       onClick={handleBackgroundClick}
     >
+      {/* Indicateur du mode déplacement */}
+      {dragMode && (
+        <div className="absolute top-2 left-2 z-30 bg-blue-500 text-white px-3 py-1 rounded-md text-sm font-medium">
+          Mode déplacement actif - Cliquez et glissez les articles
+          <button
+            onClick={() => setDragMode(false)}
+            className="ml-2 text-blue-200 hover:text-white"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       <Image
         ref={imageRef as React.Ref<HTMLImageElement>}
         src={imageSrc}
@@ -381,15 +618,28 @@ export default function ImageWithArticles({
                 <div
                   className={`absolute border ${
                     isActive ? "border-blue-500" : "border-white"
-                  } rounded-md shadow-md overflow-hidden cursor-pointer pointer-events-auto ${
+                  } rounded-md shadow-md overflow-hidden ${
+                    dragMode ? "cursor-move hover:border-blue-400" : "cursor-pointer"
+                  } pointer-events-auto ${
                     isEditable ? "z-10" : ""
-                  }`}
+                  } ${isDragging && draggingArticleId === article.id ? "opacity-75 z-20" : ""}`}
                   style={{
                     ...articleStyle,
-                    zIndex: isActive ? 10 : 5,
-                    backgroundColor: "rgba(0, 0, 0, 0.2)",
+                    zIndex: isDragging && draggingArticleId === article.id ? 20 : (isActive ? 10 : 5),
+                    backgroundColor: dragMode ? "rgba(59, 130, 246, 0.3)" : "rgba(0, 0, 0, 0.2)",
                   }}
-                  onClick={(e: React.MouseEvent) => handleArticleInteraction(e, article)}
+                  onClick={(e: React.MouseEvent) => {
+                    if (dragMode) {
+                      e.stopPropagation();
+                      return; // En mode déplacement, ne pas ouvrir le popover au clic
+                    }
+                    handleArticleInteraction(e, article);
+                  }}
+                  onMouseDown={(e: React.MouseEvent) => {
+                    if (dragMode && onArticlePositionUpdate) {
+                      handleDragStart(e, article);
+                    }
+                  }}
                   onMouseEnter={(e: React.MouseEvent) => handleArticleMouseEnter(e, article)}
                   onMouseLeave={handleArticleMouseLeave}
                 >
@@ -417,13 +667,20 @@ export default function ImageWithArticles({
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          onArticleMove(article.id);
-                          setOpenPopoverId(null);
+                          if (onArticlePositionUpdate) {
+                            // Activer le mode déplacement intégré
+                            setDragMode(true);
+                            setOpenPopoverId(null);
+                          } else {
+                            // Fallback vers la fonction externe (redirection)
+                            onArticleMove(article.id);
+                            setOpenPopoverId(null);
+                          }
                         }}
                         className="flex items-center gap-2"
                       >
                         <Move size={16} />
-                        Déplacer
+                        {dragMode ? "Mode déplacement actif" : "Déplacer"}
                       </Button>
                     )}
 
@@ -447,8 +704,14 @@ export default function ImageWithArticles({
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          onArticleEdit(article.id);
-                          setOpenPopoverId(null);
+                          if (onArticleUpdate) {
+                            // Utiliser le modal d'édition intégré
+                            handleEditArticle(article);
+                          } else {
+                            // Fallback vers la fonction externe (redirection)
+                            onArticleEdit(article.id);
+                            setOpenPopoverId(null);
+                          }
                         }}
                         className="flex items-center gap-2"
                       >
@@ -513,6 +776,50 @@ export default function ImageWithArticles({
           </div>
         );
       })}
+
+      {/* Modal d'édition */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier l&apos;article</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              {/* @ts-expect-error - Types issue with shadcn/ui Label children prop */}
+              <Label htmlFor="title">Titre</Label>
+              <Input
+                id="title"
+                value={editForm.title}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, title: e.target.value })
+                }
+                placeholder="Titre de l'article"
+              />
+            </div>
+            <div>
+              {/* @ts-expect-error - Types issue with shadcn/ui Label children prop */}
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={editForm.description}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, description: e.target.value })
+                }
+                placeholder="Description de l'article (optionnelle)"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancelEdit}>
+              Annuler
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={isLoading}>
+              {isLoading ? "Enregistrement..." : "Enregistrer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
