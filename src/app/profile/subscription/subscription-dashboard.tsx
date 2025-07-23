@@ -16,8 +16,6 @@ import {
   CalendarClock,
   Star,
   Sparkles,
-  Crown,
-  Mail,
   Check,
 } from "lucide-react";
 import { Progress } from "@/app/components/ui/progress";
@@ -33,7 +31,6 @@ import {
   DialogFooter,
 } from "@/app/components/ui/dialog";
 import { BackButton } from "@/app/components/ui/BackButton";
-import Link from "next/link";
 
 type Plan = {
   id: string;
@@ -247,6 +244,12 @@ export default function SubscriptionDashboard({
   const handleSelectPlan = async (plan: Plan) => {
     if (!isAdmin) {
       toast.error("Seuls les administrateurs peuvent modifier l'abonnement");
+      return;
+    }
+
+    // Si c'est un plan sur mesure, rediriger vers la page de contact
+    if (plan.hasCustomPricing) {
+      window.location.href = "/contact";
       return;
     }
 
@@ -692,7 +695,7 @@ export default function SubscriptionDashboard({
   return (
     <div className="min-h-screen bg-[color:var(--background)]">
       {/* Header avec navigation */}
-      <div className="bg-[color:var(--card)] border-b border-[color:var(--border)] sticky top-0 z-40">
+      <div className="bg-white dark:bg-[color:var(--card)] border-b border-[color:var(--border)] sticky top-0 z-40 shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <BackButton
@@ -917,7 +920,6 @@ export default function SubscriptionDashboard({
             {standardPlans.map((plan) => {
               const colors = getPlanColor(plan.name);
               const isCurrentPlan = currentPlan?.id === plan.id;
-              const isPopular = plan.name === "PROFESSIONAL";
               const simplifiedFeatures = getSimplifiedFeatures(plan);
 
               return (
@@ -929,16 +931,6 @@ export default function SubscriptionDashboard({
                       : "shadow-sm hover:shadow-md"
                   }`}
                 >
-                  {/* Badge populaire */}
-                  {isPopular && (
-                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
-                      <div className="flex items-center gap-1 bg-gradient-to-r from-[#d9840d] to-[#e36002] text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg">
-                        <Sparkles className="w-3 h-3" />
-                        Populaire
-                      </div>
-                    </div>
-                  )}
-
                   {/* Badge plan actuel */}
                   {isCurrentPlan && (
                     <div className="absolute top-4 right-4 z-10">
@@ -1038,6 +1030,11 @@ export default function SubscriptionDashboard({
                             <Check className="mr-2 h-4 w-4" />
                             Plan actuel
                           </>
+                        ) : plan.hasCustomPricing ? (
+                          <>
+                            Nous contacter
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </>
                         ) : (
                           <>
                             Sélectionner ce plan
@@ -1059,57 +1056,6 @@ export default function SubscriptionDashboard({
               abonnement.
             </div>
           )}
-        </div>
-
-        {/* Plan Sur mesure séparé */}
-        <div className="mb-8">
-          <div className="text-center mb-6">
-            <h3 className="text-xl font-semibold text-[color:var(--foreground)] mb-2">
-              Besoin d&apos;un plan sur mesure ?
-            </h3>
-            <p className="text-[color:var(--muted-foreground)]">
-              Pour les besoins spécifiques ou les grandes équipes
-            </p>
-          </div>
-
-          <div className="max-w-md mx-auto">
-            <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20 border-2 border-amber-200 dark:border-amber-800 shadow-lg hover:shadow-xl transition-all duration-300">
-              <CardContent className="p-6 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center">
-                  <Crown className="w-8 h-8 text-white" />
-                </div>
-
-                <h4 className="text-xl font-bold text-amber-700 dark:text-amber-400 mb-2">
-                  Solution personnalisée
-                </h4>
-                <p className="text-amber-600 dark:text-amber-500 mb-4 text-sm">
-                  Fonctionnalités sur mesure pour votre organisation
-                </p>
-
-                <div className="space-y-2 mb-6">
-                  <div className="flex items-center justify-center gap-2 text-sm text-amber-700 dark:text-amber-400">
-                    <Check className="w-4 h-4" />
-                    <span>Utilisateurs illimités</span>
-                  </div>
-                  <div className="flex items-center justify-center gap-2 text-sm text-amber-700 dark:text-amber-400">
-                    <Check className="w-4 h-4" />
-                    <span>Stockage illimité</span>
-                  </div>
-                  <div className="flex items-center justify-center gap-2 text-sm text-amber-700 dark:text-amber-400">
-                    <Check className="w-4 h-4" />
-                    <span>Support dédié</span>
-                  </div>
-                </div>
-
-                <Link href="/contact?subject=Demande%20Plan%20Sur%20Mesure">
-                  <Button className="w-full bg-amber-600 hover:bg-amber-700 text-white">
-                    <Mail className="mr-2 h-4 w-4" />
-                    Nous contacter
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </div>
         </div>
 
         {/* Section FAQ */}

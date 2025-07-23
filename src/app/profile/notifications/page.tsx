@@ -60,7 +60,7 @@ export default async function NotificationsPage() {
   return (
     <div className="min-h-screen bg-[color:var(--background)]">
       {/* Header compact */}
-      <div className="bg-[color:var(--card)] border-b border-[color:var(--border)] sticky top-0 z-40">
+      <div className="bg-white dark:bg-[color:var(--card)] border-b border-[color:var(--border)] sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           {/* Ligne navigation avec titre et stats */}
           <div className="flex items-center justify-between">
