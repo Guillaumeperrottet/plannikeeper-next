@@ -319,22 +319,20 @@ export default function NotificationsPanel({
   return (
     <div
       ref={panelRef}
-      className="absolute right-0 mt-2 w-80 sm:w-96 max-h-[80vh] overflow-hidden bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg shadow-lg z-50"
+      className="absolute right-0 mt-2 w-80 sm:w-96 max-h-[80vh] overflow-hidden bg-white border border-stone-200 rounded-lg shadow-lg z-50"
     >
-      <div className="p-3 border-b border-[color:var(--border)] flex justify-between items-center bg-[color:var(--muted)]">
-        <h3 className="font-medium text-[color:var(--foreground)]">
-          Notifications
-        </h3>
+      <div className="p-3 border-b border-stone-200 flex justify-between items-center bg-stone-50">
+        <h3 className="font-medium text-stone-900">Notifications</h3>
         <div className="flex gap-2">
           <button
             onClick={markAllAsRead}
-            className="text-xs text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)] transition-colors"
+            className="text-xs text-stone-600 hover:text-stone-900 transition-colors"
           >
             Tout marquer comme lu
           </button>
           <button
             onClick={handleClosePanel}
-            className="text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)] transition-colors"
+            className="text-stone-600 hover:text-stone-900 transition-colors"
           >
             <X size={16} />
           </button>
@@ -344,10 +342,10 @@ export default function NotificationsPanel({
       <div className="overflow-y-auto max-h-[60vh]">
         {loading ? (
           <div className="flex justify-center items-center p-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[color:var(--primary)]"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
           </div>
         ) : notifications.length === 0 ? (
-          <div className="text-center py-8 text-[color:var(--muted-foreground)]">
+          <div className="text-center py-8 text-stone-600">
             <Bell className="h-10 w-10 mx-auto mb-2 opacity-50" />
             <p>Aucune notification</p>
           </div>
@@ -356,41 +354,39 @@ export default function NotificationsPanel({
             {notifications.map((notification) => (
               <li
                 key={notification.id}
-                className={`border-b border-[color:var(--border)] last:border-b-0 hover:bg-[color:var(--muted)] transition-colors cursor-pointer ${
-                  !notification.read
-                    ? "bg-[color:var(--info-background)]/10"
-                    : ""
+                className={`border-b border-stone-200 last:border-b-0 hover:bg-stone-50 transition-colors cursor-pointer ${
+                  !notification.read ? "bg-blue-50" : ""
                 }`}
               >
                 <div
                   className="p-3 flex gap-3"
                   onClick={() => handleNotificationClick(notification)}
                 >
-                  <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-[color:var(--muted)]">
+                  <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-stone-100">
                     {navigatingNotificationId === notification.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-[color:var(--primary)]" />
+                      <Loader2 className="w-4 h-4 animate-spin text-orange-500" />
                     ) : (
                       getNotificationIcon(notification.type)
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-medium text-[color:var(--muted-foreground)] bg-[color:var(--muted)] px-2 py-1 rounded">
+                      <span className="text-xs font-medium text-stone-600 bg-stone-100 px-2 py-1 rounded">
                         {getNotificationTypeLabel(notification.type)}
                       </span>
                       {navigatingNotificationId === notification.id && (
-                        <span className="text-xs text-[color:var(--primary)] animate-pulse">
+                        <span className="text-xs text-orange-500 animate-pulse">
                           Ouverture...
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-[color:var(--foreground)] mb-1">
+                    <p className="text-sm text-stone-900 mb-1">
                       {notification.content}
                     </p>
 
                     {/* Afficher les informations détaillées de la tâche */}
                     {notification.data && notification.data.objectName && (
-                      <div className="text-xs text-[color:var(--muted-foreground)] space-y-1 mt-1">
+                      <div className="text-xs text-stone-600 space-y-1 mt-1">
                         {notification.data.taskName && (
                           <p className="flex items-center gap-1">
                             <span className="font-medium">Tâche:</span>
@@ -410,7 +406,7 @@ export default function NotificationsPanel({
                       </div>
                     )}
 
-                    <p className="text-xs text-[color:var(--muted-foreground)] mt-1">
+                    <p className="text-xs text-stone-500 mt-1">
                       {formatDistanceToNow(new Date(notification.createdAt), {
                         addSuffix: true,
                         locale: fr,
@@ -420,7 +416,7 @@ export default function NotificationsPanel({
                   {!notification.read &&
                     navigatingNotificationId !== notification.id && (
                       <button
-                        className="flex-shrink-0 text-[color:var(--primary)]"
+                        className="flex-shrink-0 text-orange-500"
                         onClick={(e) => {
                           e.stopPropagation();
                           markAsRead(notification.id);
@@ -437,10 +433,10 @@ export default function NotificationsPanel({
         )}
       </div>
 
-      <div className="p-2 border-t border-[color:var(--border)] text-center">
+      <div className="p-2 border-t border-stone-200 text-center">
         <a
           href="/profile/notifications"
-          className="text-xs text-[color:var(--primary)] hover:underline"
+          className="text-xs text-orange-500 hover:underline"
           onClick={() => handleClosePanel()}
         >
           Voir toutes les notifications

@@ -19,9 +19,32 @@ import {
   Save,
   RefreshCcw,
   Archive,
-  Check,
 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
+import { Badge } from "@/app/components/ui/badge";
+import { Label } from "@/app/components/ui/label";
+import { Input } from "@/app/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/app/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,6 +101,7 @@ interface ModernTaskDetailPageProps {
   objetId: string;
   sectorId: string;
   articleId: string;
+  readonly?: boolean;
 }
 
 export default function ModernTaskDetailPage({
@@ -86,10 +110,11 @@ export default function ModernTaskDetailPage({
   objetId,
   sectorId,
   articleId,
+  readonly = false,
 }: ModernTaskDetailPageProps) {
   const router = useRouter();
   const [task, setTask] = useState(initialTask);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(false && !readonly);
   const [isLoading, setIsLoading] = useState(false);
   const [editedTask, setEditedTask] = useState(task);
   const [activeTab, setActiveTab] = useState<
@@ -241,140 +266,45 @@ export default function ModernTaskDetailPage({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Fixed header with actions */}
-      <header className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link
-            href={`/dashboard/objet/${objetId}/secteur/${sectorId}/article/${articleId}`}
-            className="flex items-center gap-2 text-gray-900 hover:text-gray-700 transition-colors"
-          >
-            <ArrowLeft size={20} />
-            <span className="hidden sm:inline font-medium">Retour</span>
-          </Link>
-
-          <div className="flex items-center gap-2">
-            {!isEditing ? (
-              <>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      {getStatusInfo(task.status).icon}
-                      <span>{getStatusInfo(task.status).label}</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {["pending", "in_progress", "completed", "cancelled"].map(
-                      (status) => (
-                        <DropdownMenuItem
-                          key={status}
-                          onClick={() => handleStatusChange(status)}
-                          disabled={isLoading}
-                          className={
-                            task.status === status
-                              ? "bg-blue-50 text-blue-600"
-                              : ""
-                          }
-                        >
-                          <div className="flex items-center gap-2">
-                            {getStatusInfo(status).icon}
-                            <span>{getStatusInfo(status).label}</span>
-                            {task.status === status && (
-                              <Check className="w-4 h-4 ml-auto" />
-                            )}
-                          </div>
-                        </DropdownMenuItem>
-                      )
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                {/* Desktop action buttons */}
-                <div className="hidden sm:flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsEditing(true)}
-                  >
-                    <Edit size={16} className="mr-1" />
-                    Modifier
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleDelete}
-                    className="text-red-600 border-red-200 hover:bg-red-50"
-                  >
-                    <Trash2 size={16} className="mr-1" />
-                    Supprimer
-                  </Button>
-                </div>
-
-                {/* Mobile action menu */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="sm:hidden h-8 w-8 p-0"
-                      aria-label="Plus d'options"
-                    >
-                      <MoreVertical size={20} />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setIsEditing(true)}>
-                      <Edit size={16} className="mr-2" />
-                      Modifier
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={handleDelete}
-                      className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                    >
-                      <Trash2 size={16} className="mr-2" />
-                      Supprimer
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            ) : (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditing(false)}
-                  disabled={isLoading}
-                >
-                  <X size={16} className="mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">Annuler</span>
-                </Button>
-                <Button size="sm" onClick={handleSave} disabled={isLoading}>
-                  <Save size={16} className="mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">Enregistrer</span>
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* Bannière pour tâches archivées */}
-      {task.archived && (
-        <div className="bg-yellow-50 border-y border-yellow-200 py-3">
-          <div className="max-w-4xl mx-auto px-4 flex items-center gap-3">
-            <Archive className="h-5 w-5 text-yellow-600" />
-            <div>
-              <p className="text-yellow-800 font-medium">Tâche archivée</p>
-              <p className="text-yellow-700 text-sm">
-                Cette tâche est archivée et n&apos;apparaît plus dans les listes
-                actives.
-                {task.status === "completed" &&
-                  " Elle a été marquée comme terminée."}
-              </p>
+    <TooltipProvider>
+      <div className="min-h-screen bg-background">
+        {/* Bannière pour mode lecture seule */}
+        {readonly && (
+          <div className="bg-blue-50 dark:bg-blue-950 border-y border-blue-200 dark:border-blue-800 py-3">
+            <div className="max-w-7xl mx-auto px-4 flex items-center gap-4">
+              <Archive className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+              <div className="flex-1">
+                <p className="text-blue-800 dark:text-blue-200 font-medium text-sm">
+                  Mode consultation - Tâche archivée
+                </p>
+                <p className="text-blue-600 dark:text-blue-400 text-xs">
+                  Cette tâche est archivée et ne peut pas être modifiée. Pour la
+                  modifier, veuillez d&apos;abord la désarchiver.
+                </p>
+              </div>
             </div>
-            <div className="ml-auto">
-              <button
+          </div>
+        )}
+
+        {/* Bannière pour tâches archivées */}
+        {task.archived && !readonly && (
+          <div className="bg-warning/10 border-y border-warning/20 py-3">
+            <div className="max-w-7xl mx-auto px-4 flex items-center gap-4">
+              <Archive className="h-4 w-4 text-warning shrink-0" />
+              <div className="flex-1">
+                <p className="text-warning-foreground font-medium text-sm">
+                  Tâche archivée
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  Cette tâche est archivée et n&apos;apparaît plus dans les
+                  listes actives.
+                  {task.status === "completed" &&
+                    " Elle a été marquée comme terminée."}
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => {
                   // Fonction pour désarchiver
                   fetch(`/api/tasks/${task.id}/archive`, {
@@ -396,525 +326,772 @@ export default function ModernTaskDetailPage({
                       toast.error("Erreur lors de la désarchivation");
                     });
                 }}
-                className="px-3 py-1.5 text-xs rounded-md border border-yellow-300
-                          bg-white text-yellow-700 hover:bg-yellow-100 transition-colors"
+                className="shrink-0 text-xs h-7"
               >
-                Désarchiver cette tâche
-              </button>
+                Désarchiver
+              </Button>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-4 md:py-6">
-        {/* Task title and badges */}
-        <div className="mb-6">
-          <div className="flex items-start gap-3 mb-2">
-            <div
-              className="w-3 h-3 rounded-full flex-shrink-0 mt-2"
-              style={{ backgroundColor: task.color || "#3b82f6" }}
-            />
-            <div className="flex-1 min-w-0">
-              {isEditing ? (
-                <span className="relative inline-block">
-                  <input
-                    type="text"
-                    value={editedTask.name}
-                    onChange={(e) =>
-                      setEditedTask({ ...editedTask, name: e.target.value })
-                    }
-                    className="text-xl sm:text-2xl font-bold bg-transparent border-b border-gray-300 focus:border-blue-500 focus:ring-0 outline-none px-0 text-gray-900"
-                    style={{
-                      width: `${Math.max(editedTask.name.length * 0.65 + 1, 5)}ch`,
-                    }}
-                    autoFocus
-                  />
-                  <span
-                    className="absolute invisible text-xl sm:text-2xl font-bold whitespace-pre"
-                    aria-hidden="true"
-                  >
-                    {editedTask.name}
-                  </span>
-                </span>
-              ) : (
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                  {task.name}
-                </h1>
-              )}
-            </div>
+        <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-3">
+          {/* Breadcrumb navigation simple */}
+          <div className="mb-4">
+            <Link
+              href={`/dashboard/objet/${objetId}/secteur/${sectorId}/article/${articleId}`}
+              className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-sm w-fit"
+            >
+              <ArrowLeft size={16} />
+              <span className="hidden sm:inline">Retour à l&apos;article</span>
+              <span className="sm:hidden">Retour</span>
+            </Link>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 ml-6">
-            {task.taskType && (
-              <span className="px-2 py-0.5 text-xs sm:text-sm rounded-full bg-gray-100 text-gray-700">
-                {task.taskType}
-              </span>
-            )}
-            {task.recurring && (
-              <span className="px-2 py-0.5 text-xs sm:text-sm rounded-full bg-blue-50 text-blue-700 flex items-center gap-1">
-                <RefreshCcw size={12} />
-                <span>{getPeriodLabel(task.period)}</span>
-              </span>
-            )}
+          {/* Navigation avec Tabs pour mobile et desktop */}
+          <div className="sm:hidden">
+            <Tabs
+              value={activeTab}
+              onValueChange={(value) =>
+                setActiveTab(value as "details" | "documents" | "comments")
+              }
+            >
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="details">Détails</TabsTrigger>
+                <TabsTrigger value="documents">Documents</TabsTrigger>
+                <TabsTrigger value="comments">Commentaires</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
-        </div>
 
-        {/* Tab navigation for mobile */}
-        <div className="mb-6 border-b border-gray-200 sm:hidden">
-          <div className="flex">
-            <button
-              onClick={() => setActiveTab("details")}
-              className={`flex-1 py-2 px-1 text-sm font-medium ${
-                activeTab === "details"
-                  ? "text-blue-600 border-b-2 border-blue-600"
-                  : "text-gray-500"
-              }`}
-            >
-              Détails
-            </button>
-            <button
-              onClick={() => setActiveTab("documents")}
-              className={`flex-1 py-2 px-1 text-sm font-medium ${
-                activeTab === "documents"
-                  ? "text-blue-600 border-b-2 border-blue-600"
-                  : "text-gray-500"
-              }`}
-            >
-              Documents
-            </button>
-            <button
-              onClick={() => setActiveTab("comments")}
-              className={`flex-1 py-2 px-1 text-sm font-medium ${
-                activeTab === "comments"
-                  ? "text-blue-600 border-b-2 border-blue-600"
-                  : "text-gray-500"
-              }`}
-            >
-              Commentaires
-            </button>
-          </div>
-        </div>
-
-        {/* Content area - responsive layout */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Task details panel - always visible on desktop, conditionally on mobile */}
-          {(activeTab === "details" || !isMobile) && (
-            <div className="md:col-span-2 space-y-6">
-              {/* Bloc édition récurrence (avant la description) */}
-              {isEditing && (
-                <div className="mb-6">
-                  <div className="flex items-center mb-2">
-                    <input
-                      type="checkbox"
-                      id="recurring-edit"
-                      checked={editedTask.recurring}
-                      onChange={(e) =>
-                        setEditedTask({
-                          ...editedTask,
-                          recurring: e.target.checked,
-                        })
-                      }
-                      className="w-4 h-4 text-[color:var(--primary)] rounded focus:ring-[color:var(--ring)]"
-                    />
-                    <label
-                      htmlFor="recurring-edit"
-                      className="ml-2 text-sm font-medium text-[color:var(--foreground)]"
-                    >
-                      Tâche récurrente
-                    </label>
-                  </div>
-                  {editedTask.recurring && (
-                    <div className="ml-6 mt-2 space-y-3 bg-blue-50 p-3 rounded-lg border border-blue-200">
-                      <div>
-                        <label className="block text-sm font-medium mb-1 text-blue-700">
-                          Périodicité
-                        </label>
-                        <select
-                          value={editedTask.period || "weekly"}
-                          onChange={(e) =>
-                            setEditedTask({
-                              ...editedTask,
-                              period: e.target.value,
-                            })
-                          }
-                          className="w-full p-2 border border-gray-300 rounded-md text-sm bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                        >
-                          <option value="daily">Quotidienne</option>
-                          <option value="weekly">Hebdomadaire</option>
-                          <option value="monthly">Mensuelle</option>
-                          <option value="quarterly">Trimestrielle</option>
-                          <option value="yearly">Annuelle</option>
-                        </select>
-                        <p className="text-xs text-blue-600 mt-1">
-                          Définit à quelle fréquence la tâche doit se répéter.
-                        </p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1 text-blue-700">
-                          Date de fin (optionnelle)
-                        </label>
-                        <input
-                          type="date"
-                          value={
-                            editedTask.endDate
-                              ? new Date(
-                                  editedTask.endDate instanceof Date
-                                    ? editedTask.endDate
-                                    : new Date(editedTask.endDate)
-                                )
-                                  .toISOString()
-                                  .split("T")[0]
-                              : ""
-                          }
-                          onChange={(e) =>
-                            setEditedTask({
-                              ...editedTask,
-                              endDate: e.target.value
-                                ? new Date(e.target.value)
-                                : null,
-                            })
-                          }
-                          className="w-full p-2 border border-gray-300 rounded-md text-sm bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                        />
-                        <p className="text-xs text-blue-600 mt-1">
-                          Si définie, la tâche ne sera plus recréée après cette
-                          date. Si non définie, la tâche se répétera
-                          indéfiniment.
-                        </p>
-                      </div>
-                      {(editedTask.period === "quarterly" ||
-                        editedTask.period === "yearly") && (
-                        <div className="border-t border-blue-200 pt-3">
-                          <div className="flex items-start">
-                            <input
-                              type="checkbox"
-                              id="reminder-notification"
-                              checked={!!editedTask.recurrenceReminderDate}
-                              onChange={(e) => {
-                                if (
-                                  e.target.checked &&
-                                  editedTask.realizationDate
-                                ) {
-                                  // Calculer date 10 jours avant réalisation
-                                  const reminderDate = new Date(
-                                    editedTask.realizationDate instanceof Date
-                                      ? editedTask.realizationDate
-                                      : new Date(editedTask.realizationDate)
-                                  );
-                                  reminderDate.setDate(
-                                    reminderDate.getDate() - 10
-                                  );
-                                  setEditedTask({
-                                    ...editedTask,
-                                    recurrenceReminderDate: reminderDate,
-                                  });
-                                } else {
-                                  setEditedTask({
-                                    ...editedTask,
-                                    recurrenceReminderDate: null,
-                                  });
-                                }
+          {/* Content area - layout optimisé pour voir plus en une page */}
+          <div className="space-y-4">
+            {/* Section principale - informations et contenu */}
+            {(activeTab === "details" || !isMobile) && (
+              <div className="space-y-4">
+                {/* Informations principales - pleine largeur */}
+                <div className="space-y-4">
+                  {/* Carte principale avec toutes les informations */}
+                  <Card>
+                    <CardHeader className="pb-4">
+                      {/* Titre principal avec badge couleur et actions */}
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div
+                              className="w-3 h-3 rounded-full shrink-0"
+                              style={{
+                                backgroundColor:
+                                  task.color || "hsl(var(--primary))",
                               }}
-                              className="w-4 h-4 mt-1 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                             />
-                            <div className="ml-2">
-                              <label
-                                htmlFor="reminder-notification"
-                                className="text-sm font-medium text-blue-700"
+                            <div className="flex-1 min-w-0">
+                              {isEditing ? (
+                                <Input
+                                  type="text"
+                                  value={editedTask.name}
+                                  onChange={(e) =>
+                                    setEditedTask({
+                                      ...editedTask,
+                                      name: e.target.value,
+                                    })
+                                  }
+                                  className="text-xl font-bold bg-transparent border-b border-t-0 border-x-0 border-input focus:border-ring rounded-none px-0 h-auto py-1"
+                                  autoFocus
+                                />
+                              ) : (
+                                <CardTitle className="text-xl font-bold text-foreground leading-tight m-0 p-0">
+                                  {task.name}
+                                </CardTitle>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Badges statut et informations */}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <Badge
+                                  variant={getStatusInfo(task.status).variant}
+                                  className="gap-1.5 text-xs h-6 px-2.5"
+                                >
+                                  {getStatusInfo(task.status).icon}
+                                  {getStatusInfo(task.status).label}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Statut actuel de la tâche</p>
+                              </TooltipContent>
+                            </Tooltip>
+
+                            {task.taskType && (
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs h-6 px-2.5"
+                                  >
+                                    {task.taskType}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Type de tâche</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+
+                            {task.recurring && (
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Badge
+                                    variant="outline"
+                                    className="gap-1.5 text-xs h-6 px-2.5"
+                                  >
+                                    <RefreshCcw size={11} />
+                                    {getPeriodLabel(task.period)}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>
+                                    Tâche récurrente - se répète automatiquement
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+
+                            {task.assignedTo && (
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Badge
+                                    variant="outline"
+                                    className="gap-1.5 text-xs h-6 px-2.5"
+                                  >
+                                    <User size={11} />
+                                    {task.assignedTo.name}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Assigné à {task.assignedTo.name}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Actions côté droit */}
+                        <div className="flex items-center gap-2 shrink-0">
+                          {readonly ? (
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Archive className="h-4 w-4" />
+                              <span className="text-sm font-medium">
+                                Tâche archivée - Lecture seule
+                              </span>
+                            </div>
+                          ) : !isEditing ? (
+                            <>
+                              {/* Quick status change button */}
+                              {task.status === "pending" && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleStatusChange("completed")
+                                  }
+                                  disabled={isLoading}
+                                  className="gap-1.5 h-8 text-xs"
+                                >
+                                  <CheckCircle2 className="h-4 w-4" />
+                                  <span className="hidden sm:inline">
+                                    Marquer comme terminée
+                                  </span>
+                                  <span className="sm:hidden">Terminée</span>
+                                </Button>
+                              )}
+
+                              {task.status === "in_progress" && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleStatusChange("completed")
+                                  }
+                                  disabled={isLoading}
+                                  className="gap-1.5 h-8 text-xs"
+                                >
+                                  <CheckCircle2 className="h-4 w-4" />
+                                  <span className="hidden sm:inline">
+                                    Marquer comme terminée
+                                  </span>
+                                  <span className="sm:hidden">Terminée</span>
+                                </Button>
+                              )}
+
+                              {task.status === "completed" && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleStatusChange("pending")}
+                                  disabled={isLoading}
+                                  className="gap-1.5 h-8 text-xs"
+                                >
+                                  <Clock className="h-4 w-4" />
+                                  <span className="hidden sm:inline">
+                                    Remettre à faire
+                                  </span>
+                                  <span className="sm:hidden">À faire</span>
+                                </Button>
+                              )}
+
+                              {task.status === "cancelled" && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleStatusChange("pending")}
+                                  disabled={isLoading}
+                                  className="gap-1.5 h-8 text-xs"
+                                >
+                                  <Clock className="h-4 w-4" />
+                                  <span className="hidden sm:inline">
+                                    Remettre à faire
+                                  </span>
+                                  <span className="sm:hidden">À faire</span>
+                                </Button>
+                              )}
+
+                              {/* Desktop action buttons */}
+                              <div className="hidden sm:flex items-center gap-1.5">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setIsEditing(true)}
+                                      className="h-8 px-2.5 text-xs"
+                                    >
+                                      <Edit size={14} className="mr-1.5" />
+                                      Modifier
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Modifier les détails de la tâche</p>
+                                  </TooltipContent>
+                                </Tooltip>
+
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      onClick={handleDelete}
+                                      className="h-8 px-2.5 text-xs"
+                                    >
+                                      <Trash2 size={14} className="mr-1.5" />
+                                      Supprimer
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Supprimer définitivement la tâche</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+
+                              {/* Mobile action menu */}
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="sm:hidden h-8 w-8 p-0"
+                                    aria-label="Plus d'options"
+                                  >
+                                    <MoreVertical size={16} />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  {/* Quick status actions */}
+                                  {task.status === "pending" && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleStatusChange("completed")
+                                      }
+                                      disabled={isLoading}
+                                    >
+                                      <CheckCircle2
+                                        size={14}
+                                        className="mr-2"
+                                      />
+                                      Marquer comme terminée
+                                    </DropdownMenuItem>
+                                  )}
+
+                                  {task.status === "in_progress" && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleStatusChange("completed")
+                                      }
+                                      disabled={isLoading}
+                                    >
+                                      <CheckCircle2
+                                        size={14}
+                                        className="mr-2"
+                                      />
+                                      Marquer comme terminée
+                                    </DropdownMenuItem>
+                                  )}
+
+                                  {task.status === "completed" && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleStatusChange("pending")
+                                      }
+                                      disabled={isLoading}
+                                    >
+                                      <Clock size={14} className="mr-2" />
+                                      Remettre à faire
+                                    </DropdownMenuItem>
+                                  )}
+
+                                  {task.status === "cancelled" && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleStatusChange("pending")
+                                      }
+                                      disabled={isLoading}
+                                    >
+                                      <Clock size={14} className="mr-2" />
+                                      Remettre à faire
+                                    </DropdownMenuItem>
+                                  )}
+
+                                  <DropdownMenuItem
+                                    onClick={() => setIsEditing(true)}
+                                  >
+                                    <Edit size={14} className="mr-2" />
+                                    Modifier
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={handleDelete}
+                                    className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                                  >
+                                    <Trash2 size={14} className="mr-2" />
+                                    Supprimer
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </>
+                          ) : readonly ? null : (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setIsEditing(false)}
+                                disabled={isLoading}
+                                className="h-8 px-2.5 text-xs"
                               >
-                                Activer la notification anticipée
-                              </label>
-                              <p className="text-xs text-blue-600">
-                                Envoi d&apos;une notification 10 jours avant
-                                l&apos;échéance (recommandé pour les tâches peu
-                                fréquentes)
-                              </p>
+                                <X size={14} className="mr-1.5" />
+                                <span className="hidden sm:inline">
+                                  Annuler
+                                </span>
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={handleSave}
+                                disabled={isLoading}
+                                className="h-8 px-2.5 text-xs"
+                              >
+                                <Save size={14} className="mr-1.5" />
+                                <span className="hidden sm:inline">
+                                  Enregistrer
+                                </span>
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {/* Échéance */}
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 bg-primary/10 rounded">
+                            <Calendar className="w-4 h-4 text-primary" />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground block">
+                              Échéance
+                            </Label>
+                            {isEditing ? (
+                              <Input
+                                type="date"
+                                value={
+                                  editedTask.realizationDate
+                                    ? new Date(
+                                        typeof editedTask.realizationDate ===
+                                          "string" ||
+                                        editedTask.realizationDate instanceof
+                                          Date
+                                          ? editedTask.realizationDate
+                                          : ""
+                                      )
+                                        .toISOString()
+                                        .split("T")[0]
+                                    : ""
+                                }
+                                onChange={(e) =>
+                                  setEditedTask({
+                                    ...editedTask,
+                                    realizationDate: e.target.value
+                                      ? new Date(e.target.value)
+                                      : null,
+                                  })
+                                }
+                                className="h-7 text-xs mt-1"
+                              />
+                            ) : (
+                              <div className="text-xs font-medium text-foreground">
+                                {formatDate(task.realizationDate)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Assigné à */}
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 bg-accent/10 rounded">
+                            <User className="w-4 h-4 text-accent-foreground" />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground block">
+                              Assigné à
+                            </Label>
+                            {isEditing ? (
+                              <Select
+                                value={editedTask.assignedToId || "unassigned"}
+                                onValueChange={(value) =>
+                                  setEditedTask({
+                                    ...editedTask,
+                                    assignedToId:
+                                      value === "unassigned" ? null : value,
+                                  })
+                                }
+                              >
+                                <SelectTrigger className="w-full h-7 text-xs mt-1">
+                                  <SelectValue placeholder="Sélectionner" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="unassigned">
+                                    Non assigné
+                                  </SelectItem>
+                                  {users.map((user) => (
+                                    <SelectItem key={user.id} value={user.id}>
+                                      {user.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <div className="text-xs font-medium text-foreground">
+                                {task.assignedTo?.name || (
+                                  <span className="text-muted-foreground italic">
+                                    Non assigné
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Récurrence */}
+                        {task.recurring && (
+                          <div className="flex items-center gap-2">
+                            <div className="p-1.5 bg-blue-100 dark:bg-blue-900/20 rounded">
+                              <RefreshCcw className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground block">
+                                Récurrence
+                              </Label>
+                              <div className="text-xs font-medium text-foreground">
+                                {getPeriodLabel(task.period)}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Timestamps */}
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 bg-muted/50 rounded">
+                            <Clock className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground block">
+                              Modifiée
+                            </Label>
+                            <div className="text-xs font-medium text-foreground">
+                              {formatDate(task.updatedAt)}
                             </div>
                           </div>
                         </div>
-                      )}
-                    </div>
+                      </div>
+
+                      {/* Section Description intégrée */}
+                      <div className="mt-6 pt-4 border-t border-border">
+                        <div className="mb-3">
+                          <Label className="text-sm font-medium text-foreground">
+                            Description
+                          </Label>
+                        </div>
+                        {isEditing ? (
+                          <Textarea
+                            value={editedTask.description || ""}
+                            onChange={(e) =>
+                              setEditedTask({
+                                ...editedTask,
+                                description: e.target.value,
+                              })
+                            }
+                            placeholder="Ajouter une description..."
+                            className="min-h-[80px] text-sm"
+                          />
+                        ) : (
+                          <div className="text-sm text-foreground whitespace-pre-wrap leading-relaxed min-h-[60px] bg-muted/30 rounded-md p-3">
+                            {task.description || (
+                              <span className="text-muted-foreground italic">
+                                Aucune description
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Configuration récurrence en mode édition - pleine largeur */}
+                  {isEditing && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <RefreshCcw className="h-4 w-4 text-primary" />
+                          Configuration de la récurrence
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="flex items-center">
+                            <input
+                              type="checkbox"
+                              id="recurring-edit"
+                              checked={editedTask.recurring}
+                              onChange={(e) =>
+                                setEditedTask({
+                                  ...editedTask,
+                                  recurring: e.target.checked,
+                                })
+                              }
+                              className="w-4 h-4 text-primary rounded border-input focus:ring-ring"
+                            />
+                            <Label
+                              htmlFor="recurring-edit"
+                              className="ml-2 text-sm font-medium"
+                            >
+                              Tâche récurrente
+                            </Label>
+                          </div>
+
+                          {editedTask.recurring && (
+                            <>
+                              <div>
+                                <Label className="text-xs font-medium mb-1 block">
+                                  Périodicité
+                                </Label>
+                                <Select
+                                  value={editedTask.period || "weekly"}
+                                  onValueChange={(value) =>
+                                    setEditedTask({
+                                      ...editedTask,
+                                      period: value,
+                                    })
+                                  }
+                                >
+                                  <SelectTrigger className="w-full h-8 text-sm">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="daily">
+                                      Quotidienne
+                                    </SelectItem>
+                                    <SelectItem value="weekly">
+                                      Hebdomadaire
+                                    </SelectItem>
+                                    <SelectItem value="monthly">
+                                      Mensuelle
+                                    </SelectItem>
+                                    <SelectItem value="quarterly">
+                                      Trimestrielle
+                                    </SelectItem>
+                                    <SelectItem value="yearly">
+                                      Annuelle
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div>
+                                <Label className="text-xs font-medium mb-1 block">
+                                  Date de fin
+                                </Label>
+                                <Input
+                                  type="date"
+                                  value={
+                                    editedTask.endDate
+                                      ? new Date(
+                                          editedTask.endDate instanceof Date
+                                            ? editedTask.endDate
+                                            : new Date(editedTask.endDate)
+                                        )
+                                          .toISOString()
+                                          .split("T")[0]
+                                      : ""
+                                  }
+                                  onChange={(e) =>
+                                    setEditedTask({
+                                      ...editedTask,
+                                      endDate: e.target.value
+                                        ? new Date(e.target.value)
+                                        : null,
+                                    })
+                                  }
+                                  className="h-8 text-sm"
+                                />
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
                   )}
                 </div>
-              )}
-              {/* Description */}
-              <div className="bg-[color:var(--card)] rounded-lg border border-[color:var(--border)] shadow-sm p-4">
-                <h2 className="text-lg font-medium mb-3 flex items-center gap-1.5 text-[color:var(--foreground)]">
-                  Description
-                </h2>
-                {isEditing ? (
-                  <textarea
-                    value={editedTask.description || ""}
-                    onChange={(e) =>
-                      setEditedTask({
-                        ...editedTask,
-                        description: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 border border-[color:var(--border)] rounded-md min-h-[100px] text-sm bg-[color:var(--card)] text-[color:var(--foreground)]"
-                    placeholder="Ajouter une description..."
-                  />
-                ) : (
-                  <div className="text-sm text-[color:var(--foreground)] whitespace-pre-wrap">
-                    {task.description || (
-                      <span className="text-[color:var(--muted-foreground)] italic">
-                        Aucune description
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-              {/* Bloc affichage récurrence (après la description) */}
-              {task.recurring && (
-                <div className="bg-[color:var(--card)] rounded-lg border border-[color:var(--border)] shadow-sm p-4 mt-4">
-                  <h2 className="text-lg font-medium mb-3 flex items-center gap-1.5 text-[color:var(--foreground)]">
-                    <RefreshCcw className="h-5 w-5 text-[color:var(--info-foreground)]" />
-                    Récurrence
-                  </h2>
-                  <div className="bg-[color:var(--info-background)] rounded-lg p-3 border border-[color:var(--info-border)]">
-                    <div className="flex flex-col space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-[color:var(--info-foreground)]/90">
-                          Type de récurrence:
-                        </span>
-                        <span className="text-sm font-medium text-[color:var(--info-foreground)]">
-                          {task.period === "daily" && "Quotidienne"}
-                          {task.period === "weekly" && "Hebdomadaire"}
-                          {task.period === "monthly" && "Mensuelle"}
-                          {task.period === "quarterly" && "Trimestrielle"}
-                          {task.period === "yearly" && "Annuelle"}
-                        </span>
-                      </div>
-                      {task.realizationDate && (
-                        <div className="flex justify-between">
-                          <span className="text-sm text-[color:var(--info-foreground)]/90">
-                            Prochaine échéance:
-                          </span>
-                          <span className="text-sm font-medium text-[color:var(--info-foreground)]">
-                            {formatDate(task.realizationDate)}
-                          </span>
+
+                {/* Commentaire d'exécution et récurrence côte à côte */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Commentaire d'exécution */}
+                  {(task.executantComment || isEditing) && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base">
+                          Commentaire d&apos;exécution
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {isEditing ? (
+                          <Textarea
+                            value={editedTask.executantComment || ""}
+                            onChange={(e) =>
+                              setEditedTask({
+                                ...editedTask,
+                                executantComment: e.target.value,
+                              })
+                            }
+                            placeholder="Commentaire sur l'exécution..."
+                            className="min-h-[100px] text-sm"
+                          />
+                        ) : (
+                          <div className="text-sm text-foreground border-l-2 border-accent pl-3 py-1 bg-accent/5 rounded-r whitespace-pre-wrap leading-relaxed min-h-[100px]">
+                            {task.executantComment}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Bloc récurrence détaillé - compact */}
+                  {task.recurring && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <RefreshCcw className="h-4 w-4 text-primary" />
+                          Récurrence
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="text-center p-3 bg-gradient-to-br from-accent/10 to-accent/5 rounded border border-accent/20">
+                            <Badge variant="secondary" className="text-xs mb-2">
+                              {task.period === "daily" && "Quotidienne"}
+                              {task.period === "weekly" && "Hebdomadaire"}
+                              {task.period === "monthly" && "Mensuelle"}
+                              {task.period === "quarterly" && "Trimestrielle"}
+                              {task.period === "yearly" && "Annuelle"}
+                            </Badge>
+                            {task.realizationDate && (
+                              <div className="text-xs text-muted-foreground">
+                                Prochaine: {formatDate(task.realizationDate)}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950/20 p-2 rounded border border-blue-200 dark:border-blue-800">
+                            <p className="flex items-center gap-1">
+                              <AlertCircle className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                              Une nouvelle instance sera créée automatiquement
+                            </p>
+                          </div>
                         </div>
-                      )}
-                      {task.endDate ? (
-                        <div className="flex justify-between">
-                          <span className="text-sm text-[color:var(--info-foreground)]/90">
-                            Date de fin de récurrence:
-                          </span>
-                          <span className="text-sm font-medium text-[color:var(--info-foreground)]">
-                            {formatDate(task.endDate)}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex justify-between">
-                          <span className="text-sm text-[color:var(--info-foreground)]/90">
-                            Date de fin de récurrence:
-                          </span>
-                          <span className="text-sm font-medium text-[color:var(--info-foreground)]/70">
-                            Non définie (répétition sans fin)
-                          </span>
-                        </div>
-                      )}
-                      {(task.period === "quarterly" ||
-                        task.period === "yearly") && (
-                        <>
-                          {task.recurrenceReminderDate ? (
-                            <div className="flex justify-between">
-                              <span className="text-sm text-[color:var(--info-foreground)]">
-                                Date de notification anticipée:
-                              </span>
-                              <span className="text-sm font-medium text-[color:var(--info-foreground)]">
-                                {formatDate(task.recurrenceReminderDate)}
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="flex justify-between">
-                              <span className="text-sm text-[color:var(--info-foreground)]/90">
-                                Notification anticipée:
-                              </span>
-                              <span className="text-sm font-medium text-[color:var(--info-foreground)]/70">
-                                Non activée
-                              </span>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+
+                {/* Documents et commentaires côte à côte */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Documents section compacte */}
+                  {(activeTab === "documents" || !isMobile) && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Paperclip className="h-4 w-4 text-muted-foreground" />
+                          Documents
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <DocumentsList
+                            taskId={task.id}
+                            onDocumentsChange={() => {}}
+                          />
+                          {!readonly && (
+                            <div className="border-t border-border pt-4">
+                              <DocumentUpload
+                                taskId={task.id}
+                                onUploadSuccess={() => {}}
+                              />
                             </div>
                           )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  {/* Explication du fonctionnement des tâches récurrentes */}
-                  <div className="mt-4 text-sm text-[color:var(--muted-foreground)] bg-[color:var(--muted)]/30 p-3 rounded-lg border border-[color:var(--border)]">
-                    <p className="flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4 text-[color:var(--info-foreground)]" />
-                      <span>
-                        Cette tâche se répète automatiquement. Une fois
-                        terminée, une nouvelle instance sera créée pour la
-                        prochaine échéance.
-                      </span>
-                    </p>
-                    {task.status === "completed" && (
-                      <p className="mt-2 text-[color:var(--success-foreground)] flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4" />
-                        <span>
-                          Lorsque vous marquez cette tâche comme terminée, une
-                          nouvelle instance sera automatiquement créée pour la
-                          prochaine période.
-                        </span>
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-              {/* Execution comment (if exists) */}
-              {(task.executantComment || isEditing) && (
-                <div className="bg-[color:var(--card)] rounded-lg border border-[color:var(--border)] shadow-sm p-4">
-                  <h2 className="text-lg font-medium mb-3 text-[color:var(--foreground)]">
-                    Commentaire d&apos;exécution
-                  </h2>
-                  {isEditing ? (
-                    <textarea
-                      value={editedTask.executantComment || ""}
-                      onChange={(e) =>
-                        setEditedTask({
-                          ...editedTask,
-                          executantComment: e.target.value,
-                        })
-                      }
-                      className="w-full p-2 border border-[color:var(--border)] rounded-md min-h-[80px] text-sm bg-[color:var(--card)] text-[color:var(--foreground)]"
-                      placeholder="Commentaire sur l'exécution..."
-                    />
-                  ) : (
-                    <div className="text-sm text-[color:var(--foreground)] border-l-4 border-[color:var(--info-border)] pl-3 py-2 bg-[color:var(--info-background)] rounded-r-md whitespace-pre-wrap">
-                      {task.executantComment}
-                    </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Comments section compacte */}
+                  {(activeTab === "comments" || !isMobile) && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          Commentaires
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <TaskComments taskId={task.id} />
+                      </CardContent>
+                    </Card>
                   )}
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* Metadata sidebar on desktop / conditional tab content on mobile */}
-          {(activeTab === "details" || !isMobile) && (
-            <div className="md:col-span-1">
-              <div className="bg-[color:var(--card)] rounded-lg border border-[color:var(--border)] shadow-sm p-4">
-                <h3 className="font-medium text-[color:var(--muted-foreground)] text-sm mb-4">
-                  DÉTAILS
-                </h3>
-
-                <div className="space-y-4">
-                  {/* Due date */}
-                  <div className="flex items-start gap-2">
-                    <Calendar className="w-5 h-5 text-[color:var(--muted-foreground)] mt-0.5" />
-                    <div>
-                      <div className="text-xs text-[color:var(--muted-foreground)] mb-1">
-                        Date d&apos;échéance
-                      </div>
-                      {isEditing ? (
-                        <input
-                          type="date"
-                          value={
-                            editedTask.realizationDate
-                              ? new Date(
-                                  typeof editedTask.realizationDate ===
-                                    "string" ||
-                                  editedTask.realizationDate instanceof Date
-                                    ? editedTask.realizationDate
-                                    : ""
-                                )
-                                  .toISOString()
-                                  .split("T")[0]
-                              : ""
-                          }
-                          onChange={(e) =>
-                            setEditedTask({
-                              ...editedTask,
-                              realizationDate: e.target.value
-                                ? new Date(e.target.value)
-                                : null,
-                            })
-                          }
-                          className="w-full p-1 border border-[color:var(--border)] rounded text-sm bg-[color:var(--card)] text-[color:var(--foreground)]"
-                        />
-                      ) : (
-                        <div className="text-sm font-medium text-[color:var(--foreground)]">
-                          {formatDate(task.realizationDate)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Assignee */}
-                  <div className="flex items-start gap-2">
-                    <User className="w-5 h-5 text-[color:var(--muted-foreground)] mt-0.5" />
-                    <div>
-                      <div className="text-xs text-[color:var(--muted-foreground)] mb-1">
-                        Assigné à
-                      </div>
-                      {isEditing ? (
-                        <select
-                          value={editedTask.assignedToId || ""}
-                          onChange={(e) =>
-                            setEditedTask({
-                              ...editedTask,
-                              assignedToId: e.target.value || null,
-                            })
-                          }
-                          className="w-full p-1 border border-[color:var(--border)] rounded text-sm bg-[color:var(--card)] text-[color:var(--foreground)]"
-                        >
-                          <option value="">Non assigné</option>
-                          {users.map((user) => (
-                            <option key={user.id} value={user.id}>
-                              {user.name}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <div className="text-sm font-medium text-[color:var(--foreground)]">
-                          {task.assignedTo?.name || "Non assigné"}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Created/Updated dates */}
-                  <div className="pt-3 border-t border-[color:var(--border)]">
-                    <div className="flex justify-between text-xs text-[color:var(--muted-foreground)]">
-                      <span>Créée le: {formatDate(task.createdAt)}</span>
-                      <span>Modifiée le: {formatDate(task.updatedAt)}</span>
-                    </div>
-                  </div>
-                </div>
               </div>
-            </div>
-          )}
-
-          {/* Documents tab content - conditionally visible based on active tab */}
-          {(activeTab === "documents" || !isMobile) && (
-            <div className={`${isMobile ? "" : "md:col-span-3"} space-y-6`}>
-              <div className="bg-[color:var(--card)] rounded-lg border border-[color:var(--border)] shadow-sm p-4">
-                <h2 className="text-lg font-medium mb-4 flex items-center gap-1.5 text-[color:var(--foreground)]">
-                  <Paperclip className="h-5 w-5 text-[color:var(--muted-foreground)]" />
-                  Documents
-                </h2>
-                <DocumentsList taskId={task.id} onDocumentsChange={() => {}} />
-                <div className="mt-4 border-t border-[color:var(--border)] pt-4">
-                  <h3 className="text-sm font-medium mb-2 text-[color:var(--foreground)]">
-                    Ajouter un document
-                  </h3>
-                  <DocumentUpload taskId={task.id} onUploadSuccess={() => {}} />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Comments tab content - conditionally visible based on active tab */}
-          {(activeTab === "comments" || !isMobile) && (
-            <div className={`${isMobile ? "" : "md:col-span-3"} space-y-6`}>
-              <div className="bg-[color:var(--card)] rounded-lg border border-[color:var(--border)] shadow-sm p-4">
-                <TaskComments taskId={task.id} />
-              </div>
-            </div>
-          )}
-        </div>
-      </main>
-    </div>
+            )}
+          </div>
+        </main>
+      </div>
+    </TooltipProvider>
   );
 }

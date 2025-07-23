@@ -1,24 +1,15 @@
 "use client";
 
+import React from "react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/app/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/app/components/ui/select";
-import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
-  SheetTitle,
   SheetTrigger,
 } from "@/app/components/ui/sheet";
 import { toast } from "sonner";
-import Link from "next/link";
 import {
   ChevronLeft,
   ChevronRight,
@@ -31,9 +22,9 @@ import {
   ArrowUp,
   ArrowDown,
   XCircle,
+  Plus,
 } from "lucide-react";
 import ImageWithArticles from "@/app/components/ImageWithArticles";
-import AccessControl from "@/app/components/AccessControl";
 
 // Types définis comme dans votre code original
 type Sector = {
@@ -75,6 +66,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [createMode, setCreateMode] = useState(false);
   const viewerRef = useRef<HTMLDivElement>(null);
   const mainContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -225,6 +217,142 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
     setHoveredArticleId(articleId);
   };
 
+  const handleArticleUpdate = async (articleId: string, updates: { title: string; description: string }) => {
+    try {
+      // Trouver l'article existant pour conserver ses autres propriétés
+      const existingArticle = articles.find(a => a.id === articleId);
+      if (!existingArticle) {
+        throw new Error('Article non trouvé');
+      }
+
+      const response = await fetch(`/api/articles/${articleId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: updates.title,
+          description: updates.description,
+          positionX: existingArticle.positionX,
+          positionY: existingArticle.positionY,
+          width: existingArticle.width,
+          height: existingArticle.height,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la mise à jour de l\'article');
+      }
+
+      // Recharger les articles pour refléter les changements
+      if (selectedSector) {
+        await fetchArticles(selectedSector.id);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de l\'article:', error);
+      throw error; // Re-throw pour que le composant puisse gérer l'erreur
+    }
+  };
+
+  const handleArticlePositionUpdate = async (articleId: string, updates: { positionX: number; positionY: number; width: number; height: number }) => {
+    try {
+      // Trouver l'article existant pour conserver ses autres propriétés
+      const existingArticle = articles.find(a => a.id === articleId);
+      if (!existingArticle) {
+        throw new Error('Article non trouvé');
+      }
+
+      const response = await fetch(`/api/articles/${articleId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: existingArticle.title,
+          description: existingArticle.description,
+          positionX: updates.positionX,
+          positionY: updates.positionY,
+          width: updates.width,
+          height: updates.height,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la mise à jour de la position de l\'article');
+      }
+
+      // Recharger les articles pour refléter les changements
+      if (selectedSector) {
+        await fetchArticles(selectedSector.id);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la position de l\'article:', error);
+      throw error; // Re-throw pour que le composant puisse gérer l'erreur
+    }
+  };
+
+  const handleArticleDelete = async (articleId: string) => {
+    try {
+      const response = await fetch(`/api/articles/${articleId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la suppression de l\'article');
+      }
+
+      // Recharger les articles pour refléter les changements
+      if (selectedSector) {
+        await fetchArticles(selectedSector.id);
+      }
+
+      // Afficher un message de succès
+      toast.success('Article supprimé avec succès');
+    } catch (error) {
+      console.error('Erreur lors de la suppression de l\'article:', error);
+      toast.error('Erreur lors de la suppression de l\'article');
+      throw error; // Re-throw pour que le composant puisse gérer l'erreur
+    }
+  };
+
+  const handleArticleCreate = async (articleData: { title: string; description: string; positionX: number; positionY: number; width: number; height: number }) => {
+    try {
+      if (!selectedSector) {
+        throw new Error('Aucun secteur sélectionné');
+      }
+
+      const response = await fetch('/api/articles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: articleData.title,
+          description: articleData.description,
+          positionX: articleData.positionX,
+          positionY: articleData.positionY,
+          width: articleData.width,
+          height: articleData.height,
+          sectorId: selectedSector.id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la création de l\'article');
+      }
+
+      // Recharger les articles pour refléter les changements
+      await fetchArticles(selectedSector.id);
+
+      // Afficher un message de succès
+      toast.success('Article créé avec succès');
+    } catch (error) {
+      console.error('Erreur lors de la création de l\'article:', error);
+      toast.error('Erreur lors de la création de l\'article');
+      throw error; // Re-throw pour que le composant puisse gérer l'erreur
+    }
+  };
+
   const toggleFullscreen = useCallback(() => {
     setIsFullscreen(!isFullscreen);
 
@@ -321,57 +449,55 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 Secteur :
               </label>
             </div>
-            <Select
-              value={selectedSector?.id}
-              onValueChange={(id: string) => {
-                const sector = sectors.find((s) => s.id === id);
+            <select
+              value={selectedSector?.id || ""}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                const sector = sectors.find((s) => s.id === e.target.value);
                 if (sector) handleSectorChange(sector);
               }}
+              className="w-full sm:w-[280px] bg-background border border-input shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
             >
-              <SelectTrigger className="w-full sm:w-[280px] bg-background border-input shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors">
-                <SelectValue
-                  placeholder="Sélectionner un secteur"
-                  className="text-foreground"
-                />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                {sectors.map((sector) => (
-                  <SelectItem
-                    key={sector.id}
-                    value={sector.id}
-                    className="cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-primary/60"></div>
-                      {sector.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <option value="" disabled>Sélectionner un secteur</option>
+              {sectors.map((sector) => (
+                <option key={sector.id} value={sector.id}>
+                  {sector.name}
+                </option>
+              ))}
+            </select>
 
-            {/* Bouton Articles pour desktop - en dehors du flux normal */}
+            {/* Boutons Articles et Créer un article pour desktop */}
             {selectedSector && !isMobile && (
-              <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="ml-4 flex items-center gap-2"
-                    aria-expanded={sidebarOpen}
-                  >
-                    <ListFilter size={16} />
-                    Articles
-                  </Button>
-                </SheetTrigger>
+              <div className="flex items-center gap-2 ml-4">
+                <Button
+                  onClick={() => setCreateMode(!createMode)}
+                  className={`flex items-center gap-2 px-3 py-2 ${
+                    createMode 
+                      ? "bg-purple-600 hover:bg-purple-700 text-white" 
+                      : "border border-input hover:bg-accent hover:text-accent-foreground"
+                  }`}
+                  variant={createMode ? "default" : "outline"}
+                  size="sm"
+                >
+                  <Plus size={16} />
+                  Créer un article
+                </Button>
+                
+                <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+                  <SheetTrigger {...({ asChild: true } as React.ComponentProps<typeof SheetTrigger>)}>
+                    <button className="flex items-center gap-2 px-3 py-2 border border-input rounded-md hover:bg-accent hover:text-accent-foreground">
+                      <ListFilter size={16} />
+                      Articles
+                    </button>
+                  </SheetTrigger>
                 <SheetContent side="right" className="w-[400px] sm:w-[540px]">
                   <SheetHeader>
-                    <SheetTitle>
+                    <h2 className="text-lg font-semibold">
                       Articles ({filteredArticles.length})
-                    </SheetTitle>
-                    <SheetDescription>
+                    </h2>
+                    <div className="text-sm text-muted-foreground">
                       Liste des articles du secteur &quot;{selectedSector.name}
                       &quot;
-                    </SheetDescription>
+                    </div>
                   </SheetHeader>
 
                   {/* Contenu de la Sheet */}
@@ -469,44 +595,12 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                   </div>
                 </SheetContent>
               </Sheet>
+              </div>
             )}
           </div>
 
           {/* Bouton pour ajouter/modifier un article */}
-          {selectedSector && (
-            <div className="w-full sm:w-auto">
-              <AccessControl
-                entityType="sector"
-                entityId={selectedSector.id}
-                requiredLevel="write"
-                fallback={
-                  <Button
-                    variant="outline"
-                    className="w-full sm:w-auto opacity-60"
-                    onClick={() =>
-                      toast.info(
-                        "Vous n'avez pas les droits pour modifier ce secteur"
-                      )
-                    }
-                  >
-                    {isMobile
-                      ? "Modifier/Créer un article"
-                      : "Modifier ou créer un article"}
-                  </Button>
-                }
-              >
-                <Button asChild variant="outline" className="w-full sm:w-auto">
-                  <Link
-                    href={`/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?addArticle=1`}
-                  >
-                    {isMobile
-                      ? "Modifier/Créer un article"
-                      : "Modifier ou créer un article"}
-                  </Link>
-                </Button>
-              </AccessControl>
-            </div>
-          )}
+          {/* Supprimé - remplacé par le bouton flottant dans ImageWithArticles */}
         </div>
       )}
 
@@ -558,6 +652,24 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                     onArticleHover={handleArticleHover}
                     hoveredArticleId={hoveredArticleId}
                     selectedArticleId={selectedArticleId}
+                    onArticleMove={(articleId: string) => {
+                      // Rediriger vers la page d'édition avec l'article sélectionné
+                      window.location.href = `/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?selectedArticle=${articleId}&mode=move`;
+                    }}
+                    onArticleResize={(articleId: string) => {
+                      // Rediriger vers la page d'édition avec l'article sélectionné
+                      window.location.href = `/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?selectedArticle=${articleId}&mode=resize`;
+                    }}
+                    onArticleEdit={(articleId: string) => {
+                      // Rediriger vers la page d'édition avec l'article sélectionné
+                      window.location.href = `/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?selectedArticle=${articleId}&mode=edit`;
+                    }}
+                    onArticleDelete={handleArticleDelete}
+                    onArticleUpdate={handleArticleUpdate}
+                    onArticlePositionUpdate={handleArticlePositionUpdate}
+                    onArticleCreate={handleArticleCreate}
+                    createMode={createMode}
+                    onCreateModeChange={setCreateMode}
                     className={`${
                       isFullscreen
                         ? "max-h-screen"
@@ -597,7 +709,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                   {/* Sheet pour mobile */}
                   <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
                     {/* Bouton flottant pour ouvrir la liste */}
-                    <SheetTrigger asChild>
+                    <SheetTrigger {...({ asChild: true } as React.ComponentProps<typeof SheetTrigger>)}>
                       <button className="fixed bottom-20 left-4 z-[9] flex items-center gap-1 bg-primary text-primary-foreground rounded-full shadow-lg px-3 py-3 hover:scale-105 transition-transform">
                         <ListFilter size={18} />
                         <span className="ml-1 text-sm font-medium">
@@ -616,9 +728,9 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                       <SheetHeader className="pb-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <SheetTitle className="text-left">
+                            <h2 className="text-lg font-semibold text-left">
                               Articles de &quot;{selectedSector.name}&quot;
-                            </SheetTitle>
+                            </h2>
                             <Button
                               variant="outline"
                               size="sm"

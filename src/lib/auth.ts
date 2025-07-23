@@ -3,7 +3,15 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
 import { EmailService } from "./email";
-import { PlanType } from "@prisma/client";
+
+type PlanType =
+  | "FREE"
+  | "PERSONAL"
+  | "PROFESSIONAL"
+  | "ENTERPRISE"
+  | "SUPER_ADMIN"
+  | "ILLIMITE"
+  | "CUSTOM";
 
 const isDev =
   process.env.NODE_ENV === "development" ||
@@ -60,7 +68,6 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => {
-      console.log("📧 Envoi email de vérification:", user.email);
       const name = user.name || user.email.split("@")[0];
       const subject = "Finalisez votre inscription à PlanniKeeper";
       const html = `
@@ -102,7 +109,6 @@ export const auth = betterAuth({
       </html>
       `;
       await EmailService.sendEmail({ to: user.email, subject, html });
-      console.log("✅ Email de vérification envoyé avec succès à:", user.email);
     },
   },
 
@@ -128,8 +134,6 @@ export const auth = betterAuth({
         | Record<string, unknown>
         | undefined;
 
-      console.log("🔄 Hook after déclenché pour path:", path);
-
       // ✅ GARDER SEULEMENT LES INSCRIPTIONS NORMALES (sans invitation)
       if (path.includes("sign-up") && !path.includes("invitation")) {
         try {
@@ -139,11 +143,10 @@ export const auth = betterAuth({
               email: string;
               name?: string;
             };
-            console.log("📝 Inscription normale pour:", user.email);
             await handleRegularSignup(user);
           }
-        } catch (error) {
-          console.error("❌ Erreur dans hook inscription normale:", error);
+        } catch {
+          // Erreur silencieuse
         }
       }
 
@@ -165,17 +168,14 @@ export const auth = betterAuth({
 
             const metadata = dbUser?.metadata as Record<string, unknown> | null;
             if (metadata && typeof metadata["inviteCode"] === "string") {
-              console.log(
-                "ℹ️ Invitation détectée, pas de traitement supplémentaire"
-              );
               return {};
             }
 
             // Traitement normal pour les inscriptions classiques
             await handleEmailVerificationForRegularUser(user);
           }
-        } catch (error) {
-          console.error("❌ Erreur dans hook vérification email:", error);
+        } catch {
+          // Erreur silencieuse
         }
       }
 
@@ -205,8 +205,6 @@ async function handleRegularSignup(user: {
   email: string;
   name?: string;
 }) {
-  console.log("🆕 Nouveau propriétaire, création organisation:", user.email);
-
   // Enregistrer les métadonnées basiques
   await prisma.user.update({
     where: { id: user.id },
@@ -219,7 +217,6 @@ async function handleRegularSignup(user: {
   });
 
   // Pas de création d'organisation ici, on attend la vérification email
-  console.log("✅ Métadonnées sauvegardées, attente vérification email");
 }
 
 // Fonction pour gérer la vérification email des utilisateurs normaux
@@ -228,8 +225,6 @@ async function handleEmailVerificationForRegularUser(user: {
   email: string;
   name?: string;
 }) {
-  console.log("✅ Email vérifié pour inscription normale:", user.email);
-
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
     include: {
@@ -239,7 +234,6 @@ async function handleEmailVerificationForRegularUser(user: {
   });
 
   if (!dbUser) {
-    console.error("❌ Utilisateur introuvable après vérification email");
     return;
   }
 
@@ -295,10 +289,7 @@ async function finalizeRegularUserSetup(
         role: "admin",
       },
     });
-    console.log("✅ Association OrganizationUser créée (admin)");
-  }
-
-  // Créer abonnement si nécessaire
+  } // Créer abonnement si nécessaire
   await createSubscriptionIfNeeded(organizationId, metadata.planType || "FREE");
 }
 
@@ -312,8 +303,6 @@ async function createDefaultOrganization(user: {
   email: string;
   name?: string;
 }) {
-  console.log("🏢 Création organisation par défaut pour:", user.email);
-
   const organization = await prisma.organization.create({
     data: {
       name: `${user.name || user.email.split("@")[0]}'s Organization`,
@@ -335,7 +324,6 @@ async function createDefaultOrganization(user: {
 
   await createSubscriptionIfNeeded(organization.id, "FREE");
 
-  console.log("✅ Organisation par défaut créée:", organization.id);
   return organization;
 }
 
@@ -369,7 +357,6 @@ async function createSubscriptionIfNeeded(
         currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
       },
     });
-    console.log("💰 Abonnement créé avec plan:", plan.name);
   }
 }
 
@@ -390,9 +377,8 @@ async function sendWelcomeEmail(user: {
         userWithOrg,
         userWithOrg.Organization.name
       );
-      console.log("✅ Email de bienvenue envoyé à:", user.email);
     }
-  } catch (error) {
-    console.error("❌ Erreur envoi email de bienvenue:", error);
+  } catch {
+    // Erreur silencieuse
   }
 }

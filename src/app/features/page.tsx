@@ -14,7 +14,7 @@ export default function FeaturesPage() {
   return (
     <div className="min-h-screen bg-[color:var(--background)]">
       {/* Header avec navigation */}
-      <div className="bg-[color:var(--card)] border-b border-[color:var(--border)] sticky top-0 z-40">
+      <div className="bg-white dark:bg-[color:var(--card)] border-b border-[color:var(--border)] sticky top-0 z-40 shadow-sm">
         <div className="container max-w-3xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <BackButton

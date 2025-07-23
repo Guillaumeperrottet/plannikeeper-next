@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 import {
   Clock,
   ArrowLeft,
@@ -17,14 +17,14 @@ import PremiumBurgerButton from "@/app/components/ui/BurgerButton";
 import { useState } from "react";
 
 // Animations pour les entrées des éléments
-const fadeInUp = {
+const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
       duration: 0.6,
-      ease: "easeOut",
+      ease: "easeOut" as const,
     },
   },
 };

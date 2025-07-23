@@ -5,6 +5,7 @@ import TaskDetailPage from "@/app/dashboard/objet/[id]/secteur/[sectorId]/articl
 
 export default async function TaskPage({
   params,
+  searchParams,
 }: {
   params: Promise<{
     id: string;
@@ -12,6 +13,7 @@ export default async function TaskPage({
     articleId: string;
     taskId: string;
   }>;
+  searchParams: Promise<{ readonly?: string }>;
 }) {
   const session = await getUser();
   if (!session) {
@@ -19,6 +21,7 @@ export default async function TaskPage({
   }
 
   const { id: objetId, sectorId, articleId, taskId } = await params;
+  const { readonly } = await searchParams;
 
   // Récupérer la tâche avec tous les détails nécessaires
   const task = await prisma.task.findUnique({
@@ -75,6 +78,7 @@ export default async function TaskPage({
       objetId={objetId}
       sectorId={sectorId}
       articleId={articleId}
+      readonly={readonly === "true"}
     />
   );
 }

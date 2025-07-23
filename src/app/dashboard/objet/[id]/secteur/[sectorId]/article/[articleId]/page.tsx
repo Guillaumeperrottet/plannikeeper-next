@@ -26,7 +26,10 @@ export default async function ArticleDetailPage({
         where: {
           archived: false, // Filtrer les tâches archivées ici
         },
-        include: { assignedTo: true },
+        include: {
+          assignedTo: true,
+          documents: true,
+        },
         orderBy: { createdAt: "desc" },
       },
       sector: { include: { object: true } },

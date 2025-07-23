@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 import {
   Send,
   HomeIcon,
@@ -47,14 +47,14 @@ const industries = [
 ];
 
 // Animations pour les entrées des éléments
-const fadeInUp = {
+const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
       duration: 0.6,
-      ease: "easeOut",
+      ease: "easeOut" as const,
     },
   },
 };

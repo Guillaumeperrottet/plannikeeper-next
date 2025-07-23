@@ -1,26 +1,48 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   Search,
   Calendar,
   Archive,
   Building,
-  SortAsc,
-  SortDesc,
   RefreshCcw,
   User,
   Filter as FilterIcon,
   Printer,
-  Home,
   ArrowLeft,
   Loader2,
   Tag,
   Layers,
+  RotateCcw,
+  Eye,
+  Home,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
-import ArchiveButton from "@/app/dashboard/objet/[id]/secteur/[sectorId]/article/[articleId]/ArchiveButton";
+import { Button } from "@/app/components/ui/button";
+import { Input } from "@/app/components/ui/input";
+import { Badge } from "@/app/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader } from "@/app/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/app/components/ui/table";
+import { Label } from "@/app/components/ui/label";
 
 // Types
 type Task = {
@@ -77,15 +99,14 @@ export default function ArchivesPage() {
   const [objects, setObjects] = useState<Object[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
   const [selectedObject, setSelectedObject] = useState<string | null>(null);
   const [selectedTaskType, setSelectedTaskType] = useState<string | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<string | null>(null);
   const [selectedAssignee, setSelectedAssignee] = useState<string | null>(null);
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
-  const [sortBy, setSortBy] = useState<string>("archivedAt");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [sortField, setSortField] = useState<string>("archivedAt");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   // Métadonnées pour les filtres
   const [taskTypes, setTaskTypes] = useState<string[]>([]);
@@ -94,26 +115,8 @@ export default function ArchivesPage() {
 
   const printRef = useRef<HTMLDivElement>(null);
 
-  // Chargement initial des données
-  useEffect(() => {
-    const fetchObjects = async () => {
-      try {
-        const response = await fetch("/api/objet");
-        if (response.ok) {
-          const data = await response.json();
-          setObjects(data);
-        }
-      } catch (error) {
-        console.error("Erreur lors du chargement des objets:", error);
-      }
-    };
-
-    fetchObjects();
-    fetchArchivedTasks();
-  }, []);
-
   // Récupération des tâches archivées avec filtres
-  const fetchArchivedTasks = async () => {
+  const fetchArchivedTasks = useCallback(async () => {
     setLoading(true);
     try {
       // Construire l'URL avec les paramètres de filtrage
@@ -127,8 +130,8 @@ export default function ArchivesPage() {
       if (selectedAssignee) params.append("assigneeId", selectedAssignee);
       if (fromDate) params.append("fromDate", fromDate);
       if (toDate) params.append("toDate", toDate);
-      params.append("sortBy", sortBy);
-      params.append("sortOrder", sortOrder);
+      params.append("sortBy", sortField);
+      params.append("sortOrder", sortDirection);
 
       url += params.toString();
 
@@ -152,7 +155,46 @@ export default function ArchivesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [
+    searchQuery,
+    selectedObject,
+    selectedTaskType,
+    selectedArticle,
+    selectedAssignee,
+    fromDate,
+    toDate,
+    sortField,
+    sortDirection,
+  ]);
+
+  // Chargement initial des données
+  useEffect(() => {
+    const fetchObjects = async () => {
+      try {
+        const response = await fetch("/api/objet");
+        if (response.ok) {
+          const data = await response.json();
+          setObjects(data);
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement des objets:", error);
+      }
+    };
+
+    fetchObjects();
+  }, []);
+
+  // Effet séparé pour le chargement initial des tâches
+  useEffect(() => {
+    fetchArchivedTasks();
+  }, [fetchArchivedTasks]);
+
+  // Surveiller les changements de tri et appliquer automatiquement
+  useEffect(() => {
+    if (sortField && sortDirection) {
+      fetchArchivedTasks();
+    }
+  }, [sortField, sortDirection, fetchArchivedTasks]);
 
   // Filtres actifs
   const activeFiltersCount = useMemo(() => {
@@ -189,8 +231,8 @@ export default function ArchivesPage() {
     setSelectedAssignee(null);
     setFromDate("");
     setToDate("");
-    setSortBy("archivedAt");
-    setSortOrder("desc");
+    setSortField("archivedAt");
+    setSortDirection("desc");
 
     // Réinitialiser également le formulaire de recherche
     const searchInput = document.getElementById(
@@ -200,6 +242,28 @@ export default function ArchivesPage() {
 
     // Puis refaire la recherche
     setTimeout(fetchArchivedTasks, 0);
+  };
+
+  // Gestion du tri
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const getSortIcon = (field: string) => {
+    if (sortField === field) {
+      return sortDirection === "asc" ? (
+        <ArrowUp className="w-4 h-4" />
+      ) : (
+        <ArrowDown className="w-4 h-4" />
+      );
+    }
+    // Utiliser l'icône de tri bidirectionnel par défaut
+    return <ArrowUpDown className="w-4 h-4 text-gray-300" />;
   };
 
   // Formater les dates pour l'affichage
@@ -344,417 +408,450 @@ export default function ArchivesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[color:var(--background)]">
-      {/* En-tête fixe avec actions */}
-      <header className="sticky top-0 z-10 bg-[color:var(--card)] border-b border-[color:var(--border)] shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-1 text-[color:var(--foreground)] hover:text-[color:var(--primary)] transition-colors"
-            >
-              <ArrowLeft size={20} />
-              <span className="hidden sm:inline font-medium">Retour</span>
-            </Link>
-            <h1 className="text-lg sm:text-xl font-bold ml-2 flex items-center gap-2 text-[color:var(--foreground)]">
-              <Archive className="h-5 w-5 text-[color:var(--primary)]" />
-              Archives des tâches
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handlePrint}
-              className="p-2 text-[color:var(--foreground)] hover:bg-[color:var(--muted)] rounded-md flex items-center gap-1 transition-colors touch-target"
-              title="Imprimer les archives"
-            >
-              <Printer size={18} />
-              <span className="hidden sm:inline">Imprimer</span>
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Barre de recherche et filtres */}
-      <div className="bg-[color:var(--card)] border-b border-[color:var(--border)] p-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-wrap gap-3 items-center justify-between">
-            <div className="flex-1 min-w-[200px] max-w-md relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[color:var(--muted-foreground)] w-4 h-4" />
-              <input
-                id="search-input"
-                type="text"
-                placeholder="Rechercher des tâches archivées..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm border border-[color:var(--border)] rounded-md focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)] bg-[color:var(--background)] text-[color:var(--foreground)]"
-              />
+    <div className="min-h-screen bg-background">
+      {/* Zone de contenu principal unifiée */}
+      <main className="max-w-[1400px] mx-auto px-4 py-4">
+        <Card className="w-full">
+          <CardHeader className="space-y-4 pb-4">
+            {/* En-tête avec titre et bouton d'impression */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Link
+                  href="/dashboard"
+                  className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">Retour</span>
+                </Link>
+                <div className="flex items-center gap-3">
+                  <Archive className="h-6 w-6 text-primary" />
+                  <h1 className="text-2xl font-semibold text-foreground">
+                    Archives des tâches
+                  </h1>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrint}
+                className="gap-2"
+              >
+                <Printer className="h-4 w-4" />
+                <span className="hidden sm:inline">Imprimer</span>
+              </Button>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className={`p-2 rounded-md relative touch-target ${
-                  showFilters || activeFiltersCount > 0
-                    ? "bg-[color:var(--primary)] text-[color:var(--primary-foreground)]"
-                    : "text-[color:var(--foreground)] hover:bg-[color:var(--muted)]"
-                } transition-colors`}
-                title="Afficher les filtres"
-              >
-                <FilterIcon className="w-4 h-4" />
+            {/* Barre de recherche et actions principales */}
+            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+              <div className="relative flex-1 min-w-0 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Rechercher des tâches archivées..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={applyFilters} size="sm" className="gap-2">
+                  <Search className="h-4 w-4" />
+                  Rechercher
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resetFilters}
+                  className="gap-2"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Réinitialiser
+                </Button>
+              </div>
+            </div>
+
+            {/* Filtres compacts en ligne */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <FilterIcon className="h-4 w-4" />
+                Filtres
                 {activeFiltersCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">
-                    {activeFiltersCount}
-                  </span>
+                  <Badge variant="secondary" className="ml-2">
+                    {activeFiltersCount} actif
+                    {activeFiltersCount > 1 ? "s" : ""}
+                  </Badge>
                 )}
-              </button>
+              </div>
 
-              <button
-                onClick={applyFilters}
-                className="px-3 py-2 bg-[color:var(--primary)] text-[color:var(--primary-foreground)] rounded-md shadow-sm hover:opacity-90 text-sm transition-transform touch-target active:scale-95"
-              >
-                Rechercher
-              </button>
-            </div>
-          </div>
-
-          {/* Section des filtres avancés */}
-          {showFilters && (
-            <div className="mt-4 p-4 bg-[color:var(--background)] border border-[color:var(--border)] rounded-md">
-              <h3 className="text-sm font-medium mb-3 text-[color:var(--foreground)]">
-                Filtres avancés
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {/* Première ligne de filtres */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
                 {/* Filtre par objet */}
-                <div>
-                  <label className="block text-xs font-medium mb-1 text-[color:var(--foreground)]">
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-muted-foreground">
                     Objet
-                  </label>
-                  <select
-                    value={selectedObject || ""}
-                    onChange={(e) => setSelectedObject(e.target.value || null)}
-                    className="w-full px-3 py-2 text-sm border border-[color:var(--border)] rounded-md focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)] bg-[color:var(--background)] text-[color:var(--foreground)] touch-target"
+                  </Label>
+                  <Select
+                    value={selectedObject || "all"}
+                    onValueChange={(value) =>
+                      setSelectedObject(value === "all" ? null : value)
+                    }
                   >
-                    <option value="">Tous les objets</option>
-                    {objects.map((object) => (
-                      <option key={object.id} value={object.id}>
-                        {object.nom}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Tous" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous les objets</SelectItem>
+                      {objects.map((object) => (
+                        <SelectItem key={object.id} value={object.id}>
+                          {object.nom}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                {/* Filtre par type de tâche */}
-                <div>
-                  <label className="block text-xs font-medium mb-1 text-[color:var(--foreground)]">
-                    Type de tâche
-                  </label>
-                  <select
-                    value={selectedTaskType || ""}
-                    onChange={(e) =>
-                      setSelectedTaskType(e.target.value || null)
+                {/* Filtre par type */}
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-muted-foreground">
+                    Type
+                  </Label>
+                  <Select
+                    value={selectedTaskType || "all"}
+                    onValueChange={(value) =>
+                      setSelectedTaskType(value === "all" ? null : value)
                     }
-                    className="w-full px-3 py-2 text-sm border border-[color:var(--border)] rounded-md focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)] bg-[color:var(--background)] text-[color:var(--foreground)] touch-target"
                   >
-                    <option value="">Tous les types</option>
-                    {taskTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Tous" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous les types</SelectItem>
+                      {taskTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Filtre par article */}
-                <div>
-                  <label className="block text-xs font-medium mb-1 text-[color:var(--foreground)]">
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-muted-foreground">
                     Article
-                  </label>
-                  <select
-                    value={selectedArticle || ""}
-                    onChange={(e) => setSelectedArticle(e.target.value || null)}
-                    className="w-full px-3 py-2 text-sm border border-[color:var(--border)] rounded-md focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)] bg-[color:var(--background)] text-[color:var(--foreground)] touch-target"
+                  </Label>
+                  <Select
+                    value={selectedArticle || "all"}
+                    onValueChange={(value) =>
+                      setSelectedArticle(value === "all" ? null : value)
+                    }
                   >
-                    <option value="">Tous les articles</option>
-                    {articles.map((article) => (
-                      <option key={article.id} value={article.id}>
-                        {article.title} ({article.sectorName})
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Tous" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous les articles</SelectItem>
+                      {articles.map((article) => (
+                        <SelectItem key={article.id} value={article.id}>
+                          {article.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Filtre par assigné */}
-                <div>
-                  <label className="block text-xs font-medium mb-1 text-[color:var(--foreground)]">
-                    Assigné à
-                  </label>
-                  <select
-                    value={selectedAssignee || ""}
-                    onChange={(e) =>
-                      setSelectedAssignee(e.target.value || null)
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-muted-foreground">
+                    Assigné
+                  </Label>
+                  <Select
+                    value={selectedAssignee || "all"}
+                    onValueChange={(value) =>
+                      setSelectedAssignee(value === "all" ? null : value)
                     }
-                    className="w-full px-3 py-2 text-sm border border-[color:var(--border)] rounded-md focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)] bg-[color:var(--background)] text-[color:var(--foreground)] touch-target"
                   >
-                    <option value="">Tous les assignés</option>
-                    <option value="null">Non assigné</option>
-                    {assignees.map((assignee) => (
-                      <option key={assignee.id} value={assignee.id}>
-                        {assignee.name}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Tous" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous les assignés</SelectItem>
+                      <SelectItem value="null">Non assigné</SelectItem>
+                      {assignees.map((assignee) => (
+                        <SelectItem key={assignee.id} value={assignee.id}>
+                          {assignee.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                {/* Filtre par date (de) */}
-                <div>
-                  <label className="block text-xs font-medium mb-1 text-[color:var(--foreground)]">
-                    Archivé à partir du
-                  </label>
-                  <input
+                {/* Date de début */}
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-muted-foreground">
+                    Du
+                  </Label>
+                  <Input
                     type="date"
                     value={fromDate}
                     onChange={(e) => setFromDate(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-[color:var(--border)] rounded-md focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)] bg-[color:var(--background)] text-[color:var(--foreground)] touch-target"
+                    className="h-9 text-sm"
                   />
                 </div>
 
-                {/* Filtre par date (à) */}
-                <div>
-                  <label className="block text-xs font-medium mb-1 text-[color:var(--foreground)]">
-                    Archivé jusqu&apos;au
-                  </label>
-                  <input
+                {/* Date de fin */}
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-muted-foreground">
+                    Au
+                  </Label>
+                  <Input
                     type="date"
                     value={toDate}
                     onChange={(e) => setToDate(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-[color:var(--border)] rounded-md focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)] bg-[color:var(--background)] text-[color:var(--foreground)] touch-target"
+                    className="h-9 text-sm"
                   />
                 </div>
               </div>
+            </div>
+          </CardHeader>
 
-              <div className="mt-4 flex justify-between items-center flex-wrap gap-3">
-                {/* Tri */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <label className="text-xs font-medium text-[color:var(--foreground)]">
-                    Trier par:
-                  </label>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="px-2 py-1 text-xs border border-[color:var(--border)] rounded-md focus:outline-none focus:ring-1 focus:ring-[color:var(--ring)] bg-[color:var(--background)] text-[color:var(--foreground)] touch-target"
-                  >
-                    <option value="archivedAt">Date d&apos;archivage</option>
-                    <option value="name">Nom</option>
-                    <option value="realizationDate">
-                      Date d&apos;échéance
-                    </option>
-                  </select>
-                  <button
-                    onClick={() =>
-                      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                    }
-                    className="p-1.5 bg-[color:var(--muted)] text-[color:var(--foreground)] rounded-md hover:bg-[color:var(--accent)] transition-colors touch-target"
-                    title={
-                      sortOrder === "asc"
-                        ? "Ordre décroissant"
-                        : "Ordre croissant"
-                    }
-                  >
-                    {sortOrder === "asc" ? (
-                      <SortAsc className="w-3.5 h-3.5" />
-                    ) : (
-                      <SortDesc className="w-3.5 h-3.5" />
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
+                <p className="text-muted-foreground">
+                  Chargement des archives...
+                </p>
+              </div>
+            ) : tasks.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="space-y-4">
+                  <Archive className="w-12 h-12 text-muted-foreground mx-auto" />
+                  <div>
+                    <h3 className="text-lg font-medium mb-2">
+                      Aucune tâche archivée trouvée
+                    </h3>
+                    <p className="text-muted-foreground mb-6">
+                      {activeFiltersCount > 0
+                        ? "Essayez de modifier vos filtres pour voir plus de résultats."
+                        : "Les tâches que vous archivez apparaîtront ici pour référence future."}
+                    </p>
+                    <Button asChild>
+                      <Link href="/dashboard" className="gap-2">
+                        <Home className="w-4 h-4" />
+                        Retour au tableau de bord
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4 p-4">
+                {/* En-tête des résultats compact */}
+                <div className="flex items-center justify-between pb-2 border-b">
+                  <div>
+                    <h2 className="text-lg font-medium">
+                      {tasks.length} tâche{tasks.length !== 1 ? "s" : ""}{" "}
+                      archivée{tasks.length !== 1 ? "s" : ""}
+                    </h2>
+                    {activeFiltersCount > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {activeFiltersCount} filtre(s) actif(s)
+                      </p>
                     )}
-                  </button>
+                  </div>
                 </div>
 
-                {/* Bouton de réinitialisation */}
-                <button
-                  onClick={resetFilters}
-                  className="px-3 py-1.5 text-xs bg-[color:var(--muted)] text-[color:var(--foreground)] rounded-md hover:bg-[color:var(--accent)] transition-colors touch-target active:scale-95"
-                >
-                  Réinitialiser les filtres
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+                {/* Table des résultats */}
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[300px] text-xs font-medium text-gray-500 py-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSort("name")}
+                            className="h-auto p-0 font-medium text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                          >
+                            TÂCHE
+                            {getSortIcon("name")}
+                          </Button>
+                        </TableHead>
+                        <TableHead className="hidden md:table-cell text-xs font-medium text-gray-500 py-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSort("taskType")}
+                            className="h-auto p-0 font-medium text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                          >
+                            TYPE
+                            {getSortIcon("taskType")}
+                          </Button>
+                        </TableHead>
+                        <TableHead className="hidden sm:table-cell text-xs font-medium text-gray-500 py-3">
+                          OBJET
+                        </TableHead>
+                        <TableHead className="hidden lg:table-cell text-xs font-medium text-gray-500 py-3">
+                          SECTEUR / ARTICLE
+                        </TableHead>
+                        <TableHead className="hidden lg:table-cell text-xs font-medium text-gray-500 py-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSort("archivedAt")}
+                            className="h-auto p-0 font-medium text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                          >
+                            DATE D&apos;ARCHIVAGE
+                            {getSortIcon("archivedAt")}
+                          </Button>
+                        </TableHead>
+                        <TableHead className="hidden lg:table-cell text-xs font-medium text-gray-500 py-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSort("assignedTo")}
+                            className="h-auto p-0 font-medium text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                          >
+                            ASSIGNÉ À{getSortIcon("assignedTo")}
+                          </Button>
+                        </TableHead>
+                        <TableHead className="w-[120px] text-xs font-medium text-gray-500 py-3">
+                          ACTIONS
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {tasks.map((task) => (
+                        <TableRow key={task.id} className="hover:bg-muted/50">
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div
+                                className="w-3 h-3 rounded-full flex-shrink-0"
+                                style={{
+                                  backgroundColor: task.color || "#d9840d",
+                                }}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="font-medium text-sm truncate">
+                                  {task.name}
+                                </div>
+                                {task.description && (
+                                  <div className="text-xs text-muted-foreground truncate mt-1">
+                                    {task.description}
+                                  </div>
+                                )}
+                              </div>
+                              {task.recurring && (
+                                <Badge variant="outline" className="gap-1">
+                                  <RefreshCcw className="w-3 h-3" />
+                                  <span className="hidden sm:inline">
+                                    Récurrente
+                                  </span>
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
 
-      {/* Zone de contenu principal */}
-      <main className="max-w-7xl mx-auto px-4 py-6">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="w-10 h-10 text-[color:var(--primary)] animate-spin mb-4" />
-            <p className="text-[color:var(--muted-foreground)]">
-              Chargement des archives...
-            </p>
-          </div>
-        ) : tasks.length === 0 ? (
-          <div className="text-center py-12 bg-[color:var(--card)] rounded-lg border border-[color:var(--border)] shadow-sm">
-            <Archive className="w-12 h-12 text-[color:var(--muted-foreground)] mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2 text-[color:var(--foreground)]">
-              Aucune tâche archivée trouvée
-            </h3>
-            <p className="text-[color:var(--muted-foreground)] mb-6">
-              {activeFiltersCount > 0
-                ? "Essayez de modifier vos filtres pour voir plus de résultats."
-                : "Les tâches que vous archivez apparaîtront ici pour référence future."}
-            </p>
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[color:var(--primary)] text-[color:var(--primary-foreground)] rounded-md shadow-sm hover:opacity-90 transition-transform active:scale-95 touch-target"
-            >
-              <Home className="w-4 h-4" />
-              Retour au tableau de bord
-            </Link>
-          </div>
-        ) : (
-          <div>
-            <div className="mb-4 flex justify-between items-center">
-              <h2 className="text-lg font-medium text-[color:var(--foreground)]">
-                {tasks.length} tâche{tasks.length !== 1 ? "s" : ""} archivée
-                {tasks.length !== 1 ? "s" : ""}
-              </h2>
-            </div>
-
-            {/* Zone visible pour l'impression */}
-            <div className="hidden">
-              <div ref={printRef}>
-                {/* Le contenu sera généré dynamiquement lors de l'impression */}
-              </div>
-            </div>
-
-            {/* Liste des tâches archivées */}
-            <div className="bg-[color:var(--card)] rounded-lg border border-[color:var(--border)] overflow-hidden shadow-sm">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-[color:var(--muted)] border-b border-[color:var(--border)]">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-[color:var(--foreground)] uppercase">
-                        Tâche
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-[color:var(--foreground)] uppercase hidden md:table-cell">
-                        Type
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-[color:var(--foreground)] uppercase hidden sm:table-cell">
-                        Objet
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-[color:var(--foreground)] uppercase hidden md:table-cell">
-                        Secteur / Article
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-[color:var(--foreground)] uppercase hidden lg:table-cell">
-                        Date d&apos;archivage
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-[color:var(--foreground)] uppercase hidden lg:table-cell">
-                        Assigné à
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-[color:var(--foreground)] uppercase">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[color:var(--border)]">
-                    {tasks.map((task) => (
-                      <tr
-                        key={task.id}
-                        className="hover:bg-[color:var(--muted)] transition-colors"
-                      >
-                        <td className="px-4 py-3 text-sm whitespace-nowrap text-[color:var(--foreground)]">
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-3 h-3 rounded-full flex-shrink-0"
-                              style={{
-                                backgroundColor: task.color || "#d9840d",
-                              }}
-                            />
-                            <span className="font-medium truncate max-w-[150px] sm:max-w-[250px]">
-                              {task.name}
-                            </span>
-                            {task.recurring && (
-                              <span title="Tâche récurrente">
-                                <RefreshCcw className="w-3 h-3 text-blue-500" />
+                          <TableCell className="hidden md:table-cell">
+                            {task.taskType ? (
+                              <Badge variant="secondary" className="gap-1">
+                                <Tag className="w-3 h-3" />
+                                {task.taskType}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">
+                                Non défini
                               </span>
                             )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-[color:var(--foreground)] hidden md:table-cell">
-                          {task.taskType ? (
-                            <div className="flex items-center gap-1.5">
-                              <Tag className="w-3.5 h-3.5 text-[color:var(--muted-foreground)]" />
-                              <span className="truncate max-w-[100px]">
-                                {task.taskType}
+                          </TableCell>
+
+                          <TableCell className="hidden sm:table-cell">
+                            <div className="flex items-center gap-2">
+                              <Building className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-sm truncate max-w-[120px]">
+                                {task.article.sector.object.nom}
                               </span>
                             </div>
-                          ) : (
-                            <span className="text-[color:var(--muted-foreground)] italic">
-                              Non défini
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-[color:var(--foreground)] hidden sm:table-cell">
-                          <div className="flex items-center gap-1.5">
-                            <Building className="w-3.5 h-3.5 text-[color:var(--muted-foreground)]" />
-                            <span className="truncate max-w-[120px]">
-                              {task.article.sector.object.nom}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-[color:var(--foreground)] hidden md:table-cell">
-                          <div className="flex items-center gap-1.5">
-                            <Layers className="w-3.5 h-3.5 text-[color:var(--muted-foreground)]" />
-                            <span className="truncate max-w-[180px]">
-                              {task.article.sector.name} / {task.article.title}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-[color:var(--foreground)] hidden lg:table-cell">
-                          <div className="flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-[color:var(--muted-foreground)]" />
-                            {formatDate(task.archivedAt)}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-[color:var(--foreground)] hidden lg:table-cell">
-                          {task.assignedTo ? (
-                            <div className="flex items-center gap-1.5">
-                              <User className="w-3.5 h-3.5 text-[color:var(--muted-foreground)]" />
-                              <span>{task.assignedTo.name}</span>
-                            </div>
-                          ) : (
-                            <span className="text-[color:var(--muted-foreground)]">
-                              Non assigné
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-[color:var(--foreground)]">
-                          <div className="flex items-center gap-3 touch-area">
-                            <ArchiveButton
-                              taskId={task.id}
-                              isArchived={true}
-                              onArchiveToggle={(archived) =>
-                                handleArchiveToggle(task.id, archived)
-                              }
-                              showText={true}
-                            />
+                          </TableCell>
 
-                            <Link
-                              href={`/dashboard/objet/${task.article.sector.object.id}/secteur/${task.article.sector.id}/article/${task.article.id}/task/${task.id}`}
-                              className="text-[color:var(--primary)] hover:underline text-xs flex items-center gap-1 touch-target"
-                            >
-                              <span>Détails</span>
-                            </Link>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                          <TableCell className="hidden lg:table-cell">
+                            <div className="flex items-center gap-2">
+                              <Layers className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-sm truncate max-w-[180px]">
+                                {task.article.sector.name} /{" "}
+                                {task.article.title}
+                              </span>
+                            </div>
+                          </TableCell>
+
+                          <TableCell className="hidden lg:table-cell">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-sm">
+                                {formatDate(task.archivedAt)}
+                              </span>
+                            </div>
+                          </TableCell>
+
+                          <TableCell className="hidden lg:table-cell">
+                            {task.assignedTo ? (
+                              <div className="flex items-center gap-2">
+                                <User className="w-4 h-4 text-muted-foreground" />
+                                <span className="text-sm">
+                                  {task.assignedTo.name}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">
+                                Non assigné
+                              </span>
+                            )}
+                          </TableCell>
+
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleArchiveToggle(task.id, false)
+                                }
+                                className="gap-1 h-8 text-xs"
+                                title="Désarchiver cette tâche pour pouvoir la modifier"
+                              >
+                                <RotateCcw className="w-3 h-3" />
+                                <span className="hidden sm:inline">
+                                  Désarchiver
+                                </span>
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                asChild
+                                className="gap-1 h-8 text-xs"
+                                title="Consulter les détails (lecture seule)"
+                              >
+                                <Link
+                                  href={`/dashboard/objet/${task.article.sector.object.id}/secteur/${task.article.sector.id}/article/${task.article.id}/task/${task.id}?readonly=true`}
+                                >
+                                  <Eye className="w-3 h-3" />
+                                  <span className="hidden sm:inline">
+                                    Consulter
+                                  </span>
+                                </Link>
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
-            </div>
-          </div>
-        )}
+            )}
+          </CardContent>
+        </Card>
       </main>
     </div>
   );

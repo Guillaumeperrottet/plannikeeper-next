@@ -76,8 +76,8 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // Generate optimized and compressed output
-  swcMinify: true, // Use SWC minification instead of Terser for better performance
+  // Performance optimizations
+  // swcMinify is enabled by default in Next.js 15, no need to specify it
 
   // PWA configuration
   // Note: Should be added using next-pwa in your actual implementation
