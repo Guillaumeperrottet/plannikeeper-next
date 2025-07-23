@@ -50,9 +50,9 @@ export default function UserMenu({ user, isAdmin = false }: UserMenuProps) {
       href: "/dashboard",
     },
     {
-      icon: <Archive size={16} />,
-      label: "Archives",
-      href: "/dashboard/archives",
+      icon: <User size={16} />,
+      label: "Mon profil",
+      href: "/profile",
     },
     {
       icon: <CreditCard size={16} />,
@@ -60,9 +60,9 @@ export default function UserMenu({ user, isAdmin = false }: UserMenuProps) {
       href: "/profile/subscription",
     },
     {
-      icon: <User size={16} />,
-      label: "Mon profil",
-      href: "/profile",
+      icon: <Archive size={16} />,
+      label: "Archives",
+      href: "/dashboard/archives",
     },
     {
       icon: <Lightbulb size={16} />,
