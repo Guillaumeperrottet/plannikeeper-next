@@ -17,14 +17,25 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "20mb", // Reduced from 10mb to improve performance
     },
     // Enable optimizations
-    optimizeCss: false, // Enable CSS optimization
+    optimizeCss: true, // ACTIVATION de l'optimisation CSS
     optimizePackageImports: [
       "lucide-react",
       "@radix-ui/react-dialog",
       "@headlessui/react",
       "framer-motion",
       "date-fns",
+      "@vercel/analytics", // Ajout des imports Vercel
+      "@vercel/speed-insights",
     ],
+    // Amélioration des performances de rendu
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
   },
 
   // Improved caching strategy
@@ -89,35 +100,51 @@ const nextConfig: NextConfig = {
       : undefined,
 
   // Configure webpack for additional optimizations
-  webpack: (config, { isServer }) => {
-    // Only run these optimizations on client
-    if (!isServer) {
-      // Split chunks for better caching
-      config.optimization.splitChunks = {
-        chunks: "all",
-        maxInitialRequests: 25,
-        minSize: 20000,
-        cacheGroups: {
-          commons: {
-            test: /[\\/]node_modules[\\/]/,
-            name: "vendors",
-            chunks: "all",
+  webpack: (config, { isServer, dev }) => {
+    // Production optimizations uniquement
+    if (!dev) {
+      // Only run these optimizations on client
+      if (!isServer) {
+        // Split chunks for better caching
+        config.optimization.splitChunks = {
+          chunks: "all",
+          maxInitialRequests: 25,
+          minSize: 20000,
+          cacheGroups: {
+            commons: {
+              test: /[\\/]node_modules[\\/]/,
+              name: "vendors",
+              chunks: "all",
+            },
+            // Separate large dependencies into their own chunks
+            reactVendors: {
+              test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+              name: "react-vendors",
+              chunks: "all",
+              priority: 10,
+            },
+            uiComponents: {
+              test: /[\\/]node_modules[\\/](@radix-ui|@headlessui)[\\/]/,
+              name: "ui-vendors",
+              chunks: "all",
+              priority: 9,
+            },
+            framerMotion: {
+              test: /[\\/]node_modules[\\/]framer-motion[\\/]/,
+              name: "framer-motion",
+              chunks: "all",
+              priority: 8,
+            },
           },
-          // Separate large dependencies into their own chunks
-          reactVendors: {
-            test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
-            name: "react-vendors",
-            chunks: "all",
-            priority: 10,
-          },
-          uiComponents: {
-            test: /[\\/]node_modules[\\/](@radix-ui|@headlessui)[\\/]/,
-            name: "ui-vendors",
-            chunks: "all",
-            priority: 9,
-          },
-        },
-      };
+        };
+
+        // Optimisation pour les animations
+        config.resolve.alias = {
+          ...config.resolve.alias,
+          // Utiliser la version légère de framer-motion quand possible
+          'framer-motion': 'framer-motion/dist/framer-motion.es.js',
+        };
+      }
     }
     return config;
   },

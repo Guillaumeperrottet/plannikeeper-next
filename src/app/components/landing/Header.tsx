@@ -18,6 +18,7 @@ import { VT323 } from "next/font/google";
 import Link from "next/link";
 import PremiumBurgerButton from "@/app/components/ui/BurgerButton";
 import { User, Info } from "lucide-react";
+import { useReducedMotion, useIsLowPowerDevice, getOptimizedVariants, throttle } from "@/lib/performance-utils";
 
 const vt323 = VT323({
   subsets: ["latin"],
@@ -40,10 +41,17 @@ export default function Header() {
   const { scrollY } = useScroll();
   const scrollPositionRef = useRef(0);
 
-  // Transform values for the sidebar elements that will fade out
+  // Hooks de performance
+  const prefersReducedMotion = useReducedMotion();
+  const isLowPowerDevice = useIsLowPowerDevice();
+  
+  // Transform values optimisés pour les appareils peu performants
   const sideOpacity = useTransform(scrollY, [0, 100], [1, 0]);
   const sideScale = useTransform(scrollY, [0, 100], [1, 0.8]);
   const navScale = useTransform(scrollY, [0, 100], [1, 1.1]);
+
+  // Variants d'animation optimisées
+  const fadeInVariants = getOptimizedVariants(isLowPowerDevice, prefersReducedMotion);
 
   // Fonctions de tracking
   const handleAboutClick = (location: string) => {
@@ -119,9 +127,9 @@ export default function Header() {
     };
   }, [mobileMenuOpen]);
 
-  // Tracking scroll for active section
+  // Tracking scroll for active section - optimisé avec throttle
   useEffect(() => {
-    const handleScroll = () => {
+    const handleScroll = throttle(() => {
       // Update scrolled state for conditional styling
       setScrolled(window.scrollY > 60);
 
@@ -137,7 +145,7 @@ export default function Header() {
         }
       }
       setActiveSection(current);
-    };
+    }, 50); // Throttle à 50ms au lieu de chaque frame
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll(); // Call once initially
@@ -187,10 +195,9 @@ export default function Header() {
         {/* Center Navigation - Desktop Only */}
         <motion.nav
           className="hidden md:block fixed left-0 right-0 top-4 mx-auto w-fit z-50"
-          style={{ scale: navScale }}
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
+          style={isLowPowerDevice ? {} : { scale: navScale }}
+          initial={fadeInVariants.hidden}
+          animate={fadeInVariants.visible}
         >
           <div
             className={`flex items-center gap-6 bg-white/90 backdrop-blur-sm rounded-full px-6 py-2 shadow-lg transition-all duration-300 ${
