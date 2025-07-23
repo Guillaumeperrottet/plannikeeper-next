@@ -1115,8 +1115,7 @@ export default function ImageWithArticles({
                 }
               }}
             >
-              {/* @ts-expect-error - PopoverTrigger asChild requires children */}
-              <PopoverTrigger asChild>
+              <PopoverTrigger {...({ asChild: true } as React.ComponentProps<typeof PopoverTrigger>)}>
                 <div
                   className={`absolute border ${
                     isActive ? "border-blue-500" : "border-white"
