@@ -14,7 +14,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Move, Square, Edit, Trash } from "lucide-react";
+import { Move, Square, Edit, Trash, HelpCircle } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type Article = {
   id: string;
@@ -44,11 +50,29 @@ type ImageWithArticlesProps = {
   onArticleEdit?: (articleId: string) => void;
   onArticleDelete?: (articleId: string) => Promise<void>; // Changé pour retourner une Promise
   // Nouvelle prop pour la mise à jour des articles
-  onArticleUpdate?: (articleId: string, updates: { title: string; description: string }) => Promise<void>;
+  onArticleUpdate?: (
+    articleId: string,
+    updates: { title: string; description: string }
+  ) => Promise<void>;
   // Nouvelle prop pour la mise à jour de position
-  onArticlePositionUpdate?: (articleId: string, updates: { positionX: number; positionY: number; width: number; height: number }) => Promise<void>;
+  onArticlePositionUpdate?: (
+    articleId: string,
+    updates: {
+      positionX: number;
+      positionY: number;
+      width: number;
+      height: number;
+    }
+  ) => Promise<void>;
   // Nouvelle prop pour créer un article
-  onArticleCreate?: (articleData: { title: string; description: string; positionX: number; positionY: number; width: number; height: number }) => Promise<void>;
+  onArticleCreate?: (articleData: {
+    title: string;
+    description: string;
+    positionX: number;
+    positionY: number;
+    width: number;
+    height: number;
+  }) => Promise<void>;
   // Nouvelle prop pour activer le mode création depuis l'extérieur
   createMode?: boolean;
   onCreateModeChange?: (createMode: boolean) => void;
@@ -147,27 +171,45 @@ export default function ImageWithArticles({
   }, [externalCreateMode, createMode]);
 
   // Notifier le changement de mode création
-  const updateCreateMode = useCallback((newMode: boolean) => {
-    setCreateMode(newMode);
-    if (onCreateModeChange) {
-      onCreateModeChange(newMode);
-    }
-  }, [onCreateModeChange]);
+  const updateCreateMode = useCallback(
+    (newMode: boolean) => {
+      setCreateMode(newMode);
+      if (onCreateModeChange) {
+        onCreateModeChange(newMode);
+      }
+    },
+    [onCreateModeChange]
+  );
 
   // États pour le mode déplacement
   const [isDragging, setIsDragging] = useState(false);
-  const [draggingArticleId, setDraggingArticleId] = useState<string | null>(null);
+  const [draggingArticleId, setDraggingArticleId] = useState<string | null>(
+    null
+  );
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [dragMode, setDragMode] = useState(false);
-  const [tempDragPosition, setTempDragPosition] = useState<{ x: number; y: number } | null>(null);
+  const [tempDragPosition, setTempDragPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
 
   // États pour le redimensionnement
   const [isResizing, setIsResizing] = useState(false);
-  const [resizingArticleId, setResizingArticleId] = useState<string | null>(null);
+  const [resizingArticleId, setResizingArticleId] = useState<string | null>(
+    null
+  );
   const [resizeMode, setResizeMode] = useState(false);
   const [resizeHandle, setResizeHandle] = useState<string | null>(null); // 'se', 'sw', 'ne', 'nw'
-  const [resizeStartPosition, setResizeStartPosition] = useState({ x: 0, y: 0 });
-  const [tempResizeSize, setTempResizeSize] = useState<{ width: number; height: number; x: number; y: number } | null>(null);
+  const [resizeStartPosition, setResizeStartPosition] = useState({
+    x: 0,
+    y: 0,
+  });
+  const [tempResizeSize, setTempResizeSize] = useState<{
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+  } | null>(null);
 
   // État pour empêcher l'ouverture du popover après une action
   const [preventPopoverOpen, setPreventPopoverOpen] = useState(false);
@@ -353,55 +395,69 @@ export default function ImageWithArticles({
         transform: "translate(-50%, -50%)",
       };
     },
-    [imageSize, isDragging, draggingArticleId, tempDragPosition, isResizing, resizingArticleId, tempResizeSize]
+    [
+      imageSize,
+      isDragging,
+      draggingArticleId,
+      tempDragPosition,
+      isResizing,
+      resizingArticleId,
+      tempResizeSize,
+    ]
   );
 
   // Fonctions utilitaires pour le drag & drop
-  const pixelsToPercent = useCallback((position: { x: number; y: number; width: number; height: number }) => {
-    // Calculer les décalages pour centrer l'image
-    const unusedWidth = containerRef.current?.clientWidth
-      ? containerRef.current.clientWidth - imageSize.displayWidth
-      : 0;
-    const unusedHeight = containerRef.current?.clientHeight
-      ? containerRef.current.clientHeight - imageSize.displayHeight
-      : 0;
-    const offsetX = unusedWidth / 2;
-    const offsetY = unusedHeight / 2;
+  const pixelsToPercent = useCallback(
+    (position: { x: number; y: number; width: number; height: number }) => {
+      // Calculer les décalages pour centrer l'image
+      const unusedWidth = containerRef.current?.clientWidth
+        ? containerRef.current.clientWidth - imageSize.displayWidth
+        : 0;
+      const unusedHeight = containerRef.current?.clientHeight
+        ? containerRef.current.clientHeight - imageSize.displayHeight
+        : 0;
+      const offsetX = unusedWidth / 2;
+      const offsetY = unusedHeight / 2;
 
-    // Convertir les coordonnées pixels en pourcentages
-    const percentX = ((position.x - offsetX) / imageSize.displayWidth) * 100;
-    const percentY = ((position.y - offsetY) / imageSize.displayHeight) * 100;
+      // Convertir les coordonnées pixels en pourcentages
+      const percentX = ((position.x - offsetX) / imageSize.displayWidth) * 100;
+      const percentY = ((position.y - offsetY) / imageSize.displayHeight) * 100;
 
-    return {
-      positionX: percentX,
-      positionY: percentY,
-    };
-  }, [imageSize]);
+      return {
+        positionX: percentX,
+        positionY: percentY,
+      };
+    },
+    [imageSize]
+  );
 
   // Fonction pour vérifier si un point est dans les limites de l'image
-  const isInImageBounds = useCallback((x: number, y: number) => {
-    if (!imageSize.displayWidth || !imageSize.displayHeight) return false;
+  const isInImageBounds = useCallback(
+    (x: number, y: number) => {
+      if (!imageSize.displayWidth || !imageSize.displayHeight) return false;
 
-    // Calculer les décalages pour centrer l'image
-    const unusedWidth = containerRef.current?.clientWidth
-      ? containerRef.current.clientWidth - imageSize.displayWidth
-      : 0;
-    const unusedHeight = containerRef.current?.clientHeight
-      ? containerRef.current.clientHeight - imageSize.displayHeight
-      : 0;
-    const offsetX = unusedWidth / 2;
-    const offsetY = unusedHeight / 2;
+      // Calculer les décalages pour centrer l'image
+      const unusedWidth = containerRef.current?.clientWidth
+        ? containerRef.current.clientWidth - imageSize.displayWidth
+        : 0;
+      const unusedHeight = containerRef.current?.clientHeight
+        ? containerRef.current.clientHeight - imageSize.displayHeight
+        : 0;
+      const offsetX = unusedWidth / 2;
+      const offsetY = unusedHeight / 2;
 
-    // Vérifier si le point (x, y) est à l'intérieur de l'image (en tenant compte du décalage)
-    const imageLeft = offsetX;
-    const imageRight = offsetX + imageSize.displayWidth;
-    const imageTop = offsetY;
-    const imageBottom = offsetY + imageSize.displayHeight;
+      // Vérifier si le point (x, y) est à l'intérieur de l'image (en tenant compte du décalage)
+      const imageLeft = offsetX;
+      const imageRight = offsetX + imageSize.displayWidth;
+      const imageTop = offsetY;
+      const imageBottom = offsetY + imageSize.displayHeight;
 
-    return (
-      x >= imageLeft && x <= imageRight && y >= imageTop && y <= imageBottom
-    );
-  }, [imageSize]);
+      return (
+        x >= imageLeft && x <= imageRight && y >= imageTop && y <= imageBottom
+      );
+    },
+    [imageSize]
+  );
 
   const handleDragStart = (e: React.MouseEvent, article: Article) => {
     e.stopPropagation();
@@ -416,82 +472,112 @@ export default function ImageWithArticles({
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
+
     const articleStyle = calculateArticleStyle(article);
-    
+
     // Calculer l'offset du clic par rapport au centre de l'article
-    const articleCenterX = parseFloat(articleStyle.left?.toString() || '0');
-    const articleCenterY = parseFloat(articleStyle.top?.toString() || '0');
-    
+    const articleCenterX = parseFloat(articleStyle.left?.toString() || "0");
+    const articleCenterY = parseFloat(articleStyle.top?.toString() || "0");
+
     setDragOffset({
       x: x - articleCenterX,
       y: y - articleCenterY,
     });
   };
 
-  const handleDragMove = useCallback((clientX: number, clientY: number) => {
-    if (!isDragging || !draggingArticleId || !containerRef.current) return;
+  const handleDragMove = useCallback(
+    (clientX: number, clientY: number) => {
+      if (!isDragging || !draggingArticleId || !containerRef.current) return;
 
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
+      const rect = containerRef.current.getBoundingClientRect();
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
 
-    // Calculer la nouvelle position en tenant compte de l'offset
-    const newX = x - dragOffset.x;
-    const newY = y - dragOffset.y;
+      // Calculer la nouvelle position en tenant compte de l'offset
+      const newX = x - dragOffset.x;
+      const newY = y - dragOffset.y;
 
-    // Mettre à jour la position temporaire pour l'affichage en temps réel
-    setTempDragPosition({ x: newX, y: newY });
-  }, [isDragging, draggingArticleId, dragOffset]);
+      // Mettre à jour la position temporaire pour l'affichage en temps réel
+      setTempDragPosition({ x: newX, y: newY });
+    },
+    [isDragging, draggingArticleId, dragOffset]
+  );
 
-  const handleDragEnd = useCallback(async (clientX: number, clientY: number) => {
-    if (!isDragging || !draggingArticleId || !onArticlePositionUpdate || !containerRef.current) return;
+  const handleDragEnd = useCallback(
+    async (clientX: number, clientY: number) => {
+      if (
+        !isDragging ||
+        !draggingArticleId ||
+        !onArticlePositionUpdate ||
+        !containerRef.current
+      )
+        return;
 
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-    
-    const article = articles.find(a => a.id === draggingArticleId);
-    if (!article) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
 
-    const newX = x - dragOffset.x;
-    const newY = y - dragOffset.y;
+      const article = articles.find((a) => a.id === draggingArticleId);
+      if (!article) return;
 
-    const percentPosition = pixelsToPercent({
-      x: newX,
-      y: newY,
-      width: ((article.width || 20) / 100) * imageSize.displayWidth,
-      height: ((article.height || 20) / 100) * imageSize.displayHeight,
-    });
+      const newX = x - dragOffset.x;
+      const newY = y - dragOffset.y;
 
-    const constrainedX = Math.max(0, Math.min(100, percentPosition.positionX));
-    const constrainedY = Math.max(0, Math.min(100, percentPosition.positionY));
-
-    try {
-      // Sauvegarder la nouvelle position
-      await onArticlePositionUpdate(draggingArticleId, {
-        positionX: constrainedX,
-        positionY: constrainedY,
-        width: article.width || 20,
-        height: article.height || 20,
+      const percentPosition = pixelsToPercent({
+        x: newX,
+        y: newY,
+        width: ((article.width || 20) / 100) * imageSize.displayWidth,
+        height: ((article.height || 20) / 100) * imageSize.displayHeight,
       });
-    } catch {
-      // TODO: Afficher un toast d'erreur
-    } finally {
-      // Réinitialiser les états
-      setIsDragging(false);
-      setDraggingArticleId(null);
-      setDragMode(false);
-      setDragOffset({ x: 0, y: 0 });
-      setTempDragPosition(null);
-      
-      // Empêcher l'ouverture du popover pendant un court moment
-      setTimeout(() => setPreventPopoverOpen(false), 100);
-    }
-  }, [isDragging, draggingArticleId, dragOffset, articles, imageSize, onArticlePositionUpdate, pixelsToPercent]);
+
+      const constrainedX = Math.max(
+        0,
+        Math.min(100, percentPosition.positionX)
+      );
+      const constrainedY = Math.max(
+        0,
+        Math.min(100, percentPosition.positionY)
+      );
+
+      try {
+        // Sauvegarder la nouvelle position
+        await onArticlePositionUpdate(draggingArticleId, {
+          positionX: constrainedX,
+          positionY: constrainedY,
+          width: article.width || 20,
+          height: article.height || 20,
+        });
+      } catch {
+        // TODO: Afficher un toast d'erreur
+      } finally {
+        // Réinitialiser les états
+        setIsDragging(false);
+        setDraggingArticleId(null);
+        setDragMode(false);
+        setDragOffset({ x: 0, y: 0 });
+        setTempDragPosition(null);
+
+        // Empêcher l'ouverture du popover pendant un court moment
+        setTimeout(() => setPreventPopoverOpen(false), 100);
+      }
+    },
+    [
+      isDragging,
+      draggingArticleId,
+      dragOffset,
+      articles,
+      imageSize,
+      onArticlePositionUpdate,
+      pixelsToPercent,
+    ]
+  );
 
   // Fonctions pour le redimensionnement
-  const handleResizeStart = (e: React.MouseEvent, article: Article, handle: string) => {
+  const handleResizeStart = (
+    e: React.MouseEvent,
+    article: Article,
+    handle: string
+  ) => {
     e.stopPropagation();
     setResizeMode(true);
     setResizingArticleId(article.id);
@@ -509,85 +595,111 @@ export default function ImageWithArticles({
     });
   };
 
-  const handleResizeMove = useCallback((clientX: number, clientY: number) => {
-    if (!isResizing || !resizingArticleId || !containerRef.current || !resizeHandle) return;
+  const handleResizeMove = useCallback(
+    (clientX: number, clientY: number) => {
+      if (
+        !isResizing ||
+        !resizingArticleId ||
+        !containerRef.current ||
+        !resizeHandle
+      )
+        return;
 
-    const rect = containerRef.current.getBoundingClientRect();
-    const currentX = clientX - rect.left;
-    const currentY = clientY - rect.top;
+      const rect = containerRef.current.getBoundingClientRect();
+      const currentX = clientX - rect.left;
+      const currentY = clientY - rect.top;
 
-    const article = articles.find(a => a.id === resizingArticleId);
-    if (!article) return;
+      const article = articles.find((a) => a.id === resizingArticleId);
+      if (!article) return;
 
-    // Calculer les décalages pour centrer l'image
-    const unusedWidth = containerRef.current?.clientWidth
-      ? containerRef.current.clientWidth - imageSize.displayWidth
-      : 0;
-    const unusedHeight = containerRef.current?.clientHeight
-      ? containerRef.current.clientHeight - imageSize.displayHeight
-      : 0;
-    const offsetX = unusedWidth / 2;
-    const offsetY = unusedHeight / 2;
+      // Calculer les décalages pour centrer l'image
+      const unusedWidth = containerRef.current?.clientWidth
+        ? containerRef.current.clientWidth - imageSize.displayWidth
+        : 0;
+      const unusedHeight = containerRef.current?.clientHeight
+        ? containerRef.current.clientHeight - imageSize.displayHeight
+        : 0;
+      const offsetX = unusedWidth / 2;
+      const offsetY = unusedHeight / 2;
 
-    // Position actuelle de l'article en pixels dans l'image
-    const currentCenterX = (article.positionX! / 100) * imageSize.displayWidth + offsetX;
-    const currentCenterY = (article.positionY! / 100) * imageSize.displayHeight + offsetY;
-    const currentWidth = ((article.width || 20) / 100) * imageSize.displayWidth;
-    const currentHeight = ((article.height || 20) / 100) * imageSize.displayHeight;
+      // Position actuelle de l'article en pixels dans l'image
+      const currentCenterX =
+        (article.positionX! / 100) * imageSize.displayWidth + offsetX;
+      const currentCenterY =
+        (article.positionY! / 100) * imageSize.displayHeight + offsetY;
+      const currentWidth =
+        ((article.width || 20) / 100) * imageSize.displayWidth;
+      const currentHeight =
+        ((article.height || 20) / 100) * imageSize.displayHeight;
 
-    // Position actuelle des coins
-    const currentLeft = currentCenterX - currentWidth / 2;
-    const currentTop = currentCenterY - currentHeight / 2;
-    const currentRight = currentCenterX + currentWidth / 2;
-    const currentBottom = currentCenterY + currentHeight / 2;
+      // Position actuelle des coins
+      const currentLeft = currentCenterX - currentWidth / 2;
+      const currentTop = currentCenterY - currentHeight / 2;
+      const currentRight = currentCenterX + currentWidth / 2;
+      const currentBottom = currentCenterY + currentHeight / 2;
 
-    // Calculer les nouvelles dimensions selon la poignée utilisée
-    let newLeft = currentLeft;
-    let newTop = currentTop;
-    let newRight = currentRight;
-    let newBottom = currentBottom;
+      // Calculer les nouvelles dimensions selon la poignée utilisée
+      let newLeft = currentLeft;
+      let newTop = currentTop;
+      let newRight = currentRight;
+      let newBottom = currentBottom;
 
-    const deltaX = currentX - resizeStartPosition.x;
-    const deltaY = currentY - resizeStartPosition.y;
+      const deltaX = currentX - resizeStartPosition.x;
+      const deltaY = currentY - resizeStartPosition.y;
 
-    switch (resizeHandle) {
-      case 'se': // Sud-Est (coin bas-droite)
-        newRight = Math.max(currentLeft + 50, currentRight + deltaX);
-        newBottom = Math.max(currentTop + 30, currentBottom + deltaY);
-        break;
-      case 'sw': // Sud-Ouest (coin bas-gauche)
-        newLeft = Math.min(currentRight - 50, currentLeft + deltaX);
-        newBottom = Math.max(currentTop + 30, currentBottom + deltaY);
-        break;
-      case 'ne': // Nord-Est (coin haut-droite)
-        newRight = Math.max(currentLeft + 50, currentRight + deltaX);
-        newTop = Math.min(currentBottom - 30, currentTop + deltaY);
-        break;
-      case 'nw': // Nord-Ouest (coin haut-gauche)
-        newLeft = Math.min(currentRight - 50, currentLeft + deltaX);
-        newTop = Math.min(currentBottom - 30, currentTop + deltaY);
-        break;
-    }
+      switch (resizeHandle) {
+        case "se": // Sud-Est (coin bas-droite)
+          newRight = Math.max(currentLeft + 50, currentRight + deltaX);
+          newBottom = Math.max(currentTop + 30, currentBottom + deltaY);
+          break;
+        case "sw": // Sud-Ouest (coin bas-gauche)
+          newLeft = Math.min(currentRight - 50, currentLeft + deltaX);
+          newBottom = Math.max(currentTop + 30, currentBottom + deltaY);
+          break;
+        case "ne": // Nord-Est (coin haut-droite)
+          newRight = Math.max(currentLeft + 50, currentRight + deltaX);
+          newTop = Math.min(currentBottom - 30, currentTop + deltaY);
+          break;
+        case "nw": // Nord-Ouest (coin haut-gauche)
+          newLeft = Math.min(currentRight - 50, currentLeft + deltaX);
+          newTop = Math.min(currentBottom - 30, currentTop + deltaY);
+          break;
+      }
 
-    // Calculer les nouvelles dimensions et position du centre
-    const newWidth = newRight - newLeft;
-    const newHeight = newBottom - newTop;
-    const newCenterX = newLeft + newWidth / 2;
-    const newCenterY = newTop + newHeight / 2;
+      // Calculer les nouvelles dimensions et position du centre
+      const newWidth = newRight - newLeft;
+      const newHeight = newBottom - newTop;
+      const newCenterX = newLeft + newWidth / 2;
+      const newCenterY = newTop + newHeight / 2;
 
-    // Mettre à jour la position temporaire
-    setTempResizeSize({ 
-      width: newWidth, 
-      height: newHeight, 
-      x: newCenterX, 
-      y: newCenterY 
-    });
-  }, [isResizing, resizingArticleId, resizeHandle, resizeStartPosition, articles, imageSize]);
+      // Mettre à jour la position temporaire
+      setTempResizeSize({
+        width: newWidth,
+        height: newHeight,
+        x: newCenterX,
+        y: newCenterY,
+      });
+    },
+    [
+      isResizing,
+      resizingArticleId,
+      resizeHandle,
+      resizeStartPosition,
+      articles,
+      imageSize,
+    ]
+  );
 
   const handleResizeEnd = useCallback(async () => {
-    if (!isResizing || !resizingArticleId || !onArticlePositionUpdate || !tempResizeSize) return;
+    if (
+      !isResizing ||
+      !resizingArticleId ||
+      !onArticlePositionUpdate ||
+      !tempResizeSize
+    )
+      return;
 
-    const article = articles.find(a => a.id === resizingArticleId);
+    const article = articles.find((a) => a.id === resizingArticleId);
     if (!article) return;
 
     // Calculer les décalages pour centrer l'image
@@ -601,12 +713,16 @@ export default function ImageWithArticles({
     const offsetY = unusedHeight / 2;
 
     // Convertir les nouvelles dimensions en pourcentages
-    const newWidthPercent = (tempResizeSize.width / imageSize.displayWidth) * 100;
-    const newHeightPercent = (tempResizeSize.height / imageSize.displayHeight) * 100;
+    const newWidthPercent =
+      (tempResizeSize.width / imageSize.displayWidth) * 100;
+    const newHeightPercent =
+      (tempResizeSize.height / imageSize.displayHeight) * 100;
 
     // Convertir la nouvelle position du centre en pourcentages
-    const newPositionXPercent = ((tempResizeSize.x - offsetX) / imageSize.displayWidth) * 100;
-    const newPositionYPercent = ((tempResizeSize.y - offsetY) / imageSize.displayHeight) * 100;
+    const newPositionXPercent =
+      ((tempResizeSize.x - offsetX) / imageSize.displayWidth) * 100;
+    const newPositionYPercent =
+      ((tempResizeSize.y - offsetY) / imageSize.displayHeight) * 100;
 
     // Limiter les valeurs
     const constrainedWidth = Math.max(5, Math.min(50, newWidthPercent));
@@ -631,19 +747,18 @@ export default function ImageWithArticles({
       setResizeHandle(null);
       setTempResizeSize(null);
       setResizeStartPosition({ x: 0, y: 0 });
-      
+
       // Empêcher l'ouverture du popover pendant un court moment
       setTimeout(() => setPreventPopoverOpen(false), 100);
     }
-  }, [isResizing, resizingArticleId, tempResizeSize, articles, imageSize, onArticlePositionUpdate]);
-
-
-
-
-
-
-
-
+  }, [
+    isResizing,
+    resizingArticleId,
+    tempResizeSize,
+    articles,
+    imageSize,
+    onArticlePositionUpdate,
+  ]);
 
   // Gérer le clic/toucher sur un article
   const handleArticleInteraction = (
@@ -751,18 +866,21 @@ export default function ImageWithArticles({
     setDeleteConfirmText("");
   };
 
-  const openCreateModal = useCallback((positionX: number, positionY: number, width: number, height: number) => {
-    setCreateForm({
-      title: "",
-      description: "",
-      positionX,
-      positionY,
-      width,
-      height,
-    });
-    setCreateModalOpen(true);
-    updateCreateMode(false); // Sortir du mode création
-  }, [updateCreateMode]);
+  const openCreateModal = useCallback(
+    (positionX: number, positionY: number, width: number, height: number) => {
+      setCreateForm({
+        title: "",
+        description: "",
+        positionX,
+        positionY,
+        width,
+        height,
+      });
+      setCreateModalOpen(true);
+      updateCreateMode(false); // Sortir du mode création
+    },
+    [updateCreateMode]
+  );
 
   const handleSaveCreate = async () => {
     if (!createForm.title.trim()) {
@@ -821,7 +939,7 @@ export default function ImageWithArticles({
 
       e.preventDefault();
       e.stopPropagation();
-      
+
       setNewArticleStart({ x, y });
       setNewArticleEnd({ x, y });
       setNewArticleSize({ width: 0, height: 0 });
@@ -898,7 +1016,7 @@ export default function ImageWithArticles({
       } else if (isResizing) {
         handleResizeEnd();
       } else if (isDrawingNew && containerRef.current) {
-        // Terminer le dessin de nouvel article  
+        // Terminer le dessin de nouvel article
         const rect = containerRef.current.getBoundingClientRect();
         const endX = e.clientX - rect.left;
         const endY = e.clientY - rect.top;
@@ -909,8 +1027,8 @@ export default function ImageWithArticles({
         // Vérifier que le rectangle a une taille minimale
         if (width > 15 && height > 10) {
           // Calculer la position du centre du rectangle
-          const centerX = (Math.min(newArticleStart.x, endX) + width / 2);
-          const centerY = (Math.min(newArticleStart.y, endY) + height / 2);
+          const centerX = Math.min(newArticleStart.x, endX) + width / 2;
+          const centerY = Math.min(newArticleStart.y, endY) + height / 2;
 
           // Calculer les décalages pour centrer l'image
           const unusedWidth = containerRef.current?.clientWidth
@@ -923,8 +1041,10 @@ export default function ImageWithArticles({
           const offsetY = unusedHeight / 2;
 
           // Convertir en pourcentages
-          const positionXPercent = ((centerX - offsetX) / imageSize.displayWidth) * 100;
-          const positionYPercent = ((centerY - offsetY) / imageSize.displayHeight) * 100;
+          const positionXPercent =
+            ((centerX - offsetX) / imageSize.displayWidth) * 100;
+          const positionYPercent =
+            ((centerY - offsetY) / imageSize.displayHeight) * 100;
           const widthPercent = (width / imageSize.displayWidth) * 100;
           const heightPercent = (height / imageSize.displayHeight) * 100;
 
@@ -935,7 +1055,12 @@ export default function ImageWithArticles({
           const constrainedHeight = Math.max(3, Math.min(30, heightPercent));
 
           // Ouvrir le modal avec les dimensions calculées
-          openCreateModal(constrainedX, constrainedY, constrainedWidth, constrainedHeight);
+          openCreateModal(
+            constrainedX,
+            constrainedY,
+            constrainedWidth,
+            constrainedHeight
+          );
         }
 
         // Réinitialiser les états de dessin
@@ -965,7 +1090,7 @@ export default function ImageWithArticles({
     };
 
     const handleEscapeKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         if (createMode) {
           updateCreateMode(false);
           setIsDrawingNew(false);
@@ -991,22 +1116,37 @@ export default function ImageWithArticles({
     };
 
     if (isDragging || isResizing || isDrawingNew) {
-      document.addEventListener('mousemove', handleGlobalMouseMove);
-      document.addEventListener('mouseup', handleGlobalMouseUp);
-      document.addEventListener('mouseleave', handleMouseLeave);
-      window.addEventListener('blur', handleMouseLeave); // Perte de focus de la fenêtre
+      document.addEventListener("mousemove", handleGlobalMouseMove);
+      document.addEventListener("mouseup", handleGlobalMouseUp);
+      document.addEventListener("mouseleave", handleMouseLeave);
+      window.addEventListener("blur", handleMouseLeave); // Perte de focus de la fenêtre
     }
 
-    document.addEventListener('keydown', handleEscapeKey);
+    document.addEventListener("keydown", handleEscapeKey);
 
     return () => {
-      document.removeEventListener('mousemove', handleGlobalMouseMove);
-      document.removeEventListener('mouseup', handleGlobalMouseUp);
-      document.removeEventListener('mouseleave', handleMouseLeave);
-      window.removeEventListener('blur', handleMouseLeave);
-      document.removeEventListener('keydown', handleEscapeKey);
+      document.removeEventListener("mousemove", handleGlobalMouseMove);
+      document.removeEventListener("mouseup", handleGlobalMouseUp);
+      document.removeEventListener("mouseleave", handleMouseLeave);
+      window.removeEventListener("blur", handleMouseLeave);
+      document.removeEventListener("keydown", handleEscapeKey);
     };
-  }, [isDragging, isResizing, isDrawingNew, handleDragMove, handleDragEnd, handleResizeMove, handleResizeEnd, dragMode, resizeMode, createMode, newArticleStart, imageSize, openCreateModal, updateCreateMode]);
+  }, [
+    isDragging,
+    isResizing,
+    isDrawingNew,
+    handleDragMove,
+    handleDragEnd,
+    handleResizeMove,
+    handleResizeEnd,
+    dragMode,
+    resizeMode,
+    createMode,
+    newArticleStart,
+    imageSize,
+    openCreateModal,
+    updateCreateMode,
+  ]);
 
   // Ne rien afficher pendant le premier rendu côté client
   if (!mounted) {
@@ -1016,11 +1156,13 @@ export default function ImageWithArticles({
   return (
     <div
       ref={containerRef}
-      className={`relative overflow-hidden ${className} ${createMode ? 'cursor-crosshair' : ''}`}
-      style={{ 
-        width: "100%", 
-        position: "relative"
-      } as React.CSSProperties & { '--tooltip-delay': string }}
+      className={`relative overflow-hidden ${className} ${createMode ? "cursor-crosshair" : ""}`}
+      style={
+        {
+          width: "100%",
+          position: "relative",
+        } as React.CSSProperties & { "--tooltip-delay": string }
+      }
       onMouseDown={handleBackgroundMouseDown}
       onClick={handleBackgroundClick}
     >
@@ -1069,7 +1211,106 @@ export default function ImageWithArticles({
         </div>
       )}
 
+      {/* Point d'aide pour les articles perdus */}
+      {(() => {
+        const lostArticles = articles.filter(
+          (article) =>
+            !article.positionX ||
+            !article.positionY ||
+            article.positionX < 0 ||
+            article.positionX > 100 ||
+            article.positionY < 0 ||
+            article.positionY > 100 ||
+            (article.width && article.width > 80) ||
+            (article.height && article.height > 60)
+        );
 
+        if (lostArticles.length > 0 && onArticlePositionUpdate) {
+          return (
+            <TooltipProvider>
+              <div className="absolute top-2 right-2 z-30">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-8 h-8 p-0 bg-white hover:bg-gray-50 border-gray-300 shadow-sm"
+                        >
+                          <HelpCircle className="h-4 w-4 text-gray-600" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-80"
+                        side="left"
+                        align="start"
+                      >
+                        <div className="space-y-3">
+                          <div>
+                            <h4 className="font-medium text-orange-700">
+                              {lostArticles.length > 0
+                                ? `Articles perdus (${lostArticles.length})`
+                                : "Récupération d'articles"}
+                            </h4>
+                            <p className="text-sm text-gray-600 mt-1">
+                              {lostArticles.length > 0
+                                ? "Ces articles sont hors limites ou trop grands pour être accessibles normalement."
+                                : "Aucun article perdu détecté. Cette fonction permet de récupérer des articles qui seraient positionnés en dehors des limites ou trop grands."}
+                            </p>
+                          </div>
+                          {lostArticles.length > 0 && (
+                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                              {lostArticles.map((article) => (
+                                <div
+                                  key={article.id}
+                                  className="flex items-center justify-between bg-orange-50 border border-orange-200 px-3 py-2 rounded text-sm"
+                                >
+                                  <span
+                                    className="truncate mr-2"
+                                    title={article.title}
+                                  >
+                                    {article.title}
+                                  </span>
+                                  <Button
+                                    size="sm"
+                                    onClick={async () => {
+                                      try {
+                                        await onArticlePositionUpdate(
+                                          article.id,
+                                          {
+                                            positionX: 50,
+                                            positionY: 50,
+                                            width: 20,
+                                            height: 15,
+                                          }
+                                        );
+                                      } catch {
+                                        // TODO: Afficher un toast d'erreur
+                                      }
+                                    }}
+                                    className="bg-orange-600 hover:bg-orange-700 text-white text-xs px-2 py-1 h-auto"
+                                  >
+                                    📍 Récupérer
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">
+                    <p>Articles perdus - Cliquez pour les récupérer</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            </TooltipProvider>
+          );
+        }
+        return null;
+      })()}
 
       <Image
         ref={imageRef as React.Ref<HTMLImageElement>}
@@ -1113,23 +1354,41 @@ export default function ImageWithArticles({
                 }
               }}
             >
-              <PopoverTrigger {...({ asChild: true } as React.ComponentProps<typeof PopoverTrigger>)}>
+              <PopoverTrigger
+                {...({ asChild: true } as React.ComponentProps<
+                  typeof PopoverTrigger
+                >)}
+              >
                 <div
                   className={`absolute border ${
                     isActive ? "border-blue-500" : "border-white"
                   } rounded-md shadow-md overflow-hidden ${
-                    dragMode ? "cursor-move hover:border-blue-400" : 
-                    resizeMode ? "cursor-pointer hover:border-green-400" : "cursor-pointer"
+                    dragMode
+                      ? "cursor-move hover:border-blue-400"
+                      : resizeMode
+                        ? "cursor-pointer hover:border-green-400"
+                        : "cursor-pointer"
                   } pointer-events-auto ${
                     isEditable ? "z-10" : ""
                   } ${isDragging && draggingArticleId === article.id ? "opacity-75 z-20" : ""} ${
-                    isResizing && resizingArticleId === article.id ? "opacity-75 z-20" : ""
+                    isResizing && resizingArticleId === article.id
+                      ? "opacity-75 z-20"
+                      : ""
                   } fast-tooltip`}
                   style={{
                     ...articleStyle,
-                    zIndex: (isDragging && draggingArticleId === article.id) || (isResizing && resizingArticleId === article.id) ? 20 : (isActive ? 10 : 5),
-                    backgroundColor: dragMode ? "rgba(59, 130, 246, 0.3)" : 
-                                   resizeMode ? "rgba(34, 197, 94, 0.3)" : "rgba(0, 0, 0, 0.2)",
+                    zIndex:
+                      (isDragging && draggingArticleId === article.id) ||
+                      (isResizing && resizingArticleId === article.id)
+                        ? 20
+                        : isActive
+                          ? 10
+                          : 5,
+                    backgroundColor: dragMode
+                      ? "rgba(59, 130, 246, 0.3)"
+                      : resizeMode
+                        ? "rgba(34, 197, 94, 0.3)"
+                        : "rgba(0, 0, 0, 0.2)",
                   }}
                   onClick={(e: React.MouseEvent) => {
                     if (createMode) {
@@ -1154,14 +1413,16 @@ export default function ImageWithArticles({
                     if (dragMode && onArticlePositionUpdate && !resizeMode) {
                       // Ne déclencher le drag que si on n'est pas en train de redimensionner
                       const target = e.target as HTMLElement;
-                      if (!target.closest('.resize-handle')) {
+                      if (!target.closest(".resize-handle")) {
                         handleDragStart(e, article);
                       }
                     }
                   }}
-                  onMouseEnter={(e: React.MouseEvent) => handleArticleMouseEnter(e, article)}
+                  onMouseEnter={(e: React.MouseEvent) =>
+                    handleArticleMouseEnter(e, article)
+                  }
                   onMouseLeave={handleArticleMouseLeave}
-                  title={`${article.title}${article.description ? `\n${article.description}` : ''}`}
+                  title={`${article.title}${article.description ? `\n${article.description}` : ""}`}
                 >
                   {/* Poignées de redimensionnement */}
                   {resizeMode && (
@@ -1169,44 +1430,44 @@ export default function ImageWithArticles({
                       {/* Poignée Nord-Ouest */}
                       <div
                         className="resize-handle absolute w-3 h-3 bg-green-500 border border-white rounded-full cursor-nw-resize"
-                        style={{ top: '-6px', left: '-6px' }}
+                        style={{ top: "-6px", left: "-6px" }}
                         onMouseDown={(e) => {
                           e.stopPropagation();
                           if (onArticlePositionUpdate) {
-                            handleResizeStart(e, article, 'nw');
+                            handleResizeStart(e, article, "nw");
                           }
                         }}
                       />
                       {/* Poignée Nord-Est */}
                       <div
                         className="resize-handle absolute w-3 h-3 bg-green-500 border border-white rounded-full cursor-ne-resize"
-                        style={{ top: '-6px', right: '-6px' }}
+                        style={{ top: "-6px", right: "-6px" }}
                         onMouseDown={(e) => {
                           e.stopPropagation();
                           if (onArticlePositionUpdate) {
-                            handleResizeStart(e, article, 'ne');
+                            handleResizeStart(e, article, "ne");
                           }
                         }}
                       />
                       {/* Poignée Sud-Ouest */}
                       <div
                         className="resize-handle absolute w-3 h-3 bg-green-500 border border-white rounded-full cursor-sw-resize"
-                        style={{ bottom: '-6px', left: '-6px' }}
+                        style={{ bottom: "-6px", left: "-6px" }}
                         onMouseDown={(e) => {
                           e.stopPropagation();
                           if (onArticlePositionUpdate) {
-                            handleResizeStart(e, article, 'sw');
+                            handleResizeStart(e, article, "sw");
                           }
                         }}
                       />
                       {/* Poignée Sud-Est */}
                       <div
                         className="resize-handle absolute w-3 h-3 bg-green-500 border border-white rounded-full cursor-se-resize"
-                        style={{ bottom: '-6px', right: '-6px' }}
+                        style={{ bottom: "-6px", right: "-6px" }}
                         onMouseDown={(e) => {
                           e.stopPropagation();
                           if (onArticlePositionUpdate) {
-                            handleResizeStart(e, article, 'se');
+                            handleResizeStart(e, article, "se");
                           }
                         }}
                       />
@@ -1272,7 +1533,9 @@ export default function ImageWithArticles({
                           className="flex items-center gap-2"
                         >
                           <Square size={16} />
-                          {resizeMode ? "Mode redimensionnement actif" : "Redimensionner"}
+                          {resizeMode
+                            ? "Mode redimensionnement actif"
+                            : "Redimensionner"}
                         </Button>
                       )}
 
@@ -1313,8 +1576,6 @@ export default function ImageWithArticles({
                     </div>
                   )}
 
-
-
                   {/* Bouton pour voir/gérer les tâches si pas d'actions spécifiques */}
                   {onArticleClick && (
                     <Button
@@ -1350,7 +1611,7 @@ export default function ImageWithArticles({
             onClick={(e) => handleArticleInteraction(e, article)}
             onMouseEnter={(e) => handleArticleMouseEnter(e, article)}
             onMouseLeave={handleArticleMouseLeave}
-            title={`${article.title}${article.description ? `\n${article.description}` : ''}`}
+            title={`${article.title}${article.description ? `\n${article.description}` : ""}`}
           >
             {/* Zone cliquable/survolable pour chaque article positionné */}
           </div>
@@ -1358,17 +1619,19 @@ export default function ImageWithArticles({
       })}
 
       {/* Rectangle de dessin pour le nouvel article */}
-      {isDrawingNew && newArticleSize.width > 0 && newArticleSize.height > 0 && (
-        <div
-          className="absolute border-2 border-purple-500 border-dashed bg-purple-500 bg-opacity-20 pointer-events-none z-20"
-          style={{
-            left: `${Math.min(newArticleStart.x, newArticleEnd.x)}px`,
-            top: `${Math.min(newArticleStart.y, newArticleEnd.y)}px`,
-            width: `${newArticleSize.width}px`,
-            height: `${newArticleSize.height}px`,
-          }}
-        />
-      )}
+      {isDrawingNew &&
+        newArticleSize.width > 0 &&
+        newArticleSize.height > 0 && (
+          <div
+            className="absolute border-2 border-purple-500 border-dashed bg-purple-500 bg-opacity-20 pointer-events-none z-20"
+            style={{
+              left: `${Math.min(newArticleStart.x, newArticleEnd.x)}px`,
+              top: `${Math.min(newArticleStart.y, newArticleEnd.y)}px`,
+              width: `${newArticleSize.width}px`,
+              height: `${newArticleSize.height}px`,
+            }}
+          />
+        )}
 
       {/* Modal d'édition */}
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
@@ -1378,7 +1641,12 @@ export default function ImageWithArticles({
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label htmlFor="title" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Titre</label>
+              <label
+                htmlFor="title"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Titre
+              </label>
               <Input
                 id="title"
                 value={editForm.title}
@@ -1389,7 +1657,12 @@ export default function ImageWithArticles({
               />
             </div>
             <div>
-              <label htmlFor="description" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Description</label>
+              <label
+                htmlFor="description"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Description
+              </label>
               <Textarea
                 id="description"
                 value={editForm.description}
@@ -1416,7 +1689,9 @@ export default function ImageWithArticles({
       <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <h2 className="text-lg font-semibold text-red-600">Supprimer l&apos;article</h2>
+            <h2 className="text-lg font-semibold text-red-600">
+              Supprimer l&apos;article
+            </h2>
           </DialogHeader>
           <div className="space-y-4">
             <div className="p-4 bg-red-50 border border-red-200 rounded-md">
@@ -1439,9 +1714,12 @@ export default function ImageWithArticles({
                     Attention : Cette action est irréversible
                   </h3>
                   <p className="mt-1 text-sm text-red-700">
-                    Vous êtes sur le point de supprimer définitivement l&apos;article{" "}
-                    <span className="font-semibold">&quot;{deletingArticle?.title}&quot;</span>.
-                    Cette action ne peut pas être annulée.
+                    Vous êtes sur le point de supprimer définitivement
+                    l&apos;article{" "}
+                    <span className="font-semibold">
+                      &quot;{deletingArticle?.title}&quot;
+                    </span>
+                    . Cette action ne peut pas être annulée.
                   </p>
                 </div>
               </div>
@@ -1449,7 +1727,8 @@ export default function ImageWithArticles({
 
             <div>
               <label htmlFor="deleteConfirm" className="text-sm font-medium">
-                Pour confirmer la suppression, tapez le nom exact de l&apos;article :
+                Pour confirmer la suppression, tapez le nom exact de
+                l&apos;article :
               </label>
               <div className="mt-2 space-y-2">
                 <div className="text-sm text-gray-600 bg-gray-100 p-2 rounded border">
@@ -1492,7 +1771,12 @@ export default function ImageWithArticles({
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label htmlFor="createTitle" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Titre</label>
+              <label
+                htmlFor="createTitle"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Titre
+              </label>
               <Input
                 id="createTitle"
                 value={createForm.title}
@@ -1503,7 +1787,12 @@ export default function ImageWithArticles({
               />
             </div>
             <div>
-              <label htmlFor="createDescription" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Description</label>
+              <label
+                htmlFor="createDescription"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Description
+              </label>
               <Textarea
                 id="createDescription"
                 value={createForm.description}
@@ -1516,7 +1805,12 @@ export default function ImageWithArticles({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="createPositionX" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Position X (%)</label>
+                <label
+                  htmlFor="createPositionX"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Position X (%)
+                </label>
                 <Input
                   id="createPositionX"
                   type="number"
@@ -1524,12 +1818,20 @@ export default function ImageWithArticles({
                   max={95}
                   value={createForm.positionX}
                   onChange={(e) =>
-                    setCreateForm({ ...createForm, positionX: Number(e.target.value) })
+                    setCreateForm({
+                      ...createForm,
+                      positionX: Number(e.target.value),
+                    })
                   }
                 />
               </div>
               <div>
-                <label htmlFor="createPositionY" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Position Y (%)</label>
+                <label
+                  htmlFor="createPositionY"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Position Y (%)
+                </label>
                 <Input
                   id="createPositionY"
                   type="number"
@@ -1537,14 +1839,22 @@ export default function ImageWithArticles({
                   max={95}
                   value={createForm.positionY}
                   onChange={(e) =>
-                    setCreateForm({ ...createForm, positionY: Number(e.target.value) })
+                    setCreateForm({
+                      ...createForm,
+                      positionY: Number(e.target.value),
+                    })
                   }
                 />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="createWidth" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Largeur (%)</label>
+                <label
+                  htmlFor="createWidth"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Largeur (%)
+                </label>
                 <Input
                   id="createWidth"
                   type="number"
@@ -1552,12 +1862,20 @@ export default function ImageWithArticles({
                   max={50}
                   value={createForm.width}
                   onChange={(e) =>
-                    setCreateForm({ ...createForm, width: Number(e.target.value) })
+                    setCreateForm({
+                      ...createForm,
+                      width: Number(e.target.value),
+                    })
                   }
                 />
               </div>
               <div>
-                <label htmlFor="createHeight" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Hauteur (%)</label>
+                <label
+                  htmlFor="createHeight"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Hauteur (%)
+                </label>
                 <Input
                   id="createHeight"
                   type="number"
@@ -1565,7 +1883,10 @@ export default function ImageWithArticles({
                   max={30}
                   value={createForm.height}
                   onChange={(e) =>
-                    setCreateForm({ ...createForm, height: Number(e.target.value) })
+                    setCreateForm({
+                      ...createForm,
+                      height: Number(e.target.value),
+                    })
                   }
                 />
               </div>
@@ -1575,7 +1896,10 @@ export default function ImageWithArticles({
             <Button variant="outline" onClick={handleCancelCreate}>
               Annuler
             </Button>
-            <Button onClick={handleSaveCreate} disabled={isCreating || !createForm.title.trim()}>
+            <Button
+              onClick={handleSaveCreate}
+              disabled={isCreating || !createForm.title.trim()}
+            >
               {isCreating ? "Création..." : "Créer l'article"}
             </Button>
           </DialogFooter>
