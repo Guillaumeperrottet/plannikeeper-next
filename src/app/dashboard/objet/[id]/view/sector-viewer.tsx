@@ -297,6 +297,30 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
     }
   };
 
+  const handleArticleDelete = async (articleId: string) => {
+    try {
+      const response = await fetch(`/api/articles/${articleId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la suppression de l\'article');
+      }
+
+      // Recharger les articles pour refléter les changements
+      if (selectedSector) {
+        await fetchArticles(selectedSector.id);
+      }
+
+      // Afficher un message de succès
+      toast.success('Article supprimé avec succès');
+    } catch (error) {
+      console.error('Erreur lors de la suppression de l\'article:', error);
+      toast.error('Erreur lors de la suppression de l\'article');
+      throw error; // Re-throw pour que le composant puisse gérer l'erreur
+    }
+  };
+
   const toggleFullscreen = useCallback(() => {
     setIsFullscreen(!isFullscreen);
 
@@ -637,10 +661,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                       // Rediriger vers la page d'édition avec l'article sélectionné
                       window.location.href = `/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?selectedArticle=${articleId}&mode=edit`;
                     }}
-                    onArticleDelete={(articleId: string) => {
-                      // Rediriger vers la page d'édition avec l'article sélectionné
-                      window.location.href = `/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?selectedArticle=${articleId}&mode=delete`;
-                    }}
+                    onArticleDelete={handleArticleDelete}
                     onArticleUpdate={handleArticleUpdate}
                     onArticlePositionUpdate={handleArticlePositionUpdate}
                     className={`${

@@ -44,7 +44,7 @@ type ImageWithArticlesProps = {
   onArticleMove?: (articleId: string) => void;
   onArticleResize?: (articleId: string) => void;
   onArticleEdit?: (articleId: string) => void;
-  onArticleDelete?: (articleId: string) => void;
+  onArticleDelete?: (articleId: string) => Promise<void>; // Changé pour retourner une Promise
   // Nouvelle prop pour la mise à jour des articles
   onArticleUpdate?: (articleId: string, updates: { title: string; description: string }) => Promise<void>;
   // Nouvelle prop pour la mise à jour de position
@@ -99,12 +99,29 @@ export default function ImageWithArticles({
   });
   const [isLoading, setIsLoading] = useState(false);
 
+  // États pour le modal de suppression
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingArticle, setDeletingArticle] = useState<Article | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // États pour le mode déplacement
   const [isDragging, setIsDragging] = useState(false);
   const [draggingArticleId, setDraggingArticleId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [dragMode, setDragMode] = useState(false);
   const [tempDragPosition, setTempDragPosition] = useState<{ x: number; y: number } | null>(null);
+
+  // États pour le redimensionnement
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizingArticleId, setResizingArticleId] = useState<string | null>(null);
+  const [resizeMode, setResizeMode] = useState(false);
+  const [resizeHandle, setResizeHandle] = useState<string | null>(null); // 'se', 'sw', 'ne', 'nw'
+  const [resizeStartPosition, setResizeStartPosition] = useState({ x: 0, y: 0 });
+  const [tempResizeSize, setTempResizeSize] = useState<{ width: number; height: number; x: number; y: number } | null>(null);
+
+  // État pour empêcher l'ouverture du popover après une action
+  const [preventPopoverOpen, setPreventPopoverOpen] = useState(false);
 
   // Détecter si l'appareil est mobile
   useEffect(() => {
@@ -244,6 +261,17 @@ export default function ImageWithArticles({
         return {};
       }
 
+      // Si cet article est en cours de redimensionnement, utiliser les dimensions temporaires
+      if (isResizing && resizingArticleId === article.id && tempResizeSize) {
+        return {
+          left: `${tempResizeSize.x}px`,
+          top: `${tempResizeSize.y}px`,
+          width: `${tempResizeSize.width}px`,
+          height: `${tempResizeSize.height}px`,
+          transform: "translate(-50%, -50%)",
+        };
+      }
+
       // Si cet article est en cours de déplacement, utiliser la position temporaire
       if (isDragging && draggingArticleId === article.id && tempDragPosition) {
         const width = ((article.width || 20) / 100) * imageSize.displayWidth;
@@ -285,7 +313,7 @@ export default function ImageWithArticles({
         transform: "translate(-50%, -50%)",
       };
     },
-    [imageSize, isDragging, draggingArticleId, tempDragPosition]
+    [imageSize, isDragging, draggingArticleId, tempDragPosition, isResizing, resizingArticleId, tempResizeSize]
   );
 
   // Fonctions utilitaires pour le drag & drop
@@ -316,6 +344,7 @@ export default function ImageWithArticles({
     setDraggingArticleId(article.id);
     setIsDragging(true);
     setOpenPopoverId(null); // Fermer le popover
+    setPreventPopoverOpen(true); // Empêcher l'ouverture du popover
 
     if (!containerRef.current) return;
 
@@ -390,8 +419,247 @@ export default function ImageWithArticles({
       setDragMode(false);
       setDragOffset({ x: 0, y: 0 });
       setTempDragPosition(null);
+      
+      // Empêcher l'ouverture du popover pendant un court moment
+      setTimeout(() => setPreventPopoverOpen(false), 100);
     }
   }, [isDragging, draggingArticleId, dragOffset, articles, imageSize, onArticlePositionUpdate, pixelsToPercent]);
+
+  // Fonctions pour le redimensionnement
+  const handleResizeStart = (e: React.MouseEvent, article: Article, handle: string) => {
+    e.stopPropagation();
+    setResizeMode(true);
+    setResizingArticleId(article.id);
+    setIsResizing(true);
+    setResizeHandle(handle);
+    setOpenPopoverId(null);
+    setPreventPopoverOpen(true); // Empêcher l'ouverture du popover
+
+    if (!containerRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    setResizeStartPosition({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+  };
+
+  const handleResizeMove = useCallback((clientX: number, clientY: number) => {
+    if (!isResizing || !resizingArticleId || !containerRef.current || !resizeHandle) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const currentX = clientX - rect.left;
+    const currentY = clientY - rect.top;
+
+    const article = articles.find(a => a.id === resizingArticleId);
+    if (!article) return;
+
+    // Calculer les décalages pour centrer l'image
+    const unusedWidth = containerRef.current?.clientWidth
+      ? containerRef.current.clientWidth - imageSize.displayWidth
+      : 0;
+    const unusedHeight = containerRef.current?.clientHeight
+      ? containerRef.current.clientHeight - imageSize.displayHeight
+      : 0;
+    const offsetX = unusedWidth / 2;
+    const offsetY = unusedHeight / 2;
+
+    // Position actuelle de l'article en pixels dans l'image
+    const currentCenterX = (article.positionX! / 100) * imageSize.displayWidth + offsetX;
+    const currentCenterY = (article.positionY! / 100) * imageSize.displayHeight + offsetY;
+    const currentWidth = ((article.width || 20) / 100) * imageSize.displayWidth;
+    const currentHeight = ((article.height || 20) / 100) * imageSize.displayHeight;
+
+    // Position actuelle des coins
+    const currentLeft = currentCenterX - currentWidth / 2;
+    const currentTop = currentCenterY - currentHeight / 2;
+    const currentRight = currentCenterX + currentWidth / 2;
+    const currentBottom = currentCenterY + currentHeight / 2;
+
+    // Calculer les nouvelles dimensions selon la poignée utilisée
+    let newLeft = currentLeft;
+    let newTop = currentTop;
+    let newRight = currentRight;
+    let newBottom = currentBottom;
+
+    const deltaX = currentX - resizeStartPosition.x;
+    const deltaY = currentY - resizeStartPosition.y;
+
+    switch (resizeHandle) {
+      case 'se': // Sud-Est (coin bas-droite)
+        newRight = Math.max(currentLeft + 50, currentRight + deltaX);
+        newBottom = Math.max(currentTop + 30, currentBottom + deltaY);
+        break;
+      case 'sw': // Sud-Ouest (coin bas-gauche)
+        newLeft = Math.min(currentRight - 50, currentLeft + deltaX);
+        newBottom = Math.max(currentTop + 30, currentBottom + deltaY);
+        break;
+      case 'ne': // Nord-Est (coin haut-droite)
+        newRight = Math.max(currentLeft + 50, currentRight + deltaX);
+        newTop = Math.min(currentBottom - 30, currentTop + deltaY);
+        break;
+      case 'nw': // Nord-Ouest (coin haut-gauche)
+        newLeft = Math.min(currentRight - 50, currentLeft + deltaX);
+        newTop = Math.min(currentBottom - 30, currentTop + deltaY);
+        break;
+    }
+
+    // Calculer les nouvelles dimensions et position du centre
+    const newWidth = newRight - newLeft;
+    const newHeight = newBottom - newTop;
+    const newCenterX = newLeft + newWidth / 2;
+    const newCenterY = newTop + newHeight / 2;
+
+    // Mettre à jour la position temporaire
+    setTempResizeSize({ 
+      width: newWidth, 
+      height: newHeight, 
+      x: newCenterX, 
+      y: newCenterY 
+    });
+  }, [isResizing, resizingArticleId, resizeHandle, resizeStartPosition, articles, imageSize]);
+
+  const handleResizeEnd = useCallback(async () => {
+    if (!isResizing || !resizingArticleId || !onArticlePositionUpdate || !tempResizeSize) return;
+
+    const article = articles.find(a => a.id === resizingArticleId);
+    if (!article) return;
+
+    // Calculer les décalages pour centrer l'image
+    const unusedWidth = containerRef.current?.clientWidth
+      ? containerRef.current.clientWidth - imageSize.displayWidth
+      : 0;
+    const unusedHeight = containerRef.current?.clientHeight
+      ? containerRef.current.clientHeight - imageSize.displayHeight
+      : 0;
+    const offsetX = unusedWidth / 2;
+    const offsetY = unusedHeight / 2;
+
+    // Convertir les nouvelles dimensions en pourcentages
+    const newWidthPercent = (tempResizeSize.width / imageSize.displayWidth) * 100;
+    const newHeightPercent = (tempResizeSize.height / imageSize.displayHeight) * 100;
+
+    // Convertir la nouvelle position du centre en pourcentages
+    const newPositionXPercent = ((tempResizeSize.x - offsetX) / imageSize.displayWidth) * 100;
+    const newPositionYPercent = ((tempResizeSize.y - offsetY) / imageSize.displayHeight) * 100;
+
+    // Limiter les valeurs
+    const constrainedWidth = Math.max(5, Math.min(50, newWidthPercent));
+    const constrainedHeight = Math.max(3, Math.min(30, newHeightPercent));
+    const constrainedX = Math.max(5, Math.min(95, newPositionXPercent));
+    const constrainedY = Math.max(5, Math.min(95, newPositionYPercent));
+
+    try {
+      await onArticlePositionUpdate(resizingArticleId, {
+        positionX: constrainedX,
+        positionY: constrainedY,
+        width: constrainedWidth,
+        height: constrainedHeight,
+      });
+    } catch (error) {
+      console.error("Erreur lors du redimensionnement de l'article:", error);
+    } finally {
+      // Réinitialiser les états
+      setIsResizing(false);
+      setResizingArticleId(null);
+      setResizeMode(false);
+      setResizeHandle(null);
+      setTempResizeSize(null);
+      setResizeStartPosition({ x: 0, y: 0 });
+      
+      // Empêcher l'ouverture du popover pendant un court moment
+      setTimeout(() => setPreventPopoverOpen(false), 100);
+    }
+  }, [isResizing, resizingArticleId, tempResizeSize, articles, imageSize, onArticlePositionUpdate]);
+
+  // Fonction pour centrer un article au milieu de l'image
+  const centerArticle = useCallback(async (articleId: string) => {
+    if (!onArticlePositionUpdate) return;
+
+    const article = articles.find(a => a.id === articleId);
+    if (!article) return;
+
+    try {
+      // Centrer l'article à 50%, 50% avec des dimensions par défaut si nécessaire
+      await onArticlePositionUpdate(articleId, {
+        positionX: 50, // Centre horizontal
+        positionY: 50, // Centre vertical
+        width: article.width || 20, // Garder la taille existante ou 20% par défaut
+        height: article.height || 20, // Garder la taille existante ou 20% par défaut
+      });
+      
+      console.log(`Article "${article.title}" repositionné au centre de l'image`);
+    } catch (error) {
+      console.error(`Erreur lors du centrage de l'article "${article.title}":`, error);
+    }
+  }, [articles, onArticlePositionUpdate]);
+
+  // Fonction pour corriger un article avec des dimensions invalides
+  const fixArticleDimensions = useCallback(async (articleId: string) => {
+    if (!onArticlePositionUpdate) return;
+
+    const article = articles.find(a => a.id === articleId);
+    if (!article) return;
+
+    try {
+      // Corriger les dimensions et la position
+      const correctedWidth = article.width && article.width > 100 ? 20 : (article.width || 20);
+      const correctedHeight = article.height && article.height > 100 ? 15 : (article.height || 15);
+      const correctedX = (article.positionX === 0 || !article.positionX) ? 50 : Math.max(5, Math.min(95, article.positionX));
+      const correctedY = (article.positionY === 0 || !article.positionY) ? 50 : Math.max(5, Math.min(95, article.positionY));
+
+      await onArticlePositionUpdate(articleId, {
+        positionX: correctedX,
+        positionY: correctedY,
+        width: correctedWidth,
+        height: correctedHeight,
+      });
+      
+      console.log(`Article "${article.title}" corrigé:`, {
+        ancien: { positionX: article.positionX, positionY: article.positionY, width: article.width, height: article.height },
+        nouveau: { positionX: correctedX, positionY: correctedY, width: correctedWidth, height: correctedHeight }
+      });
+    } catch (error) {
+      console.error(`Erreur lors de la correction de l'article "${article.title}":`, error);
+    }
+  }, [articles, onArticlePositionUpdate]);
+
+  // Fonction de debug pour afficher les positions des articles
+  const debugArticlePositions = useCallback(() => {
+    console.log("=== DEBUG: Positions des articles ===");
+    const outOfBounds: Article[] = [];
+    articles.forEach((article) => {
+      const isOutOfBounds = article.positionX && article.positionY && 
+        (article.positionX < 0 || article.positionX > 100 || 
+         article.positionY < 0 || article.positionY > 100);
+      
+      if (isOutOfBounds) {
+        outOfBounds.push(article);
+      }
+      
+      console.log(`Article: "${article.title}"`, {
+        id: article.id,
+        positionX: article.positionX,
+        positionY: article.positionY,
+        width: article.width,
+        height: article.height,
+        visible: article.positionX !== null && article.positionY !== null,
+        outOfBounds: isOutOfBounds
+      });
+    });
+    
+    if (outOfBounds.length > 0) {
+      console.warn("⚠️ Articles hors limites (0-100%) :", outOfBounds.map(a => a.title));
+    }
+    console.log("=====================================");
+  }, [articles]);
+
+  // Debug automatique quand les articles changent (en dev uniquement)
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "production") {
+      debugArticlePositions();
+    }
+  }, [articles, debugArticlePositions]);
 
   // Gérer le clic/toucher sur un article
   const handleArticleInteraction = (
@@ -465,6 +733,42 @@ export default function ImageWithArticles({
     setEditForm({ title: "", description: "" });
   };
 
+  // Fonctions pour gérer la suppression d'articles
+  const handleDeleteArticle = (article: Article) => {
+    setDeletingArticle(article);
+    setDeleteConfirmText("");
+    setDeleteModalOpen(true);
+    setOpenPopoverId(null); // Fermer le popover
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingArticle || !onArticleDelete) return;
+
+    // Vérifier que le nom saisi correspond exactement au titre de l'article
+    if (deleteConfirmText.trim() !== deletingArticle.title.trim()) {
+      return; // Ne pas procéder à la suppression si le nom ne correspond pas
+    }
+
+    setIsDeleting(true);
+    try {
+      await onArticleDelete(deletingArticle.id);
+      setDeleteModalOpen(false);
+      setDeletingArticle(null);
+      setDeleteConfirmText("");
+    } catch (error) {
+      console.error("Erreur lors de la suppression de l'article:", error);
+      // TODO: Afficher un toast d'erreur
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteModalOpen(false);
+    setDeletingArticle(null);
+    setDeleteConfirmText("");
+  };
+
   // Fermer le popover quand on clique ailleurs
   const handleBackgroundClick = () => {
     setOpenPopoverId(null);
@@ -509,32 +813,66 @@ export default function ImageWithArticles({
     };
   }, [onArticleHover]);
 
-  // Gestion globale des événements de drag
+  // Gestion globale des événements de drag et resize
   useEffect(() => {
     const handleGlobalMouseMove = (e: MouseEvent) => {
       if (isDragging) {
         handleDragMove(e.clientX, e.clientY);
+      } else if (isResizing) {
+        handleResizeMove(e.clientX, e.clientY);
       }
     };
 
     const handleGlobalMouseUp = (e: MouseEvent) => {
       if (isDragging) {
         handleDragEnd(e.clientX, e.clientY);
+      } else if (isResizing) {
+        handleResizeEnd();
+      }
+    };
+
+    // Gestion de la perte de focus ou de la sortie de la fenêtre
+    const handleMouseLeave = () => {
+      if (isDragging) {
+        // Arrêter immédiatement le drag sans sauvegarder
+        setIsDragging(false);
+        setDraggingArticleId(null);
+        setTempDragPosition(null);
+        setTimeout(() => setPreventPopoverOpen(false), 100);
+      }
+      if (isResizing) {
+        // Arrêter immédiatement le resize sans sauvegarder
+        setIsResizing(false);
+        setResizingArticleId(null);
+        setTempResizeSize(null);
+        setTimeout(() => setPreventPopoverOpen(false), 100);
       }
     };
 
     const handleEscapeKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && dragMode) {
-        setDragMode(false);
-        setIsDragging(false);
-        setDraggingArticleId(null);
-        setTempDragPosition(null);
+      if (e.key === 'Escape') {
+        if (dragMode) {
+          setDragMode(false);
+          setIsDragging(false);
+          setDraggingArticleId(null);
+          setTempDragPosition(null);
+          setPreventPopoverOpen(false);
+        }
+        if (resizeMode) {
+          setResizeMode(false);
+          setIsResizing(false);
+          setResizingArticleId(null);
+          setTempResizeSize(null);
+          setPreventPopoverOpen(false);
+        }
       }
     };
 
-    if (isDragging) {
+    if (isDragging || isResizing) {
       document.addEventListener('mousemove', handleGlobalMouseMove);
       document.addEventListener('mouseup', handleGlobalMouseUp);
+      document.addEventListener('mouseleave', handleMouseLeave);
+      window.addEventListener('blur', handleMouseLeave); // Perte de focus de la fenêtre
     }
 
     document.addEventListener('keydown', handleEscapeKey);
@@ -542,9 +880,11 @@ export default function ImageWithArticles({
     return () => {
       document.removeEventListener('mousemove', handleGlobalMouseMove);
       document.removeEventListener('mouseup', handleGlobalMouseUp);
+      document.removeEventListener('mouseleave', handleMouseLeave);
+      window.removeEventListener('blur', handleMouseLeave);
       document.removeEventListener('keydown', handleEscapeKey);
     };
-  }, [isDragging, handleDragMove, handleDragEnd, dragMode]);
+  }, [isDragging, isResizing, handleDragMove, handleDragEnd, handleResizeMove, handleResizeEnd, dragMode, resizeMode]);
 
   // Ne rien afficher pendant le premier rendu côté client
   if (!mounted) {
@@ -568,6 +908,68 @@ export default function ImageWithArticles({
           >
             ✕
           </button>
+        </div>
+      )}
+
+      {/* Indicateur du mode redimensionnement */}
+      {resizeMode && (
+        <div className="absolute top-2 left-2 z-30 bg-green-500 text-white px-3 py-1 rounded-md text-sm font-medium">
+          Mode redimensionnement actif - Utilisez les poignées aux coins
+          <button
+            onClick={() => setResizeMode(false)}
+            className="ml-2 text-green-200 hover:text-white"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Bouton de debug en mode développement */}
+      {process.env.NODE_ENV !== "production" && (
+        <div className="absolute top-2 right-2 z-30 space-y-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={debugArticlePositions}
+            className="bg-white/90 text-xs"
+          >
+            Debug positions
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const lostArticle = articles.find(a => a.title.includes("Place de jeux"));
+              if (lostArticle) {
+                centerArticle(lostArticle.id);
+              }
+            }}
+            className="bg-yellow-100 text-yellow-800 text-xs"
+          >
+            Retrouver &quot;Place de jeux&quot;
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              // Centrer l'article "Grand sanitaire" avec des dimensions correctes
+              centerArticle('f50402ca-ef55-465f-a413-4995664576d3');
+            }}
+            className="bg-red-100 text-red-800 text-xs"
+          >
+            Centrer &quot;Grand sanitaire&quot;
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              // Corriger les dimensions de l'article "Grand sanitaire"
+              fixArticleDimensions('f50402ca-ef55-465f-a413-4995664576d3');
+            }}
+            className="bg-orange-100 text-orange-800 text-xs"
+          >
+            Corriger dimensions
+          </Button>
         </div>
       )}
 
@@ -619,30 +1021,92 @@ export default function ImageWithArticles({
                   className={`absolute border ${
                     isActive ? "border-blue-500" : "border-white"
                   } rounded-md shadow-md overflow-hidden ${
-                    dragMode ? "cursor-move hover:border-blue-400" : "cursor-pointer"
+                    dragMode ? "cursor-move hover:border-blue-400" : 
+                    resizeMode ? "cursor-pointer hover:border-green-400" : "cursor-pointer"
                   } pointer-events-auto ${
                     isEditable ? "z-10" : ""
-                  } ${isDragging && draggingArticleId === article.id ? "opacity-75 z-20" : ""}`}
+                  } ${isDragging && draggingArticleId === article.id ? "opacity-75 z-20" : ""} ${
+                    isResizing && resizingArticleId === article.id ? "opacity-75 z-20" : ""
+                  }`}
                   style={{
                     ...articleStyle,
-                    zIndex: isDragging && draggingArticleId === article.id ? 20 : (isActive ? 10 : 5),
-                    backgroundColor: dragMode ? "rgba(59, 130, 246, 0.3)" : "rgba(0, 0, 0, 0.2)",
+                    zIndex: (isDragging && draggingArticleId === article.id) || (isResizing && resizingArticleId === article.id) ? 20 : (isActive ? 10 : 5),
+                    backgroundColor: dragMode ? "rgba(59, 130, 246, 0.3)" : 
+                                   resizeMode ? "rgba(34, 197, 94, 0.3)" : "rgba(0, 0, 0, 0.2)",
                   }}
                   onClick={(e: React.MouseEvent) => {
-                    if (dragMode) {
+                    if (dragMode || resizeMode) {
                       e.stopPropagation();
-                      return; // En mode déplacement, ne pas ouvrir le popover au clic
+                      return; // En mode déplacement ou redimensionnement, ne pas ouvrir le popover au clic
+                    }
+                    if (preventPopoverOpen) {
+                      e.stopPropagation();
+                      return; // Empêcher l'ouverture du popover juste après une action
                     }
                     handleArticleInteraction(e, article);
                   }}
                   onMouseDown={(e: React.MouseEvent) => {
-                    if (dragMode && onArticlePositionUpdate) {
-                      handleDragStart(e, article);
+                    if (dragMode && onArticlePositionUpdate && !resizeMode) {
+                      // Ne déclencher le drag que si on n'est pas en train de redimensionner
+                      const target = e.target as HTMLElement;
+                      if (!target.closest('.resize-handle')) {
+                        handleDragStart(e, article);
+                      }
                     }
                   }}
                   onMouseEnter={(e: React.MouseEvent) => handleArticleMouseEnter(e, article)}
                   onMouseLeave={handleArticleMouseLeave}
+                  title={`${article.title}${article.description ? `\n${article.description}` : ''}`}
                 >
+                  {/* Poignées de redimensionnement */}
+                  {resizeMode && (
+                    <>
+                      {/* Poignée Nord-Ouest */}
+                      <div
+                        className="resize-handle absolute w-3 h-3 bg-green-500 border border-white rounded-full cursor-nw-resize"
+                        style={{ top: '-6px', left: '-6px' }}
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                          if (onArticlePositionUpdate) {
+                            handleResizeStart(e, article, 'nw');
+                          }
+                        }}
+                      />
+                      {/* Poignée Nord-Est */}
+                      <div
+                        className="resize-handle absolute w-3 h-3 bg-green-500 border border-white rounded-full cursor-ne-resize"
+                        style={{ top: '-6px', right: '-6px' }}
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                          if (onArticlePositionUpdate) {
+                            handleResizeStart(e, article, 'ne');
+                          }
+                        }}
+                      />
+                      {/* Poignée Sud-Ouest */}
+                      <div
+                        className="resize-handle absolute w-3 h-3 bg-green-500 border border-white rounded-full cursor-sw-resize"
+                        style={{ bottom: '-6px', left: '-6px' }}
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                          if (onArticlePositionUpdate) {
+                            handleResizeStart(e, article, 'sw');
+                          }
+                        }}
+                      />
+                      {/* Poignée Sud-Est */}
+                      <div
+                        className="resize-handle absolute w-3 h-3 bg-green-500 border border-white rounded-full cursor-se-resize"
+                        style={{ bottom: '-6px', right: '-6px' }}
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                          if (onArticlePositionUpdate) {
+                            handleResizeStart(e, article, 'se');
+                          }
+                        }}
+                      />
+                    </>
+                  )}
                   {/* Zone cliquable/survolable pour chaque article positionné */}
                 </div>
               </PopoverTrigger>
@@ -689,13 +1153,20 @@ export default function ImageWithArticles({
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          onArticleResize(article.id);
-                          setOpenPopoverId(null);
+                          if (onArticlePositionUpdate) {
+                            // Activer le mode redimensionnement intégré
+                            setResizeMode(true);
+                            setOpenPopoverId(null);
+                          } else {
+                            // Fallback vers la fonction externe (redirection)
+                            onArticleResize(article.id);
+                            setOpenPopoverId(null);
+                          }
                         }}
                         className="flex items-center gap-2"
                       >
                         <Square size={16} />
-                        Redimensionner
+                        {resizeMode ? "Mode redimensionnement actif" : "Redimensionner"}
                       </Button>
                     )}
 
@@ -725,8 +1196,7 @@ export default function ImageWithArticles({
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          onArticleDelete(article.id);
-                          setOpenPopoverId(null);
+                          handleDeleteArticle(article);
                         }}
                         className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
                       >
@@ -735,6 +1205,24 @@ export default function ImageWithArticles({
                       </Button>
                     )}
                   </div>
+
+                  {/* Bouton pour centrer l'article si la fonction de mise à jour de position est disponible */}
+                  {onArticlePositionUpdate && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        centerArticle(article.id);
+                        setOpenPopoverId(null);
+                      }}
+                      className="w-full flex items-center gap-2"
+                    >
+                      <div className="w-4 h-4 border border-current rounded-sm flex items-center justify-center">
+                        <div className="w-1 h-1 bg-current rounded-full"></div>
+                      </div>
+                      Centrer l&apos;article
+                    </Button>
+                  )}
 
                   {/* Bouton pour voir/gérer les tâches si pas d'actions spécifiques */}
                   {onArticleClick && (
@@ -771,6 +1259,7 @@ export default function ImageWithArticles({
             onClick={(e) => handleArticleInteraction(e, article)}
             onMouseEnter={(e) => handleArticleMouseEnter(e, article)}
             onMouseLeave={handleArticleMouseLeave}
+            title={`${article.title}${article.description ? `\n${article.description}` : ''}`}
           >
             {/* Zone cliquable/survolable pour chaque article positionné */}
           </div>
@@ -816,6 +1305,80 @@ export default function ImageWithArticles({
             </Button>
             <Button onClick={handleSaveEdit} disabled={isLoading}>
               {isLoading ? "Enregistrement..." : "Enregistrer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de suppression */}
+      <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            {/* @ts-expect-error - Types issue with shadcn/ui DialogTitle children prop */}
+            <DialogTitle className="text-red-600">Supprimer l&apos;article</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-5 w-5 text-red-400"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-red-800">
+                    Attention : Cette action est irréversible
+                  </h3>
+                  <p className="mt-1 text-sm text-red-700">
+                    Vous êtes sur le point de supprimer définitivement l&apos;article{" "}
+                    <span className="font-semibold">&quot;{deletingArticle?.title}&quot;</span>.
+                    Cette action ne peut pas être annulée.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              {/* @ts-expect-error - Types issue with shadcn/ui Label children prop */}
+              <Label htmlFor="deleteConfirm" className="text-sm font-medium">
+                Pour confirmer la suppression, tapez le nom exact de l&apos;article :
+              </Label>
+              <div className="mt-2 space-y-2">
+                <div className="text-sm text-gray-600 bg-gray-100 p-2 rounded border">
+                  {deletingArticle?.title}
+                </div>
+                <Input
+                  id="deleteConfirm"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="Tapez le nom de l'article ici"
+                  className="focus:ring-red-500 focus:border-red-500"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancelDelete}>
+              Annuler
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={
+                isDeleting ||
+                !deletingArticle ||
+                deleteConfirmText.trim() !== deletingArticle.title.trim()
+              }
+            >
+              {isDeleting ? "Suppression..." : "Supprimer définitivement"}
             </Button>
           </DialogFooter>
         </DialogContent>
