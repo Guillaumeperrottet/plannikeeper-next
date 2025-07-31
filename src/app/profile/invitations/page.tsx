@@ -39,25 +39,27 @@ export default async function InvitationsPage() {
               Invitations Réservées aux Administrateurs
             </h1>
             <p className="text-[color:var(--muted-foreground)] text-lg">
-              Seuls les administrateurs peuvent créer des codes d&apos;invitation
+              Seuls les administrateurs peuvent créer des codes
+              d&apos;invitation
             </p>
           </div>
 
           <div className="bg-[color:var(--muted)] rounded-lg p-6 mb-6">
             <h2 className="font-semibold text-[color:var(--foreground)] mb-3">
-              Votre rôle actuel : <span className="text-[color:var(--primary)]">Membre</span>
+              Votre rôle actuel :{" "}
+              <span className="text-[color:var(--primary)]">Membre</span>
             </h2>
             <p className="text-[color:var(--muted-foreground)] text-sm leading-relaxed">
-              En tant que membre, vous ne pouvez pas créer d&apos;invitations ou gérer 
-              les codes existants. Cette fonctionnalité est réservée aux administrateurs 
-              pour maintenir la sécurité de l&apos;organisation.
+              En tant que membre, vous ne pouvez pas créer d&apos;invitations ou
+              gérer les codes existants. Cette fonctionnalité est réservée aux
+              administrateurs pour maintenir la sécurité de l&apos;organisation.
             </p>
           </div>
 
           <div className="text-[color:var(--muted-foreground)] text-sm">
             <p>
-              Vous souhaitez inviter quelqu&apos;un ? 
-              Demandez à un administrateur de créer une invitation.
+              Vous souhaitez inviter quelqu&apos;un ? Demandez à un
+              administrateur de créer une invitation.
             </p>
           </div>
         </div>

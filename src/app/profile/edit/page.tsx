@@ -44,19 +44,21 @@ export default async function ProfileEditPage() {
 
           <div className="bg-[color:var(--muted)] rounded-lg p-6 mb-6">
             <h2 className="font-semibold text-[color:var(--foreground)] mb-3">
-              Votre rôle actuel : <span className="text-[color:var(--primary)]">Membre</span>
+              Votre rôle actuel :{" "}
+              <span className="text-[color:var(--primary)]">Membre</span>
             </h2>
             <p className="text-[color:var(--muted-foreground)] text-sm leading-relaxed">
-              En tant que membre, vous pouvez consulter votre profil et modifier vos préférences,
-              mais la gestion des utilisateurs (invitations, modification des rôles) est réservée 
-              aux administrateurs de l&apos;organisation.
+              En tant que membre, vous pouvez consulter votre profil et modifier
+              vos préférences, mais la gestion des utilisateurs (invitations,
+              modification des rôles) est réservée aux administrateurs de
+              l&apos;organisation.
             </p>
           </div>
 
           <div className="text-[color:var(--muted-foreground)] text-sm">
             <p>
-              Besoin d&apos;accéder à cette fonctionnalité ? 
-              Contactez un administrateur de votre organisation.
+              Besoin d&apos;accéder à cette fonctionnalité ? Contactez un
+              administrateur de votre organisation.
             </p>
           </div>
         </div>
