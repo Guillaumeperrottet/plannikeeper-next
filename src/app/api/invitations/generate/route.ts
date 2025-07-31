@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 import { generateInviteCode } from "@/lib/utils";
 import { checkOrganizationLimits } from "@/lib/subscription-limits";
+import type { Prisma } from "@prisma/client";
 
 export async function POST(req: NextRequest) {
   const user = await getUser();
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest) {
       createdBy: user.id,
       expiresAt,
       ...(role === "member" && objectPermissions 
-        ? { objectPermissions: objectPermissions as Record<string, unknown> }
+        ? { objectPermissions: objectPermissions as Prisma.InputJsonValue }
         : {}
       ),
     },
