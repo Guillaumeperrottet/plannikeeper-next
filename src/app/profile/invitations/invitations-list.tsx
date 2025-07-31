@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { Prisma } from "@prisma/client";
 
 type InvitationCode = {
   id: string;
@@ -8,7 +9,7 @@ type InvitationCode = {
   role: string;
   createdAt: Date;
   expiresAt: Date;
-  objectPermissions?: Record<string, string>;
+  objectPermissions?: Prisma.JsonValue;
 };
 
 export default function InvitationsList({
@@ -56,10 +57,20 @@ export default function InvitationsList({
     }
   };
 
-  const getPermissionSummary = (objectPermissions?: Record<string, string>) => {
-    if (!objectPermissions) return null;
+  const getPermissionSummary = (objectPermissions?: Prisma.JsonValue) => {
+    if (!objectPermissions || objectPermissions === null) return null;
 
-    const permissions = Object.values(objectPermissions);
+    // Vérifier que c'est un objet
+    if (
+      typeof objectPermissions !== "object" ||
+      Array.isArray(objectPermissions)
+    ) {
+      return null;
+    }
+
+    const permissions = Object.values(
+      objectPermissions as Record<string, string>
+    );
     const accessCount = permissions.filter((p) => p !== "none").length;
 
     if (accessCount === 0) return "Aucun accès";
@@ -171,7 +182,7 @@ export default function InvitationsList({
           <strong className="text-[color:var(--foreground)]">
             {organizationName}
           </strong>
-          . Le lien expirera à la date indiquée.
+          . Le lien expirera à la date indiquée ou de la création du compte.
         </p>
       </div>
     </div>
