@@ -22,7 +22,7 @@ export default async function InvitationsPage() {
     redirect("/profile");
   }
 
-  // Récupérez les codes d'invitation actifs
+  // Récupérez les codes d'invitation actifs avec un contournement temporaire
   const invitationCodes = await prisma.invitationCode.findMany({
     where: {
       organizationId: orgUser.organizationId,

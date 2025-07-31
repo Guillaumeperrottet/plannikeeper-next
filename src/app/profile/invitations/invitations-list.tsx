@@ -8,6 +8,7 @@ type InvitationCode = {
   role: string;
   createdAt: Date;
   expiresAt: Date;
+  objectPermissions?: Record<string, string>;
 };
 
 export default function InvitationsList({
@@ -55,6 +56,41 @@ export default function InvitationsList({
     }
   };
 
+  const getPermissionSummary = (objectPermissions?: Record<string, string>) => {
+    if (!objectPermissions) return null;
+
+    const permissions = Object.values(objectPermissions);
+    const accessCount = permissions.filter((p) => p !== "none").length;
+
+    if (accessCount === 0) return "Aucun accès";
+
+    const permissionCounts = permissions.reduce(
+      (acc, perm) => {
+        if (perm !== "none") {
+          acc[perm] = (acc[perm] || 0) + 1;
+        }
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+
+    const summary = Object.entries(permissionCounts)
+      .map(([perm, count]) => {
+        const label =
+          perm === "read"
+            ? "L"
+            : perm === "write"
+              ? "M"
+              : perm === "admin"
+                ? "A"
+                : perm;
+        return `${count}${label}`;
+      })
+      .join(", ");
+
+    return `${accessCount} objet(s): ${summary}`;
+  };
+
   if (invitationCodes.length === 0) {
     return (
       <p className="text-[color:var(--muted-foreground)]">
@@ -75,6 +111,9 @@ export default function InvitationsList({
               Rôle
             </th>
             <th className="p-2 text-left text-[color:var(--foreground)]">
+              Permissions
+            </th>
+            <th className="p-2 text-left text-[color:var(--foreground)]">
               Date d&apos;expiration
             </th>
             <th className="p-2 text-left text-[color:var(--foreground)]">
@@ -93,6 +132,12 @@ export default function InvitationsList({
               </td>
               <td className="p-2 capitalize text-[color:var(--foreground)]">
                 {invite.role}
+              </td>
+              <td className="p-2 text-[color:var(--foreground)] text-sm">
+                {invite.role === "admin"
+                  ? "Accès complet"
+                  : getPermissionSummary(invite.objectPermissions) ||
+                    "Non défini"}
               </td>
               <td className="p-2 text-[color:var(--foreground)]">
                 {new Date(invite.expiresAt).toLocaleDateString()}

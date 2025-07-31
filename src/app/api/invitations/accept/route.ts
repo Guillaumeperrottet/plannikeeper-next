@@ -107,28 +107,48 @@ export async function POST(req: NextRequest) {
 
       console.log("✅ Association OrganizationUser créée:", invitation.role);
 
-      // Créer les accès par défaut aux objets existants
-      const objects = await tx.objet.findMany({
-        where: { organizationId: invitation.organizationId },
-        select: { id: true, nom: true },
-      });
+      // Créer les accès aux objets selon le rôle et les permissions stockées
+      if (invitation.role === "admin") {
+        // Admin : accès admin à tous les objets
+        const objects = await tx.objet.findMany({
+          where: { organizationId: invitation.organizationId },
+          select: { id: true, nom: true },
+        });
 
-      if (objects.length > 0) {
-        const accessLevel = invitation.role === "admin" ? "admin" : "read";
+        if (objects.length > 0) {
+          const accessPromises = objects.map((object) =>
+            tx.objectAccess.create({
+              data: {
+                userId: user.id,
+                objectId: object.id,
+                accessLevel: "admin",
+              },
+            })
+          );
 
-        const accessPromises = objects.map((object) =>
-          tx.objectAccess.create({
-            data: {
-              userId: user.id,
-              objectId: object.id,
-              accessLevel,
-            },
-          })
+          await Promise.all(accessPromises);
+          console.log(
+            `✅ Accès admin créés pour ${objects.length} objets (administrateur)`
+          );
+        }
+      } else if (invitation.role === "member" && "objectPermissions" in invitation && invitation.objectPermissions) {
+        // Membre : utiliser les permissions stockées dans l'invitation
+        const objectPermissions = invitation.objectPermissions as Record<string, string>;
+
+        const accessPromises = Object.entries(objectPermissions).map(
+          ([objectId, accessLevel]) =>
+            tx.objectAccess.create({
+              data: {
+                userId: user.id,
+                objectId,
+                accessLevel,
+              },
+            })
         );
 
         await Promise.all(accessPromises);
         console.log(
-          `✅ Accès ${accessLevel} créés pour ${objects.length} objets`
+          `✅ Accès personnalisés créés pour ${Object.keys(objectPermissions).length} objets (membre)`
         );
       }
 

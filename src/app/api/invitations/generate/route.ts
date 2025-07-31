@@ -36,7 +36,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { role } = await req.json();
+  const { role, objectPermissions } = await req.json();
+
+  // Validation : si c'est un membre, les permissions d'objets sont requises
+  if (
+    role === "member" &&
+    (!objectPermissions || Object.keys(objectPermissions).length === 0)
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Les permissions d'objets sont requises pour les invitations de membres",
+      },
+      { status: 400 }
+    );
+  }
 
   // Générez un code aléatoire de 8 caractères
   const code = generateInviteCode();
@@ -53,6 +67,10 @@ export async function POST(req: NextRequest) {
       organizationId: userOrg.organizationId,
       createdBy: user.id,
       expiresAt,
+      ...(role === "member" && objectPermissions 
+        ? { objectPermissions: objectPermissions as Record<string, unknown> }
+        : {}
+      ),
     },
   });
 

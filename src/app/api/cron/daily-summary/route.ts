@@ -58,7 +58,62 @@ export async function GET() {
       try {
         if (!user.Organization) continue;
 
-        // Récupérer les tâches ajoutées hier
+        // Vérifier les accès aux objets pour cet utilisateur
+        const userObjectAccess = await prisma.objectAccess.findMany({
+          where: {
+            userId: user.id,
+            NOT: { accessLevel: "none" }, // Exclure les accès "aucun accès"
+          },
+          select: { objectId: true },
+        });
+
+        // Vérifier si l'utilisateur est admin de l'organisation
+        const isOrgAdmin = await prisma.organizationUser.findFirst({
+          where: {
+            userId: user.id,
+            role: "admin",
+          },
+        });
+
+        // Si l'utilisateur est admin, il a accès à tout
+        let accessibleObjectIds: string[];
+        if (isOrgAdmin) {
+          console.log(`User ${user.email} is admin - access to all objects`);
+          // Admin : récupérer tous les objets de l'organisation
+          const orgObjects = await prisma.objet.findMany({
+            where: { organizationId: isOrgAdmin.organizationId },
+            select: { id: true },
+          });
+          accessibleObjectIds = orgObjects.map((obj) => obj.id);
+        } else {
+          console.log(
+            `User ${user.email} is member - access to ${userObjectAccess.length} objects`
+          );
+          // Membre : seulement les objets avec accès explicite (admin, modif, lecture)
+          accessibleObjectIds = userObjectAccess.map(
+            (access) => access.objectId
+          );
+        }
+
+        // Si l'utilisateur n'a accès à aucun objet, passer au suivant
+        if (accessibleObjectIds.length === 0) {
+          console.log(`User ${user.email} has no object access - skipping`);
+          emailResults.push({
+            userId: user.id,
+            email: user.email,
+            success: true,
+            tasksAdded: 0,
+            tasksCompleted: 0,
+            tasksPending: 0,
+            objectsCount: 0,
+            error: undefined,
+            filteredByAccess: true,
+            reason: "Aucun accès aux objets",
+          });
+          continue;
+        }
+
+        // Récupérer les tâches ajoutées hier (filtrées par permissions)
         const tasksAdded = await prisma.task.findMany({
           where: {
             createdAt: {
@@ -69,6 +124,7 @@ export async function GET() {
               sector: {
                 object: {
                   organizationId: user.Organization.id,
+                  id: { in: accessibleObjectIds }, // Filtrer par accès aux objets
                 },
               },
             },
@@ -95,7 +151,7 @@ export async function GET() {
           },
         });
 
-        // Récupérer les tâches terminées hier
+        // Récupérer les tâches terminées hier (filtrées par permissions)
         const tasksCompleted = await prisma.task.findMany({
           where: {
             status: "completed",
@@ -108,6 +164,7 @@ export async function GET() {
               sector: {
                 object: {
                   organizationId: user.Organization.id,
+                  id: { in: accessibleObjectIds }, // Filtrer par accès aux objets
                 },
               },
             },
@@ -134,7 +191,7 @@ export async function GET() {
           },
         });
 
-        // Récupérer les tâches en attente (tâches assignées à l'utilisateur, non terminées et non archivées)
+        // Récupérer les tâches en attente (tâches assignées à l'utilisateur, non terminées et non archivées, filtrées par permissions)
         const tasksPending = await prisma.task.findMany({
           where: {
             assignedToId: user.id, // Seulement les tâches assignées à cet utilisateur
@@ -145,6 +202,7 @@ export async function GET() {
               sector: {
                 object: {
                   organizationId: user.Organization.id,
+                  id: { in: accessibleObjectIds }, // Filtrer par accès aux objets
                 },
               },
             },
@@ -172,7 +230,7 @@ export async function GET() {
         });
 
         console.log(
-          `User ${user.email}: ${tasksAdded.length} tasks added, ${tasksCompleted.length} tasks completed, ${tasksPending.length} tasks pending`
+          `User ${user.email}: ${tasksAdded.length} tasks added, ${tasksCompleted.length} tasks completed, ${tasksPending.length} tasks pending (filtered by object access)`
         );
 
         // Organiser par objet
@@ -296,6 +354,8 @@ export async function GET() {
           tasksCompleted: tasksCompleted.length,
           tasksPending: tasksPending.length,
           objectsCount: summaryData.objectSummaries.length,
+          accessibleObjectsCount: accessibleObjectIds.length,
+          filteredByAccess: false, // Les tâches ont été filtrées par permissions mais l'email a été envoyé
           error: result.success ? undefined : result.error,
         });
 
@@ -308,6 +368,12 @@ export async function GET() {
           userId: user.id,
           email: user.email,
           success: false,
+          tasksAdded: 0,
+          tasksCompleted: 0,
+          tasksPending: 0,
+          objectsCount: 0,
+          accessibleObjectsCount: 0,
+          filteredByAccess: false,
           error:
             userError instanceof Error ? userError.message : "Unknown error",
         });

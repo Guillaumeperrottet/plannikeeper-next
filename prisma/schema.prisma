@@ -128,15 +128,16 @@ model OrganizationUser {
 }
 
 model InvitationCode {
-  id             String       @id @default(uuid())
-  code           String       @unique
-  organizationId String
-  role           String
-  createdBy      String
-  createdAt      DateTime     @default(now())
-  expiresAt      DateTime
-  isUsed         Boolean      @default(false)
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  id              String       @id @default(uuid())
+  code            String       @unique
+  organizationId  String
+  role            String
+  createdBy       String
+  createdAt       DateTime     @default(now())
+  expiresAt       DateTime
+  isUsed          Boolean      @default(false)
+  objectPermissions Json?      // Stockage des permissions d'objets pour les membres
+  organization    Organization @relation(fields: [organizationId], references: [id])
 
   @@map("invitation_code")
 }
