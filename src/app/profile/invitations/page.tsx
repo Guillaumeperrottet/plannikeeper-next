@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import GenerateInviteForm from "./generate-invite-form";
 import InvitationsList from "./invitations-list";
 import Link from "next/link";
+import { PlusCircle } from "lucide-react";
 
 export default async function InvitationsPage() {
   const user = await getUser();
@@ -19,7 +20,49 @@ export default async function InvitationsPage() {
   });
 
   if (!orgUser || orgUser.role !== "admin") {
-    redirect("/profile");
+    // Au lieu de rediriger, affichons un message explicatif pour les membres
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
+        <div className="mb-8">
+          <Link
+            href="/profile"
+            className="inline-flex items-center px-4 py-2 bg-[color:var(--muted)] rounded hover:bg-[color:var(--muted)]/80 transition text-[color:var(--foreground)]"
+          >
+            ← Retour au profil
+          </Link>
+        </div>
+
+        <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg p-8 text-center">
+          <div className="mb-6">
+            <PlusCircle className="w-16 h-16 mx-auto text-[color:var(--muted-foreground)] mb-4" />
+            <h1 className="text-2xl font-bold text-[color:var(--foreground)] mb-2">
+              Invitations Réservées aux Administrateurs
+            </h1>
+            <p className="text-[color:var(--muted-foreground)] text-lg">
+              Seuls les administrateurs peuvent créer des codes d&apos;invitation
+            </p>
+          </div>
+
+          <div className="bg-[color:var(--muted)] rounded-lg p-6 mb-6">
+            <h2 className="font-semibold text-[color:var(--foreground)] mb-3">
+              Votre rôle actuel : <span className="text-[color:var(--primary)]">Membre</span>
+            </h2>
+            <p className="text-[color:var(--muted-foreground)] text-sm leading-relaxed">
+              En tant que membre, vous ne pouvez pas créer d&apos;invitations ou gérer 
+              les codes existants. Cette fonctionnalité est réservée aux administrateurs 
+              pour maintenir la sécurité de l&apos;organisation.
+            </p>
+          </div>
+
+          <div className="text-[color:var(--muted-foreground)] text-sm">
+            <p>
+              Vous souhaitez inviter quelqu&apos;un ? 
+              Demandez à un administrateur de créer une invitation.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Récupérez les codes d'invitation actifs avec un contournement temporaire

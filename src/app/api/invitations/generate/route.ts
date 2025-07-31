@@ -68,10 +68,9 @@ export async function POST(req: NextRequest) {
       organizationId: userOrg.organizationId,
       createdBy: user.id,
       expiresAt,
-      ...(role === "member" && objectPermissions 
+      ...(role === "member" && objectPermissions
         ? { objectPermissions: objectPermissions as Prisma.InputJsonValue }
-        : {}
-      ),
+        : {}),
     },
   });
 

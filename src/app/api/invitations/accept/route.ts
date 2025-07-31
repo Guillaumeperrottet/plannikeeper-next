@@ -131,9 +131,16 @@ export async function POST(req: NextRequest) {
             `✅ Accès admin créés pour ${objects.length} objets (administrateur)`
           );
         }
-      } else if (invitation.role === "member" && "objectPermissions" in invitation && invitation.objectPermissions) {
+      } else if (
+        invitation.role === "member" &&
+        "objectPermissions" in invitation &&
+        invitation.objectPermissions
+      ) {
         // Membre : utiliser les permissions stockées dans l'invitation
-        const objectPermissions = invitation.objectPermissions as Record<string, string>;
+        const objectPermissions = invitation.objectPermissions as Record<
+          string,
+          string
+        >;
 
         const accessPromises = Object.entries(objectPermissions).map(
           ([objectId, accessLevel]) =>
