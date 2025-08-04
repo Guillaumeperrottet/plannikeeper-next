@@ -1070,50 +1070,50 @@ export default function ModernTaskDetailPage({
                     </Card>
                   </div>
                 )}
-
-                {/* Documents section pour mobile */}
-                {isMobile && activeTab === "documents" && (
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Paperclip className="h-4 w-4 text-muted-foreground" />
-                        Documents
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <DocumentsList
-                          taskId={task.id}
-                          onDocumentsChange={() => {}}
-                        />
-                        {!readonly && (
-                          <div className="border-t border-border pt-4">
-                            <DocumentUpload
-                              taskId={task.id}
-                              onUploadSuccess={() => {}}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Comments section pour mobile */}
-                {isMobile && activeTab === "comments" && (
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        Commentaires
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <TaskComments taskId={task.id} />
-                    </CardContent>
-                  </Card>
-                )}
               </div>
+            )}
+
+            {/* Documents section pour mobile */}
+            {isMobile && activeTab === "documents" && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Paperclip className="h-4 w-4 text-muted-foreground" />
+                    Documents
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <DocumentsList
+                      taskId={task.id}
+                      onDocumentsChange={() => {}}
+                    />
+                    {!readonly && (
+                      <div className="border-t border-border pt-4">
+                        <DocumentUpload
+                          taskId={task.id}
+                          onUploadSuccess={() => {}}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Comments section pour mobile */}
+            {isMobile && activeTab === "comments" && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    Commentaires
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <TaskComments taskId={task.id} />
+                </CardContent>
+              </Card>
             )}
           </div>
         </main>
