@@ -86,7 +86,7 @@ export default function TaskFormMobileOptimized({
   >({
     name: task?.name || "",
     description: task?.description || "",
-    executantComment: task?.executantComment || "",
+    executantComment: null, // Toujours null car on n'utilise plus ce champ
     done: task?.done || false,
     realizationDate: task?.realizationDate || null,
     status: task?.status || "pending",
@@ -552,22 +552,6 @@ export default function TaskFormMobileOptimized({
                 />
               </div>
             </div>
-
-            {task?.id && (
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Commentaire d&apos;exécution
-                </label>
-                <textarea
-                  name="executantComment"
-                  value={formData.executantComment || ""}
-                  onChange={handleChange}
-                  placeholder="Commentaires sur l'exécution..."
-                  className="w-full px-3 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)]"
-                  rows={2}
-                />
-              </div>
-            )}
           </div>
         )}
 

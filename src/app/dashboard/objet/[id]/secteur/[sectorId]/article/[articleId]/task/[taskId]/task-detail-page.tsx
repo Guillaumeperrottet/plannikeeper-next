@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -121,11 +121,29 @@ export default function ModernTaskDetailPage({
     "details" | "documents" | "comments"
   >("details");
 
-  // Detect mobile screen size
-  const isMobile =
-    typeof window !== "undefined"
-      ? window.matchMedia("(max-width: 767px)").matches
-      : false;
+  // Detect mobile screen size with proper hook
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.matchMedia("(max-width: 767px)").matches);
+    };
+
+    // Initial check
+    checkMobile();
+
+    // Add event listener for resize
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const handleChange = (e: MediaQueryListEvent) => {
+      setIsMobile(e.matches);
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+
+    return () => {
+      mediaQuery.removeEventListener("change", handleChange);
+    };
+  }, []);
 
   // Format date for display
   const formatDate = (date: Date | null) => {
@@ -972,80 +990,47 @@ export default function ModernTaskDetailPage({
                   )}
                 </div>
 
-                {/* Commentaire d'exécution et récurrence côte à côte */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {/* Commentaire d'exécution */}
-                  {(task.executantComment || isEditing) && (
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-base">
-                          Commentaire d&apos;exécution
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        {isEditing ? (
-                          <Textarea
-                            value={editedTask.executantComment || ""}
-                            onChange={(e) =>
-                              setEditedTask({
-                                ...editedTask,
-                                executantComment: e.target.value,
-                              })
-                            }
-                            placeholder="Commentaire sur l'exécution..."
-                            className="min-h-[100px] text-sm"
-                          />
-                        ) : (
-                          <div className="text-sm text-foreground border-l-2 border-accent pl-3 py-1 bg-accent/5 rounded-r whitespace-pre-wrap leading-relaxed min-h-[100px]">
-                            {task.executantComment}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Bloc récurrence détaillé - compact */}
-                  {task.recurring && (
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <RefreshCcw className="h-4 w-4 text-primary" />
-                          Récurrence
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          <div className="text-center p-3 bg-gradient-to-br from-accent/10 to-accent/5 rounded border border-accent/20">
-                            <Badge variant="secondary" className="text-xs mb-2">
-                              {task.period === "daily" && "Quotidienne"}
-                              {task.period === "weekly" && "Hebdomadaire"}
-                              {task.period === "monthly" && "Mensuelle"}
-                              {task.period === "quarterly" && "Trimestrielle"}
-                              {task.period === "yearly" && "Annuelle"}
-                            </Badge>
-                            {task.realizationDate && (
-                              <div className="text-xs text-muted-foreground">
-                                Prochaine: {formatDate(task.realizationDate)}
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950/20 p-2 rounded border border-blue-200 dark:border-blue-800">
-                            <p className="flex items-center gap-1">
-                              <AlertCircle className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                              Une nouvelle instance sera créée automatiquement
-                            </p>
-                          </div>
+                {/* Bloc récurrence détaillé - en pleine largeur si nécessaire */}
+                {task.recurring && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <RefreshCcw className="h-4 w-4 text-primary" />
+                        Récurrence
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="text-center p-3 bg-gradient-to-br from-accent/10 to-accent/5 rounded border border-accent/20">
+                          <Badge variant="secondary" className="text-xs mb-2">
+                            {task.period === "daily" && "Quotidienne"}
+                            {task.period === "weekly" && "Hebdomadaire"}
+                            {task.period === "monthly" && "Mensuelle"}
+                            {task.period === "quarterly" && "Trimestrielle"}
+                            {task.period === "yearly" && "Annuelle"}
+                          </Badge>
+                          {task.realizationDate && (
+                            <div className="text-xs text-muted-foreground">
+                              Prochaine: {formatDate(task.realizationDate)}
+                            </div>
+                          )}
                         </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
 
-                {/* Documents et commentaires côte à côte */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {/* Documents section compacte */}
-                  {(activeTab === "documents" || !isMobile) && (
+                        <div className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950/20 p-2 rounded border border-blue-200 dark:border-blue-800">
+                          <p className="flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                            Une nouvelle instance sera créée automatiquement
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Documents et commentaires côte à côte pour desktop */}
+                {!isMobile && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {/* Documents section compacte */}
                     <Card>
                       <CardHeader className="pb-3">
                         <CardTitle className="text-base flex items-center gap-2">
@@ -1070,10 +1055,8 @@ export default function ModernTaskDetailPage({
                         </div>
                       </CardContent>
                     </Card>
-                  )}
 
-                  {/* Comments section compacte */}
-                  {(activeTab === "comments" || !isMobile) && (
+                    {/* Comments section compacte */}
                     <Card>
                       <CardHeader className="pb-3">
                         <CardTitle className="text-base flex items-center gap-2">
@@ -1085,8 +1068,51 @@ export default function ModernTaskDetailPage({
                         <TaskComments taskId={task.id} />
                       </CardContent>
                     </Card>
-                  )}
-                </div>
+                  </div>
+                )}
+
+                {/* Documents section pour mobile */}
+                {isMobile && activeTab === "documents" && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Paperclip className="h-4 w-4 text-muted-foreground" />
+                        Documents
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <DocumentsList
+                          taskId={task.id}
+                          onDocumentsChange={() => {}}
+                        />
+                        {!readonly && (
+                          <div className="border-t border-border pt-4">
+                            <DocumentUpload
+                              taskId={task.id}
+                              onUploadSuccess={() => {}}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Comments section pour mobile */}
+                {isMobile && activeTab === "comments" && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        Commentaires
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <TaskComments taskId={task.id} />
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             )}
           </div>

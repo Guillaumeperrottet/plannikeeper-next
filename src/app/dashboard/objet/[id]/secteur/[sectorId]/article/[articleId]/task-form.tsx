@@ -194,7 +194,7 @@ export default function TaskFormWithDocuments({
   >({
     name: task?.name || "",
     description: task?.description || "",
-    executantComment: task?.executantComment || "",
+    executantComment: null, // Toujours null car on n'utilise plus ce champ
     done: task?.done || false,
     realizationDate: task?.realizationDate || null,
     status: task?.status || "pending",
@@ -606,26 +606,6 @@ export default function TaskFormWithDocuments({
               </div>
             )}
           </div>
-
-          {task?.id && (
-            <div>
-              <label
-                htmlFor="executantComment"
-                className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-foreground"
-              >
-                Commentaire d&apos;exécution
-              </label>
-              <textarea
-                id="executantComment"
-                name="executantComment"
-                value={formData.executantComment || ""}
-                onChange={handleChange}
-                placeholder="Commentaires sur l'exécution de la tâche"
-                className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
-                rows={2}
-              />
-            </div>
-          )}
 
           {/* Section pour l'upload de documents */}
           <div>
