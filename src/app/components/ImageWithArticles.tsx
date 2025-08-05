@@ -1645,6 +1645,12 @@ export default function ImageWithArticles({
                               // Activer le mode déplacement intégré
                               setDragMode(true);
                               setOpenPopoverId(null);
+                              // Toast de test pour vérifier que le système fonctionne
+                              toast.success("Mode déplacement activé !", {
+                                description:
+                                  "Vous pouvez maintenant déplacer les articles en les faisant glisser.",
+                                duration: 3000,
+                              });
                             } else {
                               // Fallback vers la fonction externe (redirection)
                               onArticleMove(article.id);
@@ -1667,6 +1673,12 @@ export default function ImageWithArticles({
                               // Activer le mode redimensionnement intégré
                               setResizeMode(true);
                               setOpenPopoverId(null);
+                              // Toast de test pour vérifier que le système fonctionne
+                              toast.success("Mode redimensionnement activé !", {
+                                description:
+                                  "Vous pouvez maintenant redimensionner les articles avec les poignées aux coins.",
+                                duration: 3000,
+                              });
                             } else {
                               // Fallback vers la fonction externe (redirection)
                               onArticleResize(article.id);
