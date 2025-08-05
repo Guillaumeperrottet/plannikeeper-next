@@ -539,9 +539,22 @@ export default function ImageWithArticles({
         Math.min(100, percentPosition.positionY)
       );
 
+      // Stocker l'ID avant de le réinitialiser
+      const articleIdToUpdate = draggingArticleId;
+
+      // IMPORTANT: Réinitialiser les états IMMÉDIATEMENT pour arrêter le suivi de la souris
+      setIsDragging(false);
+      setDraggingArticleId(null);
+      setDragMode(false);
+      setDragOffset({ x: 0, y: 0 });
+      setTempDragPosition(null);
+
+      // Empêcher l'ouverture du popover pendant un court moment
+      setTimeout(() => setPreventPopoverOpen(false), 100);
+
       try {
-        // Sauvegarder la nouvelle position
-        await onArticlePositionUpdate(draggingArticleId, {
+        // Sauvegarder la nouvelle position en arrière-plan
+        await onArticlePositionUpdate(articleIdToUpdate, {
           positionX: constrainedX,
           positionY: constrainedY,
           width: article.width || 20,
@@ -549,16 +562,7 @@ export default function ImageWithArticles({
         });
       } catch {
         // TODO: Afficher un toast d'erreur
-      } finally {
-        // Réinitialiser les états
-        setIsDragging(false);
-        setDraggingArticleId(null);
-        setDragMode(false);
-        setDragOffset({ x: 0, y: 0 });
-        setTempDragPosition(null);
-
-        // Empêcher l'ouverture du popover pendant un court moment
-        setTimeout(() => setPreventPopoverOpen(false), 100);
+        // Optionnel: restaurer la position précédente en cas d'erreur
       }
     },
     [
@@ -730,8 +734,23 @@ export default function ImageWithArticles({
     const constrainedX = Math.max(5, Math.min(95, newPositionXPercent));
     const constrainedY = Math.max(5, Math.min(95, newPositionYPercent));
 
+    // Stocker l'ID avant de le réinitialiser
+    const articleIdToUpdate = resizingArticleId;
+
+    // IMPORTANT: Réinitialiser les états IMMÉDIATEMENT pour arrêter le suivi de la souris
+    setIsResizing(false);
+    setResizingArticleId(null);
+    setResizeMode(false);
+    setResizeHandle(null);
+    setTempResizeSize(null);
+    setResizeStartPosition({ x: 0, y: 0 });
+
+    // Empêcher l'ouverture du popover pendant un court moment
+    setTimeout(() => setPreventPopoverOpen(false), 100);
+
     try {
-      await onArticlePositionUpdate(resizingArticleId, {
+      // Sauvegarder les nouvelles dimensions en arrière-plan
+      await onArticlePositionUpdate(articleIdToUpdate, {
         positionX: constrainedX,
         positionY: constrainedY,
         width: constrainedWidth,
@@ -739,17 +758,7 @@ export default function ImageWithArticles({
       });
     } catch {
       // TODO: Afficher un toast d'erreur
-    } finally {
-      // Réinitialiser les états
-      setIsResizing(false);
-      setResizingArticleId(null);
-      setResizeMode(false);
-      setResizeHandle(null);
-      setTempResizeSize(null);
-      setResizeStartPosition({ x: 0, y: 0 });
-
-      // Empêcher l'ouverture du popover pendant un court moment
-      setTimeout(() => setPreventPopoverOpen(false), 100);
+      // Optionnel: restaurer les dimensions précédentes en cas d'erreur
     }
   }, [
     isResizing,
