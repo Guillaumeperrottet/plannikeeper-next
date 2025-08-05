@@ -215,6 +215,9 @@ export default function ImageWithArticles({
   // État pour empêcher l'ouverture du popover après une action
   const [preventPopoverOpen, setPreventPopoverOpen] = useState(false);
 
+  // État pour détecter si un drag a réellement eu lieu
+  const [hasDraggedMoved, setHasDraggedMoved] = useState(false);
+
   // États pour la restauration en cas d'erreur
   const [previousPosition, setPreviousPosition] = useState<{
     articleId: string;
@@ -471,8 +474,7 @@ export default function ImageWithArticles({
 
   // Fonctions utilitaires pour la gestion d'erreur et restauration
   const showErrorToast = useCallback(
-    (action: "déplacement" | "redimensionnement", error?: unknown) => {
-      console.error(`Erreur lors du ${action}:`, error);
+    (action: "déplacement" | "redimensionnement") => {
       toast.error(`Échec du ${action}`, {
         description: `Une erreur s'est produite lors du ${action} de l'article. Veuillez réessayer.`,
         duration: 4000,
@@ -506,8 +508,7 @@ export default function ImageWithArticles({
         description: "L'article a été restauré à sa position précédente.",
         duration: 3000,
       });
-    } catch (restoreError) {
-      console.error("Erreur lors de la restauration:", restoreError);
+    } catch {
       toast.error("Échec de la restauration", {
         description: "Impossible de restaurer la position précédente.",
         duration: 4000,
@@ -526,6 +527,7 @@ export default function ImageWithArticles({
     setDragMode(true);
     setDraggingArticleId(article.id);
     setIsDragging(true);
+    setHasDraggedMoved(false); // Réinitialiser le flag de mouvement
     setOpenPopoverId(null); // Fermer le popover
     setPreventPopoverOpen(true); // Empêcher l'ouverture du popover
 
@@ -558,6 +560,9 @@ export default function ImageWithArticles({
       // Calculer la nouvelle position en tenant compte de l'offset
       const newX = x - dragOffset.x;
       const newY = y - dragOffset.y;
+
+      // Marquer qu'un mouvement a eu lieu
+      setHasDraggedMoved(true);
 
       // Mettre à jour la position temporaire pour l'affichage en temps réel
       setTempDragPosition({ x: newX, y: newY });
@@ -611,8 +616,14 @@ export default function ImageWithArticles({
       setDragOffset({ x: 0, y: 0 });
       setTempDragPosition(null);
 
-      // Empêcher l'ouverture du popover pendant un moment plus long
-      setTimeout(() => setPreventPopoverOpen(false), 1500);
+      // Empêcher l'ouverture du popover seulement si un mouvement a vraiment eu lieu
+      if (hasDraggedMoved) {
+        setTimeout(() => setPreventPopoverOpen(false), 1500);
+      } else {
+        // Si pas de mouvement, restaurer immédiatement la possibilité d'ouvrir le popover
+        setPreventPopoverOpen(false);
+      }
+      setHasDraggedMoved(false); // Réinitialiser pour le prochain drag
 
       // Afficher un toast de chargement
       const loadingToast = toast.loading("Déplacement en cours...", {
@@ -634,14 +645,14 @@ export default function ImageWithArticles({
           duration: 2000,
           id: loadingToast,
         });
-      } catch (error) {
+      } catch {
         // Fermer le toast de chargement
         toast.dismiss(loadingToast);
 
         // En cas d'erreur, essayer de restaurer la position précédente
         restorePreviousPosition();
         // Afficher un toast d'erreur
-        showErrorToast("déplacement", error);
+        showErrorToast("déplacement");
       }
     },
     [
@@ -654,6 +665,7 @@ export default function ImageWithArticles({
       pixelsToPercent,
       restorePreviousPosition,
       showErrorToast,
+      hasDraggedMoved,
     ]
   );
 
@@ -853,14 +865,14 @@ export default function ImageWithArticles({
         duration: 2000,
         id: loadingToast,
       });
-    } catch (error) {
+    } catch {
       // Fermer le toast de chargement
       toast.dismiss(loadingToast);
 
       // En cas d'erreur, essayer de restaurer la position précédente
       restorePreviousPosition();
       // Afficher un toast d'erreur
-      showErrorToast("redimensionnement", error);
+      showErrorToast("redimensionnement");
     }
   }, [
     isResizing,
@@ -931,9 +943,8 @@ export default function ImageWithArticles({
       setEditModalOpen(false);
       setEditingArticle(null);
       setEditForm({ title: "", description: "" });
-    } catch (error) {
+    } catch {
       // Afficher un toast d'erreur
-      console.error("Erreur lors de la mise à jour de l'article:", error);
       toast.error("Échec de la modification", {
         description:
           "Une erreur s'est produite lors de la modification de l'article. Veuillez réessayer.",
@@ -972,9 +983,8 @@ export default function ImageWithArticles({
       setDeleteModalOpen(false);
       setDeletingArticle(null);
       setDeleteConfirmText("");
-    } catch (error) {
+    } catch {
       // Afficher un toast d'erreur
-      console.error("Erreur lors de la suppression de l'article:", error);
       toast.error("Échec de la suppression", {
         description:
           "Une erreur s'est produite lors de la suppression de l'article. Veuillez réessayer.",
@@ -1026,9 +1036,8 @@ export default function ImageWithArticles({
         width: 20,
         height: 15,
       });
-    } catch (error) {
+    } catch {
       // Afficher un toast d'erreur
-      console.error("Erreur lors de la création de l'article:", error);
       toast.error("Échec de la création", {
         description:
           "Une erreur s'est produite lors de la création de l'article. Veuillez réessayer.",
@@ -1209,6 +1218,7 @@ export default function ImageWithArticles({
         setIsDragging(false);
         setDraggingArticleId(null);
         setTempDragPosition(null);
+        setHasDraggedMoved(false);
         setTimeout(() => setPreventPopoverOpen(false), 100);
       }
       if (isResizing) {
@@ -1234,6 +1244,7 @@ export default function ImageWithArticles({
           setIsDragging(false);
           setDraggingArticleId(null);
           setTempDragPosition(null);
+          setHasDraggedMoved(false);
           setPreventPopoverOpen(false);
         }
         if (resizeMode) {
@@ -1416,12 +1427,8 @@ export default function ImageWithArticles({
                                             height: 15,
                                           }
                                         );
-                                      } catch (error) {
+                                      } catch {
                                         // Afficher un toast d'erreur
-                                        console.error(
-                                          "Erreur lors de la récupération de l'article:",
-                                          error
-                                        );
                                         toast.error(
                                           "Échec de la récupération",
                                           {
@@ -1463,7 +1470,7 @@ export default function ImageWithArticles({
         height={originalHeight}
         className="block h-auto max-h-[calc(100vh-150px)]"
         style={{ objectFit: "contain" }}
-        onLoadingComplete={updateDimensions}
+        onLoad={updateDimensions}
         priority
       />
 
@@ -1565,7 +1572,11 @@ export default function ImageWithArticles({
                     handleArticleMouseEnter(e, article)
                   }
                   onMouseLeave={handleArticleMouseLeave}
-                  title={`${article.title}${article.description ? `\n${article.description}` : ""}`}
+                  title={
+                    preventPopoverOpen 
+                      ? undefined 
+                      : `${article.title}${article.description ? `\n${article.description}` : ""}`
+                  }
                 >
                   {/* Poignées de redimensionnement */}
                   {resizeMode && (
@@ -1766,7 +1777,11 @@ export default function ImageWithArticles({
             onClick={(e) => handleArticleInteraction(e, article)}
             onMouseEnter={(e) => handleArticleMouseEnter(e, article)}
             onMouseLeave={handleArticleMouseLeave}
-            title={`${article.title}${article.description ? `\n${article.description}` : ""}`}
+            title={
+              preventPopoverOpen 
+                ? undefined 
+                : `${article.title}${article.description ? `\n${article.description}` : ""}`
+            }
           >
             {/* Zone cliquable/survolable pour chaque article positionné */}
           </div>
