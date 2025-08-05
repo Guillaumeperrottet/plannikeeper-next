@@ -611,8 +611,13 @@ export default function ImageWithArticles({
       setDragOffset({ x: 0, y: 0 });
       setTempDragPosition(null);
 
-      // Empêcher l'ouverture du popover pendant un court moment
-      setTimeout(() => setPreventPopoverOpen(false), 100);
+      // Empêcher l'ouverture du popover pendant un moment plus long
+      setTimeout(() => setPreventPopoverOpen(false), 1500);
+
+      // Afficher un toast de chargement
+      const loadingToast = toast.loading("Déplacement en cours...", {
+        description: "Sauvegarde de la nouvelle position",
+      });
 
       try {
         // Sauvegarder la nouvelle position en arrière-plan
@@ -622,7 +627,17 @@ export default function ImageWithArticles({
           width: article.width || 20,
           height: article.height || 20,
         });
+
+        // Succès : remplacer le toast de chargement par un toast de succès
+        toast.success("Article déplacé !", {
+          description: "La nouvelle position a été sauvegardée.",
+          duration: 2000,
+          id: loadingToast,
+        });
       } catch (error) {
+        // Fermer le toast de chargement
+        toast.dismiss(loadingToast);
+
         // En cas d'erreur, essayer de restaurer la position précédente
         restorePreviousPosition();
         // Afficher un toast d'erreur
@@ -815,8 +830,13 @@ export default function ImageWithArticles({
     setTempResizeSize(null);
     setResizeStartPosition({ x: 0, y: 0 });
 
-    // Empêcher l'ouverture du popover pendant un court moment
-    setTimeout(() => setPreventPopoverOpen(false), 100);
+    // Empêcher l'ouverture du popover pendant un moment plus long
+    setTimeout(() => setPreventPopoverOpen(false), 1500);
+
+    // Afficher un toast de chargement
+    const loadingToast = toast.loading("Redimensionnement en cours...", {
+      description: "Sauvegarde des nouvelles dimensions",
+    });
 
     try {
       // Sauvegarder les nouvelles dimensions en arrière-plan
@@ -826,7 +846,17 @@ export default function ImageWithArticles({
         width: constrainedWidth,
         height: constrainedHeight,
       });
+
+      // Succès : remplacer le toast de chargement par un toast de succès
+      toast.success("Article redimensionné !", {
+        description: "Les nouvelles dimensions ont été sauvegardées.",
+        duration: 2000,
+        id: loadingToast,
+      });
     } catch (error) {
+      // Fermer le toast de chargement
+      toast.dismiss(loadingToast);
+
       // En cas d'erreur, essayer de restaurer la position précédente
       restorePreviousPosition();
       // Afficher un toast d'erreur
