@@ -1,7 +1,7 @@
-// src/app/dashboard/objet/[id]/sector/[sectorId]/article/[articleId]/page.tsx
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
+import { getUsersWithObjectAccess } from "@/lib/object-access-utils";
 import TasksPage from "./tasks-page-table";
 
 export default async function ArticleDetailPage({
@@ -52,18 +52,8 @@ export default async function ArticleDetailPage({
     redirect("/dashboard");
   }
 
-  // Récupérer tous les utilisateurs de l'organisation pour l'attribution des tâches
-  const orgUsers = await prisma.organizationUser.findMany({
-    where: { organizationId: article.sector.object.organizationId },
-    include: { user: true },
-    orderBy: { user: { name: "asc" } },
-  });
-
-  const users = orgUsers.map((ou) => ({
-    id: ou.user.id,
-    name: ou.user.name ?? "",
-    email: ou.user.email ?? "",
-  }));
+  // Récupérer les utilisateurs qui ont accès à cet objet spécifique
+  const users = await getUsersWithObjectAccess(article.sector.object.id);
 
   return (
     <TasksPage

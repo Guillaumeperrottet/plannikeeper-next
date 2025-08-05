@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 import { checkArticleAccess } from "@/lib/auth-session";
+import { hasUserObjectAccess } from "@/lib/object-access-utils";
 import { calculateReminderDate } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
@@ -58,6 +59,22 @@ export async function POST(req: NextRequest) {
       },
       { status: 403 }
     );
+  }
+
+  // Si un utilisateur est assigné, vérifier qu'il a accès à l'objet
+  if (assignedToId) {
+    const hasObjectAccess = await hasUserObjectAccess(
+      assignedToId,
+      article.sector.object.id
+    );
+    if (!hasObjectAccess) {
+      return NextResponse.json(
+        {
+          error: "L'utilisateur assigné n'a pas accès à cet objet",
+        },
+        { status: 400 }
+      );
+    }
   }
 
   // Calcul de la date de rappel automatiquement si nécessaire

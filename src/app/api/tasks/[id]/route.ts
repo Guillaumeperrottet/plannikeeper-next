@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUser } from "@/lib/auth-session";
 import { checkTaskAccess } from "@/lib/auth-session";
+import { hasUserObjectAccess } from "@/lib/object-access-utils";
 import { calculateReminderDate } from "@/lib/utils";
 import { NotificationService } from "@/lib/notification-serice";
 
@@ -94,6 +95,22 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       { error: "Vous n'avez pas les droits pour modifier cette tâche" },
       { status: 403 }
     );
+  }
+
+  // Si un utilisateur est assigné, vérifier qu'il a accès à l'objet
+  if (assignedToId) {
+    const hasObjectAccess = await hasUserObjectAccess(
+      assignedToId,
+      task.article.sector.object.id
+    );
+    if (!hasObjectAccess) {
+      return NextResponse.json(
+        {
+          error: "L'utilisateur assigné n'a pas accès à cet objet",
+        },
+        { status: 400 }
+      );
+    }
   }
 
   // Avant la mise à jour, récupérer l'état actuel
@@ -247,6 +264,22 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       { error: "Vous n'avez pas les droits pour modifier cette tâche" },
       { status: 403 }
     );
+  }
+
+  // Si l'assignation est mise à jour, vérifier que l'utilisateur assigné a accès à l'objet
+  if (updateData.assignedToId) {
+    const hasObjectAccess = await hasUserObjectAccess(
+      updateData.assignedToId,
+      task.article.sector.object.id
+    );
+    if (!hasObjectAccess) {
+      return NextResponse.json(
+        {
+          error: "L'utilisateur assigné n'a pas accès à cet objet",
+        },
+        { status: 400 }
+      );
+    }
   }
 
   const updatedTask = await prisma.task.update({
