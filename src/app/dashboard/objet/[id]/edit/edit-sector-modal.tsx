@@ -1,11 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, Trash, Loader2, Edit } from "lucide-react";
+import {
+  Upload,
+  Trash,
+  Loader2,
+  Edit,
+  MoreVertical,
+  ImageIcon,
+} from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { Button } from "@/app/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/app/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/app/components/ui/dialog";
 import {
   compressImage,
   validateImageFile,
@@ -37,6 +58,20 @@ export default function EditSectorModal({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [shouldRemoveImage, setShouldRemoveImage] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  // Réinitialiser les états quand la modal s'ouvre ou que les données du secteur changent
+  useEffect(() => {
+    if (isOpen) {
+      setName(sector.name);
+      setImage(null);
+      setImagePreview(sector.image);
+      setUploadProgress(0);
+      setShouldRemoveImage(false);
+      setIsCompressing(false);
+      setShowConfirmDialog(false);
+    }
+  }, [isOpen, sector.name, sector.image]);
 
   const handleImageChange = async (file: File | null) => {
     if (file) {
@@ -85,6 +120,23 @@ export default function EditSectorModal({
     }
   };
 
+  // Fonction pour déclencher l'ouverture du sélecteur de fichier
+  const triggerFileSelector = () => {
+    const fileInput = document.getElementById(
+      "image-upload"
+    ) as HTMLInputElement;
+    if (fileInput) {
+      fileInput.click();
+    }
+  };
+
+  // Fonction pour gérer la suppression directe de l'image
+  const handleRemoveImage = () => {
+    setShouldRemoveImage(true);
+    setImagePreview(null);
+    setImage(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -93,6 +145,21 @@ export default function EditSectorModal({
       return;
     }
 
+    // Vérifier si on remplace ou supprime une image existante
+    const isChangingImage =
+      (image && sector.image) || (shouldRemoveImage && sector.image);
+
+    if (isChangingImage) {
+      // Montrer la confirmation si on modifie l'image
+      setShowConfirmDialog(true);
+    } else {
+      // Procéder directement si pas de changement d'image critique
+      await performUpdate();
+    }
+  };
+
+  const performUpdate = async () => {
+    setShowConfirmDialog(false); // Fermer la dialog de confirmation
     setIsSubmitting(true);
     setUploadProgress(0);
 
@@ -104,7 +171,17 @@ export default function EditSectorModal({
       });
     }, 300);
 
-    const toastId = toast.loading("Mise à jour du secteur en cours...");
+    // Message de chargement personnalisé selon l'action
+    let loadingMessage = "Mise à jour du secteur en cours...";
+    if (shouldRemoveImage) {
+      loadingMessage = "Suppression de l'image en cours...";
+    } else if (image) {
+      loadingMessage = sector.image
+        ? "Remplacement de l'image en cours..."
+        : "Ajout de l'image en cours...";
+    }
+
+    const toastId = toast.loading(loadingMessage);
 
     try {
       const formData = new FormData();
@@ -132,7 +209,17 @@ export default function EditSectorModal({
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      toast.success("Secteur mis à jour avec succès !", { id: toastId });
+      // Message de succès personnalisé selon l'action
+      let successMessage = "Secteur mis à jour avec succès !";
+      if (shouldRemoveImage) {
+        successMessage = "Secteur mis à jour et image supprimée !";
+      } else if (image) {
+        successMessage = sector.image
+          ? "Secteur mis à jour et image remplacée !"
+          : "Secteur mis à jour et image ajoutée !";
+      }
+
+      toast.success(successMessage, { id: toastId });
       onSuccess();
       onClose();
       router.refresh();
@@ -164,6 +251,7 @@ export default function EditSectorModal({
       setUploadProgress(0);
       setShouldRemoveImage(false);
       setIsCompressing(false);
+      setShowConfirmDialog(false);
       onClose();
     }
   };
@@ -213,39 +301,77 @@ export default function EditSectorModal({
             <div className="mt-2 flex items-start space-x-4">
               <div className="flex-shrink-0">
                 {imagePreview && !shouldRemoveImage ? (
-                  <div className="relative w-48 h-48 border rounded-lg overflow-hidden">
+                  <div className="relative w-48 h-48 border rounded-lg overflow-hidden group">
                     <Image
                       src={imagePreview}
                       alt="Aperçu de l'image"
                       fill
                       className="object-cover"
                     />
-                    <button
-                      type="button"
-                      onClick={() => handleImageChange(null)}
-                      className="absolute top-2 right-2 p-1 bg-[color:var(--destructive)] text-[color:var(--destructive-foreground)] rounded-full hover:bg-[color:var(--destructive)]/90 transition-colors"
-                      disabled={isSubmitting}
-                    >
-                      <Trash size={16} />
-                    </button>
+                    <div className="absolute top-2 right-2">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            className="h-8 w-8 p-0 bg-black/50 hover:bg-black/70 border-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            disabled={isSubmitting}
+                          >
+                            <MoreVertical size={14} className="text-white" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem
+                            onClick={triggerFileSelector}
+                            className="cursor-pointer"
+                          >
+                            <ImageIcon className="mr-2 h-4 w-4" />
+                            Remplacer l&apos;image
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={handleRemoveImage}
+                            className="cursor-pointer text-destructive focus:text-destructive"
+                          >
+                            <Trash className="mr-2 h-4 w-4" />
+                            Supprimer l&apos;image
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
                 ) : shouldRemoveImage ? (
-                  <div className="w-48 h-48 border-2 border-dashed border-[color:var(--destructive)] rounded-lg bg-[color:var(--destructive)]/5 flex flex-col items-center justify-center">
-                    <Trash className="w-10 h-10 text-[color:var(--destructive)] mb-2" />
-                    <p className="text-sm text-[color:var(--destructive)] text-center px-4">
-                      L&apos;image sera supprimée
+                  <div className="w-48 h-48 border border-gray-200 rounded-lg bg-gray-50 flex flex-col items-center justify-center p-4">
+                    <Trash className="w-6 h-6 text-gray-500 mb-3" />
+                    <p className="text-sm text-gray-700 text-center mb-4">
+                      Image supprimée
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShouldRemoveImage(false);
-                        setImagePreview(sector.image);
-                      }}
-                      className="mt-2 text-xs text-[color:var(--primary)] hover:underline"
-                      disabled={isSubmitting}
-                    >
-                      Annuler la suppression
-                    </button>
+                    <div className="flex flex-col gap-2 w-full">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={triggerFileSelector}
+                        disabled={isSubmitting}
+                        className="w-full"
+                      >
+                        <ImageIcon className="mr-2 h-4 w-4" />
+                        Choisir une image
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setShouldRemoveImage(false);
+                          setImagePreview(sector.image);
+                        }}
+                        disabled={isSubmitting}
+                        className="w-full text-xs"
+                      >
+                        Annuler
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <label
@@ -260,17 +386,6 @@ export default function EditSectorModal({
                         Cliquez pour sélectionner une image
                       </p>
                     </div>
-                    <input
-                      id="image-upload"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0] || null;
-                        handleImageChange(file);
-                      }}
-                      disabled={isSubmitting || isCompressing}
-                    />
                   </label>
                 )}
               </div>
@@ -285,6 +400,19 @@ export default function EditSectorModal({
                       ? " Une nouvelle image remplacera l'actuelle."
                       : " Laissez vide pour conserver l'image actuelle."}
                 </p>
+
+                {/* Input file toujours présent mais caché */}
+                <input
+                  id="image-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    handleImageChange(file);
+                  }}
+                  disabled={isSubmitting || isCompressing}
+                />
 
                 {isCompressing && (
                   <div className="mt-3 p-3 bg-[color:var(--muted)] rounded-md">
@@ -339,6 +467,50 @@ export default function EditSectorModal({
           </div>
         </form>
       </div>
+
+      {/* Dialog de confirmation pour le changement d'image */}
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmer la modification de l&apos;image</DialogTitle>
+            <DialogDescription className="space-y-3">
+              <p>
+                {shouldRemoveImage
+                  ? "Vous êtes sur le point de supprimer l'image de ce secteur."
+                  : "Vous êtes sur le point de remplacer l'image de ce secteur."}
+              </p>
+              <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
+                <p className="text-sm text-amber-800">
+                  <strong>Important :</strong> Les articles positionnés sur
+                  cette image continueront d&apos;exister, mais ils devront être
+                  repositionnés correctement sur la nouvelle image ou après
+                  suppression.
+                </p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Cette action ne supprimera pas vos articles, mais leur
+                positionnement devra être ajusté.
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowConfirmDialog(false)}
+            >
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              onClick={performUpdate}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              Continuer la modification
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

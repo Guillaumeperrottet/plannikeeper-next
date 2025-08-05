@@ -114,7 +114,7 @@ export default function SectorCard({
                 {new Date(sector.createdAt).toLocaleDateString()}
               </span>
               <span className="text-primary text-sm font-medium">
-                Voir détails
+                Accéder au secteur
               </span>
             </div>
           </Link>

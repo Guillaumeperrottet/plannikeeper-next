@@ -88,7 +88,23 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
           sector.image
         );
         if (oldPublicId) {
-          await CloudinaryService.deleteFile(oldPublicId, "image");
+          try {
+            const deletionSuccess = await CloudinaryService.deleteFile(
+              oldPublicId,
+              "image"
+            );
+            if (!deletionSuccess) {
+              console.warn(
+                `⚠️ Échec suppression ancienne image Cloudinary ${oldPublicId}, mais on continue`
+              );
+            }
+          } catch (cloudinaryError) {
+            console.warn(
+              `⚠️ Erreur suppression ancienne image ${oldPublicId}:`,
+              cloudinaryError
+            );
+            // On continue - la nouvelle image sera quand même uploadée
+          }
         }
       }
 
@@ -102,7 +118,23 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
           sector.image
         );
         if (oldPublicId) {
-          await CloudinaryService.deleteFile(oldPublicId, "image");
+          try {
+            const deletionSuccess = await CloudinaryService.deleteFile(
+              oldPublicId,
+              "image"
+            );
+            if (!deletionSuccess) {
+              console.warn(
+                `⚠️ Échec suppression Cloudinary pour ${oldPublicId}, mais on continue la mise à jour`
+              );
+            }
+          } catch (cloudinaryError) {
+            console.warn(
+              `⚠️ Erreur suppression Cloudinary ${oldPublicId}:`,
+              cloudinaryError
+            );
+            // On continue quand même - l'image sera orpheline mais l'utilisateur ne sera pas bloqué
+          }
         }
       }
 
