@@ -109,18 +109,12 @@ export async function checkOrganizationMembership(
   userId: string,
   objectId: string
 ): Promise<boolean> {
-  console.log("🔍 Vérification appartenance organisation:", {
-    userId,
-    objectId,
-  });
-
   const userWithOrg = await prisma.user.findUnique({
     where: { id: userId },
     include: { Organization: true },
   });
 
   if (!userWithOrg?.Organization) {
-    console.log("❌ Utilisateur sans organisation:", userId);
     return false;
   }
 
@@ -130,16 +124,10 @@ export async function checkOrganizationMembership(
   });
 
   if (!object) {
-    console.log("❌ Objet introuvable:", objectId);
     return false;
   }
 
   const isMember = userWithOrg.Organization.id === object.organizationId;
-  console.log("✅ Appartenance vérifiée:", {
-    userOrgId: userWithOrg.Organization.id,
-    objectOrgId: object.organizationId,
-    isMember,
-  });
 
   return isMember;
 }
@@ -153,7 +141,6 @@ export async function isOrganizationAdmin(userId: string): Promise<boolean> {
   });
 
   const isAdmin = !!orgUser;
-  console.log("🔧 Vérification admin:", { userId, isAdmin });
   return isAdmin;
 }
 
@@ -165,16 +152,9 @@ export async function checkObjectAccess(
   objectId: string,
   requiredLevel: AccessLevel
 ): Promise<boolean> {
-  console.log("🔐 Vérification accès objet:", {
-    userId,
-    objectId,
-    requiredLevel,
-  });
-
   // Les administrateurs ont toujours accès à tout
   const isAdmin = await isOrganizationAdmin(userId);
   if (isAdmin) {
-    console.log("✅ Accès admin accordé");
     return true;
   }
 
@@ -186,7 +166,6 @@ export async function checkObjectAccess(
   // Vérifier d'abord l'appartenance à l'organisation
   const isMember = await checkOrganizationMembership(userId, objectId);
   if (!isMember) {
-    console.log("❌ Utilisateur pas membre de l'organisation");
     return false;
   }
 
@@ -212,11 +191,6 @@ export async function checkObjectAccess(
   const requiredLevelValue = accessLevels[requiredLevel];
 
   const hasAccess = userLevel >= requiredLevelValue;
-  console.log("🔐 Résultat vérification accès:", {
-    userLevel,
-    requiredLevel: requiredLevelValue,
-    hasAccess,
-  });
 
   return hasAccess;
 }
@@ -328,11 +302,6 @@ export async function getAccessibleObjects(
   userId: string,
   organizationId?: string
 ) {
-  console.log("🏠 Récupération objets accessibles:", {
-    userId,
-    organizationId,
-  });
-
   // Récupérer l'utilisateur avec son organisation si pas fournie
   let userOrgId = organizationId;
   let userRole = null;
@@ -356,17 +325,14 @@ export async function getAccessibleObjects(
   }
 
   if (!userOrgId) {
-    console.log("❌ Pas d'organisation trouvée pour l'utilisateur");
     return [];
   }
 
   // Vérifier si l'utilisateur est admin
   const isAdmin = userRole === "admin";
-  console.log("🔧 Utilisateur admin:", isAdmin, "- Rôle:", userRole);
 
   // Si l'utilisateur est admin, retourner tous les objets
   if (isAdmin) {
-    console.log("✅ Admin: retour de tous les objets");
     return prisma.objet.findMany({
       where: { organizationId: userOrgId },
       orderBy: { nom: "asc" },
@@ -382,12 +348,8 @@ export async function getAccessibleObjects(
     select: { objectId: true, accessLevel: true },
   });
 
-  console.log("🔐 Accès trouvés:", objectAccess.length);
-
   // CORRECTIF: Si aucun accès et que l'utilisateur est membre, créer les accès par défaut
   if (objectAccess.length === 0 && userRole) {
-    console.log("⚠️ Membre sans accès détecté - Création des accès par défaut");
-
     await createDefaultObjectAccessForNewMember(userId, userOrgId, userRole);
 
     // Re-récupérer les accès après création
@@ -412,7 +374,6 @@ export async function getAccessibleObjects(
   }
 
   const objectIds = objectAccess.map((access) => access.objectId);
-  console.log("🔐 IDs objets avec accès:", objectIds);
 
   return prisma.objet.findMany({
     where: {

@@ -1573,8 +1573,8 @@ export default function ImageWithArticles({
                   }
                   onMouseLeave={handleArticleMouseLeave}
                   title={
-                    preventPopoverOpen 
-                      ? undefined 
+                    preventPopoverOpen
+                      ? undefined
                       : `${article.title}${article.description ? `\n${article.description}` : ""}`
                   }
                 >
@@ -1778,8 +1778,8 @@ export default function ImageWithArticles({
             onMouseEnter={(e) => handleArticleMouseEnter(e, article)}
             onMouseLeave={handleArticleMouseLeave}
             title={
-              preventPopoverOpen 
-                ? undefined 
+              preventPopoverOpen
+                ? undefined
                 : `${article.title}${article.description ? `\n${article.description}` : ""}`
             }
           >
