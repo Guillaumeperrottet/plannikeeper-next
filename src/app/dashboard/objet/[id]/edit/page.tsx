@@ -9,15 +9,15 @@ import EditableIconField from "@/app/components/ui/EditableIconField";
 import EditableCountryField from "@/app/components/ui/EditableCountryField";
 import SectorCard from "./sector-card";
 import { Button } from "@/app/components/ui/button";
+import { Label } from "@/app/components/ui/label";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/app/components/ui/card";
-import { Label } from "@/app/components/ui/label";
 
-export default async function ObjetEditPage({
+export default async function EditObjetPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -30,14 +30,15 @@ export default async function ObjetEditPage({
 
   const { id: objetId } = await params;
 
-  // Récupérer l'objet avec ses secteurs
   const objet = await prisma.objet.findUnique({
     where: { id: objetId },
     include: {
-      sectors: {
-        orderBy: { createdAt: "asc" },
-      },
       organization: true,
+      sectors: {
+        include: {
+          articles: true,
+        },
+      },
     },
   });
 
@@ -45,53 +46,72 @@ export default async function ObjetEditPage({
     redirect("/dashboard");
   }
 
-  // Vérifier que l'utilisateur appartient à la même organisation que l'objet
-  const userWithOrg = await prisma.user.findUnique({
-    where: { id: session.id },
-    include: { Organization: true },
-  });
+  interface SessionWithMetadata {
+    metadata?: {
+      role?: string;
+    };
+    organizationId?: string;
+  }
 
-  if (
-    !userWithOrg?.Organization ||
-    userWithOrg.Organization.id !== objet.organizationId
-  ) {
+  const isAdmin =
+    (session as unknown as SessionWithMetadata).metadata?.role ===
+      "SUPER_ADMIN" || objet.organization.id === session.organizationId;
+
+  if (!isAdmin) {
     redirect("/dashboard");
   }
 
-  // Vérifier si l'utilisateur est admin
-  const isAdmin = await prisma.organizationUser.findFirst({
-    where: {
-      userId: session.id,
-      organizationId: objet.organizationId,
-      role: "admin",
-    },
-  });
-
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/dashboard">
-              <ArrowLeft size={20} />
-            </Link>
-          </Button>
-          <h1 className="text-2xl font-bold text-foreground">
-            Modifier : {objet.nom}
-          </h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+      {/* Navigation moderne */}
+      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-slate-200">
+        <div className="max-w-6xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link href="/dashboard">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="hover:bg-slate-100"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Retour
+                </Button>
+              </Link>
+              <div className="h-6 w-px bg-slate-300" />
+              <div>
+                <h1 className="text-xl font-semibold text-slate-900">
+                  {objet.nom}
+                </h1>
+                <p className="text-sm text-slate-500">
+                  {objet.organization.name}
+                </p>
+              </div>
+            </div>
+            {isAdmin && (
+              <DeleteObjectButton objetId={objetId} objetName={objet.nom} />
+            )}
+          </div>
         </div>
       </div>
 
-      <Card className="mb-6">
-        <CardContent className="p-6">
-          <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <CardTitle className="text-lg mb-4">
+      {/* Contenu principal */}
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        <div className="space-y-8">
+          {/* Informations générales */}
+          <Card className="shadow-sm border-slate-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
                 Informations générales
               </CardTitle>
-              <div className="space-y-4">
-                <div>
-                  <Label className="block text-sm font-medium mb-1">Nom</Label>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Nom */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Nom
+                  </Label>
                   <EditableField
                     initialValue={objet.nom}
                     fieldName="nom"
@@ -100,8 +120,9 @@ export default async function ObjetEditPage({
                   />
                 </div>
 
-                <div>
-                  <Label className="block text-sm font-medium mb-1">
+                {/* Adresse */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
                     Adresse
                   </Label>
                   <EditableField
@@ -112,16 +133,20 @@ export default async function ObjetEditPage({
                   />
                 </div>
 
-                <div>
-                  <Label className="block text-sm font-medium mb-1">Pays</Label>
+                {/* Pays */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Pays
+                  </Label>
                   <EditableCountryField
                     initialValue={objet.pays}
                     objectId={objetId}
                   />
                 </div>
 
-                <div>
-                  <Label className="block text-sm font-medium mb-1">
+                {/* Activité */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
                     Activité
                   </Label>
                   <EditableField
@@ -132,8 +157,9 @@ export default async function ObjetEditPage({
                   />
                 </div>
 
-                <div>
-                  <Label className="block text-sm font-medium mb-1">
+                {/* Icône */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
                     Icône
                   </Label>
                   <EditableIconField
@@ -142,64 +168,63 @@ export default async function ObjetEditPage({
                   />
                 </div>
               </div>
-            </div>
-            <div>
-              <CardTitle className="text-lg mb-4">Organisation</CardTitle>
-              <p className="font-medium text-foreground">
-                {objet.organization.name}
-              </p>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          {isAdmin && (
-            <div className="border-t pt-4 mt-4">
-              <DeleteObjectButton objetId={objetId} objetName={objet.nom} />
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="mt-8">
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Secteurs ({objet.sectors.length})</CardTitle>
-            <Link
-              href={`/dashboard/objet/${objetId}/secteur/new`}
-              className="flex items-center gap-2 text-[color:var(--primary)] hover:text-[color:var(--primary)]/80 font-medium transition"
-            >
-              <Plus size={16} />
-              <span>Ajouter un secteur</span>
-            </Link>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {objet.sectors.length === 0 ? (
-            <div className="text-center py-12 bg-muted rounded-lg border">
-              <p className="text-muted-foreground mb-4">
-                Aucun secteur n&apos;a été créé pour cet objet.
-              </p>
-              <Link
-                href={`/dashboard/objet/${objetId}/secteur/new`}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition"
-              >
-                <Plus size={16} />
-                <span>Ajouter un secteur</span>
-              </Link>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {objet.sectors.map((sector) => (
-                <SectorCard
-                  key={sector.id}
-                  sector={sector}
-                  objetId={objetId}
-                  isAdmin={!!isAdmin}
-                />
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          {/* Secteurs */}
+          <Card className="shadow-sm border-slate-200">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  Secteurs
+                  <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-medium bg-slate-100 text-slate-700 rounded-full">
+                    {objet.sectors.length}
+                  </span>
+                </CardTitle>
+                <Link href={`/dashboard/objet/${objetId}/secteur/new`}>
+                  <Button size="sm" className="shadow-sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nouveau secteur
+                  </Button>
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {objet.sectors.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
+                    <Plus className="w-8 h-8 text-slate-400" />
+                  </div>
+                  <h3 className="text-sm font-medium text-slate-900 mb-2">
+                    Aucun secteur
+                  </h3>
+                  <p className="text-sm text-slate-500 mb-4">
+                    Commencez par créer votre premier secteur pour organiser
+                    votre objet
+                  </p>
+                  <Link href={`/dashboard/objet/${objetId}/secteur/new`}>
+                    <Button size="sm">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Créer un secteur
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {objet.sectors.map((sector) => (
+                    <SectorCard
+                      key={sector.id}
+                      sector={sector}
+                      objetId={objetId}
+                      isAdmin={!!isAdmin}
+                    />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
