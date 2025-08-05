@@ -21,6 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 
 type Article = {
   id: string;
@@ -213,6 +214,15 @@ export default function ImageWithArticles({
 
   // État pour empêcher l'ouverture du popover après une action
   const [preventPopoverOpen, setPreventPopoverOpen] = useState(false);
+
+  // États pour la restauration en cas d'erreur
+  const [previousPosition, setPreviousPosition] = useState<{
+    articleId: string;
+    positionX: number;
+    positionY: number;
+    width: number;
+    height: number;
+  } | null>(null);
 
   // Détecter si l'appareil est mobile
   useEffect(() => {
@@ -459,8 +469,60 @@ export default function ImageWithArticles({
     [imageSize]
   );
 
+  // Fonctions utilitaires pour la gestion d'erreur et restauration
+  const showErrorToast = useCallback(
+    (action: "déplacement" | "redimensionnement", error?: unknown) => {
+      console.error(`Erreur lors du ${action}:`, error);
+      toast.error(`Échec du ${action}`, {
+        description: `Une erreur s'est produite lors du ${action} de l'article. Veuillez réessayer.`,
+        duration: 4000,
+      });
+    },
+    []
+  );
+
+  const savePositionBeforeChange = useCallback((article: Article) => {
+    setPreviousPosition({
+      articleId: article.id,
+      positionX: article.positionX || 50,
+      positionY: article.positionY || 50,
+      width: article.width || 20,
+      height: article.height || 20,
+    });
+  }, []);
+
+  const restorePreviousPosition = useCallback(async () => {
+    if (!previousPosition || !onArticlePositionUpdate) return;
+
+    try {
+      await onArticlePositionUpdate(previousPosition.articleId, {
+        positionX: previousPosition.positionX,
+        positionY: previousPosition.positionY,
+        width: previousPosition.width,
+        height: previousPosition.height,
+      });
+
+      toast.success("Position restaurée", {
+        description: "L'article a été restauré à sa position précédente.",
+        duration: 3000,
+      });
+    } catch (restoreError) {
+      console.error("Erreur lors de la restauration:", restoreError);
+      toast.error("Échec de la restauration", {
+        description: "Impossible de restaurer la position précédente.",
+        duration: 4000,
+      });
+    } finally {
+      setPreviousPosition(null);
+    }
+  }, [previousPosition, onArticlePositionUpdate]);
+
   const handleDragStart = (e: React.MouseEvent, article: Article) => {
     e.stopPropagation();
+
+    // Sauvegarder la position actuelle avant de commencer le déplacement
+    savePositionBeforeChange(article);
+
     setDragMode(true);
     setDraggingArticleId(article.id);
     setIsDragging(true);
@@ -560,9 +622,11 @@ export default function ImageWithArticles({
           width: article.width || 20,
           height: article.height || 20,
         });
-      } catch {
-        // TODO: Afficher un toast d'erreur
-        // Optionnel: restaurer la position précédente en cas d'erreur
+      } catch (error) {
+        // En cas d'erreur, essayer de restaurer la position précédente
+        restorePreviousPosition();
+        // Afficher un toast d'erreur
+        showErrorToast("déplacement", error);
       }
     },
     [
@@ -573,6 +637,8 @@ export default function ImageWithArticles({
       imageSize,
       onArticlePositionUpdate,
       pixelsToPercent,
+      restorePreviousPosition,
+      showErrorToast,
     ]
   );
 
@@ -583,6 +649,10 @@ export default function ImageWithArticles({
     handle: string
   ) => {
     e.stopPropagation();
+
+    // Sauvegarder la position et taille actuelles avant de commencer le redimensionnement
+    savePositionBeforeChange(article);
+
     setResizeMode(true);
     setResizingArticleId(article.id);
     setIsResizing(true);
@@ -756,9 +826,11 @@ export default function ImageWithArticles({
         width: constrainedWidth,
         height: constrainedHeight,
       });
-    } catch {
-      // TODO: Afficher un toast d'erreur
-      // Optionnel: restaurer les dimensions précédentes en cas d'erreur
+    } catch (error) {
+      // En cas d'erreur, essayer de restaurer la position précédente
+      restorePreviousPosition();
+      // Afficher un toast d'erreur
+      showErrorToast("redimensionnement", error);
     }
   }, [
     isResizing,
@@ -767,6 +839,8 @@ export default function ImageWithArticles({
     articles,
     imageSize,
     onArticlePositionUpdate,
+    restorePreviousPosition,
+    showErrorToast,
   ]);
 
   // Gérer le clic/toucher sur un article
@@ -827,8 +901,14 @@ export default function ImageWithArticles({
       setEditModalOpen(false);
       setEditingArticle(null);
       setEditForm({ title: "", description: "" });
-    } catch {
-      // TODO: Afficher un toast d'erreur
+    } catch (error) {
+      // Afficher un toast d'erreur
+      console.error("Erreur lors de la mise à jour de l'article:", error);
+      toast.error("Échec de la modification", {
+        description:
+          "Une erreur s'est produite lors de la modification de l'article. Veuillez réessayer.",
+        duration: 4000,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -862,8 +942,14 @@ export default function ImageWithArticles({
       setDeleteModalOpen(false);
       setDeletingArticle(null);
       setDeleteConfirmText("");
-    } catch {
-      // TODO: Afficher un toast d'erreur
+    } catch (error) {
+      // Afficher un toast d'erreur
+      console.error("Erreur lors de la suppression de l'article:", error);
+      toast.error("Échec de la suppression", {
+        description:
+          "Une erreur s'est produite lors de la suppression de l'article. Veuillez réessayer.",
+        duration: 4000,
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -910,8 +996,14 @@ export default function ImageWithArticles({
         width: 20,
         height: 15,
       });
-    } catch {
-      // TODO: Afficher un toast d'erreur
+    } catch (error) {
+      // Afficher un toast d'erreur
+      console.error("Erreur lors de la création de l'article:", error);
+      toast.error("Échec de la création", {
+        description:
+          "Une erreur s'est produite lors de la création de l'article. Veuillez réessayer.",
+        duration: 4000,
+      });
     } finally {
       setIsCreating(false);
     }
@@ -1294,8 +1386,20 @@ export default function ImageWithArticles({
                                             height: 15,
                                           }
                                         );
-                                      } catch {
-                                        // TODO: Afficher un toast d'erreur
+                                      } catch (error) {
+                                        // Afficher un toast d'erreur
+                                        console.error(
+                                          "Erreur lors de la récupération de l'article:",
+                                          error
+                                        );
+                                        toast.error(
+                                          "Échec de la récupération",
+                                          {
+                                            description:
+                                              "Une erreur s'est produite lors de la récupération de l'article. Veuillez réessayer.",
+                                            duration: 4000,
+                                          }
+                                        );
                                       }
                                     }}
                                     className="bg-orange-600 hover:bg-orange-700 text-white text-xs px-2 py-1 h-auto"
