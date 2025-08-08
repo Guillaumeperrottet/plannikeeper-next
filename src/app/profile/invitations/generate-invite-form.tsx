@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Settings } from "lucide-react";
 import type {
   InvitationFormData,
   OrganizationObject,
@@ -251,14 +250,23 @@ export default function GenerateInviteForm({
                               {object.adresse} • {object.secteur}
                             </div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => router.push("/profile/edit")}
-                            className="ml-4 px-2 py-2 text-xs border rounded bg-background hover:bg-muted text-foreground border-input transition-colors flex items-center gap-1"
-                            title="Gérer les permissions"
-                          >
-                            <Settings className="h-3 w-3" />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={objectPermissions[object.id] || "none"}
+                              onChange={(e) => {
+                                setObjectPermissions((prev) => ({
+                                  ...prev,
+                                  [object.id]: e.target.value,
+                                }));
+                              }}
+                              className="px-2 py-1 text-xs border rounded bg-background text-foreground border-input"
+                            >
+                              <option value="none">Aucun accès</option>
+                              <option value="read">Lecture</option>
+                              <option value="write">Écriture</option>
+                              <option value="admin">Admin</option>
+                            </select>
+                          </div>
                         </div>
                       ))}
                   </div>
