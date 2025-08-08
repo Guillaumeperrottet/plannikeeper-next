@@ -359,8 +359,28 @@ export default function TasksPage({
 
       const savedTask = await response.json();
 
-      // Si des documents sont fournis, les uploader après la sauvegarde de la tâche
+      // Mettre à jour l'interface immédiatement avec la tâche de base
+      if (selectedTaskId) {
+        setTasks((prev) =>
+          prev.map((task) => (task.id === selectedTaskId ? savedTask : task))
+        );
+        toast.success("Tâche mise à jour avec succès");
+      } else {
+        setTasks((prev) => [savedTask, ...prev]);
+        toast.success("Tâche créée avec succès");
+      }
+
+      // Fermer le formulaire immédiatement
+      setShowAddForm(false);
+      setSelectedTaskId(null);
+
+      // Si des documents sont fournis, les uploader en arrière-plan
       if (documents && documents.length > 0) {
+        toast.info(`Upload de ${documents.length} document(s) en cours...`);
+
+        let uploadSuccessCount = 0;
+        let uploadErrorCount = 0;
+
         for (const file of documents) {
           try {
             const formData = new FormData();
@@ -374,79 +394,53 @@ export default function TasksPage({
               }
             );
 
-            if (!uploadResponse.ok) {
+            if (uploadResponse.ok) {
+              uploadSuccessCount++;
+            } else {
+              uploadErrorCount++;
               console.error(`Échec de l'upload du fichier ${file.name}`);
-              toast.error(`Échec de l'upload du fichier ${file.name}`);
             }
           } catch (error) {
+            uploadErrorCount++;
             console.error("Erreur lors de l'upload du document:", error);
-            toast.error(`Erreur lors de l'upload du fichier ${file.name}`);
           }
         }
 
-        // Récupérer la tâche mise à jour avec ses documents
+        // Récupérer la tâche mise à jour avec ses documents après tous les uploads
         try {
           const updatedTaskResponse = await fetch(`/api/tasks/${savedTask.id}`);
           if (updatedTaskResponse.ok) {
             const updatedTask = await updatedTaskResponse.json();
-
-            if (selectedTaskId) {
-              setTasks((prev) =>
-                prev.map((task) =>
-                  task.id === selectedTaskId ? updatedTask : task
-                )
-              );
-            } else {
-              setTasks((prev) => [updatedTask, ...prev]);
-            }
-          } else {
-            // Fallback si on ne peut pas récupérer la tâche mise à jour
-            if (selectedTaskId) {
-              setTasks((prev) =>
-                prev.map((task) =>
-                  task.id === selectedTaskId ? savedTask : task
-                )
-              );
-            } else {
-              setTasks((prev) => [savedTask, ...prev]);
-            }
+            setTasks((prev) =>
+              prev.map((task) =>
+                task.id === savedTask.id ? updatedTask : task
+              )
+            );
           }
         } catch (error) {
           console.error(
             "Erreur lors de la récupération de la tâche mise à jour:",
             error
           );
-          // Fallback
-          if (selectedTaskId) {
-            setTasks((prev) =>
-              prev.map((task) =>
-                task.id === selectedTaskId ? savedTask : task
-              )
-            );
-          } else {
-            setTasks((prev) => [savedTask, ...prev]);
-          }
         }
-      } else {
-        // Pas de documents à uploader
-        if (selectedTaskId) {
-          setTasks((prev) =>
-            prev.map((task) => (task.id === selectedTaskId ? savedTask : task))
+
+        // Afficher un résumé des uploads
+        if (uploadErrorCount === 0) {
+          toast.success(
+            `Tous les documents ont été uploadés avec succès (${uploadSuccessCount})`
+          );
+        } else if (uploadSuccessCount > 0) {
+          toast.warning(
+            `${uploadSuccessCount} document(s) uploadé(s), ${uploadErrorCount} échec(s)`
           );
         } else {
-          setTasks((prev) => [savedTask, ...prev]);
+          toast.error(
+            `Échec de l'upload de tous les documents (${uploadErrorCount})`
+          );
         }
       }
-
-      if (selectedTaskId) {
-        toast.success("Tâche mise à jour avec succès");
-      } else {
-        toast.success("Tâche créée avec succès");
-      }
-
-      setShowAddForm(false);
-      setSelectedTaskId(null);
-    } catch {
+    } catch (error) {
+      console.error("Erreur lors de la sauvegarde:", error);
       toast.error("Échec de la sauvegarde de la tâche");
     }
   };

@@ -218,6 +218,13 @@ export default function TaskForm({
     }
   }, [onCancel]);
 
+  // Reset loading state when component unmounts
+  useEffect(() => {
+    return () => {
+      setIsLoading(false);
+    };
+  }, []);
+
   const [formData, setFormData] = useState({
     name: task?.name || "",
     description: task?.description || "",
@@ -344,12 +351,16 @@ export default function TaskForm({
       };
 
       await onSave(taskData, documents.length > 0 ? documents : undefined);
+
+      // Si on arrive ici, la tâche a été sauvegardée avec succès
+      // Le formulaire sera fermé par le parent (handleTaskSave)
     } catch (error) {
       console.error("Erreur lors de la sauvegarde:", error);
       setFormError("Une erreur est survenue lors de la sauvegarde");
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Important: remettre à false en cas d'erreur
     }
+    // Note: on ne met pas finally ici car on veut que l'état loading reste true
+    // jusqu'à ce que le parent ferme le formulaire après une sauvegarde réussie
   };
 
   return (
