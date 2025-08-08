@@ -299,6 +299,14 @@ export default function TaskForm({
     ];
 
     const filteredFiles = files.filter((file) => {
+      // Vérifier que le fichier a un nom valide
+      if (!file.name || file.name.trim() === "" || file.name === "blob") {
+        toast.error(
+          `Le fichier n'a pas de nom valide. Veuillez renommer votre fichier.`
+        );
+        return false;
+      }
+
       if (!allowedTypes.includes(file.type)) {
         toast.error(
           `Le type de fichier ${file.type} n'est pas pris en charge.`

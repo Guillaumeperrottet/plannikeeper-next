@@ -162,16 +162,31 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Vérification du nom de fichier
+    // Vérification et correction du nom de fichier
+    let fileName = file.name;
     if (
-      !file.name ||
-      typeof file.name !== "string" ||
-      file.name.trim() === ""
+      !fileName ||
+      typeof fileName !== "string" ||
+      fileName.trim() === "" ||
+      fileName === "blob"
     ) {
-      return NextResponse.json(
-        { error: "Nom de fichier invalide ou manquant" },
-        { status: 400 }
-      );
+      // Générer un nom basé sur le type de fichier et la date
+      const timestamp = Date.now();
+      const extension =
+        file.type === "application/pdf"
+          ? ".pdf"
+          : file.type === "image/jpeg"
+            ? ".jpg"
+            : file.type === "image/png"
+              ? ".png"
+              : file.type === "image/gif"
+                ? ".gif"
+                : file.type === "image/webp"
+                  ? ".webp"
+                  : "";
+
+      fileName = `document_${timestamp}${extension}`;
+      console.log(`Nom de fichier corrigé: ${fileName}`);
     }
 
     // Vérifier le type et la taille du fichier
@@ -210,7 +225,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     const resourceType = CloudinaryService.getResourceTypeFromMime(file.type);
 
     // Upload du fichier vers Cloudinary
-    const uploadResult = await CloudinaryService.uploadFile(buffer, file.name, {
+    const uploadResult = await CloudinaryService.uploadFile(buffer, fileName, {
       folder: `plannikeeper/tasks/${taskId}/documents`,
       resourceType,
       tags: ["document", `task_${taskId}`],
@@ -219,7 +234,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     // Enregistrer en base de données
     const document = await prisma.document.create({
       data: {
-        name: file.name,
+        name: fileName,
         filePath: uploadResult.secureUrl,
         fileSize: uploadResult.bytes,
         fileType: file.type,
@@ -232,7 +247,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       taskId,
       user.id,
       user.name || "Utilisateur",
-      file.name
+      fileName
     );
 
     // APRÈS UN UPLOAD RÉUSSI : Mettre à jour l'usage du stockage

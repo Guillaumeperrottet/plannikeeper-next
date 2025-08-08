@@ -31,15 +31,10 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
 
   const fetchUnreadCount = async () => {
     try {
-      console.log("🔄 Fetching unread notifications count...");
       const response = await fetch("/api/notifications?unread=true&limit=1");
       const data = await response.json();
 
-      console.log("📊 API Response:", data);
-      console.log("📈 Response OK:", response.ok);
-
       if (response.ok) {
-        console.log("✅ Setting unread count to:", data.unreadCount || 0);
         setUnreadCount(data.unreadCount || 0);
       } else {
         console.error("❌ API Error:", data);

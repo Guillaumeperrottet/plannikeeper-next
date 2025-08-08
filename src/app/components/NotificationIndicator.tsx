@@ -11,9 +11,6 @@ export default function NotificationIndicator() {
   const { unreadCount, refreshUnreadCount } = useNotifications();
   const [showPanel, setShowPanel] = useState(false);
 
-  // Debug log pour voir la valeur du compteur
-  console.log("🔔 NotificationIndicator - unreadCount:", unreadCount);
-
   const togglePanel = () => {
     setShowPanel(!showPanel);
   };

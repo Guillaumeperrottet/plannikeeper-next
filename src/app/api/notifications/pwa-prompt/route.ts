@@ -34,9 +34,9 @@ export async function POST() {
     await NotificationService.createNotification({
       userId: user.id,
       type: "PWA_INSTALL_PROMPT" as NotificationType,
-      title: "📱 Installez PlanniKeeper sur votre téléphone",
+      title: "📱 Installation de l'application",
       message:
-        "Pour une meilleure expérience mobile, installez notre application sur votre écran d'accueil !",
+        "Ajoutez PlanniKeeper à votre écran d'accueil pour un accès instantané et une meilleure expérience. Cliquez ici pour voir comment faire.",
       link: "/install-pwa",
       data: {
         category: "pwa_installation",

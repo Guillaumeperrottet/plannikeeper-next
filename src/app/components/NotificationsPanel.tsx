@@ -64,7 +64,20 @@ export default function NotificationsPanel({
 
       if (response.ok) {
         const data = await response.json();
-        setNotifications(data.notifications || []);
+        // Mapper les données pour transformer message en content
+        const mappedNotifications = (data.notifications || []).map(
+          (n: {
+            id: number;
+            message: string;
+            category?: string;
+            [key: string]: unknown;
+          }) => ({
+            ...n,
+            content: n.message, // Mapper message vers content
+            type: n.category || "default", // Mapper category vers type
+          })
+        );
+        setNotifications(mappedNotifications);
       }
     } catch (error) {
       console.error("Erreur lors de la récupération des notifications:", error);
@@ -229,17 +242,14 @@ export default function NotificationsPanel({
               // Le lien ne contient pas le segment de tâche, l'ajouter
               taskLink = `${baseLink}/task/${taskId}`;
             }
-            console.log("Navigating to task:", taskLink);
             router.push(taskLink);
           } else {
             // La tâche n'existe plus, naviguer vers l'article et afficher un message
-            console.log("Task no longer exists, redirecting to article");
             router.push(`${baseLink}?taskDeleted=true`);
           }
         } catch (error) {
           console.error("Error checking task existence:", error);
           // En cas d'erreur, naviguer vers l'article (sans task ID pour éviter la duplication)
-          console.log("Error - redirecting to article");
           if (baseLink) {
             router.push(baseLink);
           }
@@ -252,7 +262,6 @@ export default function NotificationsPanel({
       }
       // Sinon, utiliser le lien existant
       else if (baseLink) {
-        console.log("Navigating to link:", baseLink);
         router.push(baseLink);
         // Désactiver le loader après un délai
         setTimeout(() => setNavigatingNotificationId(null), 1000);

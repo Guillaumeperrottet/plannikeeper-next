@@ -34,7 +34,6 @@ export function FirstLoginDetector() {
         if (response.ok) {
           // Marquer comme créé dans le localStorage pour éviter les répétitions
           localStorage.setItem("pwaNotificationCreated", "true");
-          console.log("✅ Notification PWA créée avec succès");
 
           // Rafraîchir le compteur de notifications pour afficher le badge
           await refreshUnreadCount();
