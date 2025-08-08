@@ -126,6 +126,8 @@ export function NotificationsList({
         );
       case "COMMENT_ADDED":
         return <span className="text-[color:var(--info-foreground)]">💬</span>;
+      case "PWA_INSTALL_PROMPT":
+        return <span className="text-[#d9840d]">📱</span>;
       default:
         return (
           <Bell className="h-4 w-4 text-[color:var(--muted-foreground)]" />

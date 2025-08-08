@@ -292,6 +292,8 @@ export default function NotificationsPanel({
         return <span className="text-indigo-500">🔑</span>;
       case "USER_REMOVED_FROM_OBJECT":
         return <span className="text-red-400">🚫</span>;
+      case "PWA_INSTALL_PROMPT":
+        return <span className="text-[#d9840d]">📱</span>;
       default:
         return (
           <Bell className="h-4 w-4 text-[color:var(--muted-foreground)]" />
@@ -311,6 +313,7 @@ export default function NotificationsPanel({
       DOCUMENT_UPLOADED: "Nouveau document",
       USER_ADDED_TO_OBJECT: "Nouvel accès",
       USER_REMOVED_FROM_OBJECT: "Accès retiré",
+      PWA_INSTALL_PROMPT: "Installation app",
     };
     return labels[type as keyof typeof labels] || type;
   };

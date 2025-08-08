@@ -11,6 +11,7 @@ import Script from "next/script";
 import { LoadingSystemProvider } from "./components/LoadingSystem";
 import { SessionManager } from "./components/SessionManager";
 import { InactivityManager } from "./components/InactivityManager";
+import { FirstLoginDetector } from "./components/FirstLoginDetector";
 
 export const metadata = {
   title: {
@@ -98,6 +99,8 @@ export default async function RootLayout({
               {/* Gestionnaires de session pour déconnexion après fermeture et inactivité */}
               <SessionManager />
               <InactivityManager />
+              {/* Détecteur de première connexion pour prompt PWA */}
+              <FirstLoginDetector />
               <Navbar user={userWithRole} />
               <div className="pb-16 md:pb-14">{children}</div>
               <TodoListAgendaWrapper />

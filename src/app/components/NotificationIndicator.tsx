@@ -11,6 +11,9 @@ export default function NotificationIndicator() {
   const { unreadCount, refreshUnreadCount } = useNotifications();
   const [showPanel, setShowPanel] = useState(false);
 
+  // Debug log pour voir la valeur du compteur
+  console.log("🔔 NotificationIndicator - unreadCount:", unreadCount);
+
   const togglePanel = () => {
     setShowPanel(!showPanel);
   };
@@ -37,7 +40,7 @@ export default function NotificationIndicator() {
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 h-4 w-4 rounded-full bg-[color:var(--destructive)] text-white text-xs flex items-center justify-center transform translate-x-1/4 -translate-y-1/4">
+          <span className="absolute top-0 right-0 h-4 w-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center transform translate-x-1/4 -translate-y-1/4 z-10">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}

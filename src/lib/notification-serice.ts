@@ -15,6 +15,7 @@ export enum NotificationType {
   OBJECT_CREATED = "OBJECT_CREATED",
   SECTOR_CREATED = "SECTOR_CREATED",
   ARTICLE_CREATED = "ARTICLE_CREATED",
+  PWA_INSTALL_PROMPT = "PWA_INSTALL_PROMPT",
 }
 
 interface BaseNotificationData {
