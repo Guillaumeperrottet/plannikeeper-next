@@ -480,6 +480,16 @@ a[data-nav]:hover:not([class*="bg-"]):not(.invite-button) {
   color: hsl(var(--brand-orange)) !important;
 }
 
+/* Boutons avec fonds sombres - assurer que le texte reste visible au hover */
+.bg-black:hover,
+.bg-slate-900:hover,
+.bg-gray-900:hover,
+.bg-zinc-900:hover,
+[style*="background-color: black"]:hover,
+[style*="background: black"]:hover {
+  color: white !important;
+}
+
 /* Bouton d'invitation - style simple et propre */
 .invite-button {
   background-color: hsl(220 14% 11%) !important; /* slate-900 */
