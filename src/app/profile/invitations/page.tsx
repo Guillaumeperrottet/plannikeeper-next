@@ -4,16 +4,17 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import GenerateInviteForm from "./generate-invite-form";
 import InvitationsList from "./invitations-list";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { BackButton } from "@/app/components/ui/BackButton";
-import { 
-  Users, 
-  ShieldAlert, 
-  Send, 
-  Clock
-} from "lucide-react";
+import { Users, ShieldAlert, Send, Clock } from "lucide-react";
 
 export default async function InvitationsPage() {
   const user = await getUser();
@@ -68,12 +69,13 @@ export default async function InvitationsPage() {
                     Membre
                   </Badge>
                 </div>
-                
+
                 <Alert>
                   <AlertDescription className="text-sm leading-relaxed">
-                    Les membres ne peuvent pas créer ou gérer les codes d&apos;invitation. 
-                    Cette fonctionnalité est réservée aux administrateurs pour maintenir 
-                    la sécurité de l&apos;organisation.
+                    Les membres ne peuvent pas créer ou gérer les codes
+                    d&apos;invitation. Cette fonctionnalité est réservée aux
+                    administrateurs pour maintenir la sécurité de
+                    l&apos;organisation.
                   </AlertDescription>
                 </Alert>
 
@@ -128,7 +130,9 @@ export default async function InvitationsPage() {
               <span>•</span>
               <Badge variant="outline" className="gap-1">
                 <Send className="h-3 w-3" />
-                {invitationCodes.length} code{invitationCodes.length !== 1 ? "s" : ""} actif{invitationCodes.length !== 1 ? "s" : ""}
+                {invitationCodes.length} code
+                {invitationCodes.length !== 1 ? "s" : ""} actif
+                {invitationCodes.length !== 1 ? "s" : ""}
               </Badge>
             </div>
           </div>
@@ -147,8 +151,8 @@ export default async function InvitationsPage() {
               Créer une Invitation
             </CardTitle>
             <CardDescription>
-              Générez un code d&apos;invitation pour permettre à de nouveaux utilisateurs 
-              de rejoindre votre organisation.
+              Générez un code d&apos;invitation pour permettre à de nouveaux
+              utilisateurs de rejoindre votre organisation.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -167,7 +171,8 @@ export default async function InvitationsPage() {
               Codes d&apos;Invitation Actifs
             </CardTitle>
             <CardDescription>
-              Gérez les codes d&apos;invitation existants et suivez leur utilisation.
+              Gérez les codes d&apos;invitation existants et suivez leur
+              utilisation.
             </CardDescription>
           </CardHeader>
           <CardContent>

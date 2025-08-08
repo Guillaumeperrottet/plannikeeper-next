@@ -2,23 +2,29 @@
 
 import { useState } from "react";
 import type { Prisma } from "@prisma/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { 
-  Copy, 
-  Trash2, 
-  Check, 
-  Clock, 
-  User, 
+import {
+  Copy,
+  Trash2,
+  Check,
+  Clock,
+  User,
   Shield,
   Eye,
   Edit,
   Crown,
   Calendar,
-  Info
+  Info,
 } from "lucide-react";
 
 type InvitationCode = {
@@ -137,14 +143,18 @@ export default function InvitationsList({
   };
 
   const getRoleIcon = (role: string) => {
-    return role === "admin" ? <Shield className="h-3 w-3" /> : <User className="h-3 w-3" />;
+    return role === "admin" ? (
+      <Shield className="h-3 w-3" />
+    ) : (
+      <User className="h-3 w-3" />
+    );
   };
 
   const formatExpirationDate = (date: Date) => {
     const now = new Date();
     const diffTime = date.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays < 0) return "Expiré";
     if (diffDays === 0) return "Expire aujourd'hui";
     if (diffDays === 1) return "Expire demain";
@@ -159,7 +169,8 @@ export default function InvitationsList({
           Aucun code d&apos;invitation actif
         </h3>
         <p className="text-sm text-muted-foreground">
-          Créez votre premier code d&apos;invitation pour commencer à inviter des utilisateurs.
+          Créez votre premier code d&apos;invitation pour commencer à inviter
+          des utilisateurs.
         </p>
       </div>
     );
@@ -168,34 +179,50 @@ export default function InvitationsList({
   return (
     <div className="space-y-4">
       {invitationCodes.map((invite) => {
-        const permissionSummary = getPermissionSummary(invite.objectPermissions);
-        const isExpiringSoon = new Date(invite.expiresAt).getTime() - new Date().getTime() < 24 * 60 * 60 * 1000; // 1 jour
-        
+        const permissionSummary = getPermissionSummary(
+          invite.objectPermissions
+        );
+        const isExpiringSoon =
+          new Date(invite.expiresAt).getTime() - new Date().getTime() <
+          24 * 60 * 60 * 1000; // 1 jour
+
         return (
-          <Card key={invite.id} className={`transition-colors ${isExpiringSoon ? 'border-orange-200 bg-orange-50/50 dark:border-orange-800 dark:bg-orange-950/20' : ''}`}>
+          <Card
+            key={invite.id}
+            className={`transition-colors ${isExpiringSoon ? "border-orange-200 bg-orange-50/50 dark:border-orange-800 dark:bg-orange-950/20" : ""}`}
+          >
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   <CardTitle className="text-base">
-                    Code: <code className="font-mono text-sm bg-muted px-2 py-1 rounded">{invite.code}</code>
+                    Code:{" "}
+                    <code className="font-mono text-sm bg-muted px-2 py-1 rounded">
+                      {invite.code}
+                    </code>
                   </CardTitle>
                   <CardDescription className="flex items-center gap-2">
                     <Calendar className="h-3 w-3" />
                     {formatExpirationDate(new Date(invite.expiresAt))}
                     {isExpiringSoon && (
-                      <Badge variant="outline" className="text-orange-600 border-orange-300">
+                      <Badge
+                        variant="outline"
+                        className="text-orange-600 border-orange-300"
+                      >
                         Expire bientôt
                       </Badge>
                     )}
                   </CardDescription>
                 </div>
-                <Badge variant={getRoleBadgeVariant(invite.role)} className="gap-1">
+                <Badge
+                  variant={getRoleBadgeVariant(invite.role)}
+                  className="gap-1"
+                >
                   {getRoleIcon(invite.role)}
                   {invite.role === "admin" ? "Administrateur" : "Membre"}
                 </Badge>
               </div>
             </CardHeader>
-            
+
             <CardContent className="space-y-4">
               {/* Permissions */}
               <div>
@@ -208,18 +235,25 @@ export default function InvitationsList({
                     <Crown className="h-3 w-3" />
                     Accès complet à tous les objets
                   </Badge>
-                ) : permissionSummary && typeof permissionSummary === 'object' ? (
+                ) : permissionSummary &&
+                  typeof permissionSummary === "object" ? (
                   <div className="space-y-2">
                     <div className="text-sm text-muted-foreground">
                       Accès à {permissionSummary.accessCount} objet(s)
                     </div>
                     <div className="flex flex-wrap gap-1">
-                      {Object.entries(permissionSummary.permissionCounts).map(([perm, count]) => (
-                        <Badge key={perm} variant="outline" className="gap-1 text-xs">
-                          {getPermissionIcon(perm)}
-                          {count} {getPermissionLabel(perm)}
-                        </Badge>
-                      ))}
+                      {Object.entries(permissionSummary.permissionCounts).map(
+                        ([perm, count]) => (
+                          <Badge
+                            key={perm}
+                            variant="outline"
+                            className="gap-1 text-xs"
+                          >
+                            {getPermissionIcon(perm)}
+                            {count} {getPermissionLabel(perm)}
+                          </Badge>
+                        )
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -274,9 +308,10 @@ export default function InvitationsList({
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          <strong>Comment utiliser :</strong> Partagez le lien d&apos;invitation avec la personne que vous souhaitez
-          inviter à rejoindre <strong>{organizationName}</strong>. 
-          Le lien expirera à la date indiquée ou dès la création du compte.
+          <strong>Comment utiliser :</strong> Partagez le lien d&apos;invitation
+          avec la personne que vous souhaitez inviter à rejoindre{" "}
+          <strong>{organizationName}</strong>. Le lien expirera à la date
+          indiquée ou dès la création du compte.
         </AlertDescription>
       </Alert>
     </div>

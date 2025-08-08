@@ -670,7 +670,7 @@ export default function SubscriptionDashboard({
               Montant
             </span>
             <span className="text-sm font-medium text-[color:var(--foreground)]">
-              {subscription.plan.monthlyPrice}€ / mois
+              {subscription.plan.monthlyPrice}CHF / mois
             </span>
           </div>
 
@@ -749,7 +749,7 @@ export default function SubscriptionDashboard({
                         ? "Prix personnalisé"
                         : subscription.plan.price === 0
                           ? "Gratuit"
-                          : `${subscription.plan.monthlyPrice}€/mois`}
+                          : `${subscription.plan.monthlyPrice}CHF/mois`}
                     </p>
                     {getStatusBadge(subscription.status)}
 
@@ -966,10 +966,10 @@ export default function SubscriptionDashboard({
                             {plan.price === 0
                               ? "Gratuit"
                               : billingCycle === "monthly"
-                                ? `${plan.monthlyPrice}€`
+                                ? `${plan.monthlyPrice}CHF`
                                 : plan.yearlyPrice
-                                  ? `${plan.yearlyPrice}€`
-                                  : `${plan.monthlyPrice * 12}€`}
+                                  ? `${plan.yearlyPrice}CHF`
+                                  : `${plan.monthlyPrice * 12}CHF`}
                           </span>
                           {plan.price > 0 && (
                             <span className="text-[color:var(--muted-foreground)] ml-1 text-sm">

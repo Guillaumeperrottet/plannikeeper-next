@@ -226,8 +226,8 @@ export default function GenerateInviteForm({
         {role === "admin" && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 dark:bg-blue-950/20 dark:border-blue-800">
             <div className="text-sm text-blue-900 dark:text-blue-100">
-              <strong>Administrateur :</strong> Accès complet à tous les objets de
-              l&apos;organisation.
+              <strong>Administrateur :</strong> Accès complet à tous les objets
+              de l&apos;organisation.
             </div>
           </div>
         )}

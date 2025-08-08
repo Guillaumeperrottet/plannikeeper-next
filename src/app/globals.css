@@ -473,233 +473,24 @@ select:active:not(.invitation-form select):not(
   box-shadow: 0 0 0 3px hsl(var(--brand-orange) / 0.1) !important;
 }
 
-/* Liens et éléments interactifs - EXCLUSIONS pour préserver l'identité */
-a:hover:not(.logo):not(.brand):not(.navbar-brand):not([href="/dashboard"]),
-button:hover:not(.bg-primary):not(.bg-destructive):not(.bg-success):not(
-    .logo
-  ):not(.brand):not(.navbar-brand) {
-  color: hsl(var(--brand-orange) / 0.8) !important;
-}
-
-/* Exclure explicitement les logos et éléments de marque */
-.logo,
-.navbar-brand,
-.brand,
-[class*="logo"],
-a[href="/dashboard"],
-h1:first-child {
-  color: inherit !important;
-}
-
-.logo *,
-.navbar-brand *,
-.brand *,
-[class*="logo"] *,
-a[href="/dashboard"] * {
-  color: inherit !important;
-}
-
-/* Forcer l'arrière-plan transparent pour le logo mais permettre le texte orange */
-a[href="/dashboard"]:hover,
-.navbar-brand:hover {
-  background-color: transparent !important;
+/* Effet orange uniquement sur les liens de navigation simples */
+nav a:hover:not([class*="bg-"]):not(.invite-button),
+.nav-item:hover:not([class*="bg-"]):not(.invite-button),
+a[data-nav]:hover:not([class*="bg-"]):not(.invite-button) {
   color: hsl(var(--brand-orange)) !important;
 }
 
-/* Forcer l'arrière-plan transparent pour tous les éléments du menu utilisateur */
-[data-user-menu] a:hover,
-[data-user-menu] .group:hover,
-.user-menu-item:hover {
-  background-color: transparent !important;
-  color: hsl(var(--brand-orange)) !important;
-}
-
-/* Bordures d'accent discrètes - uniquement pour les éléments spécifiques */
-.border-accent-orange {
-  border-color: hsl(var(--brand-orange) / 0.4) !important;
-}
-
-/* Texte d'accent - pour les éléments explicitement marqués */
-.text-brand-orange {
-  color: hsl(var(--brand-orange)) !important;
-}
-
-/* Background d'accent léger - très subtil */
-.bg-brand-orange-light {
-  background-color: hsl(var(--brand-orange) / 0.05) !important;
-}
-
-/* Indicateurs de statut actif - plus discrets */
-[data-state="active"]:not(.logo):not(.brand),
-[aria-current="page"]:not(.logo):not(.brand),
-.active:not(.logo):not(.brand) {
-  border-left: 2px solid hsl(var(--brand-orange) / 0.6) !important;
-}
-
-/* Progress bar avec votre couleur - subtile */
-.progress-bar,
-[role="progressbar"] > div {
-  background-color: hsl(var(--brand-orange) / 0.8) !important;
-}
-
-/* Scrollbar personnalisée - très discrète */
-::-webkit-scrollbar-thumb {
-  background-color: hsl(var(--brand-orange) / 0.2) !important;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background-color: hsl(var(--brand-orange) / 0.3) !important;
-}
-
-/* Badges et notifications */
-.badge-orange,
-.notification-dot {
-  background-color: hsl(var(--brand-orange)) !important;
-  color: white !important;
-}
-
-/* Accents pour l'agenda */
-[data-todo-list-agenda] .task-priority-high {
-  border-left: 4px solid hsl(var(--brand-orange)) !important;
-}
-
-[data-todo-list-agenda] .selected-date {
-  background-color: hsl(var(--brand-orange-light)) !important;
-  color: hsl(var(--brand-orange)) !important;
-}
-
-/* Boutons d'action primaires discrets */
-.btn-primary-orange {
-  background-color: hsl(var(--brand-orange)) !important;
-  color: white !important;
-  border: none !important;
-}
-
-.btn-primary-orange:hover {
-  background-color: hsl(var(--brand-orange-dark)) !important;
-}
-
-/* Accents pour les cartes importantes */
-.card-featured {
-  border-top: 3px solid hsl(var(--brand-orange)) !important;
-}
-
-/* Indicateurs de nouvelle fonctionnalité */
-.feature-new::after {
-  content: "NEW";
-  background-color: hsl(var(--brand-orange)) !important;
-  color: white;
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 8px;
-  margin-left: 8px;
-  font-weight: 600;
-}
-
-/* Hover sur les éléments de navigation */
-nav a:hover,
-.nav-item:hover {
-  background-color: hsl(var(--brand-orange-light)) !important;
-  color: hsl(var(--brand-orange)) !important;
-}
-
-/* Accents pour les formulaires */
-input:focus,
-textarea:focus,
-select:focus {
-  border-color: hsl(var(--brand-orange)) !important;
-  box-shadow: 0 0 0 2px hsl(var(--brand-orange) / 0.2) !important;
-}
-
-/* Dividers d'accent */
-.divider-accent {
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    hsl(var(--brand-orange) / 0.3),
-    transparent
-  ) !important;
-}
-
-/* Icônes d'accent */
-.icon-accent {
-  color: hsl(var(--brand-orange)) !important;
-}
-
-/* États de sélection */
-[data-selected="true"],
-.selected {
-  background-color: hsl(var(--brand-orange-light)) !important;
-  border-color: hsl(var(--brand-orange)) !important;
-}
-
-/* Tooltips avec accent orange */
-.tooltip {
-  background-color: hsl(var(--brand-orange)) !important;
-  color: white !important;
-}
-
-.tooltip::after {
-  border-top-color: hsl(var(--brand-orange)) !important;
-}
-
-/* Animation de pulse pour les éléments importants */
-@keyframes pulse-orange {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 hsl(var(--brand-orange) / 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 8px hsl(var(--brand-orange) / 0);
-  }
-}
-
-.pulse-orange {
-  animation: pulse-orange 2s infinite;
-}
-
-/* Sidebar accent */
-.sidebar-active {
-  background-color: hsl(var(--brand-orange-light)) !important;
-  border-right: 3px solid hsl(var(--brand-orange)) !important;
-}
-
-/* Status indicators */
-.status-active {
-  background-color: hsl(var(--brand-orange)) !important;
-}
-
-.status-pending {
-  background-color: hsl(var(--brand-orange) / 0.6) !important;
-}
-
-/* Accents pour les boutons de l'agenda */
-[data-todo-list-agenda] .view-toggle.active {
-  background-color: hsl(var(--brand-orange)) !important;
-  color: white !important;
-}
-
-[data-todo-list-agenda] .filter-active {
-  color: hsl(var(--brand-orange)) !important;
-  border-color: hsl(var(--brand-orange)) !important;
-}
-
-/* Bouton d'invitation - style personnalisé pour éviter l'orange */
+/* Bouton d'invitation - style simple et propre */
 .invite-button {
   background-color: hsl(220 14% 11%) !important; /* slate-900 */
   color: white !important;
   border-color: hsl(220 14% 11%) !important;
-  transition: all 0.2s ease !important;
 }
 
 .invite-button:hover {
   background-color: hsl(215 25% 27%) !important; /* slate-700 */
   border-color: hsl(215 25% 27%) !important;
   color: white !important;
-  box-shadow:
-    0 10px 15px -3px rgba(0, 0, 0, 0.1),
-    0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
 }
 
 /* ===== STYLES POUR LES FORMULAIRES D'INVITATION ===== */
