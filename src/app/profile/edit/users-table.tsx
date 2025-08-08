@@ -2,18 +2,43 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import {
   Edit,
-  ChevronDown,
   Search,
   ShieldAlert,
   User as UserIcon,
   X,
+  MoreHorizontal,
+  ArrowUpDown,
+  UserCog,
+  Mail,
+  Building,
+  Key,
 } from "lucide-react";
-import { Button } from "@/app/components/ui/button";
-import { Input } from "@/app/components/ui/input";
-import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface User {
   id: string;
@@ -22,20 +47,49 @@ interface User {
   role: string;
   avatar?: string | null;
   isCurrentUser: boolean;
+  objectAccess: {
+    id: string;
+    accessLevel: string;
+    object: {
+      id: string;
+      nom: string;
+      icon: string | null;
+    };
+  }[];
 }
+
+// Helper pour obtenir une description lisible du niveau d'accès
+const getAccessLevelDescription = (level: string) => {
+  switch (level) {
+    case "read":
+      return "Lecture seule";
+    case "write":
+      return "Lecture et écriture";
+    case "admin":
+      return "Administration complète";
+    default:
+      return level;
+  }
+};
 
 export function UsersTable({ users }: { users: User[] }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "email" | "role">("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  const router = useRouter();
 
   // Filtre sur la recherche
   const filteredUsers = users.filter(
     (user) =>
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.role.toLowerCase().includes(searchQuery.toLowerCase())
+      user.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.objectAccess.some(
+        (access) =>
+          access.object.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          getAccessLevelDescription(access.accessLevel)
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase())
+      )
   );
 
   // Tri des utilisateurs
@@ -62,240 +116,372 @@ export function UsersTable({ users }: { users: User[] }) {
     }
   };
 
-  // Rendu de l'icône de tri
-  const renderSortIcon = (column: "name" | "email" | "role") => {
-    if (sortBy !== column) return null;
-
-    return (
-      <ChevronDown
-        size={16}
-        className={`ml-1 transition-transform text-[color:var(--foreground)] ${
-          sortDirection === "desc" ? "rotate-180" : ""
-        }`}
-      />
-    );
-  };
-
   return (
-    <div className="w-full">
-      {/* Barre de recherche */}
-      <div className="mb-4 relative max-w-sm">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search size={16} className="text-[color:var(--muted-foreground)]" />
-        </div>
-        <Input
-          type="text"
-          placeholder="Rechercher un utilisateur..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 py-2 bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)]"
-        />
-        {searchQuery && (
-          <button
-            className="absolute inset-y-0 right-0 pr-3 flex items-center"
-            onClick={() => setSearchQuery("")}
-          >
-            <X
-              size={16}
-              className="text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)]"
-            />
-          </button>
-        )}
-      </div>
-
-      {/* Table pour desktop */}
-      <div className="hidden md:block overflow-x-auto rounded-md">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-[color:var(--muted)]">
-              <th className="p-3 text-left font-medium text-sm text-[color:var(--muted-foreground)] w-12"></th>
-              <th
-                className="p-3 text-left font-medium text-sm text-[color:var(--muted-foreground)] cursor-pointer"
-                onClick={() => toggleSort("name")}
-              >
-                <div className="flex items-center">
-                  <span>Nom</span>
-                  {renderSortIcon("name")}
-                </div>
-              </th>
-              <th
-                className="p-3 text-left font-medium text-sm text-[color:var(--muted-foreground)] cursor-pointer"
-                onClick={() => toggleSort("email")}
-              >
-                <div className="flex items-center">
-                  <span>Email</span>
-                  {renderSortIcon("email")}
-                </div>
-              </th>
-              <th
-                className="p-3 text-left font-medium text-sm text-[color:var(--muted-foreground)] cursor-pointer"
-                onClick={() => toggleSort("role")}
-              >
-                <div className="flex items-center">
-                  <span>Rôle</span>
-                  {renderSortIcon("role")}
-                </div>
-              </th>
-              <th className="p-3 text-right font-medium text-sm text-[color:var(--muted-foreground)]">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedUsers.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="p-4 text-center text-[color:var(--muted-foreground)]"
-                >
-                  Aucun utilisateur trouvé
-                </td>
-              </tr>
-            ) : (
-              sortedUsers.map((user) => (
-                <tr
-                  key={user.id}
-                  className="border-b border-[color:var(--border)] hover:bg-[color:var(--muted)] transition-colors"
-                >
-                  <td className="p-3">
-                    <div className="w-8 h-8 rounded-full bg-[color:var(--muted)] flex items-center justify-center overflow-hidden">
-                      {user.avatar ? (
-                        <Image
-                          src={user.avatar}
-                          alt={user.name}
-                          width={32}
-                          height={32}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-sm font-medium text-[color:var(--muted-foreground)]">
-                          {user.name.charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="p-3 font-medium text-[color:var(--foreground)]">
-                    {user.name}
-                    {user.isCurrentUser && (
-                      <span className="ml-2 text-xs bg-[color:var(--muted)] text-[color:var(--muted-foreground)] px-2 py-0.5 rounded-full">
-                        Vous
-                      </span>
-                    )}
-                  </td>
-                  <td className="p-3 text-[color:var(--muted-foreground)]">
-                    {user.email}
-                  </td>
-                  <td className="p-3">
-                    <div className="flex items-center">
-                      {user.role === "admin" ? (
-                        <div className="flex items-center gap-1 text-[color:var(--primary)]">
-                          <ShieldAlert size={14} />
-                          <span>Administrateur</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1 text-[color:var(--muted-foreground)]">
-                          <UserIcon size={14} />
-                          <span>Membre</span>
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="p-3 text-right">
-                    <Button
-                      asChild
-                      variant="outline"
-                      size="sm"
-                      className="gap-1 border-[color:var(--border)] bg-[color:var(--muted)] hover:bg-[color:var(--muted)]/80 text-[color:var(--foreground)]"
-                    >
-                      <Link href={`/profile/edit/${user.id}`}>
-                        <Edit size={14} />
-                        <span>Modifier</span>
-                      </Link>
-                    </Button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Liste pour mobile */}
-      <div className="md:hidden space-y-4">
-        {sortedUsers.length === 0 ? (
-          <div className="text-center py-8 text-[color:var(--muted-foreground)]">
-            Aucun utilisateur trouvé
-          </div>
-        ) : (
-          sortedUsers.map((user) => (
-            <div
-              key={user.id}
-              className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg p-4"
+    <TooltipProvider>
+      <div className="space-y-6">
+        {/* Barre de recherche moderne */}
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Rechercher par nom, email, rôle ou accès aux objets..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 pr-10"
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 p-0"
+              onClick={() => setSearchQuery("")}
             >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full bg-[color:var(--muted)] flex items-center justify-center overflow-hidden flex-shrink-0">
-                  {user.avatar ? (
-                    <Image
-                      src={user.avatar}
-                      alt={user.name}
-                      width={40}
-                      height={40}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-sm font-medium text-[color:var(--muted-foreground)]">
-                      {user.name.charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center">
-                    <h3 className="font-medium truncate text-[color:var(--foreground)]">
-                      {user.name}
-                    </h3>
-                    {user.isCurrentUser && (
-                      <span className="ml-2 text-xs bg-[color:var(--muted)] text-[color:var(--muted-foreground)] px-2 py-0.5 rounded-full whitespace-nowrap">
-                        Vous
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-[color:var(--muted-foreground)] truncate">
-                    {user.email}
-                  </p>
-                </div>
-              </div>
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  {user.role === "admin" ? (
-                    <div className="flex items-center gap-1 text-[color:var(--primary)] text-sm">
-                      <ShieldAlert size={14} />
-                      <span>Administrateur</span>
+        {/* Table moderne avec Shadcn/UI */}
+        <div className="rounded-lg border bg-card">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="w-16">Avatar</TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    onClick={() => toggleSort("name")}
+                    className="h-auto p-0 font-medium hover:bg-transparent"
+                  >
+                    Utilisateur
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    onClick={() => toggleSort("email")}
+                    className="h-auto p-0 font-medium hover:bg-transparent"
+                  >
+                    Email
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    onClick={() => toggleSort("role")}
+                    className="h-auto p-0 font-medium hover:bg-transparent"
+                  >
+                    Rôle
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <span className="font-medium">Accès aux objets</span>
+                </TableHead>
+                <TableHead className="w-16">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedUsers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-32 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <UserIcon className="h-8 w-8 text-muted-foreground" />
+                      <p className="text-muted-foreground">
+                        {searchQuery
+                          ? "Aucun utilisateur trouvé pour cette recherche"
+                          : "Aucun utilisateur"}
+                      </p>
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-1 text-[color:var(--muted-foreground)] text-sm">
-                      <UserIcon size={14} />
-                      <span>Membre</span>
-                    </div>
-                  )}
-                </div>
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  className="gap-1 border-[color:var(--border)] bg-[color:var(--muted)] hover:bg-[color:var(--muted)]/80 text-[color:var(--foreground)]"
-                  onClick={() => router.push(`/profile/edit/${user.id}`)}
-                >
-                  <Link href={`/profile/edit/${user.id}`}>
-                    <Edit size={14} />
-                    <span>Modifier</span>
-                  </Link>
-                </Button>
-              </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                sortedUsers.map((user) => (
+                  <TableRow key={user.id} className="group">
+                    <TableCell>
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage
+                          src={user.avatar || undefined}
+                          alt={user.name}
+                        />
+                        <AvatarFallback className="bg-muted font-medium">
+                          {user.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{user.name}</span>
+                          {user.isCurrentUser && (
+                            <Badge variant="outline" className="text-xs">
+                              Vous
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Mail className="h-4 w-4" />
+                        <span className="truncate">{user.email}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {user.role === "admin" ? (
+                        <Badge variant="default" className="gap-1">
+                          <ShieldAlert className="h-3 w-3" />
+                          Administrateur
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="gap-1">
+                          <UserIcon className="h-3 w-3" />
+                          Membre
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {user.objectAccess.length === 0 ? (
+                          <span className="text-sm text-muted-foreground">
+                            Aucun accès
+                          </span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1 max-w-xs">
+                            {user.objectAccess.slice(0, 3).map((access) => (
+                              <Tooltip key={access.id}>
+                                <TooltipTrigger asChild>
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs gap-1 max-w-24 truncate cursor-help"
+                                  >
+                                    <Building className="h-3 w-3 flex-shrink-0" />
+                                    <span className="truncate">
+                                      {access.object.nom}
+                                    </span>
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="font-medium">
+                                    {access.object.nom}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    Niveau:{" "}
+                                    {getAccessLevelDescription(
+                                      access.accessLevel
+                                    )}
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            ))}
+                            {user.objectAccess.length > 3 && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs cursor-help"
+                                  >
+                                    +{user.objectAccess.length - 3}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="font-medium">
+                                    Accès supplémentaires
+                                  </p>
+                                  <div className="text-sm text-muted-foreground max-w-48">
+                                    {user.objectAccess
+                                      .slice(3)
+                                      .map((access) => (
+                                        <div key={access.id}>
+                                          {access.object.nom} (
+                                          {getAccessLevelDescription(
+                                            access.accessLevel
+                                          )}
+                                          )
+                                        </div>
+                                      ))}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Ouvrir le menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem asChild>
+                            <Link
+                              href={`/profile/edit/${user.id}`}
+                              className="flex items-center gap-2"
+                            >
+                              <Edit className="h-4 w-4" />
+                              Modifier le profil
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link
+                              href={`/profile/edit/${user.id}/permissions`}
+                              className="flex items-center gap-2"
+                            >
+                              <UserCog className="h-4 w-4" />
+                              Gérer les permissions
+                            </Link>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Mobile Cards - Version modernisée */}
+        <div className="md:hidden space-y-4">
+          {sortedUsers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <UserIcon className="h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">
+                {searchQuery
+                  ? "Aucun utilisateur trouvé pour cette recherche"
+                  : "Aucun utilisateur"}
+              </p>
             </div>
-          ))
-        )}
+          ) : (
+            sortedUsers.map((user) => (
+              <div
+                key={user.id}
+                className="rounded-lg border bg-card p-4 shadow-sm"
+              >
+                <div className="flex items-start gap-3">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage
+                      src={user.avatar || undefined}
+                      alt={user.name}
+                    />
+                    <AvatarFallback className="bg-muted font-medium">
+                      {user.name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-medium truncate">{user.name}</h3>
+                      {user.isCurrentUser && (
+                        <Badge variant="outline" className="text-xs">
+                          Vous
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                      <Mail className="h-3 w-3" />
+                      <span className="truncate">{user.email}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      {user.role === "admin" ? (
+                        <Badge variant="default" className="gap-1">
+                          <ShieldAlert className="h-3 w-3" />
+                          Admin
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="gap-1">
+                          <UserIcon className="h-3 w-3" />
+                          Membre
+                        </Badge>
+                      )}
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem asChild>
+                            <Link
+                              href={`/profile/edit/${user.id}`}
+                              className="flex items-center gap-2"
+                            >
+                              <Edit className="h-4 w-4" />
+                              Modifier
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link
+                              href={`/profile/edit/${user.id}/permissions`}
+                              className="flex items-center gap-2"
+                            >
+                              <UserCog className="h-4 w-4" />
+                              Permissions
+                            </Link>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+
+                    {/* Accès aux objets pour mobile */}
+                    <div className="mt-3 space-y-2 pt-3 border-t">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <Key className="h-3 w-3 text-muted-foreground" />
+                        <span>Accès aux objets</span>
+                      </div>
+                      <div className="space-y-1">
+                        {user.objectAccess.length === 0 ? (
+                          <span className="text-sm text-muted-foreground">
+                            Aucun accès
+                          </span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1">
+                            {user.objectAccess.slice(0, 4).map((access) => (
+                              <Badge
+                                key={access.id}
+                                variant="outline"
+                                className="text-xs gap-1"
+                                title={`${access.object.nom} (${access.accessLevel})`}
+                              >
+                                <Building className="h-3 w-3" />
+                                <span className="truncate max-w-20">
+                                  {access.object.nom}
+                                </span>
+                              </Badge>
+                            ))}
+                            {user.objectAccess.length > 4 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{user.objectAccess.length - 4}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }

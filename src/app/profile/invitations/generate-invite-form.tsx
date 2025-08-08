@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type {
   InvitationFormData,
@@ -64,20 +64,25 @@ export default function GenerateInviteForm({
     if (role === "admin") {
       setObjectPermissions({});
     } else if (role === "member" && objects.length > 0) {
-      const initialPermissions: Record<string, string> = {};
-      objects.forEach((obj) => {
-        initialPermissions[obj.id] = objectPermissions[obj.id] || "none";
+      setObjectPermissions((prev) => {
+        const initialPermissions: Record<string, string> = {};
+        objects.forEach((obj) => {
+          initialPermissions[obj.id] = prev[obj.id] || "none";
+        });
+        return initialPermissions;
       });
-      setObjectPermissions(initialPermissions);
     }
-  }, [role, objects, objectPermissions]);
+  }, [role, objects]);
 
-  const handlePermissionChange = (objectId: string, permission: string) => {
-    setObjectPermissions((prev) => ({
-      ...prev,
-      [objectId]: permission,
-    }));
-  };
+  const handlePermissionChange = useCallback(
+    (objectId: string, permission: string) => {
+      setObjectPermissions((prev) => ({
+        ...prev,
+        [objectId]: permission,
+      }));
+    },
+    []
+  );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -122,30 +127,30 @@ export default function GenerateInviteForm({
   };
 
   return (
-    <div className="p-4 border rounded-lg bg-[color:var(--card)] border-[color:var(--border)]">
-      <h3 className="font-medium mb-3 text-[color:var(--foreground)]">
-        Générer un nouveau code d&apos;invitation
-      </h3>
-
+    <div className="invitation-form-container" data-invitation-form>
       {error && (
-        <div className="mb-4 p-3 bg-[color:var(--destructive-background)] text-[color:var(--destructive)] rounded">
+        <div className="mb-4 p-3 bg-destructive/10 text-destructive rounded-lg border border-destructive/20">
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
+      <form onSubmit={handleSubmit} className="invitation-form space-y-6">
+        <div className="space-y-2">
           <label
             htmlFor="role"
-            className="block mb-1 text-sm text-[color:var(--foreground)]"
+            className="block text-sm font-medium text-foreground"
           >
             Rôle
           </label>
           <select
             id="role"
             value={role}
-            onChange={(e) => setRole(e.target.value as "member" | "admin")}
-            className="w-full px-3 py-2 border rounded bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)]"
+            onChange={(e) => {
+              e.stopPropagation();
+              setRole(e.target.value as "member" | "admin");
+            }}
+            onFocus={(e) => e.stopPropagation()}
+            className="w-full px-3 py-2 border rounded-md bg-background text-foreground border-input focus:ring-2 focus:ring-ring focus:ring-opacity-50 focus:border-transparent transition-colors"
           >
             <option value="member">Membre</option>
             <option value="admin">Administrateur</option>
@@ -153,40 +158,45 @@ export default function GenerateInviteForm({
         </div>
 
         {role === "member" && (
-          <div className="space-y-3">
-            <h4 className="font-medium text-sm text-[color:var(--foreground)]">
-              Permissions d&apos;accès aux objets
-            </h4>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <h4 className="font-medium text-sm text-foreground">
+                Permissions d&apos;accès aux objets
+              </h4>
+              <div className="h-px bg-border flex-1" />
+            </div>
 
             {isLoadingObjects ? (
-              <div className="text-sm text-[color:var(--muted-foreground)]">
+              <div className="text-sm text-muted-foreground p-4 text-center">
                 Chargement des objets...
               </div>
             ) : objects.length === 0 ? (
-              <div className="text-sm text-[color:var(--muted-foreground)]">
+              <div className="text-sm text-muted-foreground p-4 text-center bg-muted/50 rounded-lg border border-dashed border-muted-foreground/25">
                 Aucun objet trouvé dans l&apos;organisation.
               </div>
             ) : (
-              <div className="space-y-2 max-h-60 overflow-y-auto">
+              <div className="space-y-3 max-h-60 overflow-y-auto">
                 {objects.map((object) => (
                   <div
                     key={object.id}
-                    className="flex items-center justify-between p-3 border rounded bg-[color:var(--background)] border-[color:var(--border)]"
+                    className="flex items-center justify-between p-4 border rounded-lg bg-card hover:bg-muted/50 transition-colors"
                   >
-                    <div className="flex-1">
-                      <div className="font-medium text-sm text-[color:var(--foreground)]">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm text-foreground truncate">
                         {object.nom}
                       </div>
-                      <div className="text-xs text-[color:var(--muted-foreground)]">
+                      <div className="text-xs text-muted-foreground truncate">
                         {object.adresse} • {object.secteur}
                       </div>
                     </div>
                     <select
                       value={objectPermissions[object.id] || "none"}
-                      onChange={(e) =>
-                        handlePermissionChange(object.id, e.target.value)
-                      }
-                      className="ml-3 px-2 py-1 text-sm border rounded bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)]"
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        handlePermissionChange(object.id, e.target.value);
+                      }}
+                      onFocus={(e) => e.stopPropagation()}
+                      className="ml-4 px-2 py-1 text-sm border rounded bg-background text-foreground border-input focus:ring-2 focus:ring-ring focus:ring-opacity-50 focus:border-transparent transition-colors"
                     >
                       <option value="none">Aucun accès</option>
                       <option value="read">Lecture</option>
@@ -199,30 +209,37 @@ export default function GenerateInviteForm({
             )}
 
             {role === "member" && objects.length > 0 && (
-              <div className="text-xs text-[color:var(--muted-foreground)]">
-                <strong>Résumé des accès :</strong>{" "}
-                {
-                  Object.values(objectPermissions).filter((p) => p !== "none")
-                    .length
-                }{" "}
-                objet(s) avec accès
+              <div className="bg-muted/50 rounded-lg p-3 border border-dashed border-muted-foreground/25">
+                <div className="text-xs text-muted-foreground">
+                  <strong>Résumé des accès :</strong>{" "}
+                  {
+                    Object.values(objectPermissions).filter((p) => p !== "none")
+                      .length
+                  }{" "}
+                  objet(s) avec accès
+                </div>
               </div>
             )}
           </div>
         )}
 
         {role === "admin" && (
-          <div className="p-3 bg-[color:var(--muted)] rounded text-sm text-[color:var(--foreground)]">
-            <strong>Administrateur :</strong> Accès complet à tous les objets de
-            l&apos;organisation.
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 dark:bg-blue-950/20 dark:border-blue-800">
+            <div className="text-sm text-blue-900 dark:text-blue-100">
+              <strong>Administrateur :</strong> Accès complet à tous les objets de
+              l&apos;organisation.
+            </div>
           </div>
         )}
 
-        <div>
+        <div className="flex items-center justify-between pt-4">
+          <div className="text-xs text-muted-foreground">
+            Les codes d&apos;invitation expirent automatiquement après 7 jours
+          </div>
           <button
             type="submit"
             disabled={isLoading || isLoadingObjects}
-            className="px-4 py-2 bg-[color:var(--primary)] text-[color:var(--primary-foreground)] rounded hover:bg-[color:var(--primary)]/90 disabled:opacity-50"
+            className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
           >
             {isLoading ? "Génération..." : "Générer un code"}
           </button>

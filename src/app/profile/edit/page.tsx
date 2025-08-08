@@ -3,9 +3,10 @@ import { getUser } from "@/lib/auth-session";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { UsersTable } from "@/app/profile/edit/users-table";
-import { Button } from "@/app/components/ui/button";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { BackButton } from "@/app/components/ui/BackButton";
-import { PlusCircle, Users } from "lucide-react";
+import { PlusCircle, Users, ShieldAlert } from "lucide-react";
 
 export default async function ProfileEditPage() {
   const user = await getUser();
@@ -22,54 +23,81 @@ export default async function ProfileEditPage() {
   if (!orgUser || orgUser.role !== "admin") {
     // Au lieu de rediriger, affichons un message explicatif pour les membres
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
-        <div className="mb-8">
-          <BackButton
-            href="/profile"
-            label="Retour au profil"
-            loadingMessage="Retour au profil..."
-          />
-        </div>
-
-        <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg p-8 text-center">
-          <div className="mb-6">
-            <Users className="w-16 h-16 mx-auto text-[color:var(--muted-foreground)] mb-4" />
-            <h1 className="text-2xl font-bold text-[color:var(--foreground)] mb-2">
-              Accès Restreint
-            </h1>
-            <p className="text-[color:var(--muted-foreground)] text-lg">
-              Seuls les administrateurs peuvent gérer les utilisateurs
-            </p>
+      <div className="min-h-screen bg-background">
+        <div className="container max-w-4xl mx-auto px-4 py-8">
+          <div className="mb-8">
+            <BackButton
+              href="/profile"
+              label="Retour au profil"
+              loadingMessage="Retour au profil..."
+            />
           </div>
 
-          <div className="bg-[color:var(--muted)] rounded-lg p-6 mb-6">
-            <h2 className="font-semibold text-[color:var(--foreground)] mb-3">
-              Votre rôle actuel :{" "}
-              <span className="text-[color:var(--primary)]">Membre</span>
-            </h2>
-            <p className="text-[color:var(--muted-foreground)] text-sm leading-relaxed">
-              En tant que membre, vous pouvez consulter votre profil et modifier
-              vos préférences, mais la gestion des utilisateurs (invitations,
-              modification des rôles) est réservée aux administrateurs de
-              l&apos;organisation.
-            </p>
-          </div>
+          <div className="flex flex-col items-center justify-center text-center space-y-6">
+            <div className="rounded-full bg-muted p-6">
+              <ShieldAlert className="h-12 w-12 text-muted-foreground" />
+            </div>
 
-          <div className="text-[color:var(--muted-foreground)] text-sm">
-            <p>
-              Besoin d&apos;accéder à cette fonctionnalité ? Contactez un
-              administrateur de votre organisation.
-            </p>
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold tracking-tight">
+                Accès Restreint
+              </h1>
+              <p className="text-xl text-muted-foreground max-w-2xl">
+                Seuls les administrateurs peuvent gérer les utilisateurs de
+                l&apos;organisation
+              </p>
+            </div>
+
+            <div className="bg-card border rounded-lg p-6 max-w-lg space-y-4">
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-sm font-medium">Votre rôle actuel :</span>
+                <Badge variant="secondary" className="gap-1">
+                  <Users className="h-3 w-3" />
+                  Membre
+                </Badge>
+              </div>
+
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                En tant que membre, vous pouvez consulter votre profil et
+                modifier vos préférences, mais la gestion des utilisateurs est
+                réservée aux administrateurs.
+              </p>
+            </div>
+
+            <div className="text-center space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Besoin d&apos;accéder à cette fonctionnalité ?
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Contactez un administrateur de votre organisation.
+              </p>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  // On récupère tous les utilisateurs de cette organisation avec leur rôle
+  // On récupère tous les utilisateurs de cette organisation avec leur rôle et leurs accès
   const orgUsers = await prisma.organizationUser.findMany({
     where: { organizationId: orgUser.organizationId },
-    include: { user: true },
+    include: {
+      user: {
+        include: {
+          objectAccess: {
+            include: {
+              object: {
+                select: {
+                  id: true,
+                  nom: true,
+                  icon: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     orderBy: { user: { email: "asc" } },
   });
 
@@ -79,61 +107,50 @@ export default async function ProfileEditPage() {
   });
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
-      <div className="mb-8">
-        <BackButton
-          href="/profile"
-          label="Retour au profil"
-          loadingMessage="Retour au profil..."
-        />
-
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[color:var(--foreground)]">
-              Gestion des Utilisateurs
-            </h1>
-            <p className="text-[color:var(--muted-foreground)] mt-1">
-              {organization?.name || "Organisation"} - {orgUsers.length} membre
-              {orgUsers.length > 1 ? "s" : ""}
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button
-              asChild
-              className="bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:bg-[color:var(--primary)]/90"
-            >
-              <Link href="/profile/invitations">
-                <PlusCircle size={16} className="mr-2" />
-                Inviter des membres
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg shadow-sm overflow-hidden">
-        <div className="p-4 sm:p-6 border-b border-[color:var(--border)] bg-[color:var(--muted)]">
-          <div className="flex items-center gap-3">
-            <Users size={20} className="text-[color:var(--primary)]" />
-            <h2 className="text-lg font-medium text-[color:var(--foreground)]">
-              Liste des membres
-            </h2>
-          </div>
-        </div>
-
-        <div className="p-1 sm:p-2">
-          <UsersTable
-            users={orgUsers.map((ou) => ({
-              id: ou.user.id,
-              email: ou.user.email || "",
-              name: ou.user.name || "",
-              role: ou.role,
-              avatar: ou.user.image,
-              isCurrentUser: ou.user.id === user.id,
-            }))}
+    <div className="min-h-screen bg-background">
+      <div className="container max-w-7xl mx-auto px-4 py-8 space-y-8">
+        <div className="flex items-center gap-4">
+          <BackButton
+            href="/profile"
+            label="Retour au profil"
+            loadingMessage="Retour au profil..."
           />
         </div>
+
+        <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">
+              Gestion des Utilisateurs
+            </h1>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <span>{organization?.name || "Organisation"}</span>
+              <span>•</span>
+              <Badge variant="outline" className="gap-1">
+                <Users className="h-3 w-3" />
+                {orgUsers.length} membre{orgUsers.length > 1 ? "s" : ""}
+              </Badge>
+            </div>
+          </div>
+
+          <Button asChild size="lg" className="gap-2 invite-button">
+            <Link href="/profile/invitations">
+              <PlusCircle className="h-4 w-4" />
+              Inviter des membres
+            </Link>
+          </Button>
+        </div>
+
+        <UsersTable
+          users={orgUsers.map((ou) => ({
+            id: ou.user.id,
+            email: ou.user.email || "",
+            name: ou.user.name || "",
+            role: ou.role,
+            avatar: ou.user.image,
+            isCurrentUser: ou.user.id === user.id,
+            objectAccess: ou.user.objectAccess || [],
+          }))}
+        />
       </div>
     </div>
   );

@@ -4,8 +4,16 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import GenerateInviteForm from "./generate-invite-form";
 import InvitationsList from "./invitations-list";
-import Link from "next/link";
-import { PlusCircle } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { BackButton } from "@/app/components/ui/BackButton";
+import { 
+  Users, 
+  ShieldAlert, 
+  Send, 
+  Clock
+} from "lucide-react";
 
 export default async function InvitationsPage() {
   const user = await getUser();
@@ -20,47 +28,65 @@ export default async function InvitationsPage() {
   });
 
   if (!orgUser || orgUser.role !== "admin") {
-    // Au lieu de rediriger, affichons un message explicatif pour les membres
+    // Interface moderne pour les membres non-administrateurs
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
-        <div className="mb-8">
-          <Link
-            href="/profile"
-            className="inline-flex items-center px-4 py-2 bg-[color:var(--muted)] rounded hover:bg-[color:var(--muted)]/80 transition text-[color:var(--foreground)]"
-          >
-            ← Retour au profil
-          </Link>
-        </div>
-
-        <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg p-8 text-center">
-          <div className="mb-6">
-            <PlusCircle className="w-16 h-16 mx-auto text-[color:var(--muted-foreground)] mb-4" />
-            <h1 className="text-2xl font-bold text-[color:var(--foreground)] mb-2">
-              Invitations Réservées aux Administrateurs
-            </h1>
-            <p className="text-[color:var(--muted-foreground)] text-lg">
-              Seuls les administrateurs peuvent créer des codes
-              d&apos;invitation
-            </p>
+      <div className="min-h-screen bg-background">
+        <div className="container max-w-4xl mx-auto px-4 py-8">
+          <div className="mb-8">
+            <BackButton
+              href="/profile/edit"
+              label="Retour à la gestion"
+              loadingMessage="Retour..."
+            />
           </div>
 
-          <div className="bg-[color:var(--muted)] rounded-lg p-6 mb-6">
-            <h2 className="font-semibold text-[color:var(--foreground)] mb-3">
-              Votre rôle actuel :{" "}
-              <span className="text-[color:var(--primary)]">Membre</span>
-            </h2>
-            <p className="text-[color:var(--muted-foreground)] text-sm leading-relaxed">
-              En tant que membre, vous ne pouvez pas créer d&apos;invitations ou
-              gérer les codes existants. Cette fonctionnalité est réservée aux
-              administrateurs pour maintenir la sécurité de l&apos;organisation.
-            </p>
-          </div>
+          <div className="flex flex-col items-center justify-center text-center space-y-6">
+            <div className="rounded-full bg-muted p-6">
+              <ShieldAlert className="h-12 w-12 text-muted-foreground" />
+            </div>
 
-          <div className="text-[color:var(--muted-foreground)] text-sm">
-            <p>
-              Vous souhaitez inviter quelqu&apos;un ? Demandez à un
-              administrateur de créer une invitation.
-            </p>
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold tracking-tight">
+                Gestion des Invitations
+              </h1>
+              <p className="text-xl text-muted-foreground max-w-2xl">
+                Fonctionnalité réservée aux administrateurs
+              </p>
+            </div>
+
+            <Card className="max-w-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Votre statut
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-center gap-2">
+                  <Badge variant="secondary" className="gap-1">
+                    <Users className="h-3 w-3" />
+                    Membre
+                  </Badge>
+                </div>
+                
+                <Alert>
+                  <AlertDescription className="text-sm leading-relaxed">
+                    Les membres ne peuvent pas créer ou gérer les codes d&apos;invitation. 
+                    Cette fonctionnalité est réservée aux administrateurs pour maintenir 
+                    la sécurité de l&apos;organisation.
+                  </AlertDescription>
+                </Alert>
+
+                <div className="text-center space-y-2 pt-4">
+                  <p className="text-sm text-muted-foreground">
+                    Besoin d&apos;inviter quelqu&apos;un ?
+                  </p>
+                  <p className="text-sm font-medium">
+                    Contactez un administrateur de votre organisation.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
@@ -80,32 +106,77 @@ export default async function InvitationsPage() {
   });
 
   return (
-    <div className="max-w-3xl mx-auto mt-10 p-6 bg-[color:var(--background)] rounded-lg shadow-md border border-[color:var(--border)]">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-[color:var(--foreground)]">
-          Invitations
-        </h1>
-        <Link
-          href="/profile/edit"
-          className="px-4 py-2 bg-[color:var(--muted)] rounded hover:bg-[color:var(--muted)]/80 transition text-[color:var(--foreground)]"
-        >
-          Retour aux utilisateurs
-        </Link>
-      </div>
+    <div className="min-h-screen bg-background">
+      <div className="container max-w-5xl mx-auto px-4 py-8 space-y-8">
+        {/* Header avec navigation */}
+        <div className="flex items-center gap-4">
+          <BackButton
+            href="/profile/edit"
+            label="Retour à la gestion"
+            loadingMessage="Retour..."
+          />
+        </div>
 
-      <GenerateInviteForm
-        organizationId={orgUser.organizationId}
-        userId={user.id}
-      />
+        {/* En-tête principal */}
+        <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">
+              Gestion des Invitations
+            </h1>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <span>{orgUser.organization.name}</span>
+              <span>•</span>
+              <Badge variant="outline" className="gap-1">
+                <Send className="h-3 w-3" />
+                {invitationCodes.length} code{invitationCodes.length !== 1 ? "s" : ""} actif{invitationCodes.length !== 1 ? "s" : ""}
+              </Badge>
+            </div>
+          </div>
 
-      <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-4 text-[color:var(--foreground)]">
-          Codes d&apos;invitation actifs
-        </h2>
-        <InvitationsList
-          invitationCodes={invitationCodes}
-          organizationName={orgUser.organization.name}
-        />
+          <Badge variant="default" className="gap-2">
+            <Users className="h-3 w-3" />
+            Administrateur
+          </Badge>
+        </div>
+
+        {/* Formulaire de génération */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5" />
+              Créer une Invitation
+            </CardTitle>
+            <CardDescription>
+              Générez un code d&apos;invitation pour permettre à de nouveaux utilisateurs 
+              de rejoindre votre organisation.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <GenerateInviteForm
+              organizationId={orgUser.organizationId}
+              userId={user.id}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Liste des codes actifs */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Codes d&apos;Invitation Actifs
+            </CardTitle>
+            <CardDescription>
+              Gérez les codes d&apos;invitation existants et suivez leur utilisation.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <InvitationsList
+              invitationCodes={invitationCodes}
+              organizationName={orgUser.organization.name}
+            />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
