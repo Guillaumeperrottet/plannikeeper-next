@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { Settings } from "lucide-react";
 import type {
   InvitationFormData,
   OrganizationObject,
@@ -176,35 +177,92 @@ export default function GenerateInviteForm({
               </div>
             ) : (
               <div className="space-y-3 max-h-60 overflow-y-auto">
-                {objects.map((object) => (
-                  <div
-                    key={object.id}
-                    className="flex items-center justify-between p-4 border rounded-lg bg-card hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm text-foreground truncate">
-                        {object.nom}
-                      </div>
-                      <div className="text-xs text-muted-foreground truncate">
-                        {object.adresse} • {object.secteur}
-                      </div>
+                {objects.filter(
+                  (object) =>
+                    (objectPermissions[object.id] || "none") !== "none"
+                ).length === 0 ? (
+                  <div className="text-center py-6">
+                    <div className="text-sm text-muted-foreground mb-3">
+                      Aucun objet sélectionné
                     </div>
-                    <select
-                      value={objectPermissions[object.id] || "none"}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        handlePermissionChange(object.id, e.target.value);
-                      }}
-                      onFocus={(e) => e.stopPropagation()}
-                      className="ml-4 px-2 py-1 text-sm border rounded bg-background text-foreground border-input focus:ring-2 focus:ring-ring focus:ring-opacity-50 focus:border-transparent transition-colors"
-                    >
-                      <option value="none">Aucun accès</option>
-                      <option value="read">Lecture</option>
-                      <option value="write">Modification</option>
-                      <option value="admin">Administration</option>
-                    </select>
+                    <div className="text-xs text-muted-foreground/70">
+                      Choisissez les objets auxquels ce membre aura accès
+                      ci-dessous
+                    </div>
                   </div>
-                ))}
+                ) : (
+                  objects
+                    .filter(
+                      (object) =>
+                        (objectPermissions[object.id] || "none") !== "none"
+                    )
+                    .map((object) => (
+                      <div
+                        key={object.id}
+                        className="flex items-center justify-between p-4 border rounded-lg bg-card hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm text-foreground truncate">
+                            {object.nom}
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {object.adresse} • {object.secteur}
+                          </div>
+                        </div>
+                        <select
+                          value={objectPermissions[object.id] || "none"}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handlePermissionChange(object.id, e.target.value);
+                          }}
+                          onFocus={(e) => e.stopPropagation()}
+                          className="ml-4 px-2 py-1 text-sm border rounded bg-background text-foreground border-input focus:ring-2 focus:ring-ring focus:ring-opacity-50 focus:border-transparent transition-colors"
+                        >
+                          <option value="none">Aucun accès</option>
+                          <option value="read">Lecture</option>
+                          <option value="write">Modification</option>
+                          <option value="admin">Administration</option>
+                        </select>
+                      </div>
+                    ))
+                )}
+
+                {/* Section pour ajouter des objets */}
+                <div className="border-t pt-4">
+                  <div className="text-sm font-medium text-foreground mb-3">
+                    Ajouter l&apos;accès à d&apos;autres objets :
+                  </div>
+                  <div className="space-y-2">
+                    {objects
+                      .filter(
+                        (object) =>
+                          (objectPermissions[object.id] || "none") === "none"
+                      )
+                      .map((object) => (
+                        <div
+                          key={object.id}
+                          className="flex items-center justify-between p-3 border border-dashed rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm text-muted-foreground truncate">
+                              {object.nom}
+                            </div>
+                            <div className="text-xs text-muted-foreground/70 truncate">
+                              {object.adresse} • {object.secteur}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => router.push("/profile/edit")}
+                            className="ml-4 px-2 py-2 text-xs border rounded bg-background hover:bg-muted text-foreground border-input transition-colors flex items-center gap-1"
+                            title="Gérer les permissions"
+                          >
+                            <Settings className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                </div>
               </div>
             )}
 

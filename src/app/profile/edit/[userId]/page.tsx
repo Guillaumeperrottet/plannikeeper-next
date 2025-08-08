@@ -6,9 +6,25 @@ import Link from "next/link";
 import { DeleteUserButton } from "../delete-user-button";
 import { UserRoleSelector } from "../user-role-selector";
 import { ObjectAccessManager } from "../object-access-manager";
-import { Button } from "@/app/components/ui/button";
-import { ArrowLeft, Shield, User as UserIcon, Lock } from "lucide-react";
-import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { BackButton } from "@/app/components/ui/BackButton";
+import {
+  Shield,
+  User as UserIcon,
+  AlertTriangle,
+  Mail,
+  Settings,
+  Building,
+} from "lucide-react";
 
 export default async function EditUserPage({
   params,
@@ -66,72 +82,74 @@ export default async function EditUserPage({
   const isCurrentUser = currentUser.id === userToEdit.id;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+    <div className="container max-w-7xl mx-auto px-4 py-8">
+      {/* Header avec navigation */}
       <div className="mb-8">
-        <Link
+        <BackButton
           href="/profile/edit"
-          className="flex items-center text-sm text-[color:var(--muted-foreground)] hover:text-[color:var(--foreground)] mb-4 transition-colors"
-        >
-          <ArrowLeft size={16} className="mr-1" />
-          Retour à la liste des utilisateurs
-        </Link>
+          label="Retour à la liste des utilisateurs"
+          loadingMessage="Retour en cours..."
+        />
 
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div className="w-16 h-16 rounded-full bg-[color:var(--muted)] flex items-center justify-center text-xl text-[color:var(--muted-foreground)] overflow-hidden">
-            {userToEdit.image ? (
-              <Image
-                src={userToEdit.image}
-                alt={userToEdit.name || ""}
-                width={64}
-                height={64}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              userToEdit.name?.[0] || "?"
-            )}
-          </div>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[color:var(--foreground)]">
-              {userToEdit.name || "Utilisateur sans nom"}
-              {isCurrentUser && (
-                <span className="ml-2 text-sm bg-[color:var(--muted)] text-[color:var(--muted-foreground)] px-2 py-0.5 rounded-full">
-                  Vous
-                </span>
-              )}
-            </h1>
-            <p className="text-[color:var(--muted-foreground)]">
-              {userToEdit.email}
-            </p>
-          </div>
+        {/* En-tête utilisateur moderne */}
+        <div className="mt-6">
+          <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+            <CardHeader>
+              <div className="flex items-start gap-4">
+                <Avatar className="h-20 w-20">
+                  <AvatarImage
+                    src={userToEdit.image || undefined}
+                    alt={userToEdit.name || ""}
+                  />
+                  <AvatarFallback className="text-2xl font-semibold bg-primary/10">
+                    {userToEdit.name?.charAt(0).toUpperCase() || "?"}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <CardTitle className="text-3xl">
+                      {userToEdit.name || "Utilisateur sans nom"}
+                    </CardTitle>
+                    {isCurrentUser && (
+                      <Badge variant="secondary" className="gap-1">
+                        <UserIcon className="h-3 w-3" />
+                        Vous
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Mail className="h-4 w-4" />
+                    <CardDescription className="text-base">
+                      {userToEdit.email}
+                    </CardDescription>
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
         </div>
-
-        <Button
-          asChild
-          variant="outline"
-          className="border-[color:var(--border)] bg-[color:var(--muted)] text-[color:var(--foreground)] hover:bg-[color:var(--muted)]/80"
-        >
-          <Link href="/profile/edit">
-            <ArrowLeft size={16} className="mr-2" />
-            Liste des utilisateurs
-          </Link>
-        </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
-          <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg shadow-sm overflow-hidden">
-            <div className="p-4 sm:p-6 border-b border-[color:var(--border)] bg-[color:var(--muted)]">
-              <div className="flex items-center gap-3">
-                <Shield size={20} className="text-[color:var(--primary)]" />
-                <h2 className="text-lg font-medium text-[color:var(--foreground)]">
-                  Rôle utilisateur
-                </h2>
-              </div>
-            </div>
-
-            <div className="p-5">
-              <div className="mb-3">
-                <label className="block text-sm font-medium mb-2 text-[color:var(--foreground)]">
+      {/* Layout en grille moderne */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Sidebar avec paramètres utilisateur */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Card Rôle utilisateur */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-primary" />
+                Rôle utilisateur
+              </CardTitle>
+              <CardDescription>
+                Gérer les permissions dans l&apos;organisation
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-3 block">
                   Rôle dans l&apos;organisation
                 </label>
                 <UserRoleSelector
@@ -139,60 +157,81 @@ export default async function EditUserPage({
                   currentRole={userToEditOrg.role}
                   isCurrentUser={isCurrentUser}
                 />
-                <p className="mt-2 text-sm text-[color:var(--muted-foreground)]">
-                  Les administrateurs peuvent gérer les membres et modifier les
-                  paramètres de l&apos;organisation
+              </div>
+
+              <div className="rounded-lg bg-muted/50 p-3 border border-dashed">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Info :</strong> Les administrateurs peuvent gérer les
+                  membres et modifier les paramètres de l&apos;organisation.
                 </p>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg shadow-sm overflow-hidden mt-6">
-            <div className="p-4 sm:p-6 border-b border-[color:var(--border)] bg-[color:var(--destructive-background)]">
-              <div className="flex items-center gap-3">
-                <Lock size={20} className="text-[color:var(--destructive)]" />
-                <h2 className="text-lg font-medium text-[color:var(--destructive)]">
-                  Zone de danger
-                </h2>
+          {/* Zone de danger modernisée */}
+          <Card className="border-destructive/50">
+            <CardHeader className="pb-3 bg-destructive/5">
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                Zone de danger
+              </CardTitle>
+              <CardDescription>
+                Actions irréversibles sur ce compte utilisateur
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="rounded-lg bg-destructive/5 border border-destructive/20 p-4 mb-4">
+                <p className="text-sm text-destructive">
+                  {isCurrentUser
+                    ? "⚠️ Vous êtes sur le point de vous retirer de l'organisation."
+                    : "⚠️ Supprimer cet utilisateur le retirera définitivement de l'organisation."}
+                  <br />
+                  <strong>Cette action est irréversible.</strong>
+                </p>
               </div>
-            </div>
 
-            <div className="p-5">
-              <p className="mb-4 text-[color:var(--muted-foreground)]">
-                {isCurrentUser
-                  ? "Vous êtes sur le point de vous retirer de l'organisation. Cette action est irréversible."
-                  : "En supprimant cet utilisateur, vous le retirez définitivement de l'organisation. Cette action est irréversible."}
-              </p>
               <DeleteUserButton
                 userId={userToEdit.id}
                 userName={userToEdit.name || "cet utilisateur"}
                 isCurrentUser={isCurrentUser}
               />
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
 
+        {/* Contenu principal - Accès aux objets */}
         <div className="lg:col-span-2">
-          <div className="bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg shadow-sm overflow-hidden h-full">
-            <div className="p-4 sm:p-6 border-b border-[color:var(--border)] bg-[color:var(--muted)]">
-              <div className="flex items-center gap-3">
-                <UserIcon size={20} className="text-[color:var(--primary)]" />
-                <h2 className="text-lg font-medium text-[color:var(--foreground)]">
-                  Accès aux objets
-                </h2>
-              </div>
-            </div>
-
-            <div className="p-5">
+          <Card className="h-fit">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <Building className="h-5 w-5 text-primary" />
+                Accès aux objets
+              </CardTitle>
+              <CardDescription>
+                Gérer les permissions d&apos;accès aux différents objets de
+                l&apos;organisation
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
               {objects.length === 0 ? (
-                <div className="text-center py-10 text-[color:var(--muted-foreground)]">
-                  <p>Aucun objet n&apos;a été créé dans cette organisation.</p>
-                  <Link
-                    href="/dashboard/objet/new"
-                    className="text-[color:var(--primary)] hover:underline mt-2 inline-block"
-                  >
-                    Créer un objet
-                  </Link>
+                <div className="text-center py-12 space-y-4">
+                  <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                    <Building className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium mb-2">
+                      Aucun objet trouvé
+                    </h3>
+                    <p className="text-muted-foreground mb-4">
+                      Aucun objet n&apos;a été créé dans cette organisation.
+                    </p>
+                    <Button asChild variant="outline">
+                      <Link href="/dashboard/objet/new">
+                        <Settings className="h-4 w-4 mr-2" />
+                        Créer un objet
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <ObjectAccessManager
@@ -202,8 +241,8 @@ export default async function EditUserPage({
                   isTargetUserAdmin={userToEditOrg.role === "admin"}
                 />
               )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

@@ -3,12 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  Edit,
   Search,
   ShieldAlert,
   User as UserIcon,
   X,
-  MoreHorizontal,
   ArrowUpDown,
   UserCog,
   Mail,
@@ -27,12 +25,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -311,38 +303,17 @@ export function UsersTable({ users }: { users: User[] }) {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Ouvrir le menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
-                          <DropdownMenuItem asChild>
-                            <Link
-                              href={`/profile/edit/${user.id}`}
-                              className="flex items-center gap-2"
-                            >
-                              <Edit className="h-4 w-4" />
-                              Modifier le profil
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link
-                              href={`/profile/edit/${user.id}/permissions`}
-                              className="flex items-center gap-2"
-                            >
-                              <UserCog className="h-4 w-4" />
-                              Gérer les permissions
-                            </Link>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <Link href={`/profile/edit/${user.id}`}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          title="Gérer les permissions"
+                        >
+                          <UserCog className="h-4 w-4" />
+                          <span className="sr-only">Gérer les permissions</span>
+                        </Button>
+                      </Link>
                     </TableCell>
                   </TableRow>
                 ))
@@ -407,37 +378,17 @@ export function UsersTable({ users }: { users: User[] }) {
                         </Badge>
                       )}
 
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
-                          <DropdownMenuItem asChild>
-                            <Link
-                              href={`/profile/edit/${user.id}`}
-                              className="flex items-center gap-2"
-                            >
-                              <Edit className="h-4 w-4" />
-                              Modifier
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link
-                              href={`/profile/edit/${user.id}/permissions`}
-                              className="flex items-center gap-2"
-                            >
-                              <UserCog className="h-4 w-4" />
-                              Permissions
-                            </Link>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <Link href={`/profile/edit/${user.id}`}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          title="Gérer les permissions"
+                        >
+                          <UserCog className="h-4 w-4" />
+                          <span className="sr-only">Gérer les permissions</span>
+                        </Button>
+                      </Link>
                     </div>
 
                     {/* Accès aux objets pour mobile */}
