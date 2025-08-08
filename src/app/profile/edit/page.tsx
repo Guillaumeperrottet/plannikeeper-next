@@ -85,6 +85,9 @@ export default async function ProfileEditPage() {
       user: {
         include: {
           objectAccess: {
+            where: {
+              NOT: { accessLevel: "none" },
+            },
             include: {
               object: {
                 select: {
