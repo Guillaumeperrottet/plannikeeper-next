@@ -133,8 +133,8 @@ export function UsersTable({ users }: { users: User[] }) {
           )}
         </div>
 
-        {/* Table moderne avec Shadcn/UI */}
-        <div className="rounded-lg border bg-card">
+        {/* Table moderne avec Shadcn/UI - Desktop uniquement */}
+        <div className="hidden md:block rounded-lg border bg-card">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
@@ -337,7 +337,7 @@ export function UsersTable({ users }: { users: User[] }) {
             sortedUsers.map((user) => (
               <div
                 key={user.id}
-                className="rounded-lg border bg-card p-4 shadow-sm"
+                className="group rounded-xl border bg-card/50 backdrop-blur-sm p-4 shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-200"
               >
                 <div className="flex items-start gap-3">
                   <Avatar className="h-12 w-12">
@@ -382,7 +382,7 @@ export function UsersTable({ users }: { users: User[] }) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0"
+                          className="h-10 w-10 p-0 rounded-full hover:bg-primary/10 hover:scale-105 transition-all duration-200"
                           title="Gérer les permissions"
                         >
                           <UserCog className="h-4 w-4" />

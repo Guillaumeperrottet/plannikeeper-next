@@ -120,22 +120,26 @@ export default async function ProfileEditPage() {
           />
         </div>
 
-        <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+        <div className="flex flex-col gap-4 md:gap-6 md:flex-row md:items-start md:justify-between">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
               Gestion des Utilisateurs
             </h1>
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
               <span>{organization?.name || "Organisation"}</span>
               <span>•</span>
-              <Badge variant="outline" className="gap-1">
+              <Badge variant="outline" className="gap-1 text-xs">
                 <Users className="h-3 w-3" />
                 {orgUsers.length} membre{orgUsers.length > 1 ? "s" : ""}
               </Badge>
             </div>
           </div>
 
-          <Button asChild size="lg" className="gap-2 invite-button">
+          <Button
+            asChild
+            size="default"
+            className="gap-2 w-full md:w-auto invite-button"
+          >
             <Link href="/profile/invitations">
               <PlusCircle className="h-4 w-4" />
               Inviter des membres

@@ -339,64 +339,98 @@ export function ObjectAccessManager({
           </table>
         </div>
 
-        {/* Version mobile */}
+        {/* Version mobile - Google 2025 */}
         <div className="md:hidden space-y-4">
           {filteredObjects.length === 0 ? (
-            <div className="text-center py-6 text-[color:var(--muted-foreground)]">
-              {searchQuery
-                ? "Aucun objet ne correspond à votre recherche"
-                : "Aucun objet trouvé"}
+            <div className="text-center py-12 space-y-3">
+              <div className="w-12 h-12 mx-auto bg-muted rounded-full flex items-center justify-center">
+                <Search size={20} className="text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground">
+                {searchQuery
+                  ? "Aucun objet ne correspond à votre recherche"
+                  : "Aucun objet trouvé"}
+              </p>
             </div>
           ) : (
-            filteredObjects.map((object) => (
-              <div
-                key={object.id}
-                className="border border-[color:var(--border)] rounded-lg p-4 bg-[color:var(--card)]"
-              >
-                <h3 className="font-medium mb-2 text-[color:var(--foreground)]">
-                  {object.nom}
-                </h3>
-                <div className="text-sm text-[color:var(--muted-foreground)] mb-1">
-                  {object.adresse}
-                </div>
-                <div className="text-sm text-[color:var(--muted-foreground)] mb-3">
-                  Secteur: {object.secteur}
-                </div>
+            filteredObjects.map((object) => {
+              const currentAccess = objectAccess[object.id] || "none";
+              const currentLevel = ACCESS_LEVELS.find(
+                (l) => l.value === currentAccess
+              );
+              const CurrentIcon = currentLevel?.icon || Lock;
 
-                <div className="mt-3">
-                  <label className="block text-sm font-medium mb-1.5 text-[color:var(--foreground)]">
-                    Niveau d&apos;accès
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {ACCESS_LEVELS.map((level) => {
-                      const Icon = level.icon;
-                      const isSelected =
-                        objectAccess[object.id] === level.value;
+              return (
+                <div
+                  key={object.id}
+                  className="group border border-border rounded-xl bg-card/50 backdrop-blur-sm p-4 hover:shadow-md hover:border-primary/20 transition-all duration-200"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-foreground mb-1">
+                        {object.nom}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        📍 {object.adresse}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Secteur: {object.secteur}
+                      </p>
+                    </div>
 
-                      return (
-                        <button
-                          key={level.value}
-                          onClick={() =>
-                            handleAccessChange(object.id, level.value)
-                          }
-                          disabled={isSaving}
-                          className={`flex items-center gap-2 py-2 px-3 rounded-md border transition-colors ${
-                            isSelected
-                              ? "bg-[color:var(--muted)] border-[color:var(--primary)]"
-                              : "border-[color:var(--border)] hover:bg-[color:var(--muted)]"
-                          }`}
-                        >
-                          <Icon size={16} className={level.color} />
-                          <span className="text-sm text-[color:var(--foreground)]">
-                            {level.label}
-                          </span>
-                        </button>
-                      );
-                    })}
+                    {/* Indicateur d'accès actuel */}
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border">
+                      <CurrentIcon
+                        size={14}
+                        className={
+                          currentLevel?.color || "text-muted-foreground"
+                        }
+                      />
+                      <span className="text-xs font-medium">
+                        {currentLevel?.label || "Aucun"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium mb-3 text-foreground">
+                      Niveau d&apos;accès
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {ACCESS_LEVELS.map((level) => {
+                        const Icon = level.icon;
+                        const isSelected = currentAccess === level.value;
+
+                        return (
+                          <button
+                            key={level.value}
+                            onClick={() =>
+                              handleAccessChange(object.id, level.value)
+                            }
+                            disabled={isSaving}
+                            className={`flex items-center gap-2 py-3 px-3 rounded-lg border transition-all duration-200 ${
+                              isSelected
+                                ? "bg-primary/10 border-primary text-primary ring-2 ring-primary/20"
+                                : "border-border hover:bg-muted/50 hover:border-primary/30 text-foreground"
+                            }`}
+                          >
+                            <Icon
+                              size={16}
+                              className={
+                                isSelected ? "text-primary" : level.color
+                              }
+                            />
+                            <span className="text-sm font-medium">
+                              {level.label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>

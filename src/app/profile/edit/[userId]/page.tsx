@@ -132,75 +132,10 @@ export default async function EditUserPage({
         </div>
       </div>
 
-      {/* Layout en grille moderne */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Sidebar avec paramètres utilisateur */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Card Rôle utilisateur */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-primary" />
-                Rôle utilisateur
-              </CardTitle>
-              <CardDescription>
-                Gérer les permissions dans l&apos;organisation
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-3 block">
-                  Rôle dans l&apos;organisation
-                </label>
-                <UserRoleSelector
-                  userId={userToEdit.id}
-                  currentRole={userToEditOrg.role}
-                  isCurrentUser={isCurrentUser}
-                />
-              </div>
-
-              <div className="rounded-lg bg-muted/50 p-3 border border-dashed">
-                <p className="text-sm text-muted-foreground">
-                  <strong>Info :</strong> Les administrateurs peuvent gérer les
-                  membres et modifier les paramètres de l&apos;organisation.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Zone de danger modernisée */}
-          <Card className="border-destructive/50">
-            <CardHeader className="pb-3 bg-destructive/5">
-              <CardTitle className="flex items-center gap-2 text-destructive">
-                <AlertTriangle className="h-5 w-5" />
-                Zone de danger
-              </CardTitle>
-              <CardDescription>
-                Actions irréversibles sur ce compte utilisateur
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <div className="rounded-lg bg-destructive/5 border border-destructive/20 p-4 mb-4">
-                <p className="text-sm text-destructive">
-                  {isCurrentUser
-                    ? "⚠️ Vous êtes sur le point de vous retirer de l'organisation."
-                    : "⚠️ Supprimer cet utilisateur le retirera définitivement de l'organisation."}
-                  <br />
-                  <strong>Cette action est irréversible.</strong>
-                </p>
-              </div>
-
-              <DeleteUserButton
-                userId={userToEdit.id}
-                userName={userToEdit.name || "cet utilisateur"}
-                isCurrentUser={isCurrentUser}
-              />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Contenu principal - Accès aux objets */}
-        <div className="lg:col-span-2">
+      {/* Layout en grille moderne - Mobile First */}
+      <div className="space-y-6 lg:grid lg:grid-cols-3 lg:gap-8 lg:space-y-0">
+        {/* Contenu principal - Accès aux objets (FIRST sur mobile) */}
+        <div className="lg:col-span-2 lg:order-2">
           <Card className="h-fit">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2">
@@ -244,6 +179,73 @@ export default async function EditUserPage({
             </CardContent>
           </Card>
         </div>
+
+        {/* Sidebar avec paramètres utilisateur (SECOND sur mobile) */}
+        <div className="lg:col-span-1 lg:order-1 space-y-6">
+          {/* Card Rôle utilisateur */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-primary" />
+                Rôle utilisateur
+              </CardTitle>
+              <CardDescription>
+                Gérer les permissions dans l&apos;organisation
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-3 block">
+                  Rôle dans l&apos;organisation
+                </label>
+                <UserRoleSelector
+                  userId={userToEdit.id}
+                  currentRole={userToEditOrg.role}
+                  isCurrentUser={isCurrentUser}
+                />
+              </div>
+
+              <div className="rounded-lg bg-muted/50 p-3 border border-dashed">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Info :</strong> Les administrateurs peuvent gérer les
+                  membres et modifier les paramètres de l&apos;organisation.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Zone de danger - TOUJOURS EN BAS */}
+      <div className="mt-8">
+        <Card className="border-destructive/50">
+          <CardHeader className="pb-3 bg-destructive/5">
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Zone de danger
+            </CardTitle>
+            <CardDescription>
+              Actions irréversibles sur ce compte utilisateur
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <div className="rounded-lg bg-destructive/5 border border-destructive/20 p-4 mb-4">
+              <p className="text-sm text-destructive">
+                {isCurrentUser
+                  ? "⚠️ Vous êtes sur le point de vous retirer de l'organisation."
+                  : "⚠️ Supprimer cet utilisateur le retirera définitivement de l'organisation."}
+                <br />
+                <strong>Cette action est irréversible.</strong>
+              </p>
+            </div>
+
+            <DeleteUserButton
+              userId={userToEdit.id}
+              userName={userToEdit.name || "cet utilisateur"}
+              isCurrentUser={isCurrentUser}
+            />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
