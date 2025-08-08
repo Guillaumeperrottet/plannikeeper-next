@@ -336,7 +336,10 @@ export default function TasksPage({
     }
   };
 
-  const handleTaskSave = async (taskData: Record<string, unknown>) => {
+  const handleTaskSave = async (
+    taskData: Record<string, unknown>,
+    documents?: File[]
+  ) => {
     try {
       const url = selectedTaskId
         ? `/api/tasks/${selectedTaskId}`
@@ -356,13 +359,88 @@ export default function TasksPage({
 
       const savedTask = await response.json();
 
+      // Si des documents sont fournis, les uploader après la sauvegarde de la tâche
+      if (documents && documents.length > 0) {
+        for (const file of documents) {
+          try {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const uploadResponse = await fetch(
+              `/api/tasks/${savedTask.id}/documents`,
+              {
+                method: "POST",
+                body: formData,
+              }
+            );
+
+            if (!uploadResponse.ok) {
+              console.error(`Échec de l'upload du fichier ${file.name}`);
+              toast.error(`Échec de l'upload du fichier ${file.name}`);
+            }
+          } catch (error) {
+            console.error("Erreur lors de l'upload du document:", error);
+            toast.error(`Erreur lors de l'upload du fichier ${file.name}`);
+          }
+        }
+
+        // Récupérer la tâche mise à jour avec ses documents
+        try {
+          const updatedTaskResponse = await fetch(`/api/tasks/${savedTask.id}`);
+          if (updatedTaskResponse.ok) {
+            const updatedTask = await updatedTaskResponse.json();
+
+            if (selectedTaskId) {
+              setTasks((prev) =>
+                prev.map((task) =>
+                  task.id === selectedTaskId ? updatedTask : task
+                )
+              );
+            } else {
+              setTasks((prev) => [updatedTask, ...prev]);
+            }
+          } else {
+            // Fallback si on ne peut pas récupérer la tâche mise à jour
+            if (selectedTaskId) {
+              setTasks((prev) =>
+                prev.map((task) =>
+                  task.id === selectedTaskId ? savedTask : task
+                )
+              );
+            } else {
+              setTasks((prev) => [savedTask, ...prev]);
+            }
+          }
+        } catch (error) {
+          console.error(
+            "Erreur lors de la récupération de la tâche mise à jour:",
+            error
+          );
+          // Fallback
+          if (selectedTaskId) {
+            setTasks((prev) =>
+              prev.map((task) =>
+                task.id === selectedTaskId ? savedTask : task
+              )
+            );
+          } else {
+            setTasks((prev) => [savedTask, ...prev]);
+          }
+        }
+      } else {
+        // Pas de documents à uploader
+        if (selectedTaskId) {
+          setTasks((prev) =>
+            prev.map((task) => (task.id === selectedTaskId ? savedTask : task))
+          );
+        } else {
+          setTasks((prev) => [savedTask, ...prev]);
+        }
+      }
+
       if (selectedTaskId) {
-        setTasks((prev) =>
-          prev.map((task) => (task.id === selectedTaskId ? savedTask : task))
-        );
         toast.success("Tâche mise à jour avec succès");
       } else {
-        setTasks((prev) => [savedTask, ...prev]);
         toast.success("Tâche créée avec succès");
       }
 
@@ -529,20 +607,19 @@ export default function TasksPage({
         ref={contentRef}
         className="flex-1 overflow-hidden flex flex-col md:flex-row"
       >
-        {showAddForm ? (
-          <div className="flex-1 overflow-auto p-6">
-            <TaskForm
-              task={getSelectedTask()}
-              users={users}
-              articleId={articleId}
-              onSave={handleTaskSave}
-              onCancel={() => {
-                setShowAddForm(false);
-                setSelectedTaskId(null);
-              }}
-            />
-          </div>
-        ) : (
+        {showAddForm && (
+          <TaskForm
+            task={getSelectedTask()}
+            users={users}
+            onSave={handleTaskSave}
+            onCancel={() => {
+              setShowAddForm(false);
+              setSelectedTaskId(null);
+            }}
+          />
+        )}
+
+        {!showAddForm && (
           <div className="flex-1 flex flex-col">
             {/* Clean header like dashboard */}
             <div className="px-4 md:px-6 py-4">
@@ -588,8 +665,8 @@ export default function TasksPage({
                           searchQuery && searchQuery.length > 20
                             ? "w-96"
                             : searchQuery && searchQuery.length > 10
-                            ? "w-80"
-                            : "w-72"
+                              ? "w-80"
+                              : "w-72"
                         }`}
                       />
                       {searchQuery && (

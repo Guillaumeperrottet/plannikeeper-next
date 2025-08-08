@@ -406,6 +406,7 @@ export default function ArticleEditor({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [articles, selectedArticleId, showModal]);
 
   // Convertir les coordonnées pourcentage en pixels absolus (avec décalages)

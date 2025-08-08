@@ -45,7 +45,6 @@ type Task = {
 interface TaskFormProps {
   task?: Task;
   users: User[];
-  articleId: string;
   onSave: (task: Task, documents?: File[]) => Promise<void>;
   onCancel: () => void;
 }
@@ -91,14 +90,15 @@ function TaskTypeSelect({
       )
     : PREDEFINED_TASK_TYPES;
 
+  const selectClass = className.includes("mobile-select")
+    ? "w-full px-4 py-3 text-base rounded-xl border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
+    : "flex items-center justify-between w-full px-3 py-2 border border-input rounded-lg cursor-pointer bg-background";
+
   return (
     <div className={`relative ${className}`}>
-      <div
-        className="flex items-center justify-between w-full px-3 py-2 border border-input rounded-lg cursor-pointer bg-background"
-        onClick={() => setOpen(!open)}
-      >
+      <div className={selectClass} onClick={() => setOpen(!open)}>
         {!customMode ? (
-          <span className={value ? "text-foreground" : "text-muted-foreground"}>
+          <span className="text-sm text-gray-700">
             {value || "Sélectionner ou saisir un type"}
           </span>
         ) : (
@@ -110,65 +110,70 @@ function TaskTypeSelect({
               setSearchTerm(e.target.value);
               onChange(e.target.value);
             }}
-            className="w-full bg-transparent outline-none"
+            onBlur={() => setOpen(false)}
             placeholder="Saisir un type personnalisé"
+            className="w-full bg-transparent outline-none text-sm"
             onClick={(e) => e.stopPropagation()}
           />
         )}
-        <ChevronsUpDown size={16} className="opacity-50" />
+        <ChevronsUpDown className="h-4 w-4 opacity-50" />
       </div>
 
-      {open && (
-        <div className="absolute z-10 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg">
-          <div className="max-h-60 overflow-y-auto">
-            <div className="p-1">
-              {/* Option pour basculer en mode personnalisé */}
+      {open && !customMode && (
+        <div className="absolute top-full left-0 right-0 z-10 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+          <div className="p-2">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Rechercher ou créer un type..."
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md"
+              autoFocus
+            />
+          </div>
+
+          <div className="py-1">
+            {filteredTypes.map((type) => (
               <div
-                className="flex items-center px-3 py-2 hover:bg-accent rounded cursor-pointer"
+                key={type}
+                className="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+                onClick={() => {
+                  onChange(type);
+                  setOpen(false);
+                  setSearchTerm("");
+                }}
+              >
+                {type}
+                {value === type && <Check className="h-4 w-4" />}
+              </div>
+            ))}
+
+            {searchTerm &&
+              !filteredTypes.some(
+                (type) => type.toLowerCase() === searchTerm.toLowerCase()
+              ) && (
+                <div
+                  className="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer text-blue-600 font-medium"
+                  onClick={() => {
+                    onChange(searchTerm);
+                    setCustomMode(true);
+                    setOpen(false);
+                  }}
+                >
+                  + Créer &ldquo;{searchTerm}&rdquo;
+                </div>
+              )}
+
+            <div className="border-t border-gray-200 mt-1 pt-1">
+              <div
+                className="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer text-gray-600"
                 onClick={() => {
                   setCustomMode(true);
                   setOpen(false);
-                  setTimeout(() => {
-                    setOpen(true);
-                    if (inputRef.current) inputRef.current.focus();
-                  }, 10);
                 }}
               >
-                <span className="text-primary">
-                  + Saisir un type personnalisé
-                </span>
+                ✏️ Saisir un type personnalisé
               </div>
-
-              {/* Types prédéfinis */}
-              {customMode && searchTerm
-                ? filteredTypes.map((type) => (
-                    <div
-                      key={type}
-                      className="flex items-center px-3 py-2 hover:bg-accent rounded cursor-pointer"
-                      onClick={() => {
-                        onChange(type);
-                        setCustomMode(false);
-                        setOpen(false);
-                      }}
-                    >
-                      <span>{type}</span>
-                    </div>
-                  ))
-                : PREDEFINED_TASK_TYPES.map((type) => (
-                    <div
-                      key={type}
-                      className="flex items-center justify-between px-3 py-2 hover:bg-accent rounded cursor-pointer"
-                      onClick={() => {
-                        onChange(type);
-                        setOpen(false);
-                      }}
-                    >
-                      <span>{type}</span>
-                      {type === value && (
-                        <Check size={16} className="text-primary" />
-                      )}
-                    </div>
-                  ))}
             </div>
           </div>
         </div>
@@ -177,26 +182,45 @@ function TaskTypeSelect({
   );
 }
 
-export default function TaskFormWithDocuments({
+export default function TaskForm({
   task,
   users,
   onSave,
   onCancel,
 }: TaskFormProps) {
-  const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [documents, setDocuments] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [formData, setFormData] = useState<
-    Omit<Task, "id" | "assignedTo" | "createdAt" | "updatedAt">
-  >({
+  // Bloquer le scroll du body en mobile
+  useEffect(() => {
+    const isMobile = window.innerWidth < 768;
+    if (isMobile) {
+      document.body.style.overflow = "hidden";
+
+      // Gérer la touche Escape
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          onCancel();
+        }
+      };
+
+      document.addEventListener("keydown", handleKeyDown);
+
+      return () => {
+        document.body.style.overflow = "unset";
+        document.removeEventListener("keydown", handleKeyDown);
+      };
+    }
+  }, [onCancel]);
+
+  const [formData, setFormData] = useState({
     name: task?.name || "",
     description: task?.description || "",
-    executantComment: null, // Toujours null car on n'utilise plus ce champ
-    done: task?.done || false,
-    realizationDate: task?.realizationDate || null,
     status: task?.status || "pending",
     taskType: task?.taskType || "",
     color: task?.color || "#d9840d",
@@ -205,6 +229,7 @@ export default function TaskFormWithDocuments({
     endDate: task?.endDate || null,
     recurrenceReminderDate: task?.recurrenceReminderDate || null,
     assignedToId: task?.assignedToId || "",
+    realizationDate: task?.realizationDate || null,
   });
 
   const handleChange = (
@@ -258,7 +283,6 @@ export default function TaskFormWithDocuments({
   };
 
   const addDocuments = (files: File[]) => {
-    // Vérifier le type de fichier
     const allowedTypes = [
       "application/pdf",
       "image/jpeg",
@@ -275,8 +299,7 @@ export default function TaskFormWithDocuments({
         return false;
       }
 
-      // Vérifier la taille (max 10MB)
-      const maxSize = 10 * 1024 * 1024; // 10MB
+      const maxSize = 10 * 1024 * 1024;
       if (file.size > maxSize) {
         toast.error(`Le fichier ${file.name} est trop volumineux (max 10MB).`);
         return false;
@@ -306,10 +329,11 @@ export default function TaskFormWithDocuments({
     try {
       setIsLoading(true);
 
-      // Construire l'objet de tâche complet
       const taskData: Task = {
         ...formData,
         id: task?.id,
+        executantComment: null,
+        done: false,
         realizationDate: formData.realizationDate
           ? new Date(formData.realizationDate as unknown as string)
           : null,
@@ -329,207 +353,197 @@ export default function TaskFormWithDocuments({
   };
 
   return (
-    <motion.div
-      className="w-full max-w-3xl mx-auto bg-card rounded-lg overflow-hidden shadow-lg border border-border"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      transition={{ duration: 0.3 }}
-    >
-      <div className="flex justify-between items-center bg-muted px-3 sm:px-6 py-3 sm:py-4 border-b border-border">
-        <h2 className="text-base sm:text-xl font-semibold text-foreground">
-          {task?.id ? "Modifier la tâche" : "Nouvelle tâche"}
-        </h2>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <X size={20} />
-        </button>
-      </div>
-
-      <form
-        onSubmit={handleSubmit}
-        className="p-3 sm:p-6 overflow-y-auto max-h-[calc(100vh-8rem)] sm:max-h-none"
+    <>
+      {/* Desktop version */}
+      <motion.div
+        className="hidden md:block w-full max-w-3xl mx-auto bg-card rounded-lg overflow-hidden shadow-lg border border-border"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 20 }}
+        transition={{ duration: 0.3 }}
       >
-        {formError && (
-          <div className="mb-4 flex items-center gap-2 p-2 sm:p-3 bg-destructive/15 border border-destructive/20 rounded-lg text-destructive text-xs sm:text-sm">
-            <AlertCircle size={14} className="sm:w-4 sm:h-4" />
-            <span>{formError}</span>
-          </div>
-        )}
+        <div className="flex justify-between items-center bg-muted px-6 py-4 border-b border-border">
+          <h2 className="text-xl font-semibold text-foreground">
+            {task?.id ? "Modifier la tâche" : "Nouvelle tâche"}
+          </h2>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
 
-        <div className="space-y-4 sm:space-y-6">
-          <div>
-            <label
-              htmlFor="name"
-              className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-foreground"
-            >
-              Nom de la tâche *
-            </label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="Saisir le nom de la tâche"
-              className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
-              required
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="description"
-              className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-foreground"
-            >
-              Description
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description || ""}
-              onChange={handleChange}
-              placeholder="Description détaillée (optionnelle)"
-              className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
-              rows={3}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
-            <div>
-              <label
-                htmlFor="status"
-                className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-foreground"
-              >
-                Statut
-              </label>
-              <select
-                id="status"
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
-              >
-                <option value="pending">À faire</option>
-                <option value="in_progress">En cours</option>
-                <option value="completed">Terminée</option>
-                <option value="cancelled">Annulée</option>
-              </select>
+        <form onSubmit={handleSubmit} className="p-6">
+          {formError && (
+            <div className="mb-4 flex items-center gap-2 p-3 bg-destructive/15 border border-destructive/20 rounded-lg text-destructive text-sm">
+              <AlertCircle size={16} />
+              <span>{formError}</span>
             </div>
+          )}
 
+          <div className="space-y-6">
             <div>
               <label
-                htmlFor="taskType"
-                className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-foreground"
+                htmlFor="name"
+                className="block text-sm font-medium mb-2 text-foreground"
               >
-                Type de tâche
+                Nom de la tâche *
               </label>
-              <TaskTypeSelect
-                value={formData.taskType}
-                onChange={(value) =>
-                  setFormData((prev) => ({ ...prev, taskType: value }))
-                }
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Saisir le nom de la tâche"
+                className="w-full px-4 py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
+                required
               />
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
             <div>
               <label
-                htmlFor="realizationDate"
-                className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-foreground"
+                htmlFor="description"
+                className="block text-sm font-medium mb-2 text-foreground"
               >
-                Date de réalisation prévue
+                Description
               </label>
-              <div className="relative">
-                <input
-                  type="date"
-                  id="realizationDate"
-                  name="realizationDate"
-                  value={
-                    formData.realizationDate
-                      ? new Date(formData.realizationDate as unknown as string)
-                          .toISOString()
-                          .split("T")[0]
-                      : ""
-                  }
+              <textarea
+                id="description"
+                name="description"
+                value={formData.description || ""}
+                onChange={handleChange}
+                placeholder="Description détaillée (optionnelle)"
+                className="w-full px-4 py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label
+                  htmlFor="status"
+                  className="block text-sm font-medium mb-2 text-foreground"
+                >
+                  Statut
+                </label>
+                <select
+                  id="status"
+                  name="status"
+                  value={formData.status}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
-                />
-                <Calendar
-                  size={14}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none sm:w-4 sm:h-4"
+                  className="w-full px-4 py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
+                >
+                  <option value="pending">À faire</option>
+                  <option value="in_progress">En cours</option>
+                  <option value="completed">Terminée</option>
+                  <option value="cancelled">Annulée</option>
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="taskType"
+                  className="block text-sm font-medium mb-2 text-foreground"
+                >
+                  Type de tâche
+                </label>
+                <TaskTypeSelect
+                  value={formData.taskType}
+                  onChange={(value) =>
+                    setFormData((prev) => ({ ...prev, taskType: value }))
+                  }
                 />
               </div>
             </div>
 
-            <div>
-              <label
-                htmlFor="assignedToId"
-                className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-foreground"
-              >
-                Attribuer à
-              </label>
-              <select
-                id="assignedToId"
-                name="assignedToId"
-                value={formData.assignedToId || ""}
-                onChange={handleChange}
-                className="w-full px-3 py-2 sm:px-4 sm:py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
-              >
-                <option value="">Non assignée</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name}
-                  </option>
-                ))}
-              </select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label
+                  htmlFor="realizationDate"
+                  className="block text-sm font-medium mb-2 text-foreground"
+                >
+                  Date de réalisation prévue
+                </label>
+                <div className="relative">
+                  <input
+                    type="date"
+                    id="realizationDate"
+                    name="realizationDate"
+                    value={
+                      formData.realizationDate
+                        ? new Date(formData.realizationDate)
+                            .toISOString()
+                            .split("T")[0]
+                        : ""
+                    }
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 pr-10 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
+                  />
+                  <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" />
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="assignedToId"
+                  className="block text-sm font-medium mb-2 text-foreground"
+                >
+                  Attribuer à
+                </label>
+                <select
+                  id="assignedToId"
+                  name="assignedToId"
+                  value={formData.assignedToId || ""}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
+                >
+                  <option value="">Non assignée</option>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
 
-          {/* Nouvelle section récurrence améliorée */}
-          <div className="space-y-4">
-            {/* Section récurrence avec description explicative */}
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                name="recurring"
-                id="recurring"
-                checked={formData.recurring}
-                onChange={handleCheckboxChange}
-                className="w-5 h-5 text-primary border-input rounded focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              />
-              <label
-                htmlFor="recurring"
-                className="ml-3 text-sm font-medium text-foreground"
-              >
-                Tâche récurrente
-              </label>
-            </div>
+            {/* Recurring task section */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="recurring"
+                  name="recurring"
+                  checked={formData.recurring}
+                  onChange={handleCheckboxChange}
+                  className="w-4 h-4 text-primary bg-background border-gray-300 rounded focus:ring-2 focus:ring-ring"
+                />
+                <label
+                  htmlFor="recurring"
+                  className="text-sm font-medium text-foreground"
+                >
+                  Tâche récurrente
+                </label>
+              </div>
 
-            {formData.recurring && (
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                <p className="text-xs text-blue-700 mb-4">
-                  Les tâches récurrentes sont automatiquement recréées selon la
-                  périodicité définie, jusqu&apos;à la date de fin optionnelle.
-                </p>
-
-                <div className="space-y-4">
+              {formData.recurring && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-6">
                   <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Périodicité
-                      <span className="ml-1 text-xs text-blue-600 font-normal">
-                        À quelle fréquence cette tâche doit-elle se répéter ?
-                      </span>
+                    <label
+                      htmlFor="period"
+                      className="block text-sm font-medium mb-2 text-foreground"
+                    >
+                      Période de récurrence
                     </label>
                     <select
+                      id="period"
                       name="period"
                       value={formData.period || "weekly"}
                       onChange={handleChange}
-                      className="w-full px-3 py-2.5 rounded-lg border border-input focus:ring-2 focus:ring-ring bg-background text-foreground"
+                      className="w-full px-4 py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
                     >
                       <option value="daily">Quotidienne</option>
                       <option value="weekly">Hebdomadaire</option>
@@ -540,182 +554,582 @@ export default function TaskFormWithDocuments({
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Date de fin
-                      <span className="ml-1 text-xs text-blue-600 font-normal">
-                        (Optionnelle) Quand arrêter de recréer cette tâche ?
-                      </span>
+                    <label
+                      htmlFor="endDate"
+                      className="block text-sm font-medium mb-2 text-foreground"
+                    >
+                      Date de fin (optionnelle)
                     </label>
                     <input
                       type="date"
+                      id="endDate"
                       name="endDate"
                       value={
                         formData.endDate
-                          ? new Date(formData.endDate as unknown as string)
+                          ? new Date(formData.endDate)
                               .toISOString()
                               .split("T")[0]
                           : ""
                       }
                       onChange={handleChange}
-                      className="w-full px-3 py-2.5 rounded-lg border border-input focus:ring-2 focus:ring-ring bg-background text-foreground"
+                      className="w-full px-4 py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
                     />
                   </div>
 
-                  {/* Section notifications pour les tâches trimestrielles et annuelles */}
                   {(formData.period === "quarterly" ||
                     formData.period === "yearly") && (
-                    <div className="border-t border-blue-200 pt-4 mt-4">
-                      <div className="flex items-start">
-                        <input
-                          type="checkbox"
-                          id="enableAdvanceNotification"
-                          checked={!!formData.recurrenceReminderDate}
-                          onChange={(e) => {
-                            setFormData({
-                              ...formData,
-                              recurrenceReminderDate:
-                                e.target.checked && formData.realizationDate
-                                  ? new Date(
-                                      new Date(
-                                        formData.realizationDate as unknown as string
-                                      ).getTime() -
-                                        10 * 24 * 60 * 60 * 1000
-                                    )
-                                  : null,
-                            });
-                          }}
-                          className="w-4 h-4 mt-1 text-primary border-input rounded focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                        />
-                        <div className="ml-2">
+                    <div className="col-span-full">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p className="text-sm text-blue-800 mb-3">
+                          <strong>Rappel automatique :</strong> Pour les tâches{" "}
+                          {formData.period === "quarterly"
+                            ? "trimestrielles"
+                            : "annuelles"}{" "}
+                          avec une date de réalisation, un rappel sera créé
+                          automatiquement 10 jours avant l&apos;échéance.
+                        </p>
+                        <div>
                           <label
-                            htmlFor="enableAdvanceNotification"
-                            className="text-sm font-medium"
+                            htmlFor="recurrenceReminderDate"
+                            className="block text-sm font-medium mb-2 text-blue-800"
                           >
-                            Notification anticipée
+                            Date de rappel personnalisée (optionnelle)
                           </label>
-                          <p className="text-xs text-blue-700">
-                            Recevoir une notification 10 jours avant
-                            l&apos;échéance (Recommandé pour les tâches peu
-                            fréquentes)
+                          <input
+                            type="date"
+                            id="recurrenceReminderDate"
+                            name="recurrenceReminderDate"
+                            value={
+                              formData.recurrenceReminderDate
+                                ? new Date(formData.recurrenceReminderDate)
+                                    .toISOString()
+                                    .split("T")[0]
+                                : ""
+                            }
+                            onChange={handleChange}
+                            className="w-full px-4 py-2.5 text-sm rounded-lg border border-blue-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-blue-900"
+                          />
+                          <p className="text-xs text-blue-600 mt-1">
+                            Laissez vide pour utiliser le rappel automatique (10
+                            jours avant)
                           </p>
                         </div>
                       </div>
                     </div>
                   )}
                 </div>
-              </div>
-            )}
-          </div>
-
-          {/* Section pour l'upload de documents */}
-          <div>
-            <label className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2 text-foreground">
-              Documents
-            </label>
-            <div
-              className={`border-2 border-dashed rounded-lg p-3 sm:p-4 text-center transition-colors ${
-                isDragging ? "border-primary bg-primary/5" : "border-border"
-              }`}
-              onDragEnter={handleDragEnter}
-              onDragLeave={handleDragLeave}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                onChange={handleFileChange}
-                className="hidden"
-                accept=".pdf,image/*"
-              />
-
-              <div className="flex flex-col items-center justify-center py-2 sm:py-4">
-                <Paperclip className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground mb-2" />
-                <p className="text-xs sm:text-sm text-muted-foreground mb-2">
-                  Glissez-déposez des fichiers ici, ou
-                </p>
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors"
-                >
-                  Sélectionnez des fichiers
-                </button>
-                <p className="text-[10px] sm:text-xs text-muted-foreground mt-2">
-                  PDF, JPG, PNG, GIF (max. 10MB)
-                </p>
-              </div>
+              )}
             </div>
 
-            {/* Liste des fichiers à uploader */}
-            {documents.length > 0 && (
-              <div className="mt-3 sm:mt-4 space-y-2">
-                <h4 className="text-xs sm:text-sm font-medium">
-                  Fichiers à télécharger:
-                </h4>
-                <div className="max-h-32 sm:max-h-40 overflow-y-auto pr-2">
-                  {documents.map((file, index) => (
-                    <div
-                      key={`${file.name}-${index}`}
-                      className="flex items-center justify-between p-2 bg-background border border-border rounded mb-2"
-                    >
-                      <div className="flex items-center gap-2 truncate">
-                        {file.type.startsWith("image/") ? (
-                          <ImageIcon
-                            size={14}
-                            className="text-primary sm:w-4 sm:h-4"
-                          />
-                        ) : (
-                          <FileText
-                            size={14}
-                            className="text-destructive sm:w-4 sm:h-4"
-                          />
-                        )}
-                        <span className="text-xs sm:text-sm truncate max-w-[180px] sm:max-w-[250px]">
-                          {file.name}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeDocument(index)}
-                        className="text-destructive hover:text-destructive/80"
-                      >
-                        <X size={14} className="sm:w-4 sm:h-4" />
-                      </button>
-                    </div>
-                  ))}
+            {/* Documents section */}
+            <div>
+              <label className="block text-sm font-medium mb-2 text-foreground">
+                Documents
+              </label>
+              <div
+                className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+                  isDragging ? "border-primary bg-primary/5" : "border-border"
+                }`}
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  onChange={handleFileChange}
+                  className="hidden"
+                  accept=".pdf,image/*"
+                />
+
+                <div className="flex flex-col items-center justify-center py-4">
+                  <Paperclip className="h-10 w-10 text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Glissez-déposez des fichiers ici, ou
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-4 py-2 text-sm text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors"
+                  >
+                    Sélectionnez des fichiers
+                  </button>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    PDF, JPG, PNG, GIF (max. 10MB)
+                  </p>
                 </div>
               </div>
-            )}
+
+              {documents.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <h4 className="text-sm font-medium">
+                    Fichiers à télécharger:
+                  </h4>
+                  <div className="max-h-40 overflow-y-auto pr-2">
+                    {documents.map((file, index) => (
+                      <div
+                        key={`${file.name}-${index}`}
+                        className="flex items-center justify-between p-2 bg-background border border-border rounded mb-2"
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          {file.type.startsWith("image/") ? (
+                            <ImageIcon size={16} className="text-primary" />
+                          ) : (
+                            <FileText size={16} className="text-destructive" />
+                          )}
+                          <span className="text-sm truncate max-w-[250px]">
+                            {file.name}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeDocument(index)}
+                          className="text-destructive hover:text-destructive/80"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-border">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="px-4 py-2.5 border border-input rounded-lg text-sm font-medium hover:bg-accent transition-colors text-foreground"
+                disabled={isLoading}
+              >
+                Annuler
+              </button>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="px-4 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                {isLoading
+                  ? task?.id
+                    ? "Mise à jour..."
+                    : "Création..."
+                  : task?.id
+                    ? "Mettre à jour"
+                    : "Créer la tâche"}
+              </button>
+            </div>
           </div>
+        </form>
+      </motion.div>
 
-          <div className="flex justify-end gap-2 sm:gap-3 pt-4 border-t border-border">
+      {/* Mobile version - full screen modal */}
+      <div className="md:hidden fixed inset-0 bg-black/50 z-[9998]" />
+      <motion.div
+        className="md:hidden fixed inset-0 bg-background z-[9999] flex flex-col"
+        initial={{ opacity: 0, y: "100%" }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: "100%" }}
+        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+        style={{ zIndex: 9999 }}
+      >
+        {/* Fixed header */}
+        <div className="flex-shrink-0 bg-background border-b border-border px-4 py-3 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X size={20} />
+              </button>
+              <h2 className="text-lg font-semibold text-foreground">
+                {task?.id ? "Modifier" : "Nouvelle tâche"}
+              </h2>
+            </div>
             <button
-              type="button"
-              onClick={onCancel}
-              className="px-3 py-2 sm:px-4 sm:py-2.5 border border-input rounded-lg text-xs sm:text-sm font-medium hover:bg-accent transition-colors text-foreground"
-              disabled={isLoading}
-            >
-              Annuler
-            </button>
-
-            <button
+              form="mobile-task-form"
               type="submit"
               disabled={isLoading}
-              className="px-3 py-2 sm:px-4 sm:py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-xs sm:text-sm font-medium transition-colors disabled:opacity-50"
+              className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
             >
               {isLoading
                 ? task?.id
                   ? "Mise à jour..."
                   : "Création..."
                 : task?.id
-                  ? "Mettre à jour"
-                  : "Créer la tâche"}
+                  ? "Sauvegarder"
+                  : "Créer"}
             </button>
           </div>
         </div>
-      </form>
-    </motion.div>
+
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto">
+          <form
+            id="mobile-task-form"
+            onSubmit={handleSubmit}
+            className="p-4 pb-24"
+          >
+            {formError && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="mb-4 flex items-center gap-2 p-3 bg-destructive/15 border border-destructive/20 rounded-lg text-destructive text-sm"
+              >
+                <AlertCircle size={16} />
+                <span>{formError}</span>
+              </motion.div>
+            )}
+
+            <div className="space-y-6">
+              {/* Nom de la tâche */}
+              <div>
+                <label
+                  htmlFor="mobile-name"
+                  className="block text-sm font-medium mb-2 text-foreground"
+                >
+                  Nom de la tâche *
+                </label>
+                <input
+                  type="text"
+                  id="mobile-name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Saisir le nom de la tâche"
+                  className="w-full px-4 py-3 text-base rounded-xl border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground transition-all"
+                  required
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label
+                  htmlFor="mobile-description"
+                  className="block text-sm font-medium mb-2 text-foreground"
+                >
+                  Description
+                </label>
+                <textarea
+                  id="mobile-description"
+                  name="description"
+                  value={formData.description || ""}
+                  onChange={handleChange}
+                  placeholder="Description détaillée (optionnelle)"
+                  className="w-full px-4 py-3 text-base rounded-xl border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground transition-all resize-none"
+                  rows={3}
+                />
+              </div>
+
+              {/* Statut et Type en grille */}
+              <div className="grid grid-cols-1 gap-6">
+                <div>
+                  <label
+                    htmlFor="mobile-status"
+                    className="block text-sm font-medium mb-2 text-foreground"
+                  >
+                    Statut
+                  </label>
+                  <select
+                    id="mobile-status"
+                    name="status"
+                    value={formData.status}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 text-base rounded-xl border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
+                  >
+                    <option value="pending">À faire</option>
+                    <option value="in_progress">En cours</option>
+                    <option value="completed">Terminée</option>
+                    <option value="cancelled">Annulée</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="mobile-taskType"
+                    className="block text-sm font-medium mb-2 text-foreground"
+                  >
+                    Type de tâche
+                  </label>
+                  <TaskTypeSelect
+                    value={formData.taskType}
+                    onChange={(value) =>
+                      setFormData((prev) => ({ ...prev, taskType: value }))
+                    }
+                    className="mobile-select"
+                  />
+                </div>
+              </div>
+
+              {/* Date de réalisation */}
+              <div>
+                <label
+                  htmlFor="mobile-realizationDate"
+                  className="block text-sm font-medium mb-2 text-foreground"
+                >
+                  Date de réalisation prévue
+                </label>
+                <div className="relative">
+                  <input
+                    type="date"
+                    id="mobile-realizationDate"
+                    name="realizationDate"
+                    value={
+                      formData.realizationDate
+                        ? new Date(formData.realizationDate)
+                            .toISOString()
+                            .split("T")[0]
+                        : ""
+                    }
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 pr-12 text-base rounded-xl border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
+                  />
+                  <Calendar className="absolute right-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Assignation */}
+              <div>
+                <label
+                  htmlFor="mobile-assignedToId"
+                  className="block text-sm font-medium mb-2 text-foreground"
+                >
+                  Attribuer à
+                </label>
+                <select
+                  id="mobile-assignedToId"
+                  name="assignedToId"
+                  value={formData.assignedToId || ""}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 text-base rounded-xl border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
+                >
+                  <option value="">Non assignée</option>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Tâche récurrente */}
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3 p-4 bg-muted/30 rounded-xl">
+                  <input
+                    type="checkbox"
+                    id="mobile-recurring"
+                    name="recurring"
+                    checked={formData.recurring}
+                    onChange={handleCheckboxChange}
+                    className="w-5 h-5 text-primary bg-background border-gray-300 rounded focus:ring-2 focus:ring-ring"
+                  />
+                  <label
+                    htmlFor="mobile-recurring"
+                    className="text-base font-medium text-foreground"
+                  >
+                    Tâche récurrente
+                  </label>
+                </div>
+
+                {formData.recurring && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="space-y-4 ml-2"
+                  >
+                    <div>
+                      <label
+                        htmlFor="mobile-period"
+                        className="block text-sm font-medium mb-2 text-foreground"
+                      >
+                        Période de récurrence
+                      </label>
+                      <select
+                        id="mobile-period"
+                        name="period"
+                        value={formData.period || "weekly"}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 text-base rounded-xl border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
+                      >
+                        <option value="daily">Quotidienne</option>
+                        <option value="weekly">Hebdomadaire</option>
+                        <option value="monthly">Mensuelle</option>
+                        <option value="quarterly">Trimestrielle</option>
+                        <option value="yearly">Annuelle</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="mobile-endDate"
+                        className="block text-sm font-medium mb-2 text-foreground"
+                      >
+                        Date de fin (optionnelle)
+                      </label>
+                      <input
+                        type="date"
+                        id="mobile-endDate"
+                        name="endDate"
+                        value={
+                          formData.endDate
+                            ? new Date(formData.endDate)
+                                .toISOString()
+                                .split("T")[0]
+                            : ""
+                        }
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 text-base rounded-xl border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
+                      />
+                    </div>
+
+                    {(formData.period === "quarterly" ||
+                      formData.period === "yearly") && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                        <p className="text-sm text-blue-800 mb-3">
+                          <strong>Rappel automatique :</strong> Pour les tâches{" "}
+                          {formData.period === "quarterly"
+                            ? "trimestrielles"
+                            : "annuelles"}{" "}
+                          avec une date de réalisation, un rappel sera créé
+                          automatiquement 10 jours avant l&apos;échéance.
+                        </p>
+                        <div>
+                          <label
+                            htmlFor="mobile-recurrenceReminderDate"
+                            className="block text-sm font-medium mb-2 text-blue-800"
+                          >
+                            Date de rappel personnalisée (optionnelle)
+                          </label>
+                          <input
+                            type="date"
+                            id="mobile-recurrenceReminderDate"
+                            name="recurrenceReminderDate"
+                            value={
+                              formData.recurrenceReminderDate
+                                ? new Date(formData.recurrenceReminderDate)
+                                    .toISOString()
+                                    .split("T")[0]
+                                : ""
+                            }
+                            onChange={handleChange}
+                            className="w-full px-4 py-3 text-base rounded-xl border border-blue-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-blue-900"
+                          />
+                          <p className="text-xs text-blue-600 mt-2">
+                            Laissez vide pour utiliser le rappel automatique (10
+                            jours avant)
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </div>
+
+              {/* Documents section - optimisée mobile */}
+              <div>
+                <label className="block text-sm font-medium mb-3 text-foreground">
+                  Documents
+                </label>
+                <div
+                  className={`border-2 border-dashed rounded-xl p-6 text-center transition-all ${
+                    isDragging
+                      ? "border-primary bg-primary/5 scale-[1.02]"
+                      : "border-border"
+                  }`}
+                  onDragEnter={handleDragEnter}
+                  onDragLeave={handleDragLeave}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept=".pdf,image/*"
+                  />
+
+                  <div className="flex flex-col items-center justify-center py-4">
+                    <Paperclip className="h-12 w-12 text-muted-foreground mb-3" />
+                    <p className="text-base text-muted-foreground mb-3">
+                      Glissez-déposez des fichiers ici, ou
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-6 py-3 text-base text-primary bg-primary/10 rounded-xl hover:bg-primary/20 transition-colors font-medium"
+                    >
+                      Sélectionnez des fichiers
+                    </button>
+                    <p className="text-sm text-muted-foreground mt-3">
+                      PDF, JPG, PNG, GIF (max. 10MB)
+                    </p>
+                  </div>
+                </div>
+
+                {/* Liste des fichiers optimisée mobile */}
+                {documents.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="mt-4 space-y-2"
+                  >
+                    <h4 className="text-sm font-medium">
+                      Fichiers à télécharger :
+                    </h4>
+                    <div className="space-y-2">
+                      {documents.map((file, index) => (
+                        <motion.div
+                          key={`${file.name}-${index}`}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                          className="flex items-center justify-between p-3 bg-background border border-border rounded-xl"
+                        >
+                          <div className="flex items-center gap-3 truncate flex-1">
+                            {file.type.startsWith("image/") ? (
+                              <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                                <ImageIcon size={16} className="text-primary" />
+                              </div>
+                            ) : (
+                              <div className="w-8 h-8 bg-destructive/10 rounded-lg flex items-center justify-center">
+                                <FileText
+                                  size={16}
+                                  className="text-destructive"
+                                />
+                              </div>
+                            )}
+                            <div className="truncate flex-1">
+                              <p className="text-sm font-medium truncate">
+                                {file.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {(file.size / (1024 * 1024)).toFixed(2)} MB
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeDocument(index)}
+                            className="p-2 text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-lg transition-colors"
+                          >
+                            <X size={18} />
+                          </button>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            </div>
+          </form>
+        </div>
+      </motion.div>
+    </>
   );
 }

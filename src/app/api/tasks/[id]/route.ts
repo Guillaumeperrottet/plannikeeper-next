@@ -29,6 +29,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         },
       },
       assignedTo: true,
+      documents: true, // Inclure les documents
     },
   });
   if (!task) {
