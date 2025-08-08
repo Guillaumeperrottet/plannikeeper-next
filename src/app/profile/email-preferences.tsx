@@ -64,8 +64,8 @@ export function EmailPreferences({ initialEnabled }: EmailPreferencesProps) {
             </p>
             <p className="text-sm text-[color:var(--muted-foreground)]">
               {enabled
-                ? "Vous recevez des récapitulatifs quotidiens par email"
-                : "Vous ne recevez pas de récapitulatifs par email"}
+                ? "Emails quand on vous assigne des tâches"
+                : "Pas d'alertes pour vos nouvelles tâches"}
             </p>
           </div>
         </div>
@@ -86,17 +86,25 @@ export function EmailPreferences({ initialEnabled }: EmailPreferencesProps) {
 
       <div className="mt-4 p-4 rounded-lg bg-[color:var(--muted)] text-sm">
         <h3 className="font-medium mb-2 text-[color:var(--foreground)]">
-          À propos des emails
+          📋 Ce que vous recevez
         </h3>
         <p className="text-[color:var(--muted-foreground)] mb-2">
-          Si activé, vous recevrez chaque matin un récapitulatif des tâches qui
-          vous ont été assignées la veille.
+          <strong>Uniquement vos nouvelles tâches :</strong> Un email vous
+          alerte quand on vous assigne des tâches.
         </p>
         <ul className="space-y-2 list-disc pl-5 text-[color:var(--muted-foreground)]">
-          <li>Les emails sont envoyés une fois par jour (vers 6h)</li>
-          <li>Les récapitulatifs incluent les détails des tâches</li>
-          <li>Le format est optimisé pour l&apos;impression</li>
+          <li>📧 Envoyé vers 6h du matin</li>
+          <li>🎯 Seulement les tâches qui VOUS sont assignées</li>
+          <li>📝 Nom, description et localisation de chaque tâche</li>
+          <li>🚫 Aucun email si personne ne vous assigne de tâche</li>
         </ul>
+
+        <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-950/30 rounded border-l-4 border-blue-400">
+          <p className="text-xs text-blue-700 dark:text-blue-300">
+            💡 <strong>Parfait si :</strong> Vous voulez juste savoir quand on
+            vous donne du travail à faire
+          </p>
+        </div>
       </div>
     </div>
   );

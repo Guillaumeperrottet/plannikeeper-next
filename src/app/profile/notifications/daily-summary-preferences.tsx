@@ -66,8 +66,8 @@ export function DailySummaryPreferences({
             </p>
             <p className="text-sm text-[color:var(--muted-foreground)]">
               {enabled
-                ? "Vous recevez un récapitulatif quotidien de l'activité"
-                : "Vous ne recevez pas de récapitulatif quotidien"}
+                ? "Bulletin quotidien de l&apos;activité de toute l&apos;équipe"
+                : "Pas de rapport quotidien d&apos;activité"}
             </p>
           </div>
         </div>
@@ -88,23 +88,29 @@ export function DailySummaryPreferences({
 
       <div className="mt-4 p-4 rounded-lg bg-[color:var(--muted)] text-sm">
         <h3 className="font-medium mb-2 text-[color:var(--foreground)]">
-          À propos du récapitulatif quotidien
+          📊 Ce que vous recevez
         </h3>
         <p className="text-[color:var(--muted-foreground)] mb-2">
-          Si activé, vous recevrez chaque matin (vers 7h) un email récapitulant
-          :
+          <strong>Bulletin d&apos;activité global :</strong> Un rapport
+          quotidien de tout ce qui s&apos;est passé dans votre organisation.
         </p>
         <ul className="space-y-2 list-disc pl-5 text-[color:var(--muted-foreground)]">
-          <li>Les tâches ajoutées la veille, organisées par objet</li>
-          <li>Les tâches terminées la veille, organisées par objet</li>
-          <li>Un résumé avec le nombre total d&apos;activités</li>
-          <li>
-            Les détails pour chaque objet (secteur, article, assigné à...)
-          </li>
+          <li>📧 Envoyé vers 7h du matin</li>
+          <li>📈 Toutes les tâches créées par tout le monde</li>
+          <li>✅ Toutes les tâches terminées par l&apos;équipe</li>
+          <li>📋 Un rappel de vos tâches en cours à vous</li>
+          <li>🏢 Organisé par objet et secteur pour une vue claire</li>
+          <li>📬 Envoyé même s&apos;il n&apos;y a eu aucune activité</li>
         </ul>
-        <p className="text-[color:var(--muted-foreground)] mt-2 font-medium">
-          📧 Même sans activité, vous recevrez un email pour vous tenir informé.
-        </p>
+
+        <div className="mt-3 space-y-2">
+          <div className="p-2 bg-green-50 dark:bg-green-950/30 rounded border-l-4 border-green-400">
+            <p className="text-xs text-green-700 dark:text-green-300">
+              💡 <strong>Parfait si :</strong> Vous supervisez une équipe et
+              voulez suivre l&apos;avancement général
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
