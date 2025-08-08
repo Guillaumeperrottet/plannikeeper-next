@@ -66,8 +66,8 @@ export function DailySummaryPreferences({
             </p>
             <p className="text-sm text-[color:var(--muted-foreground)]">
               {enabled
-                ? "Bulletin quotidien de l&apos;activité de toute l&apos;équipe"
-                : "Pas de rapport quotidien d&apos;activité"}
+                ? "Bulletin quotidien de l'activité de toute l'équipe"
+                : "Pas de rapport quotidien d'activité"}
             </p>
           </div>
         </div>
