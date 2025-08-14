@@ -81,6 +81,18 @@ export default function TaskFormMobileOptimized({
 
   const defaultColor = "#d9840d";
 
+  // Auto-assign if only one user available
+  const getInitialAssignedTo = () => {
+    if (task?.assignedToId) {
+      return task.assignedToId;
+    }
+    // If creating a new task and only one user, auto-assign
+    if (!task && users.length === 1) {
+      return users[0].id;
+    }
+    return "";
+  };
+
   const [formData, setFormData] = useState<
     Omit<Task, "id" | "assignedTo" | "createdAt" | "updatedAt">
   >({
@@ -96,7 +108,7 @@ export default function TaskFormMobileOptimized({
     period: task?.period || "weekly",
     endDate: task?.endDate || null,
     recurrenceReminderDate: task?.recurrenceReminderDate || null,
-    assignedToId: task?.assignedToId || "",
+    assignedToId: getInitialAssignedTo(),
   });
 
   const handleChange = (
@@ -194,6 +206,11 @@ export default function TaskFormMobileOptimized({
 
     if (!formData.name.trim()) {
       setFormError("Le nom de la tâche est requis");
+      return;
+    }
+
+    if (!formData.assignedToId) {
+      setFormError("L'assignation à un utilisateur est obligatoire");
       return;
     }
 
@@ -485,15 +502,16 @@ export default function TaskFormMobileOptimized({
 
             <div>
               <label className="block text-sm font-medium mb-1">
-                Assigné à
+                Assigné à *
               </label>
               <select
                 name="assignedToId"
                 value={formData.assignedToId || ""}
                 onChange={handleChange}
                 className="w-full px-3 py-2.5 rounded-lg border border-[color:var(--border)] focus:ring-2 focus:ring-[color:var(--ring)]"
+                required
               >
-                <option value="">Non assignée</option>
+                <option value="">Sélectionner un utilisateur</option>
                 {users.map((user) => (
                   <option key={user.id} value={user.id}>
                     {user.name}

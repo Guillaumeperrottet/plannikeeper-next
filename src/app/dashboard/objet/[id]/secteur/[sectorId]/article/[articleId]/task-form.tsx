@@ -225,6 +225,18 @@ export default function TaskForm({
     };
   }, []);
 
+  // Auto-assign if only one user available
+  const getInitialAssignedTo = () => {
+    if (task?.assignedToId) {
+      return task.assignedToId;
+    }
+    // If creating a new task and only one user, auto-assign
+    if (!task && users.length === 1) {
+      return users[0].id;
+    }
+    return "";
+  };
+
   const [formData, setFormData] = useState({
     name: task?.name || "",
     description: task?.description || "",
@@ -235,7 +247,7 @@ export default function TaskForm({
     period: task?.period || "weekly",
     endDate: task?.endDate || null,
     recurrenceReminderDate: task?.recurrenceReminderDate || null,
-    assignedToId: task?.assignedToId || "",
+    assignedToId: getInitialAssignedTo(),
     realizationDate: task?.realizationDate || null,
   });
 
@@ -338,6 +350,11 @@ export default function TaskForm({
 
     if (!formData.name.trim()) {
       setFormError("Le nom de la tâche est requis");
+      return;
+    }
+
+    if (!formData.assignedToId) {
+      setFormError("L'assignation à un utilisateur est obligatoire");
       return;
     }
 
@@ -510,7 +527,7 @@ export default function TaskForm({
                   htmlFor="assignedToId"
                   className="block text-sm font-medium mb-2 text-foreground"
                 >
-                  Attribuer à
+                  Attribuer à *
                 </label>
                 <select
                   id="assignedToId"
@@ -518,8 +535,9 @@ export default function TaskForm({
                   value={formData.assignedToId || ""}
                   onChange={handleChange}
                   className="w-full px-4 py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
+                  required
                 >
-                  <option value="">Non assignée</option>
+                  <option value="">Sélectionner un utilisateur</option>
                   {users.map((user) => (
                     <option key={user.id} value={user.id}>
                       {user.name}
@@ -917,7 +935,7 @@ export default function TaskForm({
                   htmlFor="mobile-assignedToId"
                   className="block text-sm font-medium mb-2 text-foreground"
                 >
-                  Attribuer à
+                  Attribuer à *
                 </label>
                 <select
                   id="mobile-assignedToId"
@@ -925,8 +943,9 @@ export default function TaskForm({
                   value={formData.assignedToId || ""}
                   onChange={handleChange}
                   className="w-full px-4 py-3 text-base rounded-xl border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
+                  required
                 >
-                  <option value="">Non assignée</option>
+                  <option value="">Sélectionner un utilisateur</option>
                   {users.map((user) => (
                     <option key={user.id} value={user.id}>
                       {user.name}
