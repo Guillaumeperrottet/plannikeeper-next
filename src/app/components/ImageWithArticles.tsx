@@ -1684,7 +1684,7 @@ export default function ImageWithArticles({
                               // Activer le mode redimensionnement intégré
                               setResizeMode(true);
                               setOpenPopoverId(null);
-                              // Toast de test pour vérifier que le système fonctionne
+                              // Toast de test pour verifier que le système fonctionne
                               toast.success("Mode redimensionnement activé !", {
                                 description:
                                   "Vous pouvez maintenant redimensionner les articles avec les poignées aux coins.",
