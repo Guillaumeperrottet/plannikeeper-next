@@ -36,7 +36,7 @@ export async function POST() {
       type: "PWA_INSTALL_PROMPT" as NotificationType,
       title: "📱 Installation de l'application",
       message:
-        "Ajoutez PlanniKeeper à votre écran d'accueil pour un accès instantané et une meilleure expérience. Cliquez ici pour voir comment faire.",
+        "Ajoutez Plannikeeper à votre écran d'accueil pour un accès instantané et une meilleure expérience. Cliquez ici pour voir comment faire.",
       link: "/install-pwa",
       data: {
         category: "pwa_installation",
