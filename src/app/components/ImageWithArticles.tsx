@@ -750,20 +750,20 @@ export default function ImageWithArticles({
 
       switch (resizeHandle) {
         case "se": // Sud-Est (coin bas-droite)
-          newRight = Math.max(currentLeft + 50, currentRight + deltaX);
-          newBottom = Math.max(currentTop + 30, currentBottom + deltaY);
+          newRight = Math.max(currentLeft + 5, currentRight + deltaX); // Minimum 5 pixels de largeur
+          newBottom = Math.max(currentTop + 5, currentBottom + deltaY); // Minimum 5 pixels de hauteur
           break;
         case "sw": // Sud-Ouest (coin bas-gauche)
-          newLeft = Math.min(currentRight - 50, currentLeft + deltaX);
-          newBottom = Math.max(currentTop + 30, currentBottom + deltaY);
+          newLeft = Math.min(currentRight - 5, currentLeft + deltaX); // Minimum 5 pixels de largeur
+          newBottom = Math.max(currentTop + 5, currentBottom + deltaY); // Minimum 5 pixels de hauteur
           break;
         case "ne": // Nord-Est (coin haut-droite)
-          newRight = Math.max(currentLeft + 50, currentRight + deltaX);
-          newTop = Math.min(currentBottom - 30, currentTop + deltaY);
+          newRight = Math.max(currentLeft + 5, currentRight + deltaX); // Minimum 5 pixels de largeur
+          newTop = Math.min(currentBottom - 5, currentTop + deltaY); // Minimum 5 pixels de hauteur
           break;
         case "nw": // Nord-Ouest (coin haut-gauche)
-          newLeft = Math.min(currentRight - 50, currentLeft + deltaX);
-          newTop = Math.min(currentBottom - 30, currentTop + deltaY);
+          newLeft = Math.min(currentRight - 5, currentLeft + deltaX); // Minimum 5 pixels de largeur
+          newTop = Math.min(currentBottom - 5, currentTop + deltaY); // Minimum 5 pixels de hauteur
           break;
       }
 
@@ -825,9 +825,9 @@ export default function ImageWithArticles({
     const newPositionYPercent =
       ((tempResizeSize.y - offsetY) / imageSize.displayHeight) * 100;
 
-    // Limiter les valeurs
-    const constrainedWidth = Math.max(5, Math.min(50, newWidthPercent));
-    const constrainedHeight = Math.max(3, Math.min(30, newHeightPercent));
+    // Limiter les valeurs - Tailles minimales et maximales plus flexibles
+    const constrainedWidth = Math.max(1, Math.min(80, newWidthPercent)); // Min 1%, Max 80%
+    const constrainedHeight = Math.max(1, Math.min(60, newHeightPercent)); // Min 1%, Max 60%
     const constrainedX = Math.max(5, Math.min(95, newPositionXPercent));
     const constrainedY = Math.max(5, Math.min(95, newPositionYPercent));
 
@@ -1191,8 +1191,8 @@ export default function ImageWithArticles({
           // Limiter les valeurs
           const constrainedX = Math.max(5, Math.min(95, positionXPercent));
           const constrainedY = Math.max(5, Math.min(95, positionYPercent));
-          const constrainedWidth = Math.max(5, Math.min(50, widthPercent));
-          const constrainedHeight = Math.max(3, Math.min(30, heightPercent));
+          const constrainedWidth = Math.max(1, Math.min(80, widthPercent)); // Min 1%, Max 80%
+          const constrainedHeight = Math.max(1, Math.min(60, heightPercent)); // Min 1%, Max 60%
 
           // Ouvrir le modal avec les dimensions calculées
           openCreateModal(

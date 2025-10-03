@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo, useCallback } from "react";
 import {
   Calendar,
   X,
@@ -254,17 +254,57 @@ export default function TaskFormMobileOptimized({
     const [open, setOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [customMode, setCustomMode] = useState(false);
+    const [customTaskTypes, setCustomTaskTypes] = useState<string[]>([]);
     const inputRef = useRef<HTMLInputElement>(null);
+
+    // Fonction pour charger les types de tâches
+    const loadCustomTaskTypes = useCallback(async () => {
+      try {
+        console.log("🔄 [Mobile] Chargement des types de tâches...");
+        const response = await fetch("/api/tasks/types");
+        if (response.ok) {
+          const data = await response.json();
+          console.log("✅ [Mobile] Types reçus:", data.types);
+          setCustomTaskTypes(data.types || []);
+        } else {
+          console.error("❌ [Mobile] Erreur API:", response.status, response.statusText);
+        }
+      } catch (error) {
+        console.error("❌ [Mobile] Erreur lors du chargement des types de tâches:", error);
+      }
+    }, []);
+
+    // Charger les types au montage
+    useEffect(() => {
+      loadCustomTaskTypes();
+    }, [loadCustomTaskTypes]);
+
+    // Recharger les types quand le dropdown s'ouvre
+    useEffect(() => {
+      if (open) {
+        loadCustomTaskTypes();
+      }
+    }, [open, loadCustomTaskTypes]);
+
+    // Combiner les types prédéfinis et personnalisés, en évitant les doublons
+    const allTaskTypes = useMemo(() => {
+      return [
+        ...PREDEFINED_TASK_TYPES,
+        ...customTaskTypes.filter(
+          (type) => !PREDEFINED_TASK_TYPES.includes(type)
+        ),
+      ];
+    }, [customTaskTypes]);
 
     // Détecter si la valeur actuelle est personnalisée
     useEffect(() => {
-      if (value && !PREDEFINED_TASK_TYPES.includes(value)) {
+      if (value && !allTaskTypes.includes(value)) {
         setCustomMode(true);
         setSearchTerm(value);
       } else {
         setSearchTerm("");
       }
-    }, [value]);
+    }, [value, allTaskTypes]);
 
     // Activer l'input en mode personnalisé
     useEffect(() => {
@@ -273,12 +313,12 @@ export default function TaskFormMobileOptimized({
       }
     }, [customMode, open]);
 
-    // Filtrer les types prédéfinis selon la recherche
+    // Filtrer les types selon la recherche
     const filteredTypes = searchTerm
-      ? PREDEFINED_TASK_TYPES.filter((type) =>
+      ? allTaskTypes.filter((type) =>
           type.toLowerCase().includes(searchTerm.toLowerCase())
         )
-      : PREDEFINED_TASK_TYPES;
+      : allTaskTypes;
 
     return (
       <div className={`relative ${className}`}>
@@ -446,7 +486,7 @@ export default function TaskFormMobileOptimized({
 
         {/* Essential Tab */}
         {activeTab === "essential" && (
-          <div className="p-3 space-y-4">
+          <div className="p-3 space-y-4 pb-20">
             <div>
               <label className="block text-sm font-medium mb-1">
                 Nom de la tâche *
@@ -524,7 +564,7 @@ export default function TaskFormMobileOptimized({
 
         {/* Details Tab */}
         {activeTab === "details" && (
-          <div className="p-3 space-y-4">
+          <div className="p-3 space-y-4 pb-20">
             <div>
               <label className="block text-sm font-medium mb-1">
                 Description
@@ -575,7 +615,7 @@ export default function TaskFormMobileOptimized({
 
         {/* Recurring Tab */}
         {activeTab === "recurring" && (
-          <div className="space-y-4">
+          <div className="p-3 space-y-4 pb-20">
             {/* Section récurrence avec description explicative */}
             <div className="flex items-center">
               <input
@@ -691,7 +731,7 @@ export default function TaskFormMobileOptimized({
 
         {/* Documents Tab */}
         {activeTab === "documents" && (
-          <div className="p-3 space-y-4">
+          <div className="p-3 space-y-4 pb-20">
             <div
               className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
                 isDragging
@@ -730,28 +770,40 @@ export default function TaskFormMobileOptimized({
               </div>
             </div>
 
-            {/* Liste des fichiers ajoutés */}
+            {/* Liste des fichiers ajoutés - version optimisée */}
             {documents.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium">Fichiers à télécharger:</h4>
-                <div className="space-y-2">
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium">
+                  Fichiers à télécharger ({documents.length})
+                </h4>
+                <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
                   {documents.map((file, index) => (
                     <div
                       key={`${file.name}-${index}`}
-                      className="flex items-center justify-between p-2 bg-[color:var(--muted)] rounded-lg"
+                      className="flex items-center gap-3 p-2 bg-[color:var(--muted)] rounded-lg"
                     >
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className="flex-shrink-0">
                         {file.type.startsWith("image/") ? (
-                          <ImageIcon size={16} className="text-blue-500" />
+                          <div className="relative">
+                            <ImageIcon size={20} className="text-blue-500" />
+                          </div>
                         ) : (
-                          <FileText size={16} className="text-red-500" />
+                          <FileText size={20} className="text-red-500" />
                         )}
-                        <span className="text-sm truncate">{file.name}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {file.name}
+                        </p>
+                        <p className="text-xs text-[color:var(--muted-foreground)]">
+                          {(file.size / (1024 * 1024)).toFixed(1)} MB •{" "}
+                          {file.type.split("/")[1].toUpperCase()}
+                        </p>
                       </div>
                       <button
                         type="button"
                         onClick={() => removeDocument(index)}
-                        className="ml-2 text-red-500 hover:text-red-700"
+                        className="flex-shrink-0 p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
                       >
                         <X size={16} />
                       </button>
@@ -763,6 +815,27 @@ export default function TaskFormMobileOptimized({
           </div>
         )}
       </form>
+
+      {/* Bouton flottant en bas pour mobile - visible seulement quand on scroll */}
+      <div className="sticky bottom-0 left-0 right-0 bg-[color:var(--background)] border-t border-[color:var(--border)] p-3 shadow-lg">
+        <button
+          type="submit"
+          form="task-form"
+          disabled={isLoading}
+          className="w-full py-3 bg-[color:var(--primary)] text-[color:var(--primary-foreground)] rounded-lg disabled:opacity-50 font-medium text-base shadow-md hover:shadow-lg transition-shadow"
+        >
+          {isLoading ? (
+            <div className="flex items-center justify-center gap-2">
+              <Loader2 size={20} className="animate-spin" />
+              <span>{task?.id ? "Modification..." : "Création..."}</span>
+            </div>
+          ) : task?.id ? (
+            "Modifier la tâche"
+          ) : (
+            "Créer la tâche"
+          )}
+        </button>
+      </div>
     </motion.div>
   );
 }

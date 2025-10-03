@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import TaskForm from "./task-form";
+import TaskFormMobileOptimized from "./TaskFormMobileOptimized";
 import ArchiveCompletedButton from "./ArchiveCompletedButton";
 import {
   Table,
@@ -93,6 +94,19 @@ export default function TasksPage({
   objetId: string;
   sectorId: string;
 }) {
+  // Hook pour détecter si on est sur mobile
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+
+    checkIsMobile();
+    window.addEventListener("resize", checkIsMobile);
+
+    return () => window.removeEventListener("resize", checkIsMobile);
+  }, []);
   const router = useRouter();
   const [tasks, setTasks] = useState<Task[]>(
     initialTasks.filter((task) => !task.archived)
@@ -602,15 +616,30 @@ export default function TasksPage({
         className="flex-1 overflow-hidden flex flex-col md:flex-row"
       >
         {showAddForm && (
-          <TaskForm
-            task={getSelectedTask()}
-            users={users}
-            onSave={handleTaskSave}
-            onCancel={() => {
-              setShowAddForm(false);
-              setSelectedTaskId(null);
-            }}
-          />
+          <>
+            {isMobile ? (
+              <TaskFormMobileOptimized
+                task={getSelectedTask()}
+                users={users}
+                articleId={articleId}
+                onSave={handleTaskSave}
+                onCancel={() => {
+                  setShowAddForm(false);
+                  setSelectedTaskId(null);
+                }}
+              />
+            ) : (
+              <TaskForm
+                task={getSelectedTask()}
+                users={users}
+                onSave={handleTaskSave}
+                onCancel={() => {
+                  setShowAddForm(false);
+                  setSelectedTaskId(null);
+                }}
+              />
+            )}
+          </>
         )}
 
         {!showAddForm && (

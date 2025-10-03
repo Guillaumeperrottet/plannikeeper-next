@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo, useCallback } from "react";
 import {
   Calendar,
   X,
@@ -64,17 +64,59 @@ function TaskTypeSelect({
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [customMode, setCustomMode] = useState(false);
+  const [customTaskTypes, setCustomTaskTypes] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Fonction pour charger les types de tâches
+  const loadCustomTaskTypes = useCallback(async () => {
+    try {
+      console.log("🔄 Chargement des types de tâches...");
+      const response = await fetch("/api/tasks/types");
+      if (response.ok) {
+        const data = await response.json();
+        console.log("✅ Types reçus:", data.types);
+        setCustomTaskTypes(data.types || []);
+      } else {
+        console.error("❌ Erreur API:", response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error("❌ Erreur lors du chargement des types de tâches:", error);
+    }
+  }, []);
+
+  // Charger les types au montage
+  useEffect(() => {
+    loadCustomTaskTypes();
+  }, [loadCustomTaskTypes]);
+
+  // Recharger les types quand le dropdown s'ouvre
+  useEffect(() => {
+    if (open) {
+      loadCustomTaskTypes();
+    }
+  }, [open, loadCustomTaskTypes]);
+
+  // Combiner les types prédéfinis et personnalisés, en évitant les doublons
+  const allTaskTypes = useMemo(() => {
+    const combined = [
+      ...PREDEFINED_TASK_TYPES,
+      ...customTaskTypes.filter(
+        (type) => !PREDEFINED_TASK_TYPES.includes(type)
+      ),
+    ];
+    console.log("📋 Types combinés:", combined);
+    return combined;
+  }, [customTaskTypes]);
 
   // Détecter si la valeur actuelle est personnalisée
   useEffect(() => {
-    if (value && !PREDEFINED_TASK_TYPES.includes(value)) {
+    if (value && !allTaskTypes.includes(value)) {
       setCustomMode(true);
       setSearchTerm(value);
     } else {
       setSearchTerm("");
     }
-  }, [value]);
+  }, [value, allTaskTypes]);
 
   // Activer l'input en mode personnalisé
   useEffect(() => {
@@ -83,12 +125,12 @@ function TaskTypeSelect({
     }
   }, [customMode, open]);
 
-  // Filtrer les types prédéfinis selon la recherche
+  // Filtrer les types selon la recherche
   const filteredTypes = searchTerm
-    ? PREDEFINED_TASK_TYPES.filter((type) =>
+    ? allTaskTypes.filter((type) =>
         type.toLowerCase().includes(searchTerm.toLowerCase())
       )
-    : PREDEFINED_TASK_TYPES;
+    : allTaskTypes;
 
   const selectClass = className.includes("mobile-select")
     ? "w-full px-4 py-3 text-base rounded-xl border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
@@ -392,13 +434,13 @@ export default function TaskForm({
     <>
       {/* Desktop version */}
       <motion.div
-        className="hidden md:block w-full max-w-3xl mx-auto bg-card rounded-lg overflow-hidden shadow-lg border border-border"
+        className="hidden md:flex w-full max-w-3xl mx-auto bg-card rounded-lg shadow-lg border border-border max-h-[80vh] flex-col"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20 }}
         transition={{ duration: 0.3 }}
       >
-        <div className="flex justify-between items-center bg-muted px-6 py-4 border-b border-border">
+        <div className="flex justify-between items-center bg-muted px-6 py-4 border-b border-border flex-shrink-0">
           <h2 className="text-xl font-semibold text-foreground">
             {task?.id ? "Modifier la tâche" : "Nouvelle tâche"}
           </h2>
@@ -411,327 +453,339 @@ export default function TaskForm({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6">
-          {formError && (
-            <div className="mb-4 flex items-center gap-2 p-3 bg-destructive/15 border border-destructive/20 rounded-lg text-destructive text-sm">
-              <AlertCircle size={16} />
-              <span>{formError}</span>
-            </div>
-          )}
-
-          <div className="space-y-6">
-            <div>
-              <label
-                htmlFor="name"
-                className="block text-sm font-medium mb-2 text-foreground"
-              >
-                Nom de la tâche *
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="Saisir le nom de la tâche"
-                className="w-full px-4 py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
-                required
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="description"
-                className="block text-sm font-medium mb-2 text-foreground"
-              >
-                Description
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description || ""}
-                onChange={handleChange}
-                placeholder="Description détaillée (optionnelle)"
-                className="w-full px-4 py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label
-                  htmlFor="status"
-                  className="block text-sm font-medium mb-2 text-foreground"
-                >
-                  Statut
-                </label>
-                <select
-                  id="status"
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
-                >
-                  <option value="pending">À faire</option>
-                  <option value="in_progress">En cours</option>
-                  <option value="completed">Terminée</option>
-                  <option value="cancelled">Annulée</option>
-                </select>
+        <div className="flex-1 overflow-y-auto">
+          <form onSubmit={handleSubmit} className="p-6 pb-24">
+            {formError && (
+              <div className="mb-4 flex items-center gap-2 p-3 bg-destructive/15 border border-destructive/20 rounded-lg text-destructive text-sm">
+                <AlertCircle size={16} />
+                <span>{formError}</span>
               </div>
+            )}
 
+            <div className="space-y-6">
               <div>
                 <label
-                  htmlFor="taskType"
+                  htmlFor="name"
                   className="block text-sm font-medium mb-2 text-foreground"
                 >
-                  Type de tâche
+                  Nom de la tâche *
                 </label>
-                <TaskTypeSelect
-                  value={formData.taskType}
-                  onChange={(value) =>
-                    setFormData((prev) => ({ ...prev, taskType: value }))
-                  }
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Saisir le nom de la tâche"
+                  className="w-full px-4 py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
+                  required
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label
-                  htmlFor="realizationDate"
+                  htmlFor="description"
                   className="block text-sm font-medium mb-2 text-foreground"
                 >
-                  Date de réalisation prévue
+                  Description
                 </label>
-                <div className="relative">
-                  <input
-                    type="date"
-                    id="realizationDate"
-                    name="realizationDate"
-                    value={
-                      formData.realizationDate
-                        ? new Date(formData.realizationDate)
-                            .toISOString()
-                            .split("T")[0]
-                        : ""
-                    }
+                <textarea
+                  id="description"
+                  name="description"
+                  value={formData.description || ""}
+                  onChange={handleChange}
+                  placeholder="Description détaillée (optionnelle)"
+                  className="w-full px-4 py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label
+                    htmlFor="status"
+                    className="block text-sm font-medium mb-2 text-foreground"
+                  >
+                    Statut
+                  </label>
+                  <select
+                    id="status"
+                    name="status"
+                    value={formData.status}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 pr-10 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
+                    className="w-full px-4 py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
+                  >
+                    <option value="pending">À faire</option>
+                    <option value="in_progress">En cours</option>
+                    <option value="completed">Terminée</option>
+                    <option value="cancelled">Annulée</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="taskType"
+                    className="block text-sm font-medium mb-2 text-foreground"
+                  >
+                    Type de tâche
+                  </label>
+                  <TaskTypeSelect
+                    value={formData.taskType}
+                    onChange={(value) =>
+                      setFormData((prev) => ({ ...prev, taskType: value }))
+                    }
                   />
-                  <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" />
                 </div>
               </div>
 
-              <div>
-                <label
-                  htmlFor="assignedToId"
-                  className="block text-sm font-medium mb-2 text-foreground"
-                >
-                  Attribuer à *
-                </label>
-                <select
-                  id="assignedToId"
-                  name="assignedToId"
-                  value={formData.assignedToId || ""}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
-                  required
-                >
-                  <option value="">Sélectionner un utilisateur</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Recurring task section */}
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="recurring"
-                  name="recurring"
-                  checked={formData.recurring}
-                  onChange={handleCheckboxChange}
-                  className="w-4 h-4 text-primary bg-background border-gray-300 rounded focus:ring-2 focus:ring-ring"
-                />
-                <label
-                  htmlFor="recurring"
-                  className="text-sm font-medium text-foreground"
-                >
-                  Tâche récurrente
-                </label>
-              </div>
-
-              {formData.recurring && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-6">
-                  <div>
-                    <label
-                      htmlFor="period"
-                      className="block text-sm font-medium mb-2 text-foreground"
-                    >
-                      Période de récurrence
-                    </label>
-                    <select
-                      id="period"
-                      name="period"
-                      value={formData.period || "weekly"}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
-                    >
-                      <option value="daily">Quotidienne</option>
-                      <option value="weekly">Hebdomadaire</option>
-                      <option value="monthly">Mensuelle</option>
-                      <option value="quarterly">Trimestrielle</option>
-                      <option value="yearly">Annuelle</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="endDate"
-                      className="block text-sm font-medium mb-2 text-foreground"
-                    >
-                      Date de fin (optionnelle)
-                    </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label
+                    htmlFor="realizationDate"
+                    className="block text-sm font-medium mb-2 text-foreground"
+                  >
+                    Date de réalisation prévue
+                  </label>
+                  <div className="relative">
                     <input
                       type="date"
-                      id="endDate"
-                      name="endDate"
+                      id="realizationDate"
+                      name="realizationDate"
                       value={
-                        formData.endDate
-                          ? new Date(formData.endDate)
+                        formData.realizationDate
+                          ? new Date(formData.realizationDate)
                               .toISOString()
                               .split("T")[0]
                           : ""
                       }
                       onChange={handleChange}
-                      className="w-full px-4 py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
+                      className="w-full px-4 py-2.5 pr-10 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
                     />
+                    <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" />
                   </div>
-
-                  {(formData.period === "quarterly" ||
-                    formData.period === "yearly") && (
-                    <div className="col-span-full">
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <p className="text-sm text-blue-800 mb-3">
-                          <strong>Rappel automatique :</strong> Pour les tâches{" "}
-                          {formData.period === "quarterly"
-                            ? "trimestrielles"
-                            : "annuelles"}{" "}
-                          avec une date de réalisation, un rappel sera créé
-                          automatiquement 10 jours avant l&apos;échéance.
-                        </p>
-                        <div>
-                          <label
-                            htmlFor="recurrenceReminderDate"
-                            className="block text-sm font-medium mb-2 text-blue-800"
-                          >
-                            Date de rappel personnalisée (optionnelle)
-                          </label>
-                          <input
-                            type="date"
-                            id="recurrenceReminderDate"
-                            name="recurrenceReminderDate"
-                            value={
-                              formData.recurrenceReminderDate
-                                ? new Date(formData.recurrenceReminderDate)
-                                    .toISOString()
-                                    .split("T")[0]
-                                : ""
-                            }
-                            onChange={handleChange}
-                            className="w-full px-4 py-2.5 text-sm rounded-lg border border-blue-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-blue-900"
-                          />
-                          <p className="text-xs text-blue-600 mt-1">
-                            Laissez vide pour utiliser le rappel automatique (10
-                            jours avant)
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Documents section */}
-            <div>
-              <label className="block text-sm font-medium mb-2 text-foreground">
-                Documents
-              </label>
-              <div
-                className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
-                  isDragging ? "border-primary bg-primary/5" : "border-border"
-                }`}
-                onDragEnter={handleDragEnter}
-                onDragLeave={handleDragLeave}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  onChange={handleFileChange}
-                  className="hidden"
-                  accept=".pdf,image/*"
-                />
-
-                <div className="flex flex-col items-center justify-center py-4">
-                  <Paperclip className="h-10 w-10 text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Glissez-déposez des fichiers ici, ou
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="px-4 py-2 text-sm text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors"
+                <div>
+                  <label
+                    htmlFor="assignedToId"
+                    className="block text-sm font-medium mb-2 text-foreground"
                   >
-                    Sélectionnez des fichiers
-                  </button>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    PDF, JPG, PNG, GIF (max. 10MB)
-                  </p>
+                    Attribuer à *
+                  </label>
+                  <select
+                    id="assignedToId"
+                    name="assignedToId"
+                    value={formData.assignedToId || ""}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
+                    required
+                  >
+                    <option value="">Sélectionner un utilisateur</option>
+                    {users.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
-              {documents.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  <h4 className="text-sm font-medium">
-                    Fichiers à télécharger:
-                  </h4>
-                  <div className="max-h-40 overflow-y-auto pr-2">
-                    {documents.map((file, index) => (
-                      <div
-                        key={`${file.name}-${index}`}
-                        className="flex items-center justify-between p-2 bg-background border border-border rounded mb-2"
+              {/* Recurring task section */}
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="recurring"
+                    name="recurring"
+                    checked={formData.recurring}
+                    onChange={handleCheckboxChange}
+                    className="w-4 h-4 text-primary bg-background border-gray-300 rounded focus:ring-2 focus:ring-ring"
+                  />
+                  <label
+                    htmlFor="recurring"
+                    className="text-sm font-medium text-foreground"
+                  >
+                    Tâche récurrente
+                  </label>
+                </div>
+
+                {formData.recurring && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ml-6">
+                    <div>
+                      <label
+                        htmlFor="period"
+                        className="block text-sm font-medium mb-2 text-foreground"
                       >
-                        <div className="flex items-center gap-2 truncate">
-                          {file.type.startsWith("image/") ? (
-                            <ImageIcon size={16} className="text-primary" />
-                          ) : (
-                            <FileText size={16} className="text-destructive" />
-                          )}
-                          <span className="text-sm truncate max-w-[250px]">
-                            {file.name}
-                          </span>
+                        Période de récurrence
+                      </label>
+                      <select
+                        id="period"
+                        name="period"
+                        value={formData.period || "weekly"}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
+                      >
+                        <option value="daily">Quotidienne</option>
+                        <option value="weekly">Hebdomadaire</option>
+                        <option value="monthly">Mensuelle</option>
+                        <option value="quarterly">Trimestrielle</option>
+                        <option value="yearly">Annuelle</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="endDate"
+                        className="block text-sm font-medium mb-2 text-foreground"
+                      >
+                        Date de fin (optionnelle)
+                      </label>
+                      <input
+                        type="date"
+                        id="endDate"
+                        name="endDate"
+                        value={
+                          formData.endDate
+                            ? new Date(formData.endDate)
+                                .toISOString()
+                                .split("T")[0]
+                            : ""
+                        }
+                        onChange={handleChange}
+                        className="w-full px-4 py-2.5 text-sm rounded-lg border border-input focus:ring-2 focus:ring-ring focus:border-transparent bg-background text-foreground"
+                      />
+                    </div>
+
+                    {(formData.period === "quarterly" ||
+                      formData.period === "yearly") && (
+                      <div className="col-span-full">
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <p className="text-sm text-blue-800 mb-3">
+                            <strong>Rappel automatique :</strong> Pour les
+                            tâches{" "}
+                            {formData.period === "quarterly"
+                              ? "trimestrielles"
+                              : "annuelles"}{" "}
+                            avec une date de réalisation, un rappel sera créé
+                            automatiquement 10 jours avant l&apos;échéance.
+                          </p>
+                          <div>
+                            <label
+                              htmlFor="recurrenceReminderDate"
+                              className="block text-sm font-medium mb-2 text-blue-800"
+                            >
+                              Date de rappel personnalisée (optionnelle)
+                            </label>
+                            <input
+                              type="date"
+                              id="recurrenceReminderDate"
+                              name="recurrenceReminderDate"
+                              value={
+                                formData.recurrenceReminderDate
+                                  ? new Date(formData.recurrenceReminderDate)
+                                      .toISOString()
+                                      .split("T")[0]
+                                  : ""
+                              }
+                              onChange={handleChange}
+                              className="w-full px-4 py-2.5 text-sm rounded-lg border border-blue-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-blue-900"
+                            />
+                            <p className="text-xs text-blue-600 mt-1">
+                              Laissez vide pour utiliser le rappel automatique
+                              (10 jours avant)
+                            </p>
+                          </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => removeDocument(index)}
-                          className="text-destructive hover:text-destructive/80"
-                        >
-                          <X size={16} />
-                        </button>
                       </div>
-                    ))}
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Documents section */}
+              <div>
+                <label className="block text-sm font-medium mb-2 text-foreground">
+                  Documents
+                </label>
+                <div
+                  className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+                    isDragging ? "border-primary bg-primary/5" : "border-border"
+                  }`}
+                  onDragEnter={handleDragEnter}
+                  onDragLeave={handleDragLeave}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept=".pdf,image/*"
+                  />
+
+                  <div className="flex flex-col items-center justify-center py-4">
+                    <Paperclip className="h-10 w-10 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Glissez-déposez des fichiers ici, ou
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-4 py-2 text-sm text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors"
+                    >
+                      Sélectionnez des fichiers
+                    </button>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      PDF, JPG, PNG, GIF (max. 10MB)
+                    </p>
                   </div>
                 </div>
-              )}
+
+                {documents.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <h4 className="text-sm font-medium">
+                      Fichiers à télécharger ({documents.length})
+                    </h4>
+                    <div className="max-h-32 overflow-y-auto pr-2 space-y-2">
+                      {documents.map((file, index) => (
+                        <div
+                          key={`${file.name}-${index}`}
+                          className="flex items-center gap-3 p-2 bg-background border border-border rounded-lg"
+                        >
+                          <div className="flex-shrink-0">
+                            {file.type.startsWith("image/") ? (
+                              <ImageIcon size={18} className="text-primary" />
+                            ) : (
+                              <FileText
+                                size={18}
+                                className="text-destructive"
+                              />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {file.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {(file.size / (1024 * 1024)).toFixed(1)} MB •{" "}
+                              {file.type.split("/")[1].toUpperCase()}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeDocument(index)}
+                            className="flex-shrink-0 p-1 text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded transition-colors"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t border-border">
@@ -758,8 +812,8 @@ export default function TaskForm({
                     : "Créer la tâche"}
               </button>
             </div>
-          </div>
-        </form>
+          </form>
+        </div>
       </motion.div>
 
       {/* Mobile version - full screen modal */}

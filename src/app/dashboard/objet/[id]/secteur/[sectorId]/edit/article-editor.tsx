@@ -832,7 +832,7 @@ export default function ArticleEditor({
       let newX = resizeStart.x;
       let newY = resizeStart.y;
 
-      const minPixelSize = 20; // Minimum size in pixels
+      const minPixelSize = 5; // Minimum 5 pixels - très petit mais encore manipulable
 
       // Calculate edges based on center and dimensions from resizeStart
       const startLeft = resizeStart.x - resizeStart.width / 2;
