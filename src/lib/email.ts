@@ -19,6 +19,14 @@ export type TaskWithDetails = Task & {
   } | null;
   // Le champ period peut être string, null ou undefined
   period?: string | null;
+  // Documents attachés à la tâche
+  documents?: {
+    id: string;
+    name: string;
+    filePath: string;
+    fileSize: number;
+    fileType: string;
+  }[];
 };
 
 // Import direct des templates

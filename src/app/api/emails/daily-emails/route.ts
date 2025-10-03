@@ -161,6 +161,15 @@ export async function POST(req: NextRequest) {
               email: true,
             },
           },
+          documents: {
+            select: {
+              id: true,
+              name: true,
+              filePath: true,
+              fileSize: true,
+              fileType: true,
+            },
+          },
         },
       })) as unknown as TaskWithDetails[];
 

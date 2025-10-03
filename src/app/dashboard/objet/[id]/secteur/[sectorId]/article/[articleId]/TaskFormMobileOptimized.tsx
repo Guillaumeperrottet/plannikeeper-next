@@ -267,10 +267,17 @@ export default function TaskFormMobileOptimized({
           console.log("✅ [Mobile] Types reçus:", data.types);
           setCustomTaskTypes(data.types || []);
         } else {
-          console.error("❌ [Mobile] Erreur API:", response.status, response.statusText);
+          console.error(
+            "❌ [Mobile] Erreur API:",
+            response.status,
+            response.statusText
+          );
         }
       } catch (error) {
-        console.error("❌ [Mobile] Erreur lors du chargement des types de tâches:", error);
+        console.error(
+          "❌ [Mobile] Erreur lors du chargement des types de tâches:",
+          error
+        );
       }
     }, []);
 

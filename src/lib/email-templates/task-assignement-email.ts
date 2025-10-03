@@ -118,7 +118,7 @@ export function getTaskAssignmentEmailTemplate(
                 (task) => `
               <div class="task-item">
                 <div class="task-title">${task.name}</div>
-                ${task.description ? `<div class="task-details">${task.description}</div>` : ""}
+                ${task.description ? `<div class="task-details" style="margin-top: 10px; color: #555;">${task.description}</div>` : ""}
                 <div class="task-location">
                   ${task.article.sector.object.nom} › ${task.article.sector.name} › ${task.article.title}
                 </div>
@@ -134,6 +134,41 @@ export function getTaskAssignmentEmailTemplate(
                 <div class="task-details">
                   <strong>Statut :</strong> ${getStatusText(task.status)}
                 </div>
+                ${
+                  task.documents && task.documents.length > 0
+                    ? `
+                <div class="task-details" style="margin-top: 15px;">
+                  <strong>Documents attachés (${task.documents.length}) :</strong>
+                  <div style="margin-top: 10px;">
+                    ${task.documents
+                      .map((doc) => {
+                        const isImage = doc.fileType.startsWith("image/");
+                        if (isImage) {
+                          return `
+                            <div style="margin-bottom: 10px;">
+                              <img src="${process.env.NEXT_PUBLIC_APP_URL}${doc.filePath}" 
+                                   alt="${doc.name}" 
+                                   style="max-width: 100%; height: auto; border-radius: 5px; border: 1px solid #ddd;" />
+                              <div style="font-size: 12px; color: #666; margin-top: 5px;">${doc.name}</div>
+                            </div>
+                          `;
+                        } else {
+                          const fileIcon = getFileIcon(doc.fileType);
+                          return `
+                            <div style="padding: 8px; background: #f0f0f0; border-radius: 4px; margin-bottom: 5px; display: flex; align-items: center;">
+                              <span style="margin-right: 8px;">${fileIcon}</span>
+                              <span style="font-size: 14px;">${doc.name}</span>
+                              <span style="font-size: 12px; color: #666; margin-left: 10px;">(${formatFileSize(doc.fileSize)})</span>
+                            </div>
+                          `;
+                        }
+                      })
+                      .join("")}
+                  </div>
+                </div>
+                `
+                    : ""
+                }
               </div>
             `
               )
@@ -178,4 +213,26 @@ function getStatusText(status: string): string {
     default:
       return status;
   }
+}
+
+/**
+ * Retourne une icône adaptée au type de fichier
+ */
+function getFileIcon(fileType: string): string {
+  if (fileType.startsWith("image/")) return "🖼️";
+  if (fileType.includes("pdf")) return "📄";
+  if (fileType.includes("word") || fileType.includes("document")) return "📝";
+  if (fileType.includes("excel") || fileType.includes("spreadsheet"))
+    return "📊";
+  if (fileType.includes("zip") || fileType.includes("archive")) return "📦";
+  return "📎";
+}
+
+/**
+ * Formate la taille du fichier en Ko ou Mo
+ */
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " Ko";
+  return (bytes / (1024 * 1024)).toFixed(1) + " Mo";
 }
