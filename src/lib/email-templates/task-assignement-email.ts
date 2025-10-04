@@ -143,10 +143,16 @@ export function getTaskAssignmentEmailTemplate(
                     ${task.documents
                       .map((doc) => {
                         const isImage = doc.fileType.startsWith("image/");
+                        // Gérer les URLs : si filePath commence par http/https, l'utiliser tel quel
+                        // sinon, ajouter l'URL de base de l'application
+                        const imageUrl = doc.filePath.startsWith("http")
+                          ? doc.filePath
+                          : `${process.env.NEXT_PUBLIC_APP_URL}${doc.filePath}`;
+
                         if (isImage) {
                           return `
                             <div style="margin-bottom: 10px;">
-                              <img src="${process.env.NEXT_PUBLIC_APP_URL}${doc.filePath}" 
+                              <img src="${imageUrl}" 
                                    alt="${doc.name}" 
                                    style="max-width: 100%; height: auto; border-radius: 5px; border: 1px solid #ddd;" />
                               <div style="font-size: 12px; color: #666; margin-top: 5px;">${doc.name}</div>

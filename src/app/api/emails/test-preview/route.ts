@@ -42,21 +42,21 @@ export async function GET() {
         {
           id: "doc1",
           name: "photo-toiture-1.jpg",
-          filePath: "/uploads/photo-toiture-1.jpg",
+          filePath: "https://res.cloudinary.com/demo/image/upload/sample.jpg",
           fileSize: 2456789,
           fileType: "image/jpeg",
         },
         {
           id: "doc2",
           name: "photo-toiture-2.jpg",
-          filePath: "/uploads/photo-toiture-2.jpg",
+          filePath: "https://res.cloudinary.com/demo/image/upload/sample.jpg",
           fileSize: 1856789,
           fileType: "image/jpeg",
         },
         {
           id: "doc3",
           name: "devis-reparation.pdf",
-          filePath: "/uploads/devis-reparation.pdf",
+          filePath: "https://res.cloudinary.com/demo/raw/upload/sample.pdf",
           fileSize: 156789,
           fileType: "application/pdf",
         },
@@ -99,7 +99,7 @@ export async function GET() {
         {
           id: "doc4",
           name: "manuel-chauffage.pdf",
-          filePath: "/uploads/manuel-chauffage.pdf",
+          filePath: "https://res.cloudinary.com/demo/raw/upload/sample.pdf",
           fileSize: 3456789,
           fileType: "application/pdf",
         },
