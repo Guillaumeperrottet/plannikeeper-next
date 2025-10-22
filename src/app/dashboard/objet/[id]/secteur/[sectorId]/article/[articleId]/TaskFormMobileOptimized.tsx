@@ -361,9 +361,9 @@ export default function TaskFormMobileOptimized({
         </div>
 
         {open && (
-          <div className="absolute z-10 w-full mt-1 bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg shadow-lg">
-            <div className="max-h-60 overflow-y-auto">
-              <div className="p-1">
+          <div className="absolute z-10 w-full mt-1 bg-white border border-[color:var(--border)] rounded-lg shadow-lg">
+            <div className="max-h-60 overflow-y-auto bg-white">
+              <div className="p-1 bg-white">
                 {/* Option pour basculer en mode personnalisé */}
                 <div
                   className="flex items-center px-3 py-2 hover:bg-[color:var(--muted)] rounded cursor-pointer"

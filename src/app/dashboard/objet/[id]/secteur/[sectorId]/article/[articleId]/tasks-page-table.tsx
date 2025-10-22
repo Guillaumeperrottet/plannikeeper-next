@@ -133,6 +133,46 @@ export default function TasksPage({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const descriptionInputRef = useRef<HTMLInputElement>(null);
 
+  // Cacher la navbar quand le formulaire mobile est ouvert
+  useEffect(() => {
+    if (showAddForm && isMobile) {
+      // Cacher la navbar et l'agenda
+      const navbar = document.querySelector("nav");
+      const agenda = document.querySelector("[data-todo-list-agenda]");
+
+      if (navbar) {
+        navbar.style.display = "none";
+      }
+      if (agenda) {
+        (agenda as HTMLElement).style.display = "none";
+      }
+    } else {
+      // Réafficher la navbar et l'agenda
+      const navbar = document.querySelector("nav");
+      const agenda = document.querySelector("[data-todo-list-agenda]");
+
+      if (navbar) {
+        navbar.style.display = "";
+      }
+      if (agenda) {
+        (agenda as HTMLElement).style.display = "";
+      }
+    }
+
+    // Cleanup: réafficher la navbar et l'agenda quand le composant est démonté
+    return () => {
+      const navbar = document.querySelector("nav");
+      const agenda = document.querySelector("[data-todo-list-agenda]");
+
+      if (navbar) {
+        navbar.style.display = "";
+      }
+      if (agenda) {
+        (agenda as HTMLElement).style.display = "";
+      }
+    };
+  }, [showAddForm, isMobile]);
+
   // Fonction pour archiver ou désarchiver les tâches terminées
   const handleBulkArchiveCompleted = () => {
     // Rafraîchir la liste des tâches après l'archivage
