@@ -119,18 +119,18 @@ export default function LandingSimple() {
   const faqs = [
     {
       question:
-        "Comment PlanniKeeper m'aide-t-il à gérer mes biens immobiliers ?",
+        "Comment Plannikeeper m'aide-t-il à gérer mes biens immobiliers ?",
       answer:
-        "PlanniKeeper centralise toutes les informations relatives à vos biens immobiliers, vous permettant de visualiser vos propriétés, programmer des tâches de maintenance, stocker des documents importants et collaborer avec votre équipe.",
+        "Plannikeeper centralise toutes les informations relatives à vos biens immobiliers, vous permettant de visualiser vos propriétés, programmer des tâches de maintenance, stocker des documents importants et collaborer avec votre équipe.",
     },
     {
-      question: "Puis-je accéder à PlanniKeeper sur mobile ?",
+      question: "Puis-je accéder à Plannikeeper sur mobile ?",
       answer:
-        "Oui, PlanniKeeper est entièrement responsive et s'adapte parfaitement aux smartphones et tablettes.",
+        "Oui, Plannikeeper est entièrement responsive et s'adapte parfaitement aux smartphones et tablettes.",
     },
     {
       question:
-        "Est-ce que PlanniKeeper est adapté aux grandes agences immobilières ?",
+        "Est-ce que Plannikeeper est adapté aux grandes agences immobilières ?",
       answer:
         "Oui, notre forfait Professionnel est spécialement conçu pour répondre aux besoins des grandes structures avec des propriétés illimitées et une collaboration multi-utilisateurs.",
     },
@@ -184,7 +184,7 @@ export default function LandingSimple() {
               <div className="aspect-video rounded-lg overflow-hidden border border-gray-200 hover:border-[#d9840d]/30 shadow-2xl bg-gray-50 transition-colors">
                 <Image
                   src="/images/hero.png"
-                  alt="PlanniKeeper Dashboard"
+                  alt="Plannikeeper Dashboard"
                   width={1200}
                   height={800}
                   className="w-full h-full object-cover"
@@ -365,7 +365,7 @@ export default function LandingSimple() {
               Questions fréquentes
             </h2>
             <p className="text-xl text-gray-600">
-              Tout ce que vous devez savoir sur PlanniKeeper
+              Tout ce que vous devez savoir sur Plannikeeper
             </p>
           </div>
 

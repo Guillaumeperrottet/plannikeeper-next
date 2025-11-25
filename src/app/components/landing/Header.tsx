@@ -46,7 +46,7 @@ export default function Header() {
             className="text-2xl font-bold text-gray-900 hover:text-gray-700 transition-colors"
             onClick={() => handleLinkClick("logo")}
           >
-            PlanniKeeper
+            Plannikeeper
           </Link>
 
           {/* Navigation desktop */}
@@ -106,7 +106,7 @@ export default function Header() {
               <div className="flex flex-col h-full">
                 {/* Header mobile menu */}
                 <div className="flex items-center justify-between p-4 border-b">
-                  <span className="text-xl font-bold">PlanniKeeper</span>
+                  <span className="text-xl font-bold">Plannikeeper</span>
                   <button
                     onClick={() => setMobileMenuOpen(false)}
                     className="p-2 text-gray-600 hover:text-gray-900"

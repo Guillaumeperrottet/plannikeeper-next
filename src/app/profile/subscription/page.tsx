@@ -88,9 +88,7 @@ export default async function SubscriptionPage() {
   return (
     <SubscriptionDashboard
       subscription={formattedSubscription}
-      plans={formattedPlans}
       isAdmin={!!isAdmin}
-      organizationId={organizationId}
     />
   );
 }

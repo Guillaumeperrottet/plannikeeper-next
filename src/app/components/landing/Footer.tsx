@@ -118,7 +118,7 @@ export default function Footer({ onAboutClick, onContactClick }: FooterProps) {
 
         <div className="border-t border-[#d9840d]/20 pt-8 mt-8 text-center">
           <p className="text-gray-400 text-sm">
-            &copy; {new Date().getFullYear()} PlanniKeeper. Tous droits
+            &copy; {new Date().getFullYear()} Plannikeeper. Tous droits
             réservés.
           </p>
         </div>

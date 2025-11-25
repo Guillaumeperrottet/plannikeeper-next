@@ -10,8 +10,6 @@ import {
   CreditCard,
   Shield,
   Star,
-  Mail,
-  Crown,
   ArrowRight,
 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
@@ -19,7 +17,6 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactConfetti from "react-confetti";
 import { useWindowSize } from "react-use";
-import { SelectionBadge } from "@/app/components/ui/SelectionBadge";
 import Link from "next/link";
 
 type Plan = {
@@ -303,10 +300,6 @@ export default function PricingPlans({
   isLoggedIn,
 }: PricingPlansProps) {
   const [loading, setLoading] = useState<string | null>(null);
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(
-    currentPlan?.id || null
-  );
-  const [hoveredPlan, setHoveredPlan] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [planToConfirm, setPlanToConfirm] = useState<Plan | null>(null);
@@ -324,72 +317,6 @@ export default function PricingPlans({
         return <Star className="h-6 w-6 text-[#8b5cf6]" />;
       default:
         return <CreditCard className="h-6 w-6 text-gray-500" />;
-    }
-  };
-
-  // Fonction pour obtenir la couleur du plan
-  const getPlanColor = (planName: PlanType) => {
-    switch (planName) {
-      case "FREE":
-        return {
-          accent: "bg-gray-500",
-          light: "bg-gray-50",
-          text: "text-gray-600",
-          border: "border-gray-200",
-          borderHover: "hover:border-gray-400",
-          highlight: "bg-gray-100",
-          buttonBg: "bg-gray-600",
-          buttonHover: "hover:bg-gray-700",
-          gradient: "from-gray-500 to-gray-600",
-        };
-      case "PERSONAL":
-        return {
-          accent: "bg-[#3b82f6]",
-          light: "bg-[#eff6ff]",
-          text: "text-[#3b82f6]",
-          border: "border-[#bfdbfe]",
-          borderHover: "hover:border-[#3b82f6]",
-          highlight: "bg-[#dbeafe]",
-          buttonBg: "bg-[#3b82f6]",
-          buttonHover: "hover:bg-[#2563eb]",
-          gradient: "from-blue-500 to-blue-600",
-        };
-      case "PROFESSIONAL":
-        return {
-          accent: "bg-[#d9840d]",
-          light: "bg-[#fff7ed]",
-          text: "text-[#d9840d]",
-          border: "border-[#ffedd5]",
-          borderHover: "hover:border-[#d9840d]",
-          highlight: "bg-[#ffedd5]",
-          buttonBg: "bg-[#d9840d]",
-          buttonHover: "hover:bg-[#c6780c]",
-          gradient: "from-[#d9840d] to-[#e36002]",
-        };
-      case "ENTERPRISE":
-        return {
-          accent: "bg-[#8b5cf6]",
-          light: "bg-[#f5f3ff]",
-          text: "text-[#8b5cf6]",
-          border: "border-[#e9d5ff]",
-          borderHover: "hover:border-[#8b5cf6]",
-          highlight: "bg-[#ede9fe]",
-          buttonBg: "bg-[#8b5cf6]",
-          buttonHover: "hover:bg-[#7c3aed]",
-          gradient: "from-purple-500 to-purple-600",
-        };
-      default:
-        return {
-          accent: "bg-gray-500",
-          light: "bg-gray-50",
-          text: "text-gray-600",
-          border: "border-gray-200",
-          borderHover: "hover:border-gray-400",
-          highlight: "bg-gray-100",
-          buttonBg: "bg-gray-600",
-          buttonHover: "hover:bg-gray-700",
-          gradient: "from-gray-500 to-gray-600",
-        };
     }
   };
 
@@ -467,7 +394,6 @@ export default function PricingPlans({
     if (!planToConfirm || !organizationId) return;
 
     setLoading(planToConfirm.id);
-    setSelectedPlan(planToConfirm.id);
     setShowConfetti(true);
     setShowConfirmationModal(false);
 
@@ -512,8 +438,6 @@ export default function PricingPlans({
           error instanceof Error ? error.message : "Une erreur est survenue"
         }`
       );
-      // Réinitialiser à l'état précédent en cas d'erreur
-      setSelectedPlan(currentPlan?.id || null);
     } finally {
       setLoading(null);
     }
@@ -670,50 +594,22 @@ export default function PricingPlans({
       {/* Plans simplifiés avec hauteur uniforme */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {sortedPlans.map((plan) => {
-          const colors = getPlanColor(plan.name);
           const isPopular = plan.name === "PROFESSIONAL";
           const isCurrentPlan = isLoggedIn && currentPlan?.id === plan.id;
           const simplifiedFeatures = getSimplifiedFeatures(plan);
 
           return (
-            <motion.div
+            <div
               key={plan.id}
-              initial={{ opacity: 1, y: 0, scale: 1 }}
-              whileHover={{
-                y: -10,
-                scale: 1.02,
-                boxShadow: "0px 10px 30px rgba(0, 0, 0, 0.1)",
-                transition: { duration: 0.2 },
-              }}
-              animate={{
-                y: selectedPlan === plan.id ? -10 : 0,
-                scale: selectedPlan === plan.id ? 1.02 : 1,
-                boxShadow:
-                  selectedPlan === plan.id
-                    ? "0px 10px 25px rgba(0, 0, 0, 0.15)"
-                    : "0px 4px 10px rgba(0, 0, 0, 0.05)",
-              }}
-              className={`bg-white border-2 rounded-xl overflow-hidden transition-all duration-300 h-[480px] flex flex-col ${colors.border} ${colors.borderHover} ${
-                hoveredPlan === plan.id
-                  ? "ring-2 ring-offset-1 ring-offset-[#f9f3ec] ring-[#d9840d]/20"
-                  : isCurrentPlan
-                    ? "ring-2 ring-offset-1 ring-offset-[#f9f3ec] ring-[#3b82f6]/30"
-                    : ""
-              } relative shadow-lg hover:shadow-xl`}
-              onMouseEnter={() => setHoveredPlan(plan.id)}
-              onMouseLeave={() => setHoveredPlan(null)}
+              className={`bg-white rounded-xl overflow-hidden transition-colors h-[480px] flex flex-col relative ${
+                isPopular
+                  ? "border-2 border-[#d9840d]"
+                  : "border border-gray-200 hover:border-gray-300"
+              }`}
             >
-              {/* Badge Sélectionné */}
-              {isLoggedIn && (
-                <SelectionBadge
-                  isSelected={selectedPlan === plan.id && !isCurrentPlan}
-                  isCurrentPlan={isCurrentPlan}
-                />
-              )}
-
-              {/* Badge populaire pour certains plans */}
+              {/* Badge populaire pour plan professionnel */}
               {isPopular && (
-                <div className="absolute top-0 right-0 px-3 py-1 rounded-bl-lg z-10 font-medium text-xs text-white bg-[#d9840d] shadow-sm">
+                <div className="absolute top-0 right-0 px-3 py-1 rounded-bl-lg z-10 font-medium text-xs text-white bg-[#d9840d]">
                   <span className="flex items-center gap-1">
                     <Sparkles size={12} />
                     Populaire
@@ -722,34 +618,29 @@ export default function PricingPlans({
               )}
 
               <div className="relative flex flex-col h-full">
-                {/* En-tête coloré */}
-                <div
-                  className={`h-2 w-full bg-gradient-to-r ${colors.gradient}`}
-                ></div>
-
                 {/* Contenu du plan */}
                 <div className="p-6 flex flex-col h-full">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className={`p-2 rounded-lg ${colors.light}`}>
+                    <div className="text-gray-900">
                       {getPlanIcon(plan.name)}
                     </div>
-                    <h3 className={`text-lg font-bold ${colors.text}`}>
+                    <h3 className="text-lg font-bold text-gray-900">
                       {getPlanDisplayName(plan.name)}
                     </h3>
                   </div>
 
                   <div className="mb-6">
                     {plan.hasCustomPricing ? (
-                      <div className="text-2xl font-bold text-[#141313]">
+                      <div className="text-2xl font-bold text-gray-900">
                         Sur mesure
                       </div>
                     ) : (
                       <div className="flex items-end">
-                        <span className="text-2xl font-bold text-[#141313]">
-                          {plan.price === 0 ? "Gratuit" : `${plan.price}€`}
+                        <span className="text-2xl font-bold text-gray-900">
+                          {plan.price === 0 ? "Gratuit" : `${plan.price} CHF`}
                         </span>
                         {plan.price > 0 && (
-                          <span className="text-[#62605d] ml-1 text-sm">
+                          <span className="text-gray-600 ml-1 text-sm">
                             /mois
                           </span>
                         )}
@@ -759,46 +650,26 @@ export default function PricingPlans({
 
                   <ul className="space-y-3 mb-6 flex-grow">
                     {simplifiedFeatures.map((feature, index) => (
-                      <motion.li
-                        key={index}
-                        initial={{ opacity: 1, x: 0 }}
-                        animate={{
-                          opacity: 1,
-                          x:
-                            hoveredPlan === plan.id ||
-                            selectedPlan === plan.id ||
-                            isCurrentPlan
-                              ? 3
-                              : 0,
-                        }}
-                        transition={{ duration: 0.2, delay: index * 0.05 }}
-                        className="flex items-start"
-                      >
-                        <div
-                          className={`w-4 h-4 rounded-full bg-gradient-to-br ${colors.gradient} flex items-center justify-center mt-0.5 flex-shrink-0 mr-3`}
-                        >
+                      <li key={index} className="flex items-start">
+                        <div className="w-4 h-4 rounded-full bg-gray-900 flex items-center justify-center mt-0.5 flex-shrink-0 mr-3">
                           <Check className="w-2.5 h-2.5 text-white" />
                         </div>
-                        <span className="text-[#62605d] text-sm leading-relaxed">
+                        <span className="text-gray-600 text-sm leading-relaxed">
                           {feature}
                         </span>
-                      </motion.li>
+                      </li>
                     ))}
                   </ul>
 
                   <div className="mt-auto">
                     <Button
                       onClick={() => handleSelectPlan(plan)}
-                      className={`w-full transition-all duration-300 shadow-sm ${
+                      className={`w-full transition-colors ${
                         isCurrentPlan
-                          ? "bg-white border-2 text-[#141313] " +
-                            colors.border +
-                            " " +
-                            colors.text
-                          : colors.buttonBg +
-                            " " +
-                            colors.buttonHover +
-                            " text-white hover:shadow-md"
+                          ? "bg-white border border-gray-300 text-gray-900 hover:bg-gray-50"
+                          : isPopular
+                            ? "bg-[#d9840d] hover:bg-[#c6780c] text-white"
+                            : "bg-gray-900 hover:bg-gray-800 text-white"
                       }`}
                       variant={isCurrentPlan ? "outline" : "default"}
                       disabled={
@@ -830,73 +701,18 @@ export default function PricingPlans({
                         </>
                       )}
                     </Button>
-
-                    {!isCurrentPlan && plan.name !== "FREE" && (
-                      <p className="text-xs text-[#62605d] text-center mt-2">
-                        Essai gratuit de 7 jours
-                      </p>
-                    )}
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </div>
           );
         })}
       </div>
 
-      {/* Plan Sur mesure séparé */}
-      <div className="mt-12">
-        <div className="text-center mb-8">
-          <h3 className="text-2xl font-bold text-[#141313] mb-2">
-            Besoin d&apos;un plan sur mesure ?
-          </h3>
-          <p className="text-[#62605d]">
-            Pour les besoins spécifiques ou les grandes équipes
-          </p>
-        </div>
-
-        <div className="max-w-md mx-auto">
-          <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl p-6 text-center shadow-lg hover:shadow-xl transition-all duration-300">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center">
-              <Crown className="w-8 h-8 text-white" />
-            </div>
-
-            <h4 className="text-xl font-bold text-amber-700 mb-2">
-              Solution personnalisée
-            </h4>
-            <p className="text-amber-600 mb-4 text-sm">
-              Fonctionnalités sur mesure pour votre organisation
-            </p>
-
-            <div className="space-y-2 mb-6">
-              <div className="flex items-center justify-center gap-2 text-sm text-amber-700">
-                <Check className="w-4 h-4" />
-                <span>Utilisateurs illimités</span>
-              </div>
-              <div className="flex items-center justify-center gap-2 text-sm text-amber-700">
-                <Check className="w-4 h-4" />
-                <span>Stockage illimité</span>
-              </div>
-              <div className="flex items-center justify-center gap-2 text-sm text-amber-700">
-                <Check className="w-4 h-4" />
-                <span>Support dédié</span>
-              </div>
-            </div>
-
-            <Link href="/contact?subject=Demande%20Plan%20Sur%20Mesure">
-              <Button className="w-full bg-amber-600 hover:bg-amber-700 text-white">
-                <Mail className="mr-2 h-4 w-4" />
-                Nous contacter
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-
       {/* Section informative */}
-      <div className="mt-16 p-6 border border-[#beac93]/30 rounded-xl bg-white/40 backdrop-blur-sm shadow-sm">
+      <div className="mt-16 p-6 border border-gray-200 rounded-xl bg-white">
         <div className="flex flex-col md:flex-row gap-4 items-center">
-          <div className="p-3 rounded-full bg-white shadow-sm">
+          <div className="p-3 rounded-full bg-white border border-gray-200">
             <svg
               className="h-6 w-6 text-[#d9840d]"
               fill="none"
@@ -912,11 +728,11 @@ export default function PricingPlans({
             </svg>
           </div>
           <div className="text-center md:text-left">
-            <p className="text-[#141313] mb-1">
+            <p className="text-gray-900 mb-1">
               Tous les plans incluent un accès à l&apos;application, les mises à
               jour et les nouvelles fonctionnalités.
             </p>
-            <p className="text-[#62605d]">
+            <p className="text-gray-600">
               Changement de plan possible à tout moment • Garantie 30 jours •
               Support inclus
             </p>

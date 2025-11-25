@@ -1,0 +1,770 @@
+// src/app/profile/subscription/subscription-dashboard.tsx - Version mise à jour
+"use client";
+
+import { useState } from "react";
+import {
+  CreditCard,
+  CheckCircle,
+  AlertCircle,
+  Calendar,
+  Loader2,
+  Shield,
+  ArrowRight,
+  X,
+  AlertTriangle,
+  Info,
+  CalendarClock,
+} from "lucide-react";
+import { Progress } from "@/app/components/ui/progress";
+import { Button } from "@/app/components/ui/button";
+import UsageLimits from "@/app/components/UsageLimits";
+import { Card, CardContent } from "@/app/components/ui/card";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/app/components/ui/dialog";
+import { BackButton } from "@/app/components/ui/BackButton";
+
+type Plan = {
+  id: string;
+  name: string;
+  price: number;
+  monthlyPrice: number;
+  yearlyPrice: number | null;
+  maxUsers: number | null;
+  maxObjects: number | null;
+  features: string[];
+  hasCustomPricing: boolean;
+  trialDays: number;
+};
+
+type Subscription = {
+  id: string;
+  organizationId: string;
+  status: string;
+  currentPeriodStart: Date;
+  currentPeriodEnd: Date;
+  stripeSubscriptionId: string | null;
+  stripeCustomerId: string | null;
+  cancelAtPeriodEnd: boolean;
+  plan: Plan;
+};
+
+interface SubscriptionDashboardProps {
+  subscription: Subscription | null;
+  isAdmin: boolean;
+}
+
+export default function SubscriptionDashboard({
+  subscription,
+  isAdmin,
+}: SubscriptionDashboardProps) {
+  const [loading, setLoading] = useState<string | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelOption, setCancelOption] = useState<"end_period" | "immediate">(
+    "end_period"
+  );
+  const [cancelLoading, setCancelLoading] = useState(false);
+
+  const currentPlan = subscription?.plan;
+  const isFreePlan = currentPlan?.name === "FREE";
+
+  // Fonction pour obtenir le nom d'affichage du plan
+  const getPlanDisplayName = (planName: string) => {
+    switch (planName) {
+      case "FREE":
+        return "Gratuit";
+      case "PERSONAL":
+        return "Particulier";
+      case "PROFESSIONAL":
+        return "Professionnel";
+      case "ENTERPRISE":
+        return "Entreprise";
+      default:
+        return planName;
+    }
+  };
+
+  // Gérer l'annulation de l'abonnement  // Formater la date
+  const formatDate = (date: Date | string) => {
+    return new Date(date).toLocaleDateString("fr-FR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  // Obtenir le statut de l'abonnement sous forme d'élément visuel
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "ACTIVE":
+        return (
+          <div className="flex items-center text-green-500">
+            <CheckCircle className="h-5 w-5 mr-2" />
+            <span>Actif</span>
+          </div>
+        );
+      case "PAST_DUE":
+        return (
+          <div className="flex items-center text-amber-500">
+            <AlertCircle className="h-5 w-5 mr-2" />
+            <span>Paiement en attente</span>
+          </div>
+        );
+      case "TRIALING":
+        return (
+          <div className="flex items-center text-blue-500">
+            <Calendar className="h-5 w-5 mr-2" />
+            <span>Période d&apos;essai</span>
+          </div>
+        );
+      default:
+        return (
+          <div className="flex items-center text-[color:var(--muted-foreground)]">
+            <AlertCircle className="h-5 w-5 mr-2" />
+            <span>{status}</span>
+          </div>
+        );
+    }
+  };
+
+  // Gérer la redirection vers le portail de gestion
+
+  // Gérer le portail de facturation Stripe
+  const handleManageSubscription = async () => {
+    if (!isAdmin) {
+      toast.error("Seuls les administrateurs peuvent gérer l'abonnement");
+      return;
+    }
+
+    setLoading("manage");
+
+    try {
+      const response = await fetch("/api/subscriptions/create-portal", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Une erreur est survenue");
+      }
+
+      const { url } = await response.json();
+
+      // Rediriger vers le portail client Stripe
+      if (url) {
+        window.location.href = url;
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+      toast.error(
+        `Erreur lors de l'accès au portail de gestion: ${
+          error instanceof Error ? error.message : "Une erreur est survenue"
+        }`
+      );
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  // Renouveler un abonnement gratuit
+  const handleRenewFreePlan = async () => {
+    if (!isAdmin) {
+      toast.error("Seuls les administrateurs peuvent renouveler l'abonnement");
+      return;
+    }
+
+    setLoading("renew");
+
+    try {
+      const response = await fetch("/api/subscriptions/renew-free", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Une erreur est survenue");
+      }
+
+      await response.json();
+
+      toast.success("Abonnement gratuit renouvelé avec succès!");
+      // Rafraîchir la page pour voir les changements
+      window.location.reload();
+    } catch (error) {
+      console.error("Erreur:", error);
+      toast.error(
+        `Erreur lors du renouvellement: ${
+          error instanceof Error ? error.message : "Une erreur est survenue"
+        }`
+      );
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  // Gérer l'annulation de l'abonnement
+  const handleCancelSubscription = async () => {
+    if (!isAdmin) {
+      toast.error("Seuls les administrateurs peuvent annuler l'abonnement");
+      return;
+    }
+
+    setCancelLoading(true);
+    try {
+      const response = await fetch("/api/subscriptions/cancel", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          cancelImmediately: cancelOption === "immediate",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Une erreur est survenue");
+      }
+
+      const data = await response.json();
+      toast.success(data.message);
+      setShowCancelModal(false);
+
+      // Rafraîchir la page après un court délai
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (error) {
+      console.error("Erreur:", error);
+      toast.error(
+        `Erreur lors de l'annulation: ${
+          error instanceof Error ? error.message : "Une erreur est survenue"
+        }`
+      );
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
+  // Modal de confirmation d'annulation
+  const CancelModal = () => {
+    return (
+      <Dialog open={showCancelModal} onOpenChange={setShowCancelModal}>
+        <DialogContent className="bg-[color:var(--card)] text-[color:var(--foreground)] border-[color:var(--border)] sm:max-w-md">
+          <DialogTitle className="text-[color:var(--foreground)]">
+            Confirmer l&apos;annulation de l&apos;abonnement
+          </DialogTitle>
+          <DialogDescription className="text-[color:var(--muted-foreground)]">
+            Êtes-vous sûr de vouloir annuler votre abonnement ? Cette action
+            pourrait limiter l&apos;accès à certaines fonctionnalités.
+          </DialogDescription>
+
+          <div className="py-4">
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  id="end_period"
+                  name="cancelOption"
+                  value="end_period"
+                  checked={cancelOption === "end_period"}
+                  onChange={() => setCancelOption("end_period")}
+                  className="h-4 w-4 text-[color:var(--primary)]"
+                />
+                <label
+                  htmlFor="end_period"
+                  className="text-sm font-medium text-[color:var(--foreground)]"
+                >
+                  Annuler à la fin de la période de facturation
+                  <p className="text-xs text-[color:var(--muted-foreground)]">
+                    Votre abonnement restera actif jusqu&apos;au{" "}
+                    {formatDate(subscription?.currentPeriodEnd || new Date())}
+                  </p>
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="radio"
+                  id="immediate"
+                  name="cancelOption"
+                  value="immediate"
+                  checked={cancelOption === "immediate"}
+                  onChange={() => setCancelOption("immediate")}
+                  className="h-4 w-4 text-[color:var(--primary)]"
+                />
+                <label
+                  htmlFor="immediate"
+                  className="text-sm font-medium text-[color:var(--foreground)]"
+                >
+                  Annuler immédiatement
+                  <p className="text-xs text-[color:var(--muted-foreground)]">
+                    Votre abonnement sera annulé immédiatement et vous passerez
+                    au plan gratuit
+                  </p>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="flex space-x-2 justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setShowCancelModal(false)}
+              disabled={cancelLoading}
+              className="bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)] hover:bg-[color:var(--muted)] hover:text-[color:var(--foreground)] transition-colors touch-target"
+            >
+              Annuler
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleCancelSubscription}
+              disabled={cancelLoading}
+              className="touch-target"
+            >
+              {cancelLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Traitement...
+                </>
+              ) : (
+                "Confirmer l'annulation"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  // Fonction pour calculer le pourcentage de la période écoulée
+  const getSubscriptionProgress = (start: Date, end: Date): number => {
+    const now = new Date();
+    const total = end.getTime() - start.getTime();
+    const elapsed = now.getTime() - start.getTime();
+
+    if (elapsed <= 0) return 0;
+    if (elapsed >= total) return 100;
+
+    return Math.floor((elapsed / total) * 100);
+  };
+
+  // Fonction pour obtenir le nombre de jours restants
+  const getDaysRemaining = (end: Date): number => {
+    const now = new Date();
+    const diffTime = end.getTime() - now.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  // Fonction pour vérifier si la date de fin est proche (moins de 7 jours)
+  const isEndingPeriodSoon = (end: Date): boolean => {
+    return getDaysRemaining(end) <= 7;
+  };
+
+  // Composant pour afficher un bandeau d'état
+  const SubscriptionStatusBanner = ({
+    subscription,
+  }: {
+    subscription: Subscription | null;
+  }) => {
+    if (!subscription) return null;
+
+    const isPastDue = subscription.status === "PAST_DUE";
+    const isCancelled = subscription.cancelAtPeriodEnd;
+
+    // Adaptation des classes pour le mode sombre
+    let bgClass, textClass, borderClass;
+    let icon = <CheckCircle className="h-5 w-5" />;
+    let message = "Votre abonnement est actif.";
+
+    if (isPastDue) {
+      bgClass = "bg-red-100 dark:bg-red-950/30";
+      borderClass = "border-red-200 dark:border-red-900/50";
+      textClass = "text-red-700 dark:text-red-400";
+      icon = <AlertCircle className="h-5 w-5" />;
+      message =
+        "Problème de paiement détecté. Veuillez mettre à jour vos informations de paiement.";
+    } else if (isCancelled) {
+      bgClass = "bg-amber-100 dark:bg-amber-950/30";
+      borderClass = "border-amber-200 dark:border-amber-900/50";
+      textClass = "text-amber-700 dark:text-amber-400";
+      icon = <Info className="h-5 w-5" />;
+      message = `Votre abonnement sera annulé le ${formatDate(subscription.currentPeriodEnd)}. Vous passerez ensuite au forfait gratuit.`;
+    } else if (isEndingPeriodSoon(subscription.currentPeriodEnd)) {
+      bgClass = "bg-blue-100 dark:bg-blue-950/30";
+      borderClass = "border-blue-200 dark:border-blue-900/50";
+      textClass = "text-blue-700 dark:text-blue-400";
+      icon = <CalendarClock className="h-5 w-5" />;
+      message = `Renouvellement prévu dans ${getDaysRemaining(subscription.currentPeriodEnd)} jours.`;
+    } else {
+      bgClass = "bg-green-100 dark:bg-green-950/30";
+      borderClass = "border-green-200 dark:border-green-900/50";
+      textClass = "text-green-700 dark:text-green-400";
+    }
+
+    return (
+      <div
+        className={`p-4 mb-6 rounded-lg border ${bgClass} ${borderClass} ${textClass} flex items-start gap-3`}
+      >
+        {icon}
+        <div>
+          <p className="font-medium">{message}</p>
+          {isPastDue && (
+            <Button
+              variant="default"
+              size="sm"
+              className="mt-2 touch-target active:scale-95 transition-transform"
+              onClick={handleManageSubscription}
+            >
+              Mettre à jour le paiement
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Composant pour afficher une timeline de la période d'abonnement
+  const SubscriptionTimeline = ({
+    subscription,
+  }: {
+    subscription: Subscription | null;
+  }) => {
+    if (!subscription) return null;
+
+    const progress = getSubscriptionProgress(
+      new Date(subscription.currentPeriodStart),
+      new Date(subscription.currentPeriodEnd)
+    );
+
+    const daysRemaining = getDaysRemaining(subscription.currentPeriodEnd);
+
+    return (
+      <div className="mb-6 p-4 bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg">
+        <h3 className="text-md font-medium mb-3 text-[color:var(--foreground)]">
+          Période d&apos;abonnement
+        </h3>
+
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm text-[color:var(--muted-foreground)]">
+            <span>{formatDate(subscription.currentPeriodStart)}</span>
+            <span>{formatDate(subscription.currentPeriodEnd)}</span>
+          </div>
+
+          <Progress
+            value={progress}
+            className="h-2 bg-[color:var(--muted)] [&>div]:bg-[color:var(--primary)]"
+          />
+
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-[color:var(--muted-foreground)]">
+              Progression: {progress}%
+            </span>
+            <span
+              className={`text-sm font-medium ${daysRemaining <= 7 ? "text-amber-600 dark:text-amber-500" : "text-[color:var(--foreground)]"}`}
+            >
+              {daysRemaining} jours restants
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Composant pour les détails de facturation
+  const BillingDetails = ({
+    subscription,
+  }: {
+    subscription: Subscription | null;
+  }) => {
+    if (!subscription || !subscription.stripeSubscriptionId) return null;
+
+    return (
+      <div className="mb-6 p-4 bg-[color:var(--card)] border border-[color:var(--border)] rounded-lg">
+        <h3 className="text-md font-medium mb-3 text-[color:var(--foreground)]">
+          Détails de facturation
+        </h3>
+
+        <div className="space-y-3">
+          <div className="flex justify-between">
+            <span className="text-sm text-[color:var(--muted-foreground)]">
+              Prochain paiement
+            </span>
+            <span className="text-sm font-medium text-[color:var(--foreground)]">
+              {formatDate(subscription.currentPeriodEnd)}
+            </span>
+          </div>
+
+          <div className="flex justify-between">
+            <span className="text-sm text-[color:var(--muted-foreground)]">
+              Montant
+            </span>
+            <span className="text-sm font-medium text-[color:var(--foreground)]">
+              {subscription.plan.monthlyPrice}CHF / mois
+            </span>
+          </div>
+
+          {subscription.cancelAtPeriodEnd && (
+            <div className="mt-2 p-2 bg-amber-100 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded text-amber-700 dark:text-amber-400 text-sm">
+              <div className="flex items-center gap-2">
+                <AlertTriangle size={16} />
+                <span>Pas de renouvellement prévu</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-[color:var(--background)]">
+      {/* Header avec navigation */}
+      <div className="bg-white dark:bg-[color:var(--card)] border-b border-[color:var(--border)] sticky top-0 z-40 shadow-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-4">
+            <BackButton
+              href="/profile"
+              label="Retour au profil"
+              loadingMessage="Retour au profil..."
+            />
+            <div className="h-4 w-px bg-[color:var(--border)]"></div>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-[color:var(--primary)] rounded-lg flex items-center justify-center">
+                <CreditCard
+                  size={16}
+                  className="text-[color:var(--primary-foreground)]"
+                />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-[color:var(--foreground)]">
+                  Gestion de l&apos;abonnement
+                </h1>
+                <p className="text-xs text-[color:var(--muted-foreground)] hidden sm:block">
+                  Gérez votre abonnement et vos préférences de facturation
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <main className="container mx-auto py-8 px-4">
+        {/* Section abonnement actuel */}
+        <div className="mb-10">
+          <h2 className="text-xl font-semibold mb-4 text-[color:var(--foreground)]">
+            Abonnement actuel
+          </h2>
+
+          {subscription && (
+            <SubscriptionStatusBanner subscription={subscription} />
+          )}
+
+          <Card className="bg-[color:var(--card)] border-[color:var(--border)] shadow-sm">
+            <CardContent className="p-6">
+              {subscription ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-lg font-medium mb-2 text-[color:var(--foreground)]">
+                      Plan {getPlanDisplayName(subscription.plan.name)}
+                    </h3>
+                    <p className="text-sm text-[color:var(--muted-foreground)] mb-4">
+                      {subscription.plan.hasCustomPricing
+                        ? "Prix personnalisé"
+                        : subscription.plan.price === 0
+                          ? "Gratuit"
+                          : `${subscription.plan.monthlyPrice}CHF/mois`}
+                    </p>
+                    {getStatusBadge(subscription.status)}
+
+                    {subscription.cancelAtPeriodEnd && (
+                      <div className="mt-2 p-2 bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 rounded-md text-sm">
+                        Cet abonnement sera annulé le{" "}
+                        {formatDate(subscription.currentPeriodEnd)}
+                      </div>
+                    )}
+
+                    <div className="mt-6">
+                      <h4 className="text-sm font-medium mb-2 text-[color:var(--foreground)]">
+                        Fonctionnalités incluses:
+                      </h4>
+                      <ul className="space-y-1">
+                        {subscription.plan.features
+                          .slice(0, 4)
+                          .map((feature: string, index: number) => (
+                            <li key={index} className="flex items-start">
+                              <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400 mr-2 flex-shrink-0 mt-0.5" />
+                              <span className="text-sm text-[color:var(--foreground)]">
+                                {feature}
+                              </span>
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {!isFreePlan && subscription.stripeSubscriptionId && (
+                      <>
+                        <SubscriptionTimeline subscription={subscription} />
+                        <BillingDetails subscription={subscription} />
+                      </>
+                    )}
+
+                    {isAdmin && (
+                      <div className="flex flex-col gap-3">
+                        {!isFreePlan && subscription.stripeSubscriptionId ? (
+                          <>
+                            <Button
+                              onClick={handleManageSubscription}
+                              disabled={loading === "manage"}
+                              className="w-full bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:opacity-90 transition-all touch-target active:scale-95"
+                            >
+                              {loading === "manage" ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              ) : (
+                                <CreditCard className="mr-2 h-4 w-4" />
+                              )}
+                              Gérer le paiement
+                            </Button>
+
+                            {/* Bouton pour annuler l'abonnement */}
+                            <Button
+                              onClick={() => setShowCancelModal(true)}
+                              variant="outline"
+                              className="w-full text-red-500 dark:text-red-400 border-red-200 dark:border-red-700/50 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-300 transition-colors touch-target active:scale-95"
+                              disabled={
+                                loading !== null ||
+                                subscription.cancelAtPeriodEnd
+                              }
+                            >
+                              <X className="mr-2 h-4 w-4" />
+                              {subscription.cancelAtPeriodEnd
+                                ? "Annulation programmée"
+                                : "Annuler l'abonnement"}
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            onClick={handleRenewFreePlan}
+                            disabled={loading === "renew"}
+                            className="w-full bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)] hover:bg-[color:var(--muted)] transition-colors touch-target active:scale-95"
+                            variant="outline"
+                          >
+                            {loading === "renew" ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <Calendar className="mr-2 h-4 w-4" />
+                            )}
+                            Renouveler l&apos;abonnement gratuit
+                          </Button>
+                        )}
+
+                        <Button
+                          onClick={() => (window.location.href = "/pricing")}
+                          className={`w-full transition-colors touch-target active:scale-95 ${
+                            isFreePlan
+                              ? "bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:opacity-90"
+                              : "bg-[color:var(--background)] text-[color:var(--foreground)] border-[color:var(--border)] hover:bg-[color:var(--muted)]"
+                          }`}
+                          variant={isFreePlan ? "default" : "outline"}
+                        >
+                          <ArrowRight className="mr-2 h-4 w-4" />
+                          {isFreePlan
+                            ? "Passer à un forfait payant"
+                            : "Modifier mon forfait"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <Shield className="h-12 w-12 text-[color:var(--muted-foreground)] mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2 text-[color:var(--foreground)]">
+                    Aucun abonnement actif
+                  </h3>
+                  <p className="text-[color:var(--muted-foreground)] mb-4">
+                    Vous n&apos;avez pas d&apos;abonnement actif pour le moment.
+                  </p>
+                  {isAdmin && (
+                    <Button
+                      onClick={() => (window.location.href = "/pricing")}
+                      className="bg-[color:var(--primary)] text-[color:var(--primary-foreground)] hover:opacity-90 transition-colors touch-target active:scale-95"
+                    >
+                      Voir les forfaits disponibles
+                    </Button>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Nouvelle section avec UsageLimits */}
+        <div className="mb-10">
+          <h2 className="text-xl font-semibold mb-4 text-[color:var(--foreground)]">
+            Utilisation actuelle
+          </h2>
+          <UsageLimits />
+        </div>
+
+        {/* Section FAQ */}
+        <div className="mt-10">
+          <h2 className="text-xl font-semibold mb-4 text-[color:var(--foreground)]">
+            Questions fréquentes
+          </h2>
+          <Card className="bg-[color:var(--card)] border-[color:var(--border)] shadow-sm">
+            <CardContent className="p-6 space-y-4">
+              <div>
+                <h3 className="font-medium mb-2 text-[color:var(--foreground)]">
+                  Comment fonctionne la facturation ?
+                </h3>
+                <p className="text-sm text-[color:var(--muted-foreground)]">
+                  La facturation est mensuelle ou annuelle, selon le cycle que
+                  vous choisissez. Vous pouvez changer de cycle à tout moment
+                  depuis votre portail de paiement.
+                </p>
+              </div>
+              <div>
+                <h3 className="font-medium mb-2 text-[color:var(--foreground)]">
+                  Puis-je annuler mon abonnement ?
+                </h3>
+                <p className="text-sm text-[color:var(--muted-foreground)]">
+                  Oui, vous pouvez annuler votre abonnement à tout moment. Votre
+                  abonnement restera actif jusqu&apos;à la fin de la période en
+                  cours, puis basculera automatiquement vers le plan gratuit.
+                </p>
+              </div>
+              <div>
+                <h3 className="font-medium mb-2 text-[color:var(--foreground)]">
+                  Que se passe-t-il si je dépasse les limites de mon forfait ?
+                </h3>
+                <p className="text-sm text-[color:var(--muted-foreground)]">
+                  Vous serez notifié lorsque vous approchez des limites de votre
+                  forfait. Si vous dépassez ces limites, vous devrez passer à un
+                  forfait supérieur pour pouvoir continuer à ajouter de nouveaux
+                  utilisateurs ou objets.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Modal de confirmation d'annulation */}
+        <CancelModal />
+      </main>
+    </div>
+  );
+}

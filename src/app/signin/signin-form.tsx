@@ -9,7 +9,7 @@ import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight, User, Lock, Eye, EyeOff, Home } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function SignInForm({
   className,
@@ -58,43 +58,17 @@ export default function SignInForm({
 
   return (
     <div className={cn("flex flex-col", className)} {...props}>
-      <div className="mb-8 text-center">
-        <div className="absolute top-4 right-4">
-          <Link
-            href="/"
-            className="text-[#62605d] hover:text-[#d9840d] transition-colors"
-          >
-            <Home size={20} />
-          </Link>
-        </div>
-
-        <div className="w-16 h-16 bg-gradient-to-br from-[#d9840d] to-[#e36002] rounded-xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-          <div className="w-8 h-8 text-white">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-              <polyline points="9 22 9 12 15 12 15 22"></polyline>
-            </svg>
-          </div>
-        </div>
-        <h1 className="text-2xl font-bold text-[#141313]">
-          Bienvenue sur PlanniKeeper
-        </h1>
-        <p className="text-[#62605d] mt-2">
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">Connexion</h1>
+        <p className="text-lg text-gray-600 mb-6">
           Connectez-vous pour accéder à votre espace
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
-          <div className="p-4 rounded-lg bg-[#fee2e2] border border-[#fca5a5] shadow-sm">
-            <p className="text-[#b91c1c] text-sm font-medium">{error}</p>
+          <div className="p-4 rounded-lg bg-red-50 border border-red-200">
+            <p className="text-red-600 text-sm">{error}</p>
           </div>
         )}
 
@@ -102,38 +76,30 @@ export default function SignInForm({
           <div className="space-y-2">
             <Label
               htmlFor="email"
-              className="text-sm font-medium text-[#141313]"
+              className="text-sm font-medium text-gray-900"
             >
               Email
             </Label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                <User className="h-4 w-4 text-[#62605d]" />
-              </div>
-              <Input
-                id="email"
-                type="email"
-                placeholder="m@example.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
-                className="pl-10 bg-white border-[#beac93] focus:border-[#d9840d] rounded-lg shadow-sm hover:border-[#d9840d]/70 transition-colors"
-              />
-            </div>
+            <Input
+              id="email"
+              type="email"
+              placeholder="votre@email.com"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
+              className="bg-white border-gray-200 focus:ring-2 focus:ring-[#d9840d] focus:border-transparent rounded-lg"
+            />
           </div>
 
           <div className="space-y-2">
             <Label
               htmlFor="password"
-              className="text-sm font-medium text-[#141313]"
+              className="text-sm font-medium text-gray-900"
             >
               Mot de passe
             </Label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                <Lock className="h-4 w-4 text-[#62605d]" />
-              </div>
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
@@ -141,7 +107,7 @@ export default function SignInForm({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
-                className="pl-10 pr-10 bg-white border-[#beac93] focus:border-[#d9840d] rounded-lg shadow-sm hover:border-[#d9840d]/70 transition-colors"
+                className="pr-10 bg-white border-gray-200 focus:ring-2 focus:ring-[#d9840d] focus:border-transparent rounded-lg"
               />
               <button
                 type="button"
@@ -150,9 +116,9 @@ export default function SignInForm({
                 tabIndex={-1}
               >
                 {showPassword ? (
-                  <EyeOff className="h-4 w-4 text-[#62605d] hover:text-[#141313] transition-colors" />
+                  <EyeOff className="h-4 w-4 text-gray-400 hover:text-gray-600" />
                 ) : (
-                  <Eye className="h-4 w-4 text-[#62605d] hover:text-[#141313] transition-colors" />
+                  <Eye className="h-4 w-4 text-gray-400 hover:text-gray-600" />
                 )}
               </button>
             </div>
@@ -161,21 +127,20 @@ export default function SignInForm({
 
         <Button
           type="submit"
-          className="w-full py-6 bg-gradient-to-r from-[#d9840d] to-[#e36002] hover:from-[#c6780c] hover:to-[#d9840d] transition-all duration-300 transform hover:scale-[1.02] font-medium shadow-md text-white rounded-lg"
+          className="w-full py-3 bg-[#d9840d] hover:bg-[#c6780c] transition-colors font-medium text-white rounded-lg"
           disabled={isLoading}
         >
           {isLoading ? "Connexion en cours..." : "Se connecter"}
-          {!isLoading && <ChevronRight className="ml-2 h-5 w-5" />}
         </Button>
 
         <div className="flex flex-col space-y-4 text-center">
           <div className="text-sm">
-            <span className="text-[#62605d]">
+            <span className="text-gray-600">
               Vous n&apos;avez pas encore de compte ?{" "}
             </span>
             <Link
               href="/signup"
-              className="text-[#d9840d] hover:text-[#c6780c] hover:underline underline-offset-4 font-medium transition-colors"
+              className="text-[#d9840d] hover:text-[#c6780c] underline transition-colors"
             >
               Inscrivez-vous
             </Link>
@@ -184,7 +149,7 @@ export default function SignInForm({
           <div className="text-sm">
             <Link
               href="/pricing"
-              className="text-[#d9840d] hover:text-[#c6780c] hover:underline underline-offset-4 font-medium transition-colors"
+              className="text-[#d9840d] hover:text-[#c6780c] underline transition-colors"
             >
               Découvrez nos formules
             </Link>
@@ -192,12 +157,12 @@ export default function SignInForm({
         </div>
       </form>
 
-      <div className="mt-8 pt-6 border-t border-[#beac93]/30">
-        <p className="text-xs text-center text-[#62605d]">
+      <div className="mt-8 pt-6 border-t border-gray-200">
+        <p className="text-xs text-center text-gray-600">
           En continuant, vous acceptez nos{" "}
           <a
             href="#"
-            className="underline underline-offset-4 hover:text-[#d9840d] transition-colors"
+            className="underline hover:text-[#d9840d] transition-colors"
           >
             Conditions d&apos;utilisation
           </a>{" "}
