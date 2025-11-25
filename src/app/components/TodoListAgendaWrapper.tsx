@@ -1,8 +1,9 @@
-// src/app/components/TodoListAgendaWrapper.tsx - Modifié avec la fonction de mise à jour de tâches
+// src/app/components/TodoListAgendaWrapper.tsx - Modifié avec auto-sélection d'objet
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
+import { usePathname } from "next/navigation";
 import { useTasks } from "@/hooks/useData";
 import { useTaskUpdates } from "@/hooks/useTaskUpdates"; // Nouveau hook
 
@@ -13,15 +14,52 @@ const TodoListAgenda = dynamic(() => import("./TodoListAgenda"), {
 
 // Définir un dataVersion pour le suivi des changements
 const DATA_VERSION_KEY = "plannikeeper-data-version";
+const SELECTED_OBJECT_KEY = "plannikeeper-selected-object";
 
 export default function TodoListAgendaWrapper() {
-  const [selectedObjectId] = useState<string | null>(null);
+  const pathname = usePathname();
+  const [selectedObjectId, setSelectedObjectId] = useState<string | null>(null);
   const [dataVersion, setDataVersion] = useState<number>(0);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState(false); // État pour détecter si on est sur mobile
 
+  // Extraire l'ID d'objet depuis l'URL et mettre à jour la sélection
+  useEffect(() => {
+    // Toujours extraire l'ID d'objet depuis l'URL si présent
+    if (pathname?.includes("/dashboard/objet/")) {
+      const objetMatch = pathname?.match(/\/dashboard\/objet\/([^\/]+)/);
+
+      if (objetMatch && objetMatch[1]) {
+        const objetId = objetMatch[1];
+        // Ne pas mettre à jour si c'est "new" (création d'objet)
+        if (objetId !== "new" && objetId !== selectedObjectId) {
+          setSelectedObjectId(objetId);
+          // Persister dans localStorage
+          localStorage.setItem(SELECTED_OBJECT_KEY, objetId);
+          // Incrémenter dataVersion pour forcer un refresh
+          setDataVersion((prev) => prev + 1);
+        }
+      }
+    }
+    // Si on n'est pas sur une page d'objet, charger depuis localStorage
+    else {
+      const stored = localStorage.getItem(SELECTED_OBJECT_KEY);
+      if (stored && stored !== selectedObjectId) {
+        setSelectedObjectId(stored);
+        setDataVersion((prev) => prev + 1);
+      }
+    }
+  }, [pathname, selectedObjectId]);
+
   // Utiliser le hook useTasks
   const { mutate } = useTasks(selectedObjectId);
+
+  // Forcer un refresh quand selectedObjectId change
+  useEffect(() => {
+    if (selectedObjectId) {
+      mutate();
+    }
+  }, [selectedObjectId, mutate]);
 
   // Utiliser le nouveau hook pour les mises à jour de tâches
   const { updateTaskDate, isUpdating } = useTaskUpdates({
@@ -154,6 +192,7 @@ export default function TodoListAgendaWrapper() {
       refreshKey={dataVersion}
       updateTaskDate={handleUpdateTaskDate} // Passer la fonction de mise à jour de tâches
       isMobile={isMobile} // Passer l'état mobile pour désactiver le drag sur mobile
+      initialSelectedObjectId={selectedObjectId} // Passer l'objet sélectionné
     />
   );
 }

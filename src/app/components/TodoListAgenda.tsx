@@ -108,6 +108,7 @@ interface TodoListAgendaProps {
   refreshKey?: number;
   updateTaskDate?: (taskId: string, newDate: Date) => Promise<void>; // Nouvelle prop
   isMobile?: boolean; // Prop pour détecter si on est sur mobile
+  initialSelectedObjectId?: string | null; // Nouvelle prop pour l'objet pré-sélectionné
 }
 
 export default function TodoListAgenda({
@@ -115,12 +116,30 @@ export default function TodoListAgenda({
   refreshKey = 0,
   updateTaskDate,
   isMobile = false, // Par défaut, supposer qu'on n'est pas sur mobile
+  initialSelectedObjectId = null,
 }: TodoListAgendaProps) {
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [agendaHeight, setAgendaHeight] = useState<number>(48); // Hauteur en px
   const [tasks, setTasks] = useState<Task[]>([]);
   const [objects, setObjects] = useState<AppObject[]>([]);
-  const [selectedObjectId, setSelectedObjectId] = useState<string>("");
+  const [selectedObjectId, setSelectedObjectId] = useState<string>(
+    initialSelectedObjectId || ""
+  );
+  const [lastInitialObjectId, setLastInitialObjectId] = useState<string | null>(
+    initialSelectedObjectId
+  );
+
+  // Mettre à jour selectedObjectId quand initialSelectedObjectId change depuis le wrapper
+  // mais pas quand l'utilisateur change manuellement le sélecteur
+  useEffect(() => {
+    if (
+      initialSelectedObjectId &&
+      initialSelectedObjectId !== lastInitialObjectId
+    ) {
+      setSelectedObjectId(initialSelectedObjectId);
+      setLastInitialObjectId(initialSelectedObjectId);
+    }
+  }, [initialSelectedObjectId, lastInitialObjectId]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.LIST);
   const [maxHeight, setMaxHeight] = useState<number>(600); // valeur par défaut
