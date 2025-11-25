@@ -31,9 +31,21 @@ export default function ContactPage() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulation d'envoi du formulaire
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formState),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erreur lors de l'envoi du message");
+      }
+
       setIsSubmitted(true);
       toast.success("Votre message a été envoyé avec succès!");
 
@@ -49,7 +61,16 @@ export default function ContactPage() {
         });
         setIsSubmitted(false);
       }, 5000);
-    }, 1500);
+    } catch (error) {
+      console.error("Erreur:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Une erreur est survenue lors de l'envoi du message"
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
