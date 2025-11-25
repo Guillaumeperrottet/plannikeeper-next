@@ -37,32 +37,6 @@ export default async function SubscriptionPage() {
     include: { plan: true },
   });
 
-  const plans = await prisma.plan.findMany({
-    where: {
-      name: {
-        notIn: ["SUPER_ADMIN", "ILLIMITE", "CUSTOM"],
-      },
-    },
-    orderBy: {
-      price: "asc",
-    },
-  });
-
-  // Convertir les décimaux en nombres pour le client
-  const formattedPlans = plans.map((plan) => ({
-    ...plan,
-    price: typeof plan.price === "object" ? Number(plan.price) : plan.price,
-    monthlyPrice:
-      typeof plan.monthlyPrice === "object"
-        ? Number(plan.monthlyPrice)
-        : plan.monthlyPrice,
-    yearlyPrice: plan.yearlyPrice
-      ? typeof plan.yearlyPrice === "object"
-        ? Number(plan.yearlyPrice)
-        : plan.yearlyPrice
-      : null,
-  }));
-
   const formattedSubscription = subscription
     ? {
         ...subscription,
