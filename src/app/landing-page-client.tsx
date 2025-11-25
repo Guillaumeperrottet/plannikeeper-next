@@ -734,34 +734,6 @@ const ModernLandingPage = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-[#d9840d]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="text-center md:text-left">
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                Prêt à optimiser votre gestion immobilière ?
-              </h2>
-              <p className="text-lg text-white/90 max-w-2xl">
-                Rejoignez des milliers de professionnels qui ont déjà transformé
-                leur façon de travailler.
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/signup?plan=FREE">
-                <Button
-                  className="w-full sm:w-auto px-6 py-6 text-base bg-white text-[#d9840d] hover:bg-gray-50"
-                  onClick={() => handleSignupClick("FREE", "cta_section")}
-                >
-                  Commencer maintenant
-                  <ChevronRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Footer */}
       <footer className="py-16 bg-[#19140d] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
