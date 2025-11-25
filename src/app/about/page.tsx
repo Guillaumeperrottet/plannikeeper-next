@@ -1,407 +1,179 @@
 "use client";
 
-import { motion, AnimatePresence, Variants } from "framer-motion";
-import { ArrowLeft, User, HomeIcon, RocketIcon, Info } from "lucide-react";
-import { CurrencyDollarIcon } from "@heroicons/react/24/outline";
+import { ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import PremiumBurgerButton from "@/app/components/ui/BurgerButton";
-import { useState } from "react";
-
-// Animations pour les entrées des éléments
-const fadeInUp: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.6,
-      ease: "easeOut" as const,
-    },
-  },
-};
-
-// Données de team
-const founder = {
-  name: "Guillaume Perrottet",
-  role: "Développeur",
-  bio: "Nous avons créé Plannikeeper pour répondre aux défis spécifiques que nous avons rencontrés dans la gestion quotidienne de campings et d'hôtels. Combinant notre expertise dans ces deux domaines, nous développons et améliorons continuellement cette solution pour la rendre toujours plus intuitive et efficace.",
-  image: "/images/guillaume-perrottet.jpg",
-};
-
-const NAV_ITEMS = [
-  { id: "hero", icon: HomeIcon, label: "Accueil", href: "/#hero" },
-  {
-    id: "features",
-    icon: RocketIcon,
-    label: "Fonctionnalités",
-    href: "/#features",
-  },
-  {
-    id: "pricing",
-    icon: CurrencyDollarIcon,
-    label: "Tarifs",
-    href: "/#pricing",
-  },
-  { id: "about", icon: Info, label: "A propos", href: "/about" },
-  { id: "contact", icon: User, label: "Nous contacter", href: "/contact" },
-];
+import Header from "@/app/components/landing/Header";
+import Footer from "@/app/components/landing/Footer";
 
 export default function AboutPage() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const triggerHapticFeedback = () => {
-    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-      navigator.vibrate(10);
-    }
-  };
-
-  const toggleMobileMenu = () => {
-    triggerHapticFeedback();
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#f9f3ec] to-[#f5f3ef]">
-      {/* Flèche de retour en haut à gauche */}
+    <div className="min-h-screen bg-white">
+      <Header />
+
+      {/* Bouton retour fixe */}
       <Link
         href="/"
-        className="fixed top-6 left-6 z-50 flex items-center gap-2 bg-white/80 hover:bg-white shadow-md rounded-full p-2 transition-colors border border-gray-200"
+        className="fixed top-20 left-6 z-40 flex items-center gap-2 text-gray-600 hover:text-[#d9840d] transition-colors"
       >
-        <ArrowLeft className="w-5 h-5 text-[color:var(--primary)]" />
-        <span className="sr-only">Retour</span>
+        <ArrowLeft className="w-5 h-5" />
+        <span className="text-sm font-medium">Retour</span>
       </Link>
-      {/* Burger menu en haut à droite */}
-      <div className="fixed top-6 right-6 z-50">
-        <PremiumBurgerButton
-          isOpen={mobileMenuOpen}
-          onClick={toggleMobileMenu}
-          variant="primary"
-        />
-      </div>
-      {/* Menu Overlay avec des animations synchronisées */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <>
-            {/* Fond sombre animé - Synchronisé avec le menu latéral */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
-              onClick={() => setMobileMenuOpen(false)}
-              onMouseDown={(e) => e.stopPropagation()}
-              onTouchStart={(e) => e.stopPropagation()}
-            />
-            {/* Menu latéral avec animation améliorée */}
-            <motion.div
-              initial={{ opacity: 0, x: "100%" }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed inset-y-0 right-0 w-full sm:w-96 max-w-sm bg-[#f9f3ec] z-50 shadow-xl sm:rounded-l-3xl border-l border-[#beac93] flex flex-col overflow-y-auto"
-              style={{ maxHeight: "100vh", overflowY: "auto" }}
-              onClick={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.stopPropagation()}
-              onTouchStart={(e) => e.stopPropagation()}
-            >
-              {/* En-tête du menu */}
-              <div className="p-6 border-b border-[#beac93] flex items-center justify-between">
-                <div className="text-2xl font-bold text-[#141313]">
-                  plannikeeper
-                </div>
-                <PremiumBurgerButton
-                  isOpen={true}
-                  onClick={toggleMobileMenu}
-                  variant="light"
-                />
-              </div>
-              {/* Contenu du menu */}
-              <div className="flex-1 overflow-y-auto py-6 px-6">
-                <div className="mb-8">
-                  <h3 className="text-sm font-medium text-[#62605d] mb-3 uppercase tracking-wider">
-                    Navigation
-                  </h3>
-                  <nav className="flex flex-col space-y-3">
-                    {NAV_ITEMS.map(({ id, icon: Icon, label, href }, index) => (
-                      <motion.div
-                        key={id}
-                        initial={{ opacity: 0, x: 50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.1 * index, duration: 0.3 }}
-                      >
-                        <Link
-                          href={href}
-                          className={`w-full p-4 rounded-xl transition duration-300 flex items-center gap-3 ${
-                            false
-                              ? "bg-[#d9840d] text-white shadow-md"
-                              : "bg-white text-[#141313] hover:bg-[#e8ebe0] border border-[#beac93]"
-                          }`}
-                          onClick={() => setMobileMenuOpen(false)}
-                        >
-                          <Icon className="h-5 w-5" />
-                          <span className="text-base font-medium">{label}</span>
-                        </Link>
-                      </motion.div>
-                    ))}
-                  </nav>
-                </div>
-                <div className="mb-8">
-                  <h3 className="text-sm font-medium text-[#62605d] mb-3 uppercase tracking-wider">
-                    Votre compte
-                  </h3>
-                  <nav className="flex flex-col space-y-3">
-                    <motion.div
-                      initial={{ opacity: 0, x: 50 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.5, duration: 0.3 }}
-                    >
-                      <Link
-                        href="/dashboard"
-                        className="w-full p-4 rounded-xl transition duration-300 flex items-center gap-3 bg-white text-[#141313] hover:bg-[#e8ebe0] border border-[#beac93]"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <User className="h-5 w-5" />
-                        <span className="text-base font-medium">
-                          Se connecter
-                        </span>
-                      </Link>
-                    </motion.div>
-                    <motion.div
-                      initial={{ opacity: 0, x: 50 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.6, duration: 0.3 }}
-                    >
-                      <Link
-                        href="/signup"
-                        className="w-full p-4 rounded-xl transition duration-300 flex items-center gap-3 bg-white text-[#141313] hover:bg-[#e8ebe0] border border-[#beac93]"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-5 w-5"
-                        >
-                          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                          <circle cx="9" cy="7" r="4" />
-                          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                        </svg>
-                        <span className="text-base font-medium">
-                          Créer un compte
-                        </span>
-                      </Link>
-                    </motion.div>
-                  </nav>
-                </div>
-              </div>
-              <div className="p-6 border-t border-[#beac93]">
-                <Link
-                  href="/signup?plan=FREE"
-                  className="w-full justify-center flex items-center gap-2 bg-[#d9840d] hover:bg-[#c6780c] text-white px-4 py-3 rounded-xl font-medium transition-colors shadow-md"
-                  onClick={() => {
-                    triggerHapticFeedback();
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  Commencer gratuitement
-                  <motion.svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    animate={{ x: [0, 5, 0] }}
-                    transition={{
-                      repeat: Infinity,
-                      repeatType: "loop",
-                      duration: 1.5,
-                      repeatDelay: 2,
-                    }}
-                  >
-                    <path d="M5 12h14" />
-                    <path d="m12 5 7 7-7 7" />
-                  </motion.svg>
-                </Link>
-                <motion.p
-                  className="text-center text-[#62605d] text-sm mt-4"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                >
-                  Simplifiez la gestion de vos projets immobiliers
-                </motion.p>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-      {/* Hero section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={fadeInUp}
-          className="text-center mb-16"
-        >
-          <div className="inline-block bg-[color:var(--primary)]/10 px-4 py-1 rounded-full mb-4 border border-[color:var(--primary)]/20">
-            <span className="text-[color:var(--primary)] font-medium text-sm">
-              À propos de Plannikeeper
-            </span>
-          </div>
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 text-gray-900">
-            L&apos;histoire derrière le projet
+
+      {/* Hero Section */}
+      <section className="pt-32 pb-20 px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
+            À propos de PlanniKeeper
           </h1>
-          <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
-            Comment un défi personnel dans la gestion de campings et
-            d&apos;hôtels a donné naissance à Plannikeeper.
-          </p>
-        </motion.div>
-
-        {/* Section de présentation */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-24">
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8 }}
-            className="order-2 lg:order-1"
-          >
-            <h2 className="text-3xl font-bold mb-6 text-gray-900">
-              Pourquoi Plannikeeper
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Plannikeeper est né d&apos;un besoin concret. Pour la maintenance
-              de trois campings et d&apos;un hôtel, nous avons rapidement
-              constaté que les outils existants ne répondaient pas aux défis
-              spécifiques de ces établissements : planification de la
-              maintenance, suivi des tâches, centralisation des documents...
-            </p>
-            <p className="text-gray-600 mb-6">
-              Passionné par la technologie et l&apos;optimisation des processus,
-              nous avons décidé de créer notre propre solution. Plannikeeper a
-              d&apos;abord été développé pour notre usage personnel, avec
-              l&apos;objectif de simplifier notre quotidien. C&apos;est en
-              voyant les résultats concrets - gain de temps, réduction des
-              erreurs, meilleure communication - que nous avons réalisé que
-              cette solution pourrait aider d&apos;autres professionnels du
-              secteur.
-            </p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8 }}
-            className="order-1 lg:order-2 relative"
-          >
-            <div className="relative w-full h-[400px] rounded-2xl overflow-hidden shadow-xl">
-              <div className="absolute inset-0 bg-[color:var(--primary)]/10 rounded-2xl transform rotate-3"></div>
-              <div className="absolute inset-0 overflow-hidden rounded-2xl border-2 border-[color:var(--primary)]/20">
-                <Image
-                  src="/images/camping-hotel-collage.jpg"
-                  alt="Les campings et hôtels qui utilisent Plannikeeper"
-                  fill
-                  className="object-cover"
-                  priority={false}
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                />
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Section Fondateur */}
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={fadeInUp}
-          className="mb-24"
-        >
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-6 text-gray-900">
-              Derrière Plannikeeper
-            </h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Un projet développé par{" "}
-              <a
-                href="https://www.webbing.ch/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[color:var(--primary)] hover:underline font-semibold"
-              >
-                Webbing
-              </a>
-            </p>
-          </div>
-
-          <div className="flex justify-center">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              viewport={{ once: true }}
-              className="relative"
+          <p className="text-xl text-gray-600 leading-relaxed">
+            Une solution développée par{" "}
+            <a
+              href="https://www.webbing.ch/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#d9840d] hover:underline font-semibold"
             >
-              {/* Effet de fond décoratif */}
-              <div className="absolute -inset-0.5 bg-gradient-to-br from-[#d9840d] to-[#e36002] rounded-2xl blur opacity-20"></div>
+              Webbing
+            </a>{" "}
+            pour simplifier la gestion immobilière des professionnels.
+          </p>
+        </div>
+      </section>
 
-              <div className="relative bg-white p-8 md:p-12 rounded-2xl shadow-xl border-2 border-[#beac93] flex flex-col items-center text-center max-w-3xl">
-                <div className="inline-block bg-[#d9840d]/10 px-8 py-3 rounded-full mb-8 border-2 border-[#d9840d]/30">
-                  <h3 className="text-[#d9840d] font-bold text-3xl">Webbing</h3>
-                </div>
-
-                <p className="text-[#62605d] text-lg leading-relaxed mb-6">
-                  {founder.bio}
+      {/* Notre Histoire */}
+      <section className="py-20 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">
+                La petite histoire
+              </h2>
+              <div className="space-y-4 text-gray-600 leading-relaxed">
+                <p>
+                  PlanniKeeper est né d&apos;un constat simple : la gestion
+                  quotidienne des biens immobiliers, qu&apos;il s&apos;agisse de
+                  campings, d&apos;hôtels ou d&apos;immeubles, manque
+                  d&apos;outils vraiment adaptés au terrain.
                 </p>
-
-                <div className="bg-[#f9f3ec] p-6 rounded-xl border-l-4 border-[#d9840d] mt-4">
-                  <p className="text-[#62605d] italic text-base leading-relaxed">
-                    &quot;Nous croyons fermement que la technologie doit servir
-                    l&apos;humain, pas l&apos;inverse. C&apos;est pourquoi
-                    Plannikeeper a été conçu pour être intuitif, adapté à la
-                    réalité du terrain, et en constante évolution selon les
-                    retours des utilisateurs.&quot;
+                <p>
+                  Trop souvent, les professionnels jonglent entre des fichiers
+                  Excel éparpillés, des notes manuscrites et des outils
+                  génériques qui ne comprennent pas leurs besoins spécifiques.
+                </p>
+                <div className="bg-white p-6 rounded-lg border-l-4 border-[#d9840d] mt-6">
+                  <p className="text-gray-700 italic">
+                    &quot;En collaboration avec Webbing, nous avons pu
+                    développer un outil qui répond exactement à nos besoins
+                    quotidiens. Finies les tâches dispersées et les documents
+                    perdus : tout est centralisé et accessible en quelques
+                    clics.&quot;
+                  </p>
+                  <p className="text-sm text-gray-600 mt-3 font-medium">
+                    — Camping Potentille SA
                   </p>
                 </div>
-
-                <div className="mt-8 pt-8 border-t-2 border-[#beac93] w-full">
-                  <a
-                    href="https://www.webbing.ch/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-[#d9840d] hover:text-[#c6780c] font-bold text-2xl transition-all duration-300 hover:gap-3 group"
-                  >
-                    <span>Découvrir Webbing.ch</span>
-                    <svg
-                      className="w-6 h-6 transition-transform duration-300 group-hover:translate-x-1"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M17 8l4 4m0 0l-4 4m4-4H3"
-                      />
-                    </svg>
-                  </a>
-                </div>
               </div>
-            </motion.div>
+            </div>
+
+            <div className="relative h-[400px] rounded-lg overflow-hidden shadow-xl border border-gray-200">
+              <Image
+                src="/images/camping-hotel-collage.jpg"
+                alt="Gestion de campings et hôtels"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+            </div>
           </div>
-        </motion.div>
+        </div>
       </section>
+
+      {/* Notre Mission */}
+      <section className="py-20 px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-gray-900 mb-12 text-center">
+            Notre mission
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-[#d9840d]/10 rounded-full flex items-center justify-center">
+                <span className="text-3xl">🎯</span>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Simplicité
+              </h3>
+              <p className="text-gray-600">
+                Une interface intuitive accessible à tous, sans formation
+                complexe.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-[#d9840d]/10 rounded-full flex items-center justify-center">
+                <span className="text-3xl">⚡</span>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Efficacité
+              </h3>
+              <p className="text-gray-600">
+                Automatiser les tâches répétitives pour vous concentrer sur
+                l&apos;essentiel.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-[#d9840d]/10 rounded-full flex items-center justify-center">
+                <span className="text-3xl">🔄</span>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Évolution
+              </h3>
+              <p className="text-gray-600">
+                En constante amélioration grâce à vos retours et suggestions.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Webbing */}
+      <section className="py-20 px-4 sm:px-6">
+        <div className="max-w-3xl mx-auto">
+          <div className="bg-white p-8 md:p-10 rounded-lg border border-gray-200 text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Développé par Webbing
+            </h2>
+            <p className="text-gray-600 mb-6 leading-relaxed">
+              Une entreprise suisse spécialisée dans la création de solutions
+              SaaS innovantes et accessibles.
+            </p>
+            <a
+              href="https://www.webbing.ch/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 text-base font-medium text-white bg-[#d9840d] rounded-lg hover:bg-[#c6780c] transition-colors"
+            >
+              Découvrir Webbing
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 8l4 4m0 0l-4 4m4-4H3"
+                />
+              </svg>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <Footer />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import LandingPageClient from "@/app/landing-page-client";
+import LandingSimple from "@/app/components/landing/LandingSimple";
 import { getUser } from "@/lib/auth-session";
 import { redirect } from "next/navigation";
 
@@ -106,7 +106,7 @@ export default async function Page() {
           }),
         }}
       />
-      <LandingPageClient />
+      <LandingSimple />
     </>
   );
 }
