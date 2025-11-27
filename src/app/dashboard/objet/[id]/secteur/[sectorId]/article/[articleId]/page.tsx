@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { getUsersWithObjectAccess } from "@/lib/object-access-utils";
-import TasksPage from "./tasks-page-table";
+import TasksPageClient from "./TasksPageClient";
 
 export default async function ArticleDetailPage({
   params,
@@ -56,7 +56,7 @@ export default async function ArticleDetailPage({
   const users = await getUsersWithObjectAccess(article.sector.object.id);
 
   return (
-    <TasksPage
+    <TasksPageClient
       initialTasks={article.tasks}
       users={users}
       articleId={article.id}
