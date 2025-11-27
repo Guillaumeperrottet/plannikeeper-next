@@ -167,6 +167,28 @@ export const TodoListAgendaContainer = ({
     [navToTask, triggerHapticFeedback]
   );
 
+  // Complétion rapide d'une tâche
+  const handleQuickComplete = useCallback(
+    async (taskId: string) => {
+      triggerHapticFeedback();
+
+      try {
+        const response = await fetch(`/api/tasks/${taskId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ done: true, status: "completed" }),
+        });
+
+        if (response.ok && onRefresh) {
+          await onRefresh();
+        }
+      } catch (error) {
+        console.error("Erreur lors de la complétion de la tâche:", error);
+      }
+    },
+    [triggerHapticFeedback, onRefresh]
+  );
+
   // Toggle avec feedback haptique
   const handleToggleExpanded = useCallback(() => {
     triggerHapticFeedback();
@@ -257,6 +279,7 @@ export const TodoListAgendaContainer = ({
           refreshKey={refreshKey}
           updateTaskDate={updateTaskDate}
           onTaskClick={handleTaskClick}
+          onQuickComplete={handleQuickComplete}
           showControls={state.showControls}
           showFiltersPanel={state.showFiltersPanel}
         />

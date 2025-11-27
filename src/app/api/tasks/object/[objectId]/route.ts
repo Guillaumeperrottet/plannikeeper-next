@@ -70,6 +70,16 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
           name: true,
         },
       },
+      documents: {
+        select: {
+          id: true,
+          name: true,
+          filePath: true,
+          fileType: true,
+          fileSize: true,
+        },
+        take: 5, // Limite à 5 documents pour ne pas surcharger
+      },
     },
     orderBy: [{ realizationDate: "asc" }, { createdAt: "desc" }],
   });
