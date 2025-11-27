@@ -1,4 +1,4 @@
-// src/app/components/TodoListAgendaWrapper.tsx - Modifié avec auto-sélection d'objet
+// src/app/components/TodoListAgendaWrapper.tsx - Adapté au nouvel agenda refactorisé
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -7,8 +7,9 @@ import { usePathname } from "next/navigation";
 import { useTasks } from "@/hooks/useData";
 import { useTaskUpdates } from "@/hooks/useTaskUpdates"; // Nouveau hook
 
-// Import dynamique du composant TodoListAgenda
-const TodoListAgenda = dynamic(() => import("./TodoListAgenda"), {
+// Import dynamique du composant TodoListAgenda REFACTORISÉ
+// Pointe maintenant vers le nouveau dossier modulaire TodoListAgenda/
+const TodoListAgenda = dynamic(() => import("./TodoListAgenda/"), {
   ssr: false,
 });
 
