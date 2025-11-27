@@ -12,6 +12,7 @@ import { LoadingSystemProvider } from "./components/LoadingSystem";
 import { SessionManager } from "./components/SessionManager";
 import { InactivityManager } from "./components/InactivityManager";
 import { FirstLoginDetector } from "./components/FirstLoginDetector";
+import { GlobalTaskButton } from "./components/GlobalTaskButton";
 
 export const metadata = {
   title: {
@@ -104,6 +105,8 @@ export default async function RootLayout({
               <Navbar user={userWithRole} />
               <div className="pb-16 md:pb-14">{children}</div>
               <TodoListAgendaWrapper />
+              {/* Bouton flottant global pour créer une tâche depuis n'importe où */}
+              <GlobalTaskButton />
             </NotificationProvider>
           ) : (
             <>{children}</>
