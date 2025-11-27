@@ -10,6 +10,7 @@ interface ListViewProps {
   tasks: Task[];
   filters: AgendaFilters;
   onTaskClick: (task: Task) => Promise<void>;
+  onQuickComplete?: (taskId: string) => Promise<void>;
   isMobile: boolean;
 }
 
@@ -17,6 +18,7 @@ export const ListView = ({
   tasks,
   filters,
   onTaskClick,
+  onQuickComplete,
   isMobile,
 }: ListViewProps) => {
   // Regrouper les tâches (mémoïsé)
@@ -50,7 +52,12 @@ export const ListView = ({
         ) : (
           <ul className="space-y-2 pb-4">
             {thisWeek.map((task) => (
-              <TaskCard key={task.id} task={task} onClick={onTaskClick} />
+              <TaskCard
+                key={task.id}
+                task={task}
+                onClick={onTaskClick}
+                onQuickComplete={onQuickComplete}
+              />
             ))}
           </ul>
         )}
@@ -68,7 +75,12 @@ export const ListView = ({
         ) : (
           <ul className="space-y-2 pb-4">
             {upcoming.map((task) => (
-              <TaskCard key={task.id} task={task} onClick={onTaskClick} />
+              <TaskCard
+                key={task.id}
+                task={task}
+                onClick={onTaskClick}
+                onQuickComplete={onQuickComplete}
+              />
             ))}
           </ul>
         )}

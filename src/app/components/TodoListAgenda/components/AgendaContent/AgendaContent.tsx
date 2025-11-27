@@ -19,6 +19,7 @@ interface AgendaContentProps {
   refreshKey: number;
   updateTaskDate?: (taskId: string, newDate: Date) => Promise<void>;
   onTaskClick: (task: Task) => Promise<void>;
+  onQuickComplete?: (taskId: string) => Promise<void>;
   showControls: boolean;
   showFiltersPanel: boolean;
 }
@@ -32,6 +33,7 @@ export const AgendaContent = ({
   refreshKey,
   updateTaskDate,
   onTaskClick,
+  onQuickComplete,
   showControls,
   showFiltersPanel,
 }: AgendaContentProps) => {
@@ -70,6 +72,7 @@ export const AgendaContent = ({
           tasks={tasks}
           filters={filters}
           onTaskClick={onTaskClick}
+          onQuickComplete={onQuickComplete}
           isMobile={isMobile}
         />
       )}
