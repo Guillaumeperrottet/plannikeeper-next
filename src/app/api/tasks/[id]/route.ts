@@ -164,6 +164,18 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     reminderDate = null;
   }
 
+  // Gérer completedAt basé sur le changement de statut
+  let completedAtValue = task.completedAt; // Garder la valeur actuelle par défaut
+
+  // Si le statut change vers "completed", enregistrer la date
+  if (status === "completed" && currentTask?.status !== "completed") {
+    completedAtValue = new Date();
+  }
+  // Si le statut n'est plus "completed", réinitialiser completedAt
+  else if (status !== "completed" && currentTask?.status === "completed") {
+    completedAtValue = null;
+  }
+
   const updatedTask = await prisma.task.update({
     where: { id: taskId },
     data: {
@@ -180,6 +192,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       executantComment,
       done: status === "completed",
       recurrenceReminderDate: reminderDate,
+      completedAt: completedAtValue,
     },
   });
 
@@ -280,6 +293,26 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
         },
         { status: 400 }
       );
+    }
+  }
+
+  // Gérer completedAt si le statut est dans updateData
+  if ("status" in updateData) {
+    const currentStatus = task.status;
+    const newStatus = updateData.status;
+
+    // Si le statut devient "completed", ajouter completedAt
+    if (newStatus === "completed" && currentStatus !== "completed") {
+      updateData.completedAt = new Date();
+    }
+    // Si le statut n'est plus "completed", réinitialiser completedAt
+    else if (newStatus !== "completed" && currentStatus === "completed") {
+      updateData.completedAt = null;
+    }
+
+    // S'assurer que done est cohérent avec status
+    if (newStatus === "completed") {
+      updateData.done = true;
     }
   }
 

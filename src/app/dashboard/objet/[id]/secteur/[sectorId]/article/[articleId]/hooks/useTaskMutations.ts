@@ -148,7 +148,66 @@ export function useTaskMutations({
       onTasksChange((tasks) =>
         tasks.map((task) => (task.id === taskId ? updatedTask : task))
       );
-      toast.success("Statut mis à jour avec succès");
+
+      // Toast amélioré quand une tâche est marquée "completed"
+      if (newStatus === "completed") {
+        toast.success("Tâche terminée ! Auto-archivage dans 24h", {
+          duration: 8000,
+          action: {
+            label: "Archiver maintenant",
+            onClick: async () => {
+              try {
+                const archiveResponse = await fetch(
+                  `/api/tasks/${taskId}/archive`,
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ archive: true }),
+                  }
+                );
+
+                if (archiveResponse.ok) {
+                  onTasksChange((tasks) =>
+                    tasks.filter((task) => task.id !== taskId)
+                  );
+                  toast.success("Tâche archivée immédiatement");
+                }
+              } catch (error) {
+                console.error("Erreur archivage:", error);
+                toast.error("Erreur lors de l'archivage");
+              }
+            },
+          },
+          cancel: {
+            label: "Annuler",
+            onClick: async () => {
+              try {
+                const cancelResponse = await fetch(`/api/tasks/${taskId}`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ status: "pending" }),
+                });
+
+                if (cancelResponse.ok) {
+                  const revertedTask = await cancelResponse.json();
+                  onTasksChange((tasks) =>
+                    tasks.map((task) =>
+                      task.id === taskId ? revertedTask : task
+                    )
+                  );
+                  toast.info("Tâche remise en attente");
+                }
+              } catch (error) {
+                console.error("Erreur annulation:", error);
+                toast.error("Erreur lors de l'annulation");
+              }
+            },
+          },
+        });
+      } else {
+        toast.success("Statut mis à jour avec succès");
+      }
+
       return true;
     } catch (error) {
       console.error("Erreur changement statut:", error);

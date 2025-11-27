@@ -31,6 +31,8 @@ export type Task = {
   createdAt: Date;
   updatedAt: Date;
   archived?: boolean;
+  archivedAt?: Date | null;
+  completedAt?: Date | null;
   documents?: TaskDocument[];
   article?: {
     id: string;

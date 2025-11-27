@@ -100,7 +100,63 @@ export function useTaskDetail({
 
       const updated = await response.json();
       setTask(updated);
-      toast.success("Statut mis à jour avec succès");
+
+      // Toast amélioré quand une tâche est marquée "completed"
+      if (newStatus === "completed") {
+        toast.success("Tâche terminée ! Auto-archivage dans 24h", {
+          duration: 8000,
+          action: {
+            label: "Archiver maintenant",
+            onClick: async () => {
+              try {
+                const archiveResponse = await fetch(
+                  `/api/tasks/${task.id}/archive`,
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ archive: true }),
+                  }
+                );
+
+                if (archiveResponse.ok) {
+                  toast.success("Tâche archivée immédiatement");
+                  // Rediriger vers l'article
+                  if (task.article) {
+                    const articleUrl = `/dashboard/objet/${task.article.sector.object.id}/secteur/${task.article.sector.id}/article/${task.article.id}`;
+                    router.push(articleUrl);
+                  }
+                }
+              } catch (error) {
+                console.error("Erreur archivage:", error);
+                toast.error("Erreur lors de l'archivage");
+              }
+            },
+          },
+          cancel: {
+            label: "Annuler",
+            onClick: async () => {
+              try {
+                const cancelResponse = await fetch(`/api/tasks/${task.id}`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ status: "pending" }),
+                });
+
+                if (cancelResponse.ok) {
+                  const revertedTask = await cancelResponse.json();
+                  setTask(revertedTask);
+                  toast.info("Tâche remise en attente");
+                }
+              } catch (error) {
+                console.error("Erreur annulation:", error);
+                toast.error("Erreur lors de l'annulation");
+              }
+            },
+          },
+        });
+      } else {
+        toast.success("Statut mis à jour avec succès");
+      }
     } catch (error) {
       console.error("Erreur:", error);
       toast.error("Erreur lors de la mise à jour du statut");
