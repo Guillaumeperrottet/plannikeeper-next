@@ -208,6 +208,7 @@ model Task {
   updatedAt              DateTime   @updatedAt
   archived               Boolean    @default(false)
   archivedAt             DateTime?
+  completedAt            DateTime?
   comments               Comment[]
   documents              Document[]
   article                Article    @relation(fields: [articleId], references: [id], onDelete: Cascade)

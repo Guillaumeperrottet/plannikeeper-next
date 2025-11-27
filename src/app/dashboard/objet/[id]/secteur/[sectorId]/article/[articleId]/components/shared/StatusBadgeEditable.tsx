@@ -61,7 +61,11 @@ export function StatusBadgeEditable({
     setIsSaving(true);
     try {
       await onStatusChange(newStatus);
-      toast.success("Statut modifié");
+      // Ne pas afficher de toast ici pour "completed" car useTaskMutations/useTaskDetail
+      // affichent déjà un toast personnalisé avec les actions
+      if (newStatus !== "completed") {
+        toast.success("Statut modifié");
+      }
     } catch {
       toast.error("Erreur lors de la modification du statut");
     } finally {
