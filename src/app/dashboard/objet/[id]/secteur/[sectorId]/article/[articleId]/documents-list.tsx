@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import NextImage from "next/image";
 import { File, Trash2, FileText, Image, AlertCircle, Eye } from "lucide-react";
 import { toast } from "sonner";
 import DocumentPreview from "./DocumentPreview";
@@ -161,45 +162,128 @@ export default function DocumentsList({
   }
 
   return (
-    <div className="space-y-2" data-document-list>
-      {documents.map((doc, index) => (
-        <div
-          key={doc.id}
-          className="flex items-center justify-between p-2 sm:p-3 bg-[color:var(--background)] rounded-lg border border-[color:var(--border)] shadow-sm hover:bg-[color:var(--muted)]/50 transition-colors"
-        >
-          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-            {getFileIcon(doc.fileType)}
-            <div className="flex-1 min-w-0">
-              <div
-                className="block text-xs sm:text-sm font-medium hover:underline truncate cursor-pointer text-[color:var(--foreground)]"
-                onClick={() => openPreview(doc, index)}
-              >
-                {doc.name}
-              </div>
-              <div className="text-[10px] sm:text-xs text-[color:var(--muted-foreground)]">
-                {formatFileSize(doc.fileSize)} •{" "}
-                {new Date(doc.createdAt).toLocaleDateString()}
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-1 sm:gap-2">
-            <button
-              onClick={() => openPreview(doc, index)}
-              className="p-1 hover:text-[color:var(--info-foreground)] transition-colors"
-              title="Prévisualiser"
-            >
-              <Eye size={14} className="sm:w-4 sm:h-4" />
-            </button>
-            <button
-              onClick={() => handleDelete(doc.id)}
-              className="p-1 hover:text-[color:var(--destructive)] transition-colors"
-              title="Supprimer"
-            >
-              <Trash2 size={14} className="sm:w-4 sm:h-4" />
-            </button>
+    <div className="space-y-4" data-document-list>
+      {/* Image Gallery - Photos only */}
+      {documents.filter((doc) => doc.fileType.startsWith("image/")).length >
+        0 && (
+        <div>
+          <h4 className="text-sm font-medium mb-3 text-muted-foreground">
+            Photos (
+            {
+              documents.filter((doc) => doc.fileType.startsWith("image/"))
+                .length
+            }
+            )
+          </h4>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {documents
+              .filter((doc) => doc.fileType.startsWith("image/"))
+              .map((doc) => (
+                <div
+                  key={doc.id}
+                  className="group relative aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer border border-border hover:border-primary transition-all hover:shadow-lg"
+                  onClick={() =>
+                    openPreview(
+                      doc,
+                      documents.findIndex((d) => d.id === doc.id)
+                    )
+                  }
+                >
+                  <NextImage
+                    src={doc.filePath}
+                    alt={doc.name}
+                    fill
+                    className="object-cover transition-transform group-hover:scale-105"
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                    <Eye className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <p className="text-white text-xs truncate">{doc.name}</p>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(doc.id);
+                    }}
+                    className="absolute top-2 right-2 p-1.5 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/90"
+                    title="Supprimer"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
           </div>
         </div>
-      ))}
+      )}
+
+      {/* Other Documents - PDFs and files */}
+      {documents.filter((doc) => !doc.fileType.startsWith("image/")).length >
+        0 && (
+        <div>
+          <h4 className="text-sm font-medium mb-3 text-muted-foreground">
+            Fichiers (
+            {
+              documents.filter((doc) => !doc.fileType.startsWith("image/"))
+                .length
+            }
+            )
+          </h4>
+          <div className="space-y-2">
+            {documents
+              .filter((doc) => !doc.fileType.startsWith("image/"))
+              .map((doc) => (
+                <div
+                  key={doc.id}
+                  className="flex items-center justify-between p-3 bg-background rounded-lg border border-border shadow-sm hover:bg-muted/50 hover:border-primary transition-all"
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {getFileIcon(doc.fileType)}
+                    <div className="flex-1 min-w-0">
+                      <div
+                        className="block text-sm font-medium hover:underline truncate cursor-pointer text-foreground"
+                        onClick={() =>
+                          openPreview(
+                            doc,
+                            documents.findIndex((d) => d.id === doc.id)
+                          )
+                        }
+                      >
+                        {doc.name}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatFileSize(doc.fileSize)} •{" "}
+                        {new Date(doc.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() =>
+                        openPreview(
+                          doc,
+                          documents.findIndex((d) => d.id === doc.id)
+                        )
+                      }
+                      className="p-2 hover:bg-accent rounded-lg transition-colors"
+                      title="Prévisualiser"
+                    >
+                      <Eye size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(doc.id)}
+                      className="p-2 hover:bg-destructive/10 hover:text-destructive rounded-lg transition-colors"
+                      title="Supprimer"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
 
       {/* Composant de prévisualisation */}
       {previewDocument && (

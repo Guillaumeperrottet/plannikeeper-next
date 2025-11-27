@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 import { getUsersWithObjectAccess } from "@/lib/object-access-utils";
-import TaskDetailPage from "@/app/dashboard/objet/[id]/secteur/[sectorId]/article/[articleId]/task/[taskId]/task-detail-page";
+import { TaskDetailClient } from "../../components/TaskDetail/TaskDetailClient";
 
 export default async function TaskPage({
   params,
@@ -63,12 +63,9 @@ export default async function TaskPage({
   const users = await getUsersWithObjectAccess(task.article.sector.object.id);
 
   return (
-    <TaskDetailPage
+    <TaskDetailClient
       task={task}
       users={users}
-      objetId={objetId}
-      sectorId={sectorId}
-      articleId={articleId}
       readonly={readonly === "true"}
     />
   );
