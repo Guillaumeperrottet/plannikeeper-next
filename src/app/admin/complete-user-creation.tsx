@@ -31,7 +31,7 @@ interface CreateUserData {
 }
 
 const PLANS = [
-  { id: "FREE", name: "Gratuit", description: "Pour découvrir PlanniKeeper" },
+  { id: "FREE", name: "Gratuit", description: "Pour découvrir Plannikeeper" },
   {
     id: "PERSONAL",
     name: "Particulier",

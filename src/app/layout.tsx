@@ -16,24 +16,24 @@ import { GlobalTaskButton } from "./components/GlobalTaskButton";
 
 export const metadata = {
   title: {
-    default: "PlanniKeeper - Gestion Immobilière Simplifiée",
-    template: "%s | PlanniKeeper",
+    default: "Plannikeeper - Gestion Immobilière Simplifiée",
+    template: "%s | Plannikeeper",
   },
   description:
-    "PlanniKeeper est la solution tout-en-un pour la gestion de vos projets immobiliers. Organisez vos propriétés, planifiez vos tâches et maximisez votre efficacité.",
+    "Plannikeeper est la solution tout-en-un pour la gestion de vos projets immobiliers. Organisez vos propriétés, planifiez vos tâches et maximisez votre efficacité.",
   keywords:
     "plannikeeper, planikeeper, gestion immobilière, logiciel immobilier, gestion de biens, gestion de propriétés",
   openGraph: {
-    title: "PlanniKeeper - Gestion Immobilière Simplifiée",
+    title: "Plannikeeper - Gestion Immobilière Simplifiée",
     description: "Simplifiez la gestion de vos projets immobiliers",
     url: "https://plannikeeper.ch",
-    siteName: "PlanniKeeper",
+    siteName: "Plannikeeper",
     images: [
       {
         url: "https://plannikeeper.ch/images/logo.png",
         width: 1200,
         height: 630,
-        alt: "PlanniKeeper Dashboard",
+        alt: "Plannikeeper Dashboard",
       },
     ],
   },

@@ -77,7 +77,7 @@ export default function Navbar({ user }: { user: User }) {
           transition: "color 0.3s, transform 0.1s",
         }}
       >
-        PlanniKeeper
+        Plannikeeper
       </a>
 
       {/* Reste du code inchangé */}

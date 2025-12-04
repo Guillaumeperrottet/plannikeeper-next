@@ -5,27 +5,27 @@ import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title:
-    "PlanniKeeper - Gestion Immobilière Simplifiée | Organisez, Planifiez, Maîtrisez",
+    "Plannikeeper - Gestion Immobilière Simplifiée | Organisez, Planifiez, Maîtrisez",
   description:
-    "PlanniKeeper est la solution tout-en-un pour la gestion de vos projets immobiliers. Organisez vos propriétés, planifiez vos tâches et maximisez votre efficacité avec notre interface intuitive.",
+    "Plannikeeper est la solution tout-en-un pour la gestion de vos projets immobiliers. Organisez vos propriétés, planifiez vos tâches et maximisez votre efficacité avec notre interface intuitive.",
   keywords:
-    "PlanniKeeper, gestion immobilière, gestion de propriétés, organisation immobilière, planification immobilière, tâches immobilières, logiciel immobilier, gestion de biens, agence immobilière, gestion locative",
-  authors: [{ name: "PlanniKeeper" }],
-  creator: "PlanniKeeper",
-  publisher: "PlanniKeeper",
+    "Plannikeeper, gestion immobilière, gestion de propriétés, organisation immobilière, planification immobilière, tâches immobilières, logiciel immobilier, gestion de biens, agence immobilière, gestion locative",
+  authors: [{ name: "Plannikeeper" }],
+  creator: "Plannikeeper",
+  publisher: "Plannikeeper",
   viewport: "width=device-width, initial-scale=1",
   openGraph: {
-    title: "PlanniKeeper - Gestion Immobilière Simplifiée",
+    title: "Plannikeeper - Gestion Immobilière Simplifiée",
     description:
       "Simplifiez la gestion de vos projets immobiliers avec notre solution tout-en-un.",
     url: "https://plannikeeper.ch",
-    siteName: "PlanniKeeper",
+    siteName: "Plannikeeper",
     images: [
       {
         url: "/images/logo.png",
         width: 1200,
         height: 630,
-        alt: "PlanniKeeper - Gestion Immobilière Simplifiée",
+        alt: "Plannikeeper - Gestion Immobilière Simplifiée",
       },
     ],
     locale: "fr_FR",
@@ -33,9 +33,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "PlanniKeeper - Gestion Immobilière Simplifiée",
+    title: "Plannikeeper - Gestion Immobilière Simplifiée",
     description:
-      "Organisez, planifiez et maîtrisez vos projets immobiliers avec PlanniKeeper.",
+      "Organisez, planifiez et maîtrisez vos projets immobiliers avec Plannikeeper.",
     images: ["/images/logo.png"],
   },
   alternates: {

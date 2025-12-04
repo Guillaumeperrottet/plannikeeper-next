@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       <html>
         <head>
           <meta charset="utf-8">
-          <title>Bienvenue sur PlanniKeeper</title>
+          <title>Bienvenue sur Plannikeeper</title>
           <style>
             body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }
             .container { max-width: 600px; margin: 0 auto; background-color: white; }
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
             <div class="content">
               <h3>Bonjour ${userName},</h3>
               
-              <p>Félicitations ! Votre compte PlanniKeeper a été créé avec succès. Vous pouvez maintenant commencer à organiser et gérer vos projets immobiliers en toute simplicité.</p>
+              <p>Félicitations ! Votre compte Plannikeeper a été créé avec succès. Vous pouvez maintenant commencer à organiser et gérer vos projets immobiliers en toute simplicité.</p>
               
               <div class="credentials">
                 <h4>📋 Vos informations de connexion :</h4>
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
               
               <div style="text-align: center;">
                 <a href="${process.env.NEXT_PUBLIC_APP_URL}/signin" class="button">
-                  🚀 Accéder à PlanniKeeper
+                  🚀 Accéder à Plannikeeper
                 </a>
               </div>
               
@@ -120,8 +120,8 @@ export async function POST(req: NextRequest) {
             </div>
             
             <div class="footer">
-              <p>© ${new Date().getFullYear()} PlanniKeeper. Tous droits réservés.</p>
-              <p>Simplifiez votre gestion immobilière avec PlanniKeeper</p>
+              <p>© ${new Date().getFullYear()} Plannikeeper. Tous droits réservés.</p>
+              <p>Simplifiez votre gestion immobilière avec Plannikeeper</p>
             </div>
           </div>
         </body>
@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
     // Envoyer l'email via le service d'emails
     const { error } = await EmailService.sendEmail({
       to: userEmail,
-      subject: `🏠 Bienvenue sur PlanniKeeper - Votre compte est prêt !`,
+      subject: `🏠 Bienvenue sur Plannikeeper - Votre compte est prêt !`,
       html: htmlContent,
     });
 

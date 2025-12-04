@@ -24,7 +24,7 @@ export default function AboutPage() {
       <section className="pt-32 pb-20 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
-            À propos de PlanniKeeper
+            À propos de Plannikeeper
           </h1>
           <p className="text-xl text-gray-600 leading-relaxed">
             Une solution développée par{" "}
@@ -51,7 +51,7 @@ export default function AboutPage() {
               </h2>
               <div className="space-y-4 text-gray-600 leading-relaxed">
                 <p>
-                  PlanniKeeper est né d&apos;un constat simple : la gestion
+                  Plannikeeper est né d&apos;un constat simple : la gestion
                   quotidienne des biens immobiliers, qu&apos;il s&apos;agisse de
                   campings, d&apos;hôtels ou d&apos;immeubles, manque
                   d&apos;outils vraiment adaptés au terrain.
