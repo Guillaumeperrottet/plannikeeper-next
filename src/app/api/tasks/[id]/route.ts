@@ -127,6 +127,10 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     },
   });
 
+  // Détecter si l'assignation change
+  const isReassignment =
+    currentTask && currentTask.assignedToId !== (assignedToId || null);
+
   // Gérer la date de rappel pour les tâches récurrentes
   let reminderDate = recurrenceReminderDate;
 
@@ -211,6 +215,33 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       changes.push("date d'échéance");
     }
 
+    // 🔄 GÉRER LA RÉ-ASSIGNATION
+    if (isReassignment && assignedToId && assignedToId !== user.id) {
+      // Créer une notification TASK_ASSIGNED pour la nouvelle personne assignée
+      // Cette notification sera automatiquement incluse dans l'email quotidien du matin
+      await prisma.notification.create({
+        data: {
+          userId: assignedToId,
+          title: "Nouvelle tâche assignée",
+          message: `${user.name || "Un utilisateur"} vous a assigné la tâche "${name}"`,
+          category: "TASK_ASSIGNED",
+          link: `/dashboard/objet/${task.article.sector.object.id}/secteur/${task.article.sector.id}/article/${task.article.id}`,
+          data: {
+            taskId: taskId,
+            taskName: name,
+            objectName: task.article.sector.object.nom,
+            sectorName: task.article.sector.name,
+            articleTitle: task.article.title,
+            assignerName: user.name || "Un utilisateur",
+            isReassignment: true,
+          },
+        },
+      });
+      console.log(
+        `✅ Notification de ré-assignation créée pour ${assignedToId}`
+      );
+    }
+
     // Si la tâche passe à "terminée"
     if (!currentTask.done && status === "completed") {
       await NotificationService.notifyTaskCompleted(
@@ -219,7 +250,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
         user.name || "Utilisateur"
       );
     }
-    // Sinon, si il y a d'autres changements
+    // Sinon, si il y a d'autres changements (mais pas une ré-assignation seule)
     else if (changes.length > 0) {
       await NotificationService.notifyTaskUpdated(
         taskId,
@@ -296,6 +327,11 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     }
   }
 
+  // Détecter si l'assignation change
+  const isPatchReassignment =
+    "assignedToId" in updateData &&
+    task.assignedToId !== (updateData.assignedToId || null);
+
   // Gérer completedAt si le statut est dans updateData
   if ("status" in updateData) {
     const currentStatus = task.status;
@@ -320,6 +356,36 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     where: { id: taskId },
     data: updateData,
   });
+
+  // 🔄 GÉRER LA RÉ-ASSIGNATION via PATCH
+  if (
+    isPatchReassignment &&
+    updateData.assignedToId &&
+    updateData.assignedToId !== user.id
+  ) {
+    // Créer une notification TASK_ASSIGNED pour la nouvelle personne assignée
+    await prisma.notification.create({
+      data: {
+        userId: updateData.assignedToId,
+        title: "Nouvelle tâche assignée",
+        message: `${user.name || "Un utilisateur"} vous a assigné la tâche "${task.name}"`,
+        category: "TASK_ASSIGNED",
+        link: `/dashboard/objet/${task.article.sector.object.id}/secteur/${task.article.sector.id}/article/${task.article.id}`,
+        data: {
+          taskId: taskId,
+          taskName: task.name,
+          objectName: task.article.sector.object.nom,
+          sectorName: task.article.sector.name,
+          articleTitle: task.article.title,
+          assignerName: user.name || "Un utilisateur",
+          isReassignment: true,
+        },
+      },
+    });
+    console.log(
+      `✅ Notification de ré-assignation créée pour ${updateData.assignedToId} (PATCH)`
+    );
+  }
 
   return NextResponse.json(updatedTask);
 }
