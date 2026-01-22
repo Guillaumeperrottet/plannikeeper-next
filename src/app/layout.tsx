@@ -13,6 +13,7 @@ import { SessionManager } from "./components/SessionManager";
 import { InactivityManager } from "./components/InactivityManager";
 import { FirstLoginDetector } from "./components/FirstLoginDetector";
 import { GlobalTaskButton } from "./components/GlobalTaskButton";
+import { MobileSpeedDial } from "./components/MobileSpeedDial";
 
 export const metadata = {
   title: {
@@ -105,8 +106,14 @@ export default async function RootLayout({
               <Navbar user={userWithRole} />
               <div className="pb-16 md:pb-14">{children}</div>
               <TodoListAgendaWrapper />
-              {/* Bouton flottant global pour créer une tâche depuis n'importe où */}
-              <GlobalTaskButton />
+
+              {/* Speed Dial pour mobile - Regroupe Agenda + Création tâche */}
+              <MobileSpeedDial />
+
+              {/* Bouton flottant desktop uniquement - Création tâche */}
+              <div className="hidden md:block">
+                <GlobalTaskButton />
+              </div>
             </NotificationProvider>
           ) : (
             <>{children}</>

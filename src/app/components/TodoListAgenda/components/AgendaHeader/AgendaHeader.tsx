@@ -44,7 +44,10 @@ export const AgendaHeader = ({
   thisWeekEnd = new Date(),
 }: AgendaHeaderProps) => {
   return (
-    <div className="flex justify-between items-center bg-secondary text-secondary-foreground relative border-b border-border h-12">
+    <div
+      className="flex justify-between items-center bg-secondary text-secondary-foreground relative border-b border-border h-12"
+      data-agenda-header
+    >
       {isMobile ? (
         <MobileHeader
           objects={objects}

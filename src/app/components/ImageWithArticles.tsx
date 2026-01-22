@@ -53,7 +53,7 @@ type ImageWithArticlesProps = {
   // Nouvelle prop pour la mise à jour des articles
   onArticleUpdate?: (
     articleId: string,
-    updates: { title: string; description: string }
+    updates: { title: string; description: string },
   ) => Promise<void>;
   // Nouvelle prop pour la mise à jour de position
   onArticlePositionUpdate?: (
@@ -63,7 +63,7 @@ type ImageWithArticlesProps = {
       positionY: number;
       width: number;
       height: number;
-    }
+    },
   ) => Promise<void>;
   // Nouvelle prop pour créer un article
   onArticleCreate?: (articleData: {
@@ -179,13 +179,13 @@ export default function ImageWithArticles({
         onCreateModeChange(newMode);
       }
     },
-    [onCreateModeChange]
+    [onCreateModeChange],
   );
 
   // États pour le mode déplacement
   const [isDragging, setIsDragging] = useState(false);
   const [draggingArticleId, setDraggingArticleId] = useState<string | null>(
-    null
+    null,
   );
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [dragMode, setDragMode] = useState(false);
@@ -197,7 +197,7 @@ export default function ImageWithArticles({
   // États pour le redimensionnement
   const [isResizing, setIsResizing] = useState(false);
   const [resizingArticleId, setResizingArticleId] = useState<string | null>(
-    null
+    null,
   );
   const [resizeMode, setResizeMode] = useState(false);
   const [resizeHandle, setResizeHandle] = useState<string | null>(null); // 'se', 'sw', 'ne', 'nw'
@@ -416,7 +416,7 @@ export default function ImageWithArticles({
       isResizing,
       resizingArticleId,
       tempResizeSize,
-    ]
+    ],
   );
 
   // Fonctions utilitaires pour le drag & drop
@@ -441,7 +441,7 @@ export default function ImageWithArticles({
         positionY: percentY,
       };
     },
-    [imageSize]
+    [imageSize],
   );
 
   // Fonction pour vérifier si un point est dans les limites de l'image
@@ -469,7 +469,7 @@ export default function ImageWithArticles({
         x >= imageLeft && x <= imageRight && y >= imageTop && y <= imageBottom
       );
     },
-    [imageSize]
+    [imageSize],
   );
 
   // Fonctions utilitaires pour la gestion d'erreur et restauration
@@ -480,7 +480,7 @@ export default function ImageWithArticles({
         duration: 4000,
       });
     },
-    []
+    [],
   );
 
   const savePositionBeforeChange = useCallback((article: Article) => {
@@ -567,7 +567,7 @@ export default function ImageWithArticles({
       // Mettre à jour la position temporaire pour l'affichage en temps réel
       setTempDragPosition({ x: newX, y: newY });
     },
-    [isDragging, draggingArticleId, dragOffset]
+    [isDragging, draggingArticleId, dragOffset],
   );
 
   const handleDragEnd = useCallback(
@@ -599,11 +599,11 @@ export default function ImageWithArticles({
 
       const constrainedX = Math.max(
         0,
-        Math.min(100, percentPosition.positionX)
+        Math.min(100, percentPosition.positionX),
       );
       const constrainedY = Math.max(
         0,
-        Math.min(100, percentPosition.positionY)
+        Math.min(100, percentPosition.positionY),
       );
 
       // Stocker l'ID avant de le réinitialiser
@@ -666,14 +666,14 @@ export default function ImageWithArticles({
       restorePreviousPosition,
       showErrorToast,
       hasDraggedMoved,
-    ]
+    ],
   );
 
   // Fonctions pour le redimensionnement
   const handleResizeStart = (
     e: React.MouseEvent,
     article: Article,
-    handle: string
+    handle: string,
   ) => {
     e.stopPropagation();
 
@@ -788,7 +788,7 @@ export default function ImageWithArticles({
       resizeStartPosition,
       articles,
       imageSize,
-    ]
+    ],
   );
 
   const handleResizeEnd = useCallback(async () => {
@@ -888,27 +888,35 @@ export default function ImageWithArticles({
   // Gérer le clic/toucher sur un article
   const handleArticleInteraction = (
     e: React.MouseEvent | React.TouchEvent,
-    article: Article
+    article: Article,
   ) => {
     e.stopPropagation(); // Empêcher la propagation aux éléments parents
 
-    // Sur mobile ou si les actions sont disponibles, ouvrir le popover
-    if (
-      isMobile ||
-      onArticleMove ||
-      onArticleResize ||
-      onArticleEdit ||
-      onArticleDelete
-    ) {
-      // Ouvrir le popover pour cet article
+    // Sur mobile : ouvrir le popover pour afficher les infos rapidement
+    if (isMobile) {
       setOpenPopoverId(article.id);
       if (onArticleHover) onArticleHover(article.id);
       return;
     }
 
-    // Sur desktop sans actions, comportement de clic standard
+    // Sur desktop : navigation directe vers les tâches
     if (onArticleClick) {
       onArticleClick(article.id);
+    }
+  };
+
+  // Gérer le clic droit pour le menu contextuel (desktop uniquement)
+  const handleContextMenu = (e: React.MouseEvent, article: Article) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Sur desktop, ouvrir le popover avec les actions d'édition
+    if (
+      !isMobile &&
+      (onArticleMove || onArticleResize || onArticleEdit || onArticleDelete)
+    ) {
+      setOpenPopoverId(article.id);
+      if (onArticleHover) onArticleHover(article.id);
     }
   };
 
@@ -1014,7 +1022,7 @@ export default function ImageWithArticles({
       setCreateModalOpen(true);
       updateCreateMode(false); // Sortir du mode création
     },
-    [updateCreateMode]
+    [updateCreateMode],
   );
 
   const handleSaveCreate = async () => {
@@ -1103,7 +1111,7 @@ export default function ImageWithArticles({
       if (e.touches.length >= 2) {
         const touchDistance = Math.hypot(
           e.touches[0].pageX - e.touches[1].pageX,
-          e.touches[0].pageY - e.touches[1].pageY
+          e.touches[0].pageY - e.touches[1].pageY,
         );
 
         if (
@@ -1199,7 +1207,7 @@ export default function ImageWithArticles({
             constrainedX,
             constrainedY,
             constrainedWidth,
-            constrainedHeight
+            constrainedHeight,
           );
         }
 
@@ -1364,7 +1372,7 @@ export default function ImageWithArticles({
             article.positionY < 0 ||
             article.positionY > 100 ||
             (article.width && article.width > 80) ||
-            (article.height && article.height > 60)
+            (article.height && article.height > 60),
         );
 
         if (lostArticles.length > 0 && onArticlePositionUpdate) {
@@ -1425,7 +1433,7 @@ export default function ImageWithArticles({
                                             positionY: 50,
                                             width: 20,
                                             height: 15,
-                                          }
+                                          },
                                         );
                                       } catch {
                                         // Afficher un toast d'erreur
@@ -1435,7 +1443,7 @@ export default function ImageWithArticles({
                                             description:
                                               "Une erreur s'est produite lors de la récupération de l'article. Veuillez réessayer.",
                                             duration: 4000,
-                                          }
+                                          },
                                         );
                                       }
                                     }}
@@ -1474,319 +1482,376 @@ export default function ImageWithArticles({
         priority
       />
 
-      {articles.map((article: Article) => {
-        if (!article.positionX || !article.positionY) return null;
+      <TooltipProvider delayDuration={0}>
+        {articles.map((article: Article) => {
+          if (!article.positionX || !article.positionY) return null;
 
-        const articleStyle = calculateArticleStyle(article);
-        const isActive =
-          hoveredArticleId === article.id ||
-          selectedArticleId === article.id ||
-          openPopoverId === article.id;
+          const articleStyle = calculateArticleStyle(article);
+          const isActive =
+            hoveredArticleId === article.id ||
+            selectedArticleId === article.id ||
+            openPopoverId === article.id;
 
-        // Si les actions sont disponibles, utiliser le popover
-        if (
-          onArticleMove ||
-          onArticleResize ||
-          onArticleEdit ||
-          onArticleDelete
-        ) {
+          // Toujours utiliser le popover pour afficher les infos au besoin
+          const shouldUsePopover =
+            isMobile ||
+            onArticleMove ||
+            onArticleResize ||
+            onArticleEdit ||
+            onArticleDelete;
+
+          if (shouldUsePopover) {
+            return (
+              <Tooltip key={article.id} delayDuration={0}>
+                <Popover
+                  open={openPopoverId === article.id}
+                  onOpenChange={(open) => {
+                    if (open) {
+                      setOpenPopoverId(article.id);
+                      if (onArticleHover) onArticleHover(article.id);
+                    } else {
+                      setOpenPopoverId(null);
+                      if (onArticleHover) onArticleHover(null);
+                    }
+                  }}
+                >
+                  <TooltipTrigger asChild>
+                    <PopoverTrigger
+                      {...({ asChild: true } as React.ComponentProps<
+                        typeof PopoverTrigger
+                      >)}
+                    >
+                      <div
+                        className={`absolute border ${
+                          isActive ? "border-blue-500" : "border-white"
+                        } rounded-md shadow-md overflow-hidden ${
+                          dragMode
+                            ? "cursor-move hover:border-blue-400"
+                            : resizeMode
+                              ? "cursor-pointer hover:border-green-400"
+                              : "cursor-pointer"
+                        } pointer-events-auto ${
+                          isEditable ? "z-10" : ""
+                        } ${isDragging && draggingArticleId === article.id ? "opacity-75 z-20" : ""} ${
+                          isResizing && resizingArticleId === article.id
+                            ? "opacity-75 z-20"
+                            : ""
+                        } fast-tooltip`}
+                        style={{
+                          ...articleStyle,
+                          zIndex:
+                            (isDragging && draggingArticleId === article.id) ||
+                            (isResizing && resizingArticleId === article.id)
+                              ? 20
+                              : isActive
+                                ? 10
+                                : 5,
+                          backgroundColor: dragMode
+                            ? "rgba(59, 130, 246, 0.3)"
+                            : resizeMode
+                              ? "rgba(34, 197, 94, 0.3)"
+                              : "rgba(0, 0, 0, 0.2)",
+                        }}
+                        onClick={(e: React.MouseEvent) => {
+                          if (createMode) {
+                            e.stopPropagation();
+                            return; // En mode création, ne pas interagir avec les articles existants
+                          }
+                          if (dragMode || resizeMode) {
+                            e.stopPropagation();
+                            return; // En mode déplacement ou redimensionnement, ne pas ouvrir le popover au clic
+                          }
+                          if (preventPopoverOpen) {
+                            e.stopPropagation();
+                            return; // Empêcher l'ouverture du popover juste après une action
+                          }
+                          handleArticleInteraction(e, article);
+                        }}
+                        onMouseDown={(e: React.MouseEvent) => {
+                          if (createMode) {
+                            e.stopPropagation();
+                            return; // En mode création, ne pas permettre le drag/resize
+                          }
+                          if (
+                            dragMode &&
+                            onArticlePositionUpdate &&
+                            !resizeMode
+                          ) {
+                            // Ne déclencher le drag que si on n'est pas en train de redimensionner
+                            const target = e.target as HTMLElement;
+                            if (!target.closest(".resize-handle")) {
+                              handleDragStart(e, article);
+                            }
+                          }
+                        }}
+                        onMouseEnter={(e: React.MouseEvent) =>
+                          handleArticleMouseEnter(e, article)
+                        }
+                        onMouseLeave={handleArticleMouseLeave}
+                        onContextMenu={(e: React.MouseEvent) =>
+                          handleContextMenu(e, article)
+                        }
+                      >
+                        {/* Poignées de redimensionnement */}
+                        {resizeMode && (
+                          <>
+                            {/* Poignée Nord-Ouest */}
+                            <div
+                              className="resize-handle absolute w-3 h-3 bg-green-500 border border-white rounded-full cursor-nw-resize"
+                              style={{ top: "-6px", left: "-6px" }}
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                if (onArticlePositionUpdate) {
+                                  handleResizeStart(e, article, "nw");
+                                }
+                              }}
+                            />
+                            {/* Poignée Nord-Est */}
+                            <div
+                              className="resize-handle absolute w-3 h-3 bg-green-500 border border-white rounded-full cursor-ne-resize"
+                              style={{ top: "-6px", right: "-6px" }}
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                if (onArticlePositionUpdate) {
+                                  handleResizeStart(e, article, "ne");
+                                }
+                              }}
+                            />
+                            {/* Poignée Sud-Ouest */}
+                            <div
+                              className="resize-handle absolute w-3 h-3 bg-green-500 border border-white rounded-full cursor-sw-resize"
+                              style={{ bottom: "-6px", left: "-6px" }}
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                if (onArticlePositionUpdate) {
+                                  handleResizeStart(e, article, "sw");
+                                }
+                              }}
+                            />
+                            {/* Poignée Sud-Est */}
+                            <div
+                              className="resize-handle absolute w-3 h-3 bg-green-500 border border-white rounded-full cursor-se-resize"
+                              style={{ bottom: "-6px", right: "-6px" }}
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                if (onArticlePositionUpdate) {
+                                  handleResizeStart(e, article, "se");
+                                }
+                              }}
+                            />
+                          </>
+                        )}
+                        {/* Zone cliquable/survolable pour chaque article positionné */}
+                      </div>
+                    </PopoverTrigger>
+                  </TooltipTrigger>
+
+                  {/* Tooltip au survol (desktop uniquement) */}
+                  <TooltipContent
+                    side="top"
+                    className="max-w-sm p-4 bg-white text-black border shadow-lg"
+                    sideOffset={8}
+                  >
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-base leading-tight">
+                        {article.title}
+                      </h4>
+                      {article.description && (
+                        <p className="text-sm text-gray-700 leading-relaxed">
+                          {article.description}
+                        </p>
+                      )}
+                    </div>
+                  </TooltipContent>
+
+                  <PopoverContent
+                    className="w-[calc(100vw-2rem)] sm:w-96 max-w-md p-5 mx-4"
+                    side="top"
+                    align="center"
+                    collisionPadding={10}
+                    sideOffset={12}
+                  >
+                    <div className="space-y-4">
+                      {/* En-tête avec titre et description */}
+                      <div>
+                        <h4 className="font-semibold text-lg leading-tight mb-1">
+                          {article.title}
+                        </h4>
+                        {article.description && (
+                          <p className="text-base text-muted-foreground mt-3 leading-relaxed">
+                            {article.description}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Sur mobile : bouton CTA principal uniquement */}
+                      {isMobile && onArticleClick && (
+                        <Button
+                          className="w-full mt-3"
+                          size="lg"
+                          onClick={() => {
+                            onArticleClick(article.id);
+                            setOpenPopoverId(null);
+                          }}
+                        >
+                          Ouvrir l&apos;article
+                        </Button>
+                      )}
+
+                      {/* Boutons d'action - seulement sur desktop (menu contextuel) */}
+                      {!isMobile && (
+                        <div className="grid grid-cols-2 gap-2">
+                          {onArticleMove && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                if (onArticlePositionUpdate) {
+                                  // Activer le mode déplacement intégré
+                                  setDragMode(true);
+                                  setOpenPopoverId(null);
+                                  // Toast de test pour vérifier que le système fonctionne
+                                  toast.success("Mode déplacement activé !", {
+                                    description:
+                                      "Vous pouvez maintenant déplacer les articles en les faisant glisser.",
+                                    duration: 3000,
+                                  });
+                                } else {
+                                  // Fallback vers la fonction externe (redirection)
+                                  onArticleMove(article.id);
+                                  setOpenPopoverId(null);
+                                }
+                              }}
+                              className="flex items-center gap-2"
+                            >
+                              <Move size={16} />
+                              {dragMode ? "Mode déplacement actif" : "Déplacer"}
+                            </Button>
+                          )}
+
+                          {onArticleResize && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                if (onArticlePositionUpdate) {
+                                  // Activer le mode redimensionnement intégré
+                                  setResizeMode(true);
+                                  setOpenPopoverId(null);
+                                  // Toast de test pour verifier que le système fonctionne
+                                  toast.success(
+                                    "Mode redimensionnement activé !",
+                                    {
+                                      description:
+                                        "Vous pouvez maintenant redimensionner les articles avec les poignées aux coins.",
+                                      duration: 3000,
+                                    },
+                                  );
+                                } else {
+                                  // Fallback vers la fonction externe (redirection)
+                                  onArticleResize(article.id);
+                                  setOpenPopoverId(null);
+                                }
+                              }}
+                              className="flex items-center gap-2"
+                            >
+                              <Square size={16} />
+                              {resizeMode
+                                ? "Mode redimensionnement actif"
+                                : "Redimensionner"}
+                            </Button>
+                          )}
+
+                          {onArticleEdit && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                if (onArticleUpdate) {
+                                  // Utiliser le modal d'édition intégré
+                                  handleEditArticle(article);
+                                } else {
+                                  // Fallback vers la fonction externe (redirection)
+                                  onArticleEdit(article.id);
+                                  setOpenPopoverId(null);
+                                }
+                              }}
+                              className="flex items-center gap-2"
+                            >
+                              <Edit size={16} />
+                              Modifier
+                            </Button>
+                          )}
+
+                          {onArticleDelete && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                handleDeleteArticle(article);
+                              }}
+                              className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash size={16} />
+                              Supprimer
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </Tooltip>
+            );
+          }
+
+          // Rendu simple sans popover si pas d'actions - avec Tooltip
           return (
-            <Popover
-              key={article.id}
-              open={openPopoverId === article.id}
-              onOpenChange={(open) => {
-                if (open) {
-                  setOpenPopoverId(article.id);
-                  if (onArticleHover) onArticleHover(article.id);
-                } else {
-                  setOpenPopoverId(null);
-                  if (onArticleHover) onArticleHover(null);
-                }
-              }}
-            >
-              <PopoverTrigger
-                {...({ asChild: true } as React.ComponentProps<
-                  typeof PopoverTrigger
-                >)}
-              >
+            <Tooltip key={article.id} delayDuration={0}>
+              <TooltipTrigger asChild>
                 <div
                   className={`absolute border ${
                     isActive ? "border-blue-500" : "border-white"
-                  } rounded-md shadow-md overflow-hidden ${
-                    dragMode
-                      ? "cursor-move hover:border-blue-400"
-                      : resizeMode
-                        ? "cursor-pointer hover:border-green-400"
-                        : "cursor-pointer"
-                  } pointer-events-auto ${
+                  } rounded-md shadow-md overflow-hidden cursor-pointer pointer-events-auto ${
                     isEditable ? "z-10" : ""
-                  } ${isDragging && draggingArticleId === article.id ? "opacity-75 z-20" : ""} ${
-                    isResizing && resizingArticleId === article.id
-                      ? "opacity-75 z-20"
-                      : ""
                   } fast-tooltip`}
                   style={{
                     ...articleStyle,
-                    zIndex:
-                      (isDragging && draggingArticleId === article.id) ||
-                      (isResizing && resizingArticleId === article.id)
-                        ? 20
-                        : isActive
-                          ? 10
-                          : 5,
-                    backgroundColor: dragMode
-                      ? "rgba(59, 130, 246, 0.3)"
-                      : resizeMode
-                        ? "rgba(34, 197, 94, 0.3)"
-                        : "rgba(0, 0, 0, 0.2)",
+                    zIndex: isActive ? 10 : 5,
+                    backgroundColor: "rgba(0, 0, 0, 0.2)",
                   }}
-                  onClick={(e: React.MouseEvent) => {
-                    if (createMode) {
-                      e.stopPropagation();
-                      return; // En mode création, ne pas interagir avec les articles existants
-                    }
-                    if (dragMode || resizeMode) {
-                      e.stopPropagation();
-                      return; // En mode déplacement ou redimensionnement, ne pas ouvrir le popover au clic
-                    }
-                    if (preventPopoverOpen) {
-                      e.stopPropagation();
-                      return; // Empêcher l'ouverture du popover juste après une action
-                    }
-                    handleArticleInteraction(e, article);
-                  }}
-                  onMouseDown={(e: React.MouseEvent) => {
-                    if (createMode) {
-                      e.stopPropagation();
-                      return; // En mode création, ne pas permettre le drag/resize
-                    }
-                    if (dragMode && onArticlePositionUpdate && !resizeMode) {
-                      // Ne déclencher le drag que si on n'est pas en train de redimensionner
-                      const target = e.target as HTMLElement;
-                      if (!target.closest(".resize-handle")) {
-                        handleDragStart(e, article);
-                      }
-                    }
-                  }}
-                  onMouseEnter={(e: React.MouseEvent) =>
-                    handleArticleMouseEnter(e, article)
-                  }
+                  onClick={(e) => handleArticleInteraction(e, article)}
+                  onMouseEnter={(e) => handleArticleMouseEnter(e, article)}
                   onMouseLeave={handleArticleMouseLeave}
-                  title={
-                    preventPopoverOpen
-                      ? undefined
-                      : `${article.title}${article.description ? `\n${article.description}` : ""}`
+                  onContextMenu={(e: React.MouseEvent) =>
+                    handleContextMenu(e, article)
                   }
                 >
-                  {/* Poignées de redimensionnement */}
-                  {resizeMode && (
-                    <>
-                      {/* Poignée Nord-Ouest */}
-                      <div
-                        className="resize-handle absolute w-3 h-3 bg-green-500 border border-white rounded-full cursor-nw-resize"
-                        style={{ top: "-6px", left: "-6px" }}
-                        onMouseDown={(e) => {
-                          e.stopPropagation();
-                          if (onArticlePositionUpdate) {
-                            handleResizeStart(e, article, "nw");
-                          }
-                        }}
-                      />
-                      {/* Poignée Nord-Est */}
-                      <div
-                        className="resize-handle absolute w-3 h-3 bg-green-500 border border-white rounded-full cursor-ne-resize"
-                        style={{ top: "-6px", right: "-6px" }}
-                        onMouseDown={(e) => {
-                          e.stopPropagation();
-                          if (onArticlePositionUpdate) {
-                            handleResizeStart(e, article, "ne");
-                          }
-                        }}
-                      />
-                      {/* Poignée Sud-Ouest */}
-                      <div
-                        className="resize-handle absolute w-3 h-3 bg-green-500 border border-white rounded-full cursor-sw-resize"
-                        style={{ bottom: "-6px", left: "-6px" }}
-                        onMouseDown={(e) => {
-                          e.stopPropagation();
-                          if (onArticlePositionUpdate) {
-                            handleResizeStart(e, article, "sw");
-                          }
-                        }}
-                      />
-                      {/* Poignée Sud-Est */}
-                      <div
-                        className="resize-handle absolute w-3 h-3 bg-green-500 border border-white rounded-full cursor-se-resize"
-                        style={{ bottom: "-6px", right: "-6px" }}
-                        onMouseDown={(e) => {
-                          e.stopPropagation();
-                          if (onArticlePositionUpdate) {
-                            handleResizeStart(e, article, "se");
-                          }
-                        }}
-                      />
-                    </>
-                  )}
                   {/* Zone cliquable/survolable pour chaque article positionné */}
                 </div>
-              </PopoverTrigger>
-              <PopoverContent className="w-80" side="top" align="center">
-                <div className="space-y-4">
-                  {/* En-tête avec titre et description */}
-                  <div>
-                    <h4 className="font-medium leading-none">
-                      {article.title}
-                    </h4>
-                    {article.description && (
-                      <p className="text-sm text-muted-foreground mt-2">
-                        {article.description}
-                      </p>
-                    )}
-                  </div>
+              </TooltipTrigger>
 
-                  {/* Boutons d'action - seulement sur desktop */}
-                  {!isMobile && (
-                    <div className="grid grid-cols-2 gap-2">
-                      {onArticleMove && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            if (onArticlePositionUpdate) {
-                              // Activer le mode déplacement intégré
-                              setDragMode(true);
-                              setOpenPopoverId(null);
-                              // Toast de test pour vérifier que le système fonctionne
-                              toast.success("Mode déplacement activé !", {
-                                description:
-                                  "Vous pouvez maintenant déplacer les articles en les faisant glisser.",
-                                duration: 3000,
-                              });
-                            } else {
-                              // Fallback vers la fonction externe (redirection)
-                              onArticleMove(article.id);
-                              setOpenPopoverId(null);
-                            }
-                          }}
-                          className="flex items-center gap-2"
-                        >
-                          <Move size={16} />
-                          {dragMode ? "Mode déplacement actif" : "Déplacer"}
-                        </Button>
-                      )}
-
-                      {onArticleResize && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            if (onArticlePositionUpdate) {
-                              // Activer le mode redimensionnement intégré
-                              setResizeMode(true);
-                              setOpenPopoverId(null);
-                              // Toast de test pour verifier que le système fonctionne
-                              toast.success("Mode redimensionnement activé !", {
-                                description:
-                                  "Vous pouvez maintenant redimensionner les articles avec les poignées aux coins.",
-                                duration: 3000,
-                              });
-                            } else {
-                              // Fallback vers la fonction externe (redirection)
-                              onArticleResize(article.id);
-                              setOpenPopoverId(null);
-                            }
-                          }}
-                          className="flex items-center gap-2"
-                        >
-                          <Square size={16} />
-                          {resizeMode
-                            ? "Mode redimensionnement actif"
-                            : "Redimensionner"}
-                        </Button>
-                      )}
-
-                      {onArticleEdit && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            if (onArticleUpdate) {
-                              // Utiliser le modal d'édition intégré
-                              handleEditArticle(article);
-                            } else {
-                              // Fallback vers la fonction externe (redirection)
-                              onArticleEdit(article.id);
-                              setOpenPopoverId(null);
-                            }
-                          }}
-                          className="flex items-center gap-2"
-                        >
-                          <Edit size={16} />
-                          Modifier
-                        </Button>
-                      )}
-
-                      {onArticleDelete && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            handleDeleteArticle(article);
-                          }}
-                          className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash size={16} />
-                          Supprimer
-                        </Button>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Bouton pour voir/gérer les tâches si pas d'actions spécifiques */}
-                  {onArticleClick && (
-                    <Button
-                      className="w-full"
-                      onClick={() => {
-                        onArticleClick(article.id);
-                        setOpenPopoverId(null);
-                      }}
-                    >
-                      Gérer les tâches
-                    </Button>
+              {/* Tooltip au survol */}
+              <TooltipContent
+                side="top"
+                className="max-w-sm p-4 bg-white text-black border shadow-lg"
+                sideOffset={8}
+              >
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-base leading-tight">
+                    {article.title}
+                  </h4>
+                  {article.description && (
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      {article.description}
+                    </p>
                   )}
                 </div>
-              </PopoverContent>
-            </Popover>
+              </TooltipContent>
+            </Tooltip>
           );
-        }
-
-        // Rendu simple sans popover si pas d'actions
-        return (
-          <div
-            key={article.id}
-            className={`absolute border ${
-              isActive ? "border-blue-500" : "border-white"
-            } rounded-md shadow-md overflow-hidden cursor-pointer pointer-events-auto ${
-              isEditable ? "z-10" : ""
-            } fast-tooltip`}
-            style={{
-              ...articleStyle,
-              zIndex: isActive ? 10 : 5,
-              backgroundColor: "rgba(0, 0, 0, 0.2)",
-            }}
-            onClick={(e) => handleArticleInteraction(e, article)}
-            onMouseEnter={(e) => handleArticleMouseEnter(e, article)}
-            onMouseLeave={handleArticleMouseLeave}
-            title={
-              preventPopoverOpen
-                ? undefined
-                : `${article.title}${article.description ? `\n${article.description}` : ""}`
-            }
-          >
-            {/* Zone cliquable/survolable pour chaque article positionné */}
-          </div>
-        );
-      })}
+        })}
+      </TooltipProvider>
 
       {/* Rectangle de dessin pour le nouvel article */}
       {isDrawingNew &&

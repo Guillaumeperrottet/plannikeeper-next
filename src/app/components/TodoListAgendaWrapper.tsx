@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { useTasks } from "@/hooks/useData";
 import { useTaskUpdates } from "@/hooks/useTaskUpdates"; // Nouveau hook
-import { TodoListAgendaContainer } from "./TodoListAgenda/TodoListAgendaContainer";
+import { AgendaController } from "./AgendaController";
 
 // Définir un dataVersion pour le suivi des changements
 const DATA_VERSION_KEY = "plannikeeper-data-version";
@@ -167,8 +167,8 @@ export default function TodoListAgendaWrapper() {
   }, [refreshDataSilently]);
 
   // Handler pour le rafraîchissement manuel
-  const handleRefresh = useCallback(() => {
-    refreshDataSilently();
+  const handleRefresh = useCallback(async () => {
+    await refreshDataSilently();
   }, [refreshDataSilently]);
 
   // Handler pour mettre à jour la date d'une tâche (utilisé pour le drag and drop)
@@ -181,13 +181,12 @@ export default function TodoListAgendaWrapper() {
   );
 
   return (
-    <TodoListAgendaContainer
+    <AgendaController
       onRefresh={handleRefresh}
-      isRefreshing={isRefreshing || isUpdating}
       refreshKey={dataVersion}
-      updateTaskDate={handleUpdateTaskDate} // Passer la fonction de mise à jour de tâches
-      isMobile={isMobile} // Passer l'état mobile pour désactiver le drag sur mobile
-      initialSelectedObjectId={selectedObjectId} // Passer l'objet sélectionné
+      updateTaskDate={handleUpdateTaskDate}
+      isMobile={isMobile}
+      initialSelectedObjectId={selectedObjectId}
     />
   );
 }

@@ -39,7 +39,13 @@ export const DesktopHeader = ({
   availableArticles,
   thisWeekEnd,
 }: DesktopHeaderProps) => {
-  const handleHeaderClick = () => {
+  const handleHeaderClick = (e: React.MouseEvent) => {
+    // Ne pas ouvrir si on clique sur le select ou le bouton d'impression
+    const target = e.target as HTMLElement;
+    if (target.closest("select") || target.closest("button")) {
+      return;
+    }
+
     console.log("Desktop Header clicked, isExpanded:", isExpanded);
     if (!isExpanded) {
       onToggle();
@@ -66,10 +72,7 @@ export const DesktopHeader = ({
       }}
     >
       {/* Bouton d'impression à gauche */}
-      <div
-        className="flex items-center justify-start"
-        onClick={(e) => e.stopPropagation()} // Empêcher le clic de propager au header
-      >
+      <div className="flex items-center justify-start">
         <PrintButton
           tasks={tasks}
           filteredTasks={filteredTasks}
@@ -92,7 +95,6 @@ export const DesktopHeader = ({
           className="bg-background text-foreground px-3 py-1 rounded border border-border text-sm transition-all active:scale-95"
           value={selectedObjectId}
           onChange={(e) => {
-            e.stopPropagation(); // Empêcher le clic de propager au header
             onObjectChange(e.target.value);
           }}
         >

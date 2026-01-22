@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Search,
   Calendar,
@@ -47,6 +48,7 @@ import {
   TableRow,
 } from "@/app/components/ui/table";
 import { Label } from "@/app/components/ui/label";
+import { useDebounce } from "@/hooks/useDebounce";
 
 // Types
 type Task = {
@@ -105,6 +107,9 @@ type AssigneeOption = {
 };
 
 export default function ArchivesPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   // États
   const [tasks, setTasks] = useState<Task[]>([]);
   const [objects, setObjects] = useState<Object[]>([]);
@@ -119,6 +124,15 @@ export default function ArchivesPage() {
   const [sortField, setSortField] = useState<string>("archivedAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalTasks, setTotalTasks] = useState(0);
+  const itemsPerPage = 50;
+
+  // Debounce search query
+  const debouncedSearchQuery = useDebounce(searchQuery, 400);
+
   // États pour la gestion des images
   const [selectedImage, setSelectedImage] = useState<{
     src: string;
@@ -132,6 +146,35 @@ export default function ArchivesPage() {
   const [articles, setArticles] = useState<ArticleOption[]>([]);
   const [assignees, setAssignees] = useState<AssigneeOption[]>([]);
 
+  // Mettre à jour les URL params
+  const updateURLParams = useCallback(() => {
+    const params = new URLSearchParams();
+    if (debouncedSearchQuery) params.set("search", debouncedSearchQuery);
+    if (selectedObject) params.set("objectId", selectedObject);
+    if (selectedTaskType) params.set("taskType", selectedTaskType);
+    if (selectedArticle) params.set("articleId", selectedArticle);
+    if (selectedAssignee) params.set("assigneeId", selectedAssignee);
+    if (fromDate) params.set("fromDate", fromDate);
+    if (toDate) params.set("toDate", toDate);
+    if (sortField) params.set("sortBy", sortField);
+    if (sortDirection) params.set("sortOrder", sortDirection);
+    if (currentPage > 1) params.set("page", currentPage.toString());
+
+    router.replace(`?${params.toString()}`, { scroll: false });
+  }, [
+    debouncedSearchQuery,
+    selectedObject,
+    selectedTaskType,
+    selectedArticle,
+    selectedAssignee,
+    fromDate,
+    toDate,
+    sortField,
+    sortDirection,
+    currentPage,
+    router,
+  ]);
+
   // Récupération des tâches archivées avec filtres
   const fetchArchivedTasks = useCallback(async () => {
     setLoading(true);
@@ -140,7 +183,7 @@ export default function ArchivesPage() {
       let url = "/api/tasks/archives?";
       const params = new URLSearchParams();
 
-      if (searchQuery) params.append("search", searchQuery);
+      if (debouncedSearchQuery) params.append("search", debouncedSearchQuery);
       if (selectedObject) params.append("objectId", selectedObject);
       if (selectedTaskType) params.append("taskType", selectedTaskType);
       if (selectedArticle) params.append("articleId", selectedArticle);
@@ -149,6 +192,8 @@ export default function ArchivesPage() {
       if (toDate) params.append("toDate", toDate);
       params.append("sortBy", sortField);
       params.append("sortOrder", sortDirection);
+      params.append("page", currentPage.toString());
+      params.append("limit", itemsPerPage.toString());
 
       url += params.toString();
 
@@ -159,6 +204,8 @@ export default function ArchivesPage() {
 
       const data = await response.json();
       setTasks(data.tasks);
+      setTotalPages(data.pagination?.totalPages || 1);
+      setTotalTasks(data.pagination?.total || data.tasks.length);
 
       // Mettre à jour les métadonnées pour les filtres
       if (data.metadata) {
@@ -166,6 +213,9 @@ export default function ArchivesPage() {
         setArticles(data.metadata.articles || []);
         setAssignees(data.metadata.assignees || []);
       }
+
+      // Mettre à jour l'URL
+      updateURLParams();
     } catch (error) {
       console.error("Erreur:", error);
       toast.error("Erreur lors du chargement des tâches archivées");
@@ -173,7 +223,7 @@ export default function ArchivesPage() {
       setLoading(false);
     }
   }, [
-    searchQuery,
+    debouncedSearchQuery,
     selectedObject,
     selectedTaskType,
     selectedArticle,
@@ -182,7 +232,35 @@ export default function ArchivesPage() {
     toDate,
     sortField,
     sortDirection,
+    currentPage,
+    itemsPerPage,
+    updateURLParams,
   ]);
+
+  // Restaurer les filtres depuis l'URL au chargement
+  useEffect(() => {
+    const search = searchParams.get("search");
+    const objectId = searchParams.get("objectId");
+    const taskType = searchParams.get("taskType");
+    const articleId = searchParams.get("articleId");
+    const assigneeId = searchParams.get("assigneeId");
+    const from = searchParams.get("fromDate");
+    const to = searchParams.get("toDate");
+    const sortBy = searchParams.get("sortBy");
+    const sortOrder = searchParams.get("sortOrder");
+    const page = searchParams.get("page");
+
+    if (search) setSearchQuery(search);
+    if (objectId) setSelectedObject(objectId);
+    if (taskType) setSelectedTaskType(taskType);
+    if (articleId) setSelectedArticle(articleId);
+    if (assigneeId) setSelectedAssignee(assigneeId);
+    if (from) setFromDate(from);
+    if (to) setToDate(to);
+    if (sortBy) setSortField(sortBy);
+    if (sortOrder) setSortDirection(sortOrder as "asc" | "desc");
+    if (page) setCurrentPage(parseInt(page));
+  }, [searchParams]);
 
   // Chargement initial des données
   useEffect(() => {
@@ -250,12 +328,16 @@ export default function ArchivesPage() {
     setToDate("");
     setSortField("archivedAt");
     setSortDirection("desc");
+    setCurrentPage(1);
 
     // Réinitialiser également le formulaire de recherche
     const searchInput = document.getElementById(
-      "search-input"
+      "search-input",
     ) as HTMLInputElement;
     if (searchInput) searchInput.value = "";
+
+    // Nettoyer l'URL
+    router.replace("/dashboard/archives", { scroll: false });
 
     // Puis refaire la recherche
     setTimeout(fetchArchivedTasks, 0);
@@ -269,6 +351,7 @@ export default function ArchivesPage() {
       setSortField(field);
       setSortDirection("asc");
     }
+    setCurrentPage(1); // Retour à la page 1 lors d'un tri
   };
 
   const getSortIcon = (field: string) => {
@@ -295,7 +378,7 @@ export default function ArchivesPage() {
     taskName: string,
     e: React.MouseEvent,
     allImages: string[],
-    currentIndex: number = 0
+    currentIndex: number = 0,
   ) => {
     e.stopPropagation();
     setSelectedImage({
@@ -326,7 +409,7 @@ export default function ArchivesPage() {
         currentIndex: newIndex,
       });
     },
-    [selectedImage]
+    [selectedImage],
   );
 
   // Handle keyboard events for image modal
@@ -365,8 +448,8 @@ export default function ArchivesPage() {
       // Sinon, on met à jour son statut
       setTasks(
         tasks.map((task) =>
-          task.id === taskId ? { ...task, archived: newArchiveState } : task
-        )
+          task.id === taskId ? { ...task, archived: newArchiveState } : task,
+        ),
       );
     }
   };
@@ -467,7 +550,7 @@ export default function ArchivesPage() {
                   <td>${formatDate(task.archivedAt)}</td>
                   <td>${task.assignedTo?.name || "Non assigné"}</td>
                 </tr>
-              `
+              `,
                 )
                 .join("")}
             </tbody>
@@ -748,7 +831,7 @@ export default function ArchivesPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[300px] text-xs font-medium text-gray-500 py-3">
+                        <TableHead className="w-[260px] text-xs font-medium text-gray-500 py-3">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -808,17 +891,20 @@ export default function ArchivesPage() {
                     <TableBody>
                       {tasks.map((task) => (
                         <TableRow key={task.id} className="hover:bg-muted/50">
-                          <TableCell>
-                            <div className="flex items-center gap-3">
+                          <TableCell className="w-[350px] max-w-[350px]">
+                            <div className="flex items-center gap-2 overflow-hidden">
                               <div
                                 className="w-3 h-3 rounded-full flex-shrink-0"
                                 style={{
                                   backgroundColor: task.color || "#d9840d",
                                 }}
                               />
-                              <div className="min-w-0 flex-1">
-                                <div className="font-medium text-sm truncate">
+                              <div className="min-w-0 overflow-hidden">
+                                <div className="font-medium text-sm truncate flex items-center gap-1">
                                   {task.name}
+                                  {task.recurring && (
+                                    <RefreshCcw className="w-3 h-3 flex-shrink-0 text-muted-foreground" />
+                                  )}
                                 </div>
                                 {task.description && (
                                   <div className="text-xs text-muted-foreground truncate mt-1">
@@ -826,14 +912,6 @@ export default function ArchivesPage() {
                                   </div>
                                 )}
                               </div>
-                              {task.recurring && (
-                                <Badge variant="outline" className="gap-1">
-                                  <RefreshCcw className="w-3 h-3" />
-                                  <span className="hidden sm:inline">
-                                    Récurrente
-                                  </span>
-                                </Badge>
-                              )}
                             </div>
                           </TableCell>
 
@@ -855,7 +933,7 @@ export default function ArchivesPage() {
                               {task.documents && task.documents.length > 0 ? (
                                 (() => {
                                   const imageDocuments = task.documents.filter(
-                                    (doc) => doc.fileType.startsWith("image/")
+                                    (doc) => doc.fileType.startsWith("image/"),
                                   );
 
                                   if (imageDocuments.length === 0) {
@@ -867,7 +945,7 @@ export default function ArchivesPage() {
                                   }
 
                                   const allImages = imageDocuments.map(
-                                    (doc) => doc.filePath
+                                    (doc) => doc.filePath,
                                   );
 
                                   return (
@@ -880,7 +958,7 @@ export default function ArchivesPage() {
                                             task.name,
                                             e,
                                             allImages,
-                                            0
+                                            0,
                                           )
                                         }
                                       >
@@ -991,6 +1069,75 @@ export default function ArchivesPage() {
                     </TableBody>
                   </Table>
                 </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-6 border-t pt-4">
+                    <div className="text-sm text-muted-foreground">
+                      Page {currentPage} sur {totalPages} • {totalTasks} tâche
+                      {totalTasks !== 1 ? "s" : ""} au total
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setCurrentPage((p) => Math.max(1, p - 1))
+                        }
+                        disabled={currentPage === 1}
+                        className="gap-2"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Précédent
+                      </Button>
+                      <div className="flex items-center gap-1">
+                        {Array.from(
+                          { length: Math.min(5, totalPages) },
+                          (_, i) => {
+                            let pageNum;
+                            if (totalPages <= 5) {
+                              pageNum = i + 1;
+                            } else if (currentPage <= 3) {
+                              pageNum = i + 1;
+                            } else if (currentPage >= totalPages - 2) {
+                              pageNum = totalPages - 4 + i;
+                            } else {
+                              pageNum = currentPage - 2 + i;
+                            }
+
+                            return (
+                              <Button
+                                key={pageNum}
+                                variant={
+                                  currentPage === pageNum
+                                    ? "default"
+                                    : "outline"
+                                }
+                                size="sm"
+                                onClick={() => setCurrentPage(pageNum)}
+                                className="w-9 h-9 p-0"
+                              >
+                                {pageNum}
+                              </Button>
+                            );
+                          },
+                        )}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setCurrentPage((p) => Math.min(totalPages, p + 1))
+                        }
+                        disabled={currentPage === totalPages}
+                        className="gap-2"
+                      >
+                        Suivant
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

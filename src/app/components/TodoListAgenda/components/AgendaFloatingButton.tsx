@@ -15,7 +15,9 @@ export const AgendaFloatingButton = ({
   isMobile,
   onToggle,
 }: AgendaFloatingButtonProps) => {
-  if (isExpanded || !isMobile) return null;
+  // Sur mobile, ne pas afficher (remplacé par Speed Dial)
+  // Sur desktop, afficher uniquement si pas expanded
+  if (isMobile || isExpanded) return null;
 
   return (
     <AnimatePresence>

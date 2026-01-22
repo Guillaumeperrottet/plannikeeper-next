@@ -13,7 +13,6 @@ import { useAgendaNavigation } from "./hooks/useAgendaNavigation";
 import { AgendaHeader } from "./components/AgendaHeader/AgendaHeader";
 import { AgendaControls } from "./components/AgendaControls/AgendaControls";
 import { AgendaContent } from "./components/AgendaContent/AgendaContent";
-import { AgendaFloatingButton } from "./components/AgendaFloatingButton";
 
 export const TodoListAgendaContainer = ({
   onRefresh,
@@ -164,7 +163,7 @@ export const TodoListAgendaContainer = ({
       triggerHapticFeedback();
       await navToTask(task);
     },
-    [navToTask, triggerHapticFeedback]
+    [navToTask, triggerHapticFeedback],
   );
 
   // Complétion rapide d'une tâche
@@ -186,7 +185,7 @@ export const TodoListAgendaContainer = ({
         console.error("Erreur lors de la complétion de la tâche:", error);
       }
     },
-    [triggerHapticFeedback, onRefresh]
+    [triggerHapticFeedback, onRefresh],
   );
 
   // Toggle avec feedback haptique
@@ -285,11 +284,7 @@ export const TodoListAgendaContainer = ({
         />
       </motion.div>
 
-      <AgendaFloatingButton
-        isExpanded={state.isExpanded}
-        isMobile={dimensions.isMobile}
-        onToggle={handleToggleExpanded}
-      />
+      {/* Bouton flottant agenda - masqué complètement (remplacé par clic sur header) */}
 
       {/* Overlay pour mobile PWA */}
       {state.isExpanded && dimensions.isMobile && dimensions.isPWA && (

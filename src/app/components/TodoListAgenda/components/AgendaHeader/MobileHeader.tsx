@@ -26,12 +26,22 @@ export const MobileHeader = ({
   return (
     <div className="flex justify-between items-center h-full w-full px-3">
       {/* Partie gauche */}
-      <div className="flex items-center min-w-0 flex-1">
+      <div
+        className="flex items-center min-w-0 flex-1"
+        onClick={(e) => {
+          // Si pas expanded, on ouvre l'agenda au clic
+          if (!isExpanded) {
+            e.stopPropagation();
+            onToggle();
+          }
+        }}
+      >
         {isExpanded ? (
           <select
             className="bg-background text-foreground px-2 py-1 rounded border border-border text-sm transition-all active:scale-95 max-w-[160px] truncate"
             value={selectedObjectId}
             onChange={(e) => onObjectChange(e.target.value)}
+            onClick={(e) => e.stopPropagation()}
             style={{
               WebkitAppearance: "none",
             }}
@@ -43,7 +53,10 @@ export const MobileHeader = ({
             ))}
           </select>
         ) : (
-          <div className="flex items-center gap-2">
+          <div
+            className="flex items-center gap-2 cursor-pointer"
+            onClick={onToggle}
+          >
             <span className="text-base font-semibold truncate">Agenda</span>
             <span className="text-xs text-muted-foreground whitespace-nowrap">
               {taskCount}
@@ -63,7 +76,10 @@ export const MobileHeader = ({
       <div className="flex items-center flex-shrink-0">
         {isExpanded ? (
           <button
-            onClick={onClose}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
             className="p-2 rounded-full hover:bg-muted active:scale-95 transition-all"
             aria-label="Fermer l'agenda"
           >
@@ -71,7 +87,10 @@ export const MobileHeader = ({
           </button>
         ) : (
           <button
-            onClick={onToggle}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle();
+            }}
             className="p-2 text-foreground active:scale-95 transition-all"
             title="Agrandir"
             aria-label="Agrandir"
