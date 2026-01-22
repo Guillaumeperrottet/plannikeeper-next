@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Task, SortField, SortDirection } from "../../lib/types";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -33,6 +34,7 @@ import {
 } from "lucide-react";
 import { StatusBadge } from "../shared/StatusBadge";
 import { formatDate } from "../../lib/taskHelpers";
+import { ImageLightbox } from "@/components/ui/ImageLightbox";
 
 interface TaskTableProps {
   tasks: Task[];
@@ -60,11 +62,36 @@ export function TaskTable({
   onStatusChange,
 }: TaskTableProps) {
   const router = useRouter();
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<
+    Array<{ src: string; alt: string; title: string }>
+  >([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const handleTaskClick = (taskId: string) => {
     router.push(
-      `/dashboard/objet/${objetId}/secteur/${sectorId}/article/${articleId}/task/${taskId}`
+      `/dashboard/objet/${objetId}/secteur/${sectorId}/article/${articleId}/task/${taskId}`,
     );
+  };
+
+  const handleImageClick = (e: React.MouseEvent, task: Task) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const imageDocuments =
+      task.documents?.filter((doc) => doc.fileType.startsWith("image/")) || [];
+
+    if (imageDocuments.length > 0) {
+      setLightboxImages(
+        imageDocuments.map((doc) => ({
+          src: doc.filePath,
+          alt: doc.name,
+          title: doc.name,
+        })),
+      );
+      setLightboxIndex(0);
+      setLightboxOpen(true);
+    }
   };
 
   const getSortIcon = (field: SortField) => {
@@ -194,11 +221,14 @@ export function TaskTable({
               <TableCell className="py-3">
                 {(() => {
                   const imageDocuments = task.documents?.filter((doc) =>
-                    doc.fileType.startsWith("image/")
+                    doc.fileType.startsWith("image/"),
                   );
                   if (imageDocuments && imageDocuments.length > 0) {
                     return (
-                      <div className="relative">
+                      <div
+                        className="relative cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={(e) => handleImageClick(e, task)}
+                      >
                         <Image
                           src={imageDocuments[0].filePath}
                           alt="Preview"
@@ -281,7 +311,7 @@ export function TaskTable({
                             <Check className="w-4 h-4 ml-auto" />
                           )}
                         </DropdownMenuItem>
-                      )
+                      ),
                     )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
@@ -310,6 +340,14 @@ export function TaskTable({
           ))}
         </TableBody>
       </Table>
+
+      {/* Lightbox pour les images */}
+      <ImageLightbox
+        images={lightboxImages}
+        index={lightboxIndex}
+        open={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+      />
     </div>
   );
 }

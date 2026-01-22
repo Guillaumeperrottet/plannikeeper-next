@@ -73,12 +73,16 @@ export function StatusBadgeEditable({
     }
   };
 
+  // Déterminer la couleur du point selon le statut
+  const dotColor = status === "completed" ? "bg-green-500" : "bg-red-500";
+
   if (readonly) {
     return (
       <Badge
         variant="secondary"
-        className={`text-xs h-6 px-2.5 ${config.color}`}
+        className="text-xs h-6 px-2.5 flex items-center gap-1.5"
       >
+        <div className={`w-2 h-2 rounded-full ${dotColor}`} />
         {config.label}
       </Badge>
     );
@@ -89,10 +93,11 @@ export function StatusBadgeEditable({
       <DropdownMenuTrigger asChild>
         <Badge
           variant="secondary"
-          className={`text-xs h-6 px-2.5 ${config.color} cursor-pointer hover:opacity-80 transition-opacity group relative`}
+          className="text-xs h-6 px-2.5 cursor-pointer hover:opacity-80 transition-opacity group relative flex items-center gap-1.5"
         >
+          <div className={`w-2 h-2 rounded-full ${dotColor}`} />
           {config.label}
-          <Pencil className="w-2.5 h-2.5 opacity-0 group-hover:opacity-70 transition-opacity ml-1.5" />
+          <Pencil className="w-2.5 h-2.5 opacity-0 group-hover:opacity-70 transition-opacity" />
         </Badge>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-48">

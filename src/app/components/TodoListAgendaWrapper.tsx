@@ -2,16 +2,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useTasks } from "@/hooks/useData";
 import { useTaskUpdates } from "@/hooks/useTaskUpdates"; // Nouveau hook
-
-// Import dynamique du composant TodoListAgenda REFACTORISÉ
-// Pointe maintenant vers le nouveau dossier modulaire TodoListAgenda/
-const TodoListAgenda = dynamic(() => import("./TodoListAgenda/"), {
-  ssr: false,
-});
+import { TodoListAgendaContainer } from "./TodoListAgenda/TodoListAgendaContainer";
 
 // Définir un dataVersion pour le suivi des changements
 const DATA_VERSION_KEY = "plannikeeper-data-version";
@@ -153,7 +147,7 @@ export default function TodoListAgendaWrapper() {
             refreshDataSilently();
           }
         },
-        5 * 60 * 1000
+        5 * 60 * 1000,
       ); // 5 minutes
 
       return () => clearInterval(interval);
@@ -166,7 +160,7 @@ export default function TodoListAgendaWrapper() {
           refreshDataSilently();
         }
       },
-      10 * 60 * 1000
+      10 * 60 * 1000,
     ); // 10 minutes
 
     return () => clearInterval(interval);
@@ -183,11 +177,11 @@ export default function TodoListAgendaWrapper() {
       if (isMobile) return; // Ne pas autoriser sur mobile
       await updateTaskDate(taskId, newDate);
     },
-    [updateTaskDate, isMobile]
+    [updateTaskDate, isMobile],
   );
 
   return (
-    <TodoListAgenda
+    <TodoListAgendaContainer
       onRefresh={handleRefresh}
       isRefreshing={isRefreshing || isUpdating}
       refreshKey={dataVersion}

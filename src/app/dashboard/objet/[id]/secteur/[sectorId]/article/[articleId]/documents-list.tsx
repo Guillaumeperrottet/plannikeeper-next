@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import NextImage from "next/image";
 import { File, Trash2, FileText, Image, AlertCircle, Eye } from "lucide-react";
 import { toast } from "sonner";
-import DocumentPreview from "./DocumentPreview";
+import { ImageLightbox } from "@/components/ui/ImageLightbox";
 
 interface Document {
   id: string;
@@ -27,8 +27,11 @@ export default function DocumentsList({
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
-  const [currentDocumentIndex, setCurrentDocumentIndex] = useState<number>(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<
+    Array<{ src: string; alt: string; title?: string }>
+  >([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const loadDocuments = useCallback(async () => {
     try {
@@ -106,7 +109,7 @@ export default function DocumentsList({
       }
 
       setDocuments((prevDocs) =>
-        prevDocs.filter((doc) => doc.id !== documentId)
+        prevDocs.filter((doc) => doc.id !== documentId),
       );
       toast.success("Document supprimé avec succès");
 
@@ -117,18 +120,28 @@ export default function DocumentsList({
       toast.error(
         err instanceof Error
           ? err.message
-          : "Erreur lors de la suppression du document"
+          : "Erreur lors de la suppression du document",
       );
     }
   };
 
-  const openPreview = (document: Document, index: number) => {
-    setPreviewDocument(document);
-    setCurrentDocumentIndex(index);
+  const openLightbox = (document: Document) => {
+    const imageDocuments = documents.filter((doc) =>
+      doc.fileType.startsWith("image/"),
+    );
+    const images = imageDocuments.map((doc) => ({
+      src: doc.filePath,
+      alt: doc.name,
+      title: doc.name,
+    }));
+    const index = imageDocuments.findIndex((d) => d.id === document.id);
+    setLightboxImages(images);
+    setLightboxIndex(index);
+    setLightboxOpen(true);
   };
 
-  const closePreview = () => {
-    setPreviewDocument(null);
+  const closeLightbox = () => {
+    setLightboxOpen(false);
   };
 
   if (isLoading) {
@@ -182,12 +195,7 @@ export default function DocumentsList({
                 <div
                   key={doc.id}
                   className="group relative aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer border border-border hover:border-primary transition-all hover:shadow-lg"
-                  onClick={() =>
-                    openPreview(
-                      doc,
-                      documents.findIndex((d) => d.id === doc.id)
-                    )
-                  }
+                  onClick={() => openLightbox(doc)}
                 >
                   <NextImage
                     src={doc.filePath}
@@ -241,17 +249,14 @@ export default function DocumentsList({
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     {getFileIcon(doc.fileType)}
                     <div className="flex-1 min-w-0">
-                      <div
+                      <a
+                        href={doc.filePath}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="block text-sm font-medium hover:underline truncate cursor-pointer text-foreground"
-                        onClick={() =>
-                          openPreview(
-                            doc,
-                            documents.findIndex((d) => d.id === doc.id)
-                          )
-                        }
                       >
                         {doc.name}
-                      </div>
+                      </a>
                       <div className="text-xs text-muted-foreground">
                         {formatFileSize(doc.fileSize)} •{" "}
                         {new Date(doc.createdAt).toLocaleDateString()}
@@ -259,18 +264,15 @@ export default function DocumentsList({
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() =>
-                        openPreview(
-                          doc,
-                          documents.findIndex((d) => d.id === doc.id)
-                        )
-                      }
+                    <a
+                      href={doc.filePath}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="p-2 hover:bg-accent rounded-lg transition-colors"
-                      title="Prévisualiser"
+                      title="Ouvrir"
                     >
                       <Eye size={16} />
-                    </button>
+                    </a>
                     <button
                       onClick={() => handleDelete(doc.id)}
                       className="p-2 hover:bg-destructive/10 hover:text-destructive rounded-lg transition-colors"
@@ -285,19 +287,13 @@ export default function DocumentsList({
         </div>
       )}
 
-      {/* Composant de prévisualisation */}
-      {previewDocument && (
-        <DocumentPreview
-          document={previewDocument}
-          onClose={closePreview}
-          documents={documents}
-          currentIndex={currentDocumentIndex}
-          onNavigate={(index) => {
-            setCurrentDocumentIndex(index);
-            setPreviewDocument(documents[index]);
-          }}
-        />
-      )}
+      {/* Lightbox pour les images */}
+      <ImageLightbox
+        images={lightboxImages}
+        index={lightboxIndex}
+        open={lightboxOpen}
+        onClose={closeLightbox}
+      />
     </div>
   );
 }

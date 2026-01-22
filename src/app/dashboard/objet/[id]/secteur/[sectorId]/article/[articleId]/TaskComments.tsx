@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Send, MessageCircle } from "lucide-react";
+import { Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns/formatDistanceToNow";
 import { fr } from "date-fns/locale";
+import { motion, AnimatePresence } from "framer-motion";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/app/components/ui/button";
 
 type Comment = {
   id: string;
@@ -75,83 +78,103 @@ export default function TaskComments({ taskId }: TaskCommentsProps) {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <MessageCircle size={18} className="text-[color:var(--primary)]" />
-        <h3 className="text-lg font-semibold text-[color:var(--foreground)]">
-          Discussion
-        </h3>
+    <div className="flex flex-col h-full">
+      {/* Liste des commentaires - scrollable */}
+      <div className="flex-1 overflow-y-auto space-y-3 pr-2 mb-4">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : comments.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground text-sm">Aucun commentaire</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Soyez le premier à commenter
+            </p>
+          </div>
+        ) : (
+          <AnimatePresence initial={false}>
+            {comments.map((comment, index) => (
+              <motion.div
+                key={comment.id}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ delay: index * 0.03 }}
+                className="flex gap-3 group"
+              >
+                {/* Avatar */}
+                {comment.user.image ? (
+                  <Image
+                    src={comment.user.image}
+                    alt={comment.user.name}
+                    width={32}
+                    height={32}
+                    className="w-8 h-8 rounded-full shrink-0"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 font-medium text-sm">
+                    {comment.user.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+
+                {/* Contenu */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <span className="font-medium text-sm text-foreground">
+                      {comment.user.name}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(comment.createdAt), {
+                        addSuffix: true,
+                        locale: fr,
+                      })}
+                    </span>
+                  </div>
+                  <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">
+                    {comment.content}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        )}
       </div>
 
-      {/* Formulaire pour nouveau commentaire */}
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <input
-          type="text"
-          value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
-          placeholder="Ajouter un commentaire..."
-          className="flex-1 px-3 py-2 border border-[color:var(--border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[color:var(--ring)] bg-[color:var(--background)] text-[color:var(--foreground)]"
-          disabled={isSubmitting}
-        />
-        <button
-          type="submit"
-          disabled={isSubmitting || !newComment.trim()}
-          className="px-4 py-2 bg-[color:var(--primary)] text-[color:var(--primary-foreground)] rounded-lg disabled:opacity-50 flex items-center gap-2"
-        >
-          <Send size={16} />
-          <span className="hidden sm:inline">Envoyer</span>
-        </button>
-      </form>
-
-      {/* Liste des commentaires */}
-      {isLoading ? (
-        <div className="text-center py-4">
-          <div className="animate-spin rounded-full h-6 w-6 border-2 border-[color:var(--primary)] border-t-transparent mx-auto"></div>
-        </div>
-      ) : comments.length === 0 ? (
-        <p className="text-[color:var(--muted-foreground)] text-center py-4">
-          Aucun commentaire pour le moment
+      {/* Input sticky en bas - Style 2026 */}
+      <div className="border-t pt-3">
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <Textarea
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder="Ajouter un commentaire..."
+            disabled={isSubmitting}
+            className="resize-none min-h-[60px] text-sm"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                handleSubmit(e);
+              }
+            }}
+          />
+          <Button
+            type="submit"
+            disabled={isSubmitting || !newComment.trim()}
+            size="icon"
+            className="shrink-0"
+          >
+            {isSubmitting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+          </Button>
+        </form>
+        <p className="text-xs text-muted-foreground mt-2">
+          <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Cmd</kbd> +{" "}
+          <kbd className="px-1 py-0.5 bg-muted rounded text-xs">Enter</kbd> pour
+          envoyer
         </p>
-      ) : (
-        <div className="space-y-4 max-h-60 overflow-y-auto">
-          {comments.map((comment) => (
-            <div
-              key={comment.id}
-              className="flex gap-3 p-3 bg-[color:var(--muted)] rounded-lg"
-            >
-              {comment.user.image ? (
-                <Image
-                  src={comment.user.image}
-                  alt={comment.user.name}
-                  width={32}
-                  height={32}
-                  className="w-8 h-8 rounded-full"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-[color:var(--primary)] text-[color:var(--primary-foreground)] flex items-center justify-center">
-                  {comment.user.name.charAt(0).toUpperCase()}
-                </div>
-              )}
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-[color:var(--foreground)]">
-                    {comment.user.name}
-                  </span>
-                  <span className="text-xs text-[color:var(--muted-foreground)]">
-                    {formatDistanceToNow(new Date(comment.createdAt), {
-                      addSuffix: true,
-                      locale: fr,
-                    })}
-                  </span>
-                </div>
-                <p className="text-sm whitespace-pre-wrap text-[color:var(--foreground)]">
-                  {comment.content}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      </div>
     </div>
   );
 }

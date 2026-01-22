@@ -39,7 +39,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
   if (!hasReadAccess) {
     return NextResponse.json(
       { error: "Vous n'avez pas les droits pour accéder à cette tâche" },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -71,7 +71,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
   if (!name?.trim()) {
     return NextResponse.json(
       { error: "Le nom de la tâche est requis" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -94,7 +94,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
   if (!hasWriteAccess) {
     return NextResponse.json(
       { error: "Vous n'avez pas les droits pour modifier cette tâche" },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -102,14 +102,14 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
   if (assignedToId) {
     const hasObjectAccess = await hasUserObjectAccess(
       assignedToId,
-      task.article.sector.object.id
+      task.article.sector.object.id,
     );
     if (!hasObjectAccess) {
       return NextResponse.json(
         {
           error: "L'utilisateur assigné n'a pas accès à cet objet",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
   }
@@ -153,7 +153,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
         reminderDate = calculateReminderDate(
           new Date(realizationDate),
           period,
-          10 // 10 jours avant l'échéance
+          10, // 10 jours avant l'échéance
         );
       } else {
         reminderDate = null;
@@ -198,6 +198,15 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       recurrenceReminderDate: reminderDate,
       completedAt: completedAtValue,
     },
+    include: {
+      article: {
+        include: {
+          sector: { include: { object: true } },
+        },
+      },
+      assignedTo: true,
+      documents: true,
+    },
   });
 
   // 🆕 NOTIFICATIONS POUR LES MISES À JOUR
@@ -238,7 +247,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
         },
       });
       console.log(
-        `✅ Notification de ré-assignation créée pour ${assignedToId}`
+        `✅ Notification de ré-assignation créée pour ${assignedToId}`,
       );
     }
 
@@ -247,7 +256,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       await NotificationService.notifyTaskCompleted(
         taskId,
         user.id,
-        user.name || "Utilisateur"
+        user.name || "Utilisateur",
       );
     }
     // Sinon, si il y a d'autres changements (mais pas une ré-assignation seule)
@@ -256,7 +265,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
         taskId,
         user.id,
         user.name || "Utilisateur",
-        changes
+        changes,
       );
     }
   }
@@ -274,7 +283,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       `tasks_${objectId}`,
       `article_tasks_${task.article.id}`,
       `sector_tasks_${sectorId}`,
-    ])
+    ]),
   );
 
   return response;
@@ -307,7 +316,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   if (!hasWriteAccess) {
     return NextResponse.json(
       { error: "Vous n'avez pas les droits pour modifier cette tâche" },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -315,14 +324,14 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   if (updateData.assignedToId) {
     const hasObjectAccess = await hasUserObjectAccess(
       updateData.assignedToId,
-      task.article.sector.object.id
+      task.article.sector.object.id,
     );
     if (!hasObjectAccess) {
       return NextResponse.json(
         {
           error: "L'utilisateur assigné n'a pas accès à cet objet",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
   }
@@ -383,7 +392,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       },
     });
     console.log(
-      `✅ Notification de ré-assignation créée pour ${updateData.assignedToId} (PATCH)`
+      `✅ Notification de ré-assignation créée pour ${updateData.assignedToId} (PATCH)`,
     );
   }
 
@@ -416,7 +425,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
   if (!hasWriteAccess) {
     return NextResponse.json(
       { error: "Vous n'avez pas les droits pour supprimer cette tâche" },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -435,14 +444,14 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     });
 
     console.log(
-      `Suppression tâche ${taskId}: ${deletedNotifications.count} notification(s) supprimée(s)`
+      `Suppression tâche ${taskId}: ${deletedNotifications.count} notification(s) supprimée(s)`,
     );
 
     // Supprimer la tâche
     await prisma.task.delete({ where: { id: taskId } });
 
     console.log(
-      `Tâche ${taskId} supprimée avec succès par l'utilisateur ${user.id}`
+      `Tâche ${taskId} supprimée avec succès par l'utilisateur ${user.id}`,
     );
 
     // Inclure des métadonnées sur les données à rafraichir
@@ -459,11 +468,11 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error(
       `Erreur lors de la suppression de la tâche ${taskId}:`,
-      error
+      error,
     );
     return NextResponse.json(
       { error: "Erreur lors de la suppression de la tâche" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

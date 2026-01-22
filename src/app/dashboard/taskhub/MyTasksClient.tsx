@@ -40,6 +40,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/app/components/ui/label";
 import { toast } from "sonner";
+import { ImageLightbox } from "@/components/ui/ImageLightbox";
 
 interface TaskDocument {
   id: string;
@@ -120,6 +121,13 @@ export function MyTasksClient({}: MyTasksClientProps) {
   const [taskToComplete, setTaskToComplete] = useState<Task | null>(null);
   const [completionComment, setCompletionComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // États pour la lightbox
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<
+    Array<{ src: string; alt: string; title: string }>
+  >([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   // Charger les tâches
   useEffect(() => {
@@ -456,16 +464,29 @@ export function MyTasksClient({}: MyTasksClientProps) {
                                       Photos ({images.length})
                                     </h4>
                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                      {images.slice(0, 6).map((img) => (
+                                      {images.slice(0, 6).map((img, idx) => (
                                         <div
                                           key={img.id}
-                                          className="relative aspect-square rounded-lg overflow-hidden border bg-muted"
+                                          className="relative aspect-square rounded-lg overflow-hidden border bg-muted cursor-pointer hover:border-primary transition-colors"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const allImages = images.map(
+                                              (i) => ({
+                                                src: i.filePath,
+                                                alt: i.name,
+                                                title: i.name,
+                                              }),
+                                            );
+                                            setLightboxImages(allImages);
+                                            setLightboxIndex(idx);
+                                            setLightboxOpen(true);
+                                          }}
                                         >
                                           {/* eslint-disable-next-line @next/next/no-img-element */}
                                           <img
                                             src={img.filePath}
                                             alt={img.name}
-                                            className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
+                                            className="w-full h-full object-cover hover:scale-105 transition-transform"
                                           />
                                         </div>
                                       ))}
@@ -632,6 +653,14 @@ export function MyTasksClient({}: MyTasksClientProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Lightbox pour les images */}
+      <ImageLightbox
+        images={lightboxImages}
+        index={lightboxIndex}
+        open={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+      />
     </div>
   );
 }

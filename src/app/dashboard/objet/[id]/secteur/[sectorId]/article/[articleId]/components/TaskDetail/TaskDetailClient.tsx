@@ -1,22 +1,17 @@
 "use client";
 
+import { useState } from "react";
+
 import { Task } from "../../lib/types";
 import { TaskHeader } from "./TaskHeader";
 import { TaskActions } from "./TaskActions";
 import { TaskInfo } from "./TaskInfo";
 import { TaskRecurrence } from "./TaskRecurrence";
 import { useTaskDetail } from "./useTaskDetail";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/app/components/ui/card";
-import { ChevronLeft, Paperclip, MessageSquare } from "lucide-react";
+import { motion } from "framer-motion";
+import TaskComments from "../../TaskComments";
+import { ChevronLeft, MessageSquare } from "lucide-react";
 import Link from "next/link";
-import DocumentsList from "@/app/dashboard/objet/[id]/secteur/[sectorId]/article/[articleId]/documents-list";
-import DocumentUpload from "@/app/dashboard/objet/[id]/secteur/[sectorId]/article/[articleId]/document-upload";
-import TaskComments from "@/app/dashboard/objet/[id]/secteur/[sectorId]/article/[articleId]/TaskComments";
 
 type User = {
   id: string;
@@ -43,6 +38,12 @@ export function TaskDetailClient({
     handleUpdate,
   } = useTaskDetail({ initialTask: task, readonly });
 
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleUploadSuccess = () => {
+    setRefreshKey((prev) => prev + 1);
+  };
+
   // Breadcrumb path
   const breadcrumbPath = currentTask.article
     ? [
@@ -62,7 +63,12 @@ export function TaskDetailClient({
     : [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5"
+    >
       <div className="container mx-auto px-4 py-6 max-w-7xl">
         {/* Breadcrumb Navigation */}
         {breadcrumbPath.length > 0 && (
@@ -94,6 +100,7 @@ export function TaskDetailClient({
         <div className="mb-8 space-y-4">
           <TaskHeader
             task={currentTask}
+            users={users}
             readonly={readonly}
             onUpdate={handleUpdate}
             onStatusChange={handleStatusChange}
@@ -114,9 +121,10 @@ export function TaskDetailClient({
             {/* Task Info */}
             <TaskInfo
               task={currentTask}
-              users={users}
               readonly={readonly}
               onUpdate={handleUpdate}
+              refreshKey={refreshKey}
+              onUploadSuccess={handleUploadSuccess}
             />
 
             {/* Recurrence if applicable */}
@@ -128,38 +136,20 @@ export function TaskDetailClient({
                 onTaskChange={() => {}}
               />
             )}
-
-            {/* Documents Section with Preview */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Paperclip className="h-5 w-5 text-primary" />
-                  Documents & Photos
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {!readonly && <DocumentUpload taskId={currentTask.id} />}
-                <DocumentsList taskId={currentTask.id} />
-              </CardContent>
-            </Card>
           </div>
 
-          {/* Right Sidebar - Comments */}
+          {/* Right Sidebar - Comments - Style moderne sans Card */}
           <div className="lg:col-span-1">
-            <Card className="sticky top-6">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <MessageSquare className="h-5 w-5 text-primary" />
-                  Commentaires
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <TaskComments taskId={currentTask.id} />
-              </CardContent>
-            </Card>
+            <div className="lg:sticky lg:top-6 border rounded-lg bg-card p-4 shadow-sm lg:h-[calc(100vh-10rem)] flex flex-col">
+              <div className="flex items-center gap-2 mb-4 pb-3 border-b">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-lg">Commentaires</h3>
+              </div>
+              <TaskComments taskId={currentTask.id} />
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

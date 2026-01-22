@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/app/components/ui/button";
+import { motion } from "framer-motion";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,33 +52,47 @@ export function TaskActions({
   const getQuickAction = () => {
     if (currentStatus === "pending" || currentStatus === "in_progress") {
       return (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onStatusChange("completed")}
-          disabled={isLoading}
-          className="gap-1.5 h-8"
+        <motion.div
+          key="complete-action"
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.2 }}
+          className="flex-1 sm:flex-none"
         >
-          <CheckCircle2 className="h-4 w-4" />
-          <span className="hidden sm:inline">Marquer terminée</span>
-          <span className="sm:hidden">Terminée</span>
-        </Button>
+          <Button
+            variant="default"
+            size="lg"
+            onClick={() => onStatusChange("completed")}
+            disabled={isLoading}
+            className="gap-2 h-11 w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+          >
+            <CheckCircle2 className="h-5 w-5" />
+            <span>Terminer la tâche</span>
+          </Button>
+        </motion.div>
       );
     }
 
     if (currentStatus === "completed" || currentStatus === "cancelled") {
       return (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onStatusChange("pending")}
-          disabled={isLoading}
-          className="gap-1.5 h-8"
+        <motion.div
+          key="reopen-action"
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.2 }}
+          className="flex-1 sm:flex-none"
         >
-          <Clock className="h-4 w-4" />
-          <span className="hidden sm:inline">Remettre à faire</span>
-          <span className="sm:hidden">À faire</span>
-        </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onStatusChange("pending")}
+            disabled={isLoading}
+            className="gap-1.5 h-8 w-full sm:w-auto"
+          >
+            <Clock className="h-4 w-4" />
+            <span>Remettre à faire</span>
+          </Button>
+        </motion.div>
       );
     }
 

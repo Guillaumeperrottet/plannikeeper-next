@@ -99,7 +99,14 @@ export function useTaskDetail({
       if (!response.ok) throw new Error("Erreur lors de la mise à jour");
 
       const updated = await response.json();
-      setTask(updated);
+
+      // Optimistic UI update avec animation
+      setTask((prev) => ({
+        ...prev,
+        status: newStatus,
+        done: newStatus === "completed",
+      }));
+      setTimeout(() => setTask(updated), 100);
 
       // Toast amélioré quand une tâche est marquée "completed"
       if (newStatus === "completed") {
@@ -115,7 +122,7 @@ export function useTaskDetail({
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ archive: true }),
-                  }
+                  },
                 );
 
                 if (archiveResponse.ok) {
@@ -171,6 +178,9 @@ export function useTaskDetail({
 
   // New: Direct update function for inline editing
   const handleUpdate = async (updates: Partial<Task>) => {
+    // Optimistic UI update
+    setTask((prev) => ({ ...prev, ...updates }));
+
     setIsLoading(true);
     try {
       const response = await fetch(`/api/tasks/${task.id}`, {
@@ -181,7 +191,11 @@ export function useTaskDetail({
         body: JSON.stringify({ ...task, ...updates }),
       });
 
-      if (!response.ok) throw new Error("Erreur lors de la mise à jour");
+      if (!response.ok) {
+        // Revert on error
+        setTask((prev) => prev);
+        throw new Error("Erreur lors de la mise à jour");
+      }
 
       const updated = await response.json();
       setTask(updated);

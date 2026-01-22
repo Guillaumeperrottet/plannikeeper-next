@@ -49,7 +49,7 @@ export default function DocumentUpload({
       console.log(
         "Taille après compression:",
         compressedFile.size / 1024 / 1024,
-        "MB"
+        "MB",
       );
 
       setFile(compressedFile);
@@ -57,7 +57,7 @@ export default function DocumentUpload({
     } catch (error) {
       console.error("Erreur lors de la compression:", error);
       toast.error(
-        "Impossible de compresser l'image, utilisation de l'original"
+        "Impossible de compresser l'image, utilisation de l'original",
       );
       setFile(imageFile);
     } finally {
@@ -125,7 +125,7 @@ export default function DocumentUpload({
       toast.error(
         error instanceof Error
           ? error.message
-          : "Erreur lors du téléchargement du document"
+          : "Erreur lors du téléchargement du document",
       );
     } finally {
       setIsUploading(false);
@@ -135,7 +135,7 @@ export default function DocumentUpload({
   return (
     <div className="space-y-2">
       <div
-        className={`border-2 border-dashed rounded-lg p-3 text-center transition-colors ${
+        className={`border-2 border-dashed rounded-lg p-2 text-center transition-colors ${
           dragActive
             ? "border-[color:var(--primary)] bg-[color:var(--primary)]/10"
             : "border-[color:var(--border)]"
@@ -163,19 +163,21 @@ export default function DocumentUpload({
             </button>
           </div>
         ) : (
-          <div className="py-2">
-            <Upload className="h-6 w-6 mx-auto text-[color:var(--muted-foreground)] mb-1" />
-            <p className="text-xs text-[color:var(--muted-foreground)] mb-1">
-              Glissez un fichier ici
-            </p>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="px-3 py-1 text-xs text-[color:var(--primary)] rounded hover:bg-[color:var(--muted)]"
-              disabled={isCompressing}
-            >
-              Sélectionnez un fichier
-            </button>
+          <div className="py-1.5">
+            <div className="flex items-center justify-center gap-2">
+              <Upload className="h-4 w-4 text-[color:var(--muted-foreground)]" />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-xs text-[color:var(--primary)] hover:underline"
+                disabled={isCompressing}
+              >
+                Ajouter un fichier
+              </button>
+              <span className="text-xs text-[color:var(--muted-foreground)]">
+                ou glissez-le ici
+              </span>
+            </div>
             <input
               ref={fileInputRef}
               type="file"
@@ -183,9 +185,6 @@ export default function DocumentUpload({
               className="hidden"
               accept=".pdf,image/*"
             />
-            <p className="text-xs text-[color:var(--muted-foreground)] mt-1">
-              PDF, JPG, PNG, GIF (compression auto des images)
-            </p>
           </div>
         )}
       </div>
