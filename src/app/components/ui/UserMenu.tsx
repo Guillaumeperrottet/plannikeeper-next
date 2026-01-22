@@ -3,11 +3,12 @@ import {
   LogOut,
   User,
   ChevronDown,
-  LayoutDashboard,
   CreditCard,
   Users,
   Lightbulb,
   Archive,
+  CheckSquare,
+  Building2,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -45,9 +46,14 @@ export default function UserMenu({ user, isAdmin = false }: UserMenuProps) {
 
   const menuItems = [
     {
-      icon: <LayoutDashboard size={16} />,
-      label: "Dashboard",
-      href: "/dashboard",
+      icon: <CheckSquare size={16} />,
+      label: "Mes Tâches",
+      href: "/dashboard/taskhub",
+    },
+    {
+      icon: <Building2 size={16} />,
+      label: "Mes Objets",
+      href: "/dashboard/objets",
     },
     {
       icon: <User size={16} />,
