@@ -210,9 +210,9 @@ export function MyTasksClient({}: MyTasksClientProps) {
     const toastId = toast.loading("Marquage de la tâche...");
 
     try {
-      // 1. Marquer la tâche comme terminée
+      // 1. Marquer la tâche comme terminée (utiliser PATCH pour mise à jour partielle)
       const taskResponse = await fetch(`/api/tasks/${taskToComplete.id}`, {
-        method: "PUT",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           done: true,
@@ -220,7 +220,11 @@ export function MyTasksClient({}: MyTasksClientProps) {
         }),
       });
 
-      if (!taskResponse.ok) throw new Error("Erreur mise à jour tâche");
+      if (!taskResponse.ok) {
+        const errorData = await taskResponse.json().catch(() => ({}));
+        console.error("Erreur API:", errorData);
+        throw new Error(errorData.error || "Erreur mise à jour tâche");
+      }
 
       // 2. Si un commentaire est fourni, l'ajouter
       if (completionComment.trim()) {
