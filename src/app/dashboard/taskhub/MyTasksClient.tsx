@@ -591,7 +591,10 @@ export function MyTasksClient({}: MyTasksClientProps) {
 
       {/* Modal de confirmation de complétion */}
       <Dialog open={isConfirmModalOpen} onOpenChange={setIsConfirmModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent
+          className="sm:max-w-[425px]"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Terminer la tâche</DialogTitle>
             <DialogDescription>
