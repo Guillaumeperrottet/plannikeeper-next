@@ -623,6 +623,7 @@ export function MyTasksClient({}: MyTasksClientProps) {
                 onChange={(e) => setCompletionComment(e.target.value)}
                 rows={4}
                 className="resize-none"
+                autoFocus={false}
               />
             </div>
           </div>
