@@ -27,13 +27,26 @@ export default async function ObjetsPage() {
     redirect("/signin");
   }
 
-  // Récupérer l'organisation de l'utilisateur
-  const userWithOrg = await prisma.user.findUnique({
+  // ✅ OPTIMISATION: Une seule requête pour récupérer toutes les infos utilisateur
+  const userData = await prisma.user.findUnique({
     where: { id: session.id },
-    include: { Organization: true },
+    select: {
+      id: true,
+      metadata: true,
+      organizationId: true,
+      Organization: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      OrganizationUser: {
+        select: { role: true },
+      },
+    },
   });
 
-  if (!userWithOrg?.Organization) {
+  if (!userData?.Organization) {
     return (
       <div className="max-w-6xl mx-auto p-6">
         <OrganizationRecovery />
@@ -41,22 +54,12 @@ export default async function ObjetsPage() {
     );
   }
 
-  // Vérifier si l'utilisateur a un plan en attente
-  const userWithMetadata = await prisma.user.findUnique({
-    where: { id: session.id },
-    select: {
-      metadata: true,
-      organizationId: true,
-    },
-  });
-
   // Vérifier si metadata existe et contient pendingPlanUpgrade
-  const pendingPlan = userWithMetadata?.metadata
-    ? (userWithMetadata.metadata as { pendingPlanUpgrade?: string })
-        ?.pendingPlanUpgrade
+  const pendingPlan = userData.metadata
+    ? (userData.metadata as { pendingPlanUpgrade?: string })?.pendingPlanUpgrade
     : undefined;
 
-  if (pendingPlan && userWithMetadata && userWithMetadata.organizationId) {
+  if (pendingPlan && userData.organizationId) {
     // Rediriger vers la page de paiement
     redirect(`/pricing?plan=${pendingPlan}&newSignup=true`);
   }
@@ -64,7 +67,7 @@ export default async function ObjetsPage() {
   // Récupérer tous les objets de l'organisation
   const objets = await getAccessibleObjects(
     session.id,
-    userWithOrg.Organization.id,
+    userData.Organization.id,
   );
 
   return (

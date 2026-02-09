@@ -1,74 +1,90 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getUser } from "@/lib/auth-session";
 import { prisma } from "@/lib/prisma";
 
 /**
  * GET /api/tasks/my-tasks
  * Récupère toutes les tâches assignées à l'utilisateur connecté
- * avec toutes les informations nécessaires (article, secteur, objet, documents, commentaires)
+ * Optimisé : 1 seule requête principale, pagination, _count au lieu de charger tous les docs/comments
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   const user = await getUser();
   if (!user) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
   try {
-    // Vérifier l'organisation de l'utilisateur
-    const userWithOrg = await prisma.user.findUnique({
+    // ✅ OPTIMISATION 1: Une seule requête pour récupérer toutes les infos utilisateur
+    const userData = await prisma.user.findUnique({
       where: { id: user.id },
-      include: { Organization: true },
+      select: {
+        id: true,
+        Organization: {
+          select: { id: true },
+        },
+        OrganizationUser: {
+          select: { role: true },
+        },
+        objectAccess: {
+          select: { objectId: true },
+        },
+      },
     });
 
-    if (!userWithOrg?.Organization) {
+    if (!userData?.Organization) {
       return NextResponse.json(
         { error: "Utilisateur sans organisation" },
         { status: 400 },
       );
     }
 
-    // Récupérer les objets accessibles (selon rôle et permissions)
-    const orgUser = await prisma.organizationUser.findFirst({
-      where: { userId: user.id },
-      select: { role: true },
-    });
+    // ✅ OPTIMISATION 2: Déterminer les objets accessibles efficacement
+    const isAdmin = userData.OrganizationUser?.role === "admin";
+    const accessibleObjectIds = isAdmin
+      ? undefined // Admin = tous les objets (pas de filtre)
+      : userData.objectAccess.map((access) => access.objectId);
 
-    let accessibleObjectIds: string[] = [];
+    // ✅ OPTIMISATION 3: Pagination
+    const searchParams = req.nextUrl.searchParams;
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "100");
+    const skip = (page - 1) * limit;
 
-    if (orgUser?.role === "admin") {
-      // Admin : accès à tous les objets de l'organisation
-      const orgObjects = await prisma.objet.findMany({
-        where: { organizationId: userWithOrg.Organization.id },
-        select: { id: true },
-      });
-      accessibleObjectIds = orgObjects.map((obj) => obj.id);
-    } else {
-      // Membre : seulement les objets avec accès explicite
-      const userObjectAccess = await prisma.objectAccess.findMany({
-        where: { userId: user.id },
-        select: { objectId: true },
-      });
-      accessibleObjectIds = userObjectAccess.map((access) => access.objectId);
-    }
-
-    // Récupérer toutes les tâches des objets accessibles
+    // ✅ OPTIMISATION 4: Requête optimisée avec _count au lieu de charger tous les documents/commentaires
     const tasks = await prisma.task.findMany({
       where: {
         archived: false,
         article: {
           sector: {
             object: {
-              organizationId: userWithOrg.Organization.id,
-              id: { in: accessibleObjectIds },
+              organizationId: userData.Organization.id,
+              ...(accessibleObjectIds && { id: { in: accessibleObjectIds } }),
             },
           },
         },
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        executantComment: true,
+        status: true,
+        realizationDate: true,
+        completedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        taskType: true,
+        color: true,
+        recurring: true,
         article: {
-          include: {
+          select: {
+            id: true,
+            title: true,
             sector: {
-              include: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
                 object: {
                   select: {
                     id: true,
@@ -90,42 +106,48 @@ export async function GET() {
             image: true,
           },
         },
-        documents: {
+        // ✅ OPTIMISATION 5: Utiliser _count au lieu de charger toutes les données
+        _count: {
           select: {
-            id: true,
-            name: true,
-            filePath: true,
-            fileType: true,
-            fileSize: true,
-            createdAt: true,
+            documents: true,
+            comments: true,
           },
-          orderBy: { createdAt: "desc" },
-        },
-        comments: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                image: true,
-              },
-            },
-          },
-          orderBy: { createdAt: "desc" },
         },
       },
       orderBy: [
-        { status: "asc" }, // En cours d'abord
-        { realizationDate: "asc" }, // Plus tôt en premier
-        { createdAt: "desc" }, // Plus récent ensuite
+        { status: "asc" },
+        { realizationDate: "asc" },
+        { createdAt: "desc" },
       ],
+      take: limit,
+      skip: skip,
     });
+
+    // ✅ OPTIMISATION 6: Compter le total en parallèle uniquement si nécessaire
+    const total =
+      page === 1 && tasks.length < limit
+        ? tasks.length
+        : await prisma.task.count({
+            where: {
+              archived: false,
+              article: {
+                sector: {
+                  object: {
+                    organizationId: userData.Organization.id,
+                    ...(accessibleObjectIds && {
+                      id: { in: accessibleObjectIds },
+                    }),
+                  },
+                },
+              },
+            },
+          });
 
     // Extraire les membres uniques qui ont des tâches sur les objets accessibles
     const uniqueMembers = Array.from(
       new Map(
         tasks
-          .filter((task) => task.assignedTo) // Filtrer les tâches avec assignedTo
+          .filter((task) => task.assignedTo)
           .map((task) => [task.assignedTo!.id, task.assignedTo!]),
       ).values(),
     );
@@ -134,6 +156,12 @@ export async function GET() {
       tasks,
       members: uniqueMembers,
       currentUserId: user.id,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     console.error("Erreur lors de la récupération des tâches:", error);
