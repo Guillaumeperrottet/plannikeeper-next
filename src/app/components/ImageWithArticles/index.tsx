@@ -53,14 +53,6 @@ export default function ImageWithArticles({
   const containerRef = useRef<HTMLDivElement>(null!);
   const imageRef = useRef<HTMLImageElement>(null!);
 
-  console.log("🔧 ImageWithArticles isEditable prop:", isEditable);
-  console.log("🔧 Has edit callbacks:", {
-    onArticleMove: !!onArticleMove,
-    onArticleResize: !!onArticleResize,
-    onArticleEdit: !!onArticleEdit,
-    onArticleDelete: !!onArticleDelete,
-  });
-
   // États de base
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
   const [dragMode, setDragMode] = useState(false);
@@ -188,11 +180,16 @@ export default function ImageWithArticles({
         return;
       }
 
+      // En mode édition, ne pas naviguer vers l'article
+      if (isEditable) {
+        return;
+      }
+
       if (onArticleClick) {
         onArticleClick(article.id);
       }
     },
-    [isMobile, onArticleClick, onArticleHover],
+    [isMobile, isEditable, onArticleClick, onArticleHover],
   );
 
   const handleArticleMouseEnter = useCallback(
@@ -210,21 +207,6 @@ export default function ImageWithArticles({
 
   const handleContextMenu = useCallback(
     (e: React.MouseEvent, article: Article) => {
-      console.log("🖱️ Context menu called for article:", article.id);
-      console.log("isMobile:", isMobile);
-      console.log("createMode:", createMode);
-      console.log("dragMode:", dragMode);
-      console.log("resizeMode:", resizeMode);
-      console.log(
-        "Has actions:",
-        !!(
-          onArticleMove ||
-          onArticleResize ||
-          onArticleEdit ||
-          onArticleDelete
-        ),
-      );
-
       e.preventDefault();
       e.stopPropagation();
 
@@ -236,11 +218,8 @@ export default function ImageWithArticles({
         !resizeMode &&
         (onArticleMove || onArticleResize || onArticleEdit || onArticleDelete)
       ) {
-        console.log("✅ Opening popover for article:", article.id);
         setOpenPopoverId(article.id);
         if (onArticleHover) onArticleHover(article.id);
-      } else {
-        console.log("❌ Conditions not met, popover not opened");
       }
     },
     [
@@ -497,15 +476,9 @@ export default function ImageWithArticles({
               drag.preventPopoverOpen || resize.preventPopoverOpen
             }
             popoverOpen={openPopoverId === article.id}
-            onPopoverOpenChange={(open) => {
-              console.log(
-                "📝 Popover open change for article:",
-                article.id,
-                "open:",
-                open,
-              );
-              setOpenPopoverId(open ? article.id : null);
-            }}
+            onPopoverOpenChange={(open) =>
+              setOpenPopoverId(open ? article.id : null)
+            }
             onClick={(e) => handleArticleInteraction(e, article)}
             onMouseDown={(e) => {
               if (createMode) {

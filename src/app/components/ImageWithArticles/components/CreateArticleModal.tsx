@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogFooter,
   DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,7 +51,7 @@ export function CreateArticleModal({
     <Dialog open={open} onOpenChange={(open) => !open && onCancel()}>
       <DialogContent>
         <DialogHeader>
-          <h2 className="text-lg font-semibold">Créer un nouvel article</h2>
+          <DialogTitle>Créer un nouvel article</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>

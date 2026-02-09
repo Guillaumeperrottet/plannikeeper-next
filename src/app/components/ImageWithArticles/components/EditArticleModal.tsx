@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogFooter,
   DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,7 +40,7 @@ export function EditArticleModal({
     <Dialog open={open} onOpenChange={(open) => !open && onCancel()}>
       <DialogContent>
         <DialogHeader>
-          <h2 className="text-lg font-semibold">Modifier l&apos;article</h2>
+          <DialogTitle>Modifier l&apos;article</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>

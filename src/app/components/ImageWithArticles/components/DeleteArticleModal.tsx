@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogFooter,
   DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,10 +38,10 @@ export function DeleteArticleModal({
     <Dialog open={open} onOpenChange={(open) => !open && onCancel()}>
       <DialogContent>
         <DialogHeader>
-          <h2 className="text-lg font-semibold text-red-600 flex items-center gap-2">
+          <DialogTitle className="text-red-600 flex items-center gap-2">
             <AlertTriangle className="w-5 h-5" />
             Supprimer l&apos;article
-          </h2>
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">

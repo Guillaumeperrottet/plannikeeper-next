@@ -145,13 +145,7 @@ export function ArticleMarker({
       onMouseDown={onMouseDown}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      onContextMenu={(e) => {
-        console.log(
-          "🎯 onContextMenu triggered on marker for article:",
-          article.id,
-        );
-        onContextMenu(e);
-      }}
+      onContextMenu={onContextMenu}
     >
       {/* Poignées de redimensionnement */}
       {resizeMode && (
@@ -201,28 +195,11 @@ export function ArticleMarker({
     !resizeMode &&
     !preventPopoverOpen
   ) {
-    console.log(
-      "🎨 Rendering ArticleMarker with popover for:",
-      article.id,
-      "popoverOpen:",
-      popoverOpen,
-    );
     return (
       <ArticleTooltip
         article={article}
         open={popoverOpen}
-        onOpenChange={(open) => {
-          console.log(
-            "🔄 ArticleTooltip onOpenChange:",
-            article.id,
-            "open:",
-            open,
-          );
-          onPopoverOpenChange(open);
-        }}
-        onArticleClick={
-          onClick ? () => onClick({} as React.MouseEvent) : undefined
-        }
+        onOpenChange={onPopoverOpenChange}
         actions={actions}
       >
         {marker}
@@ -231,9 +208,5 @@ export function ArticleMarker({
   }
 
   // Sinon, utiliser juste le marker avec ArticleTooltip simple (sans actions)
-  console.log(
-    "⚪ Rendering ArticleMarker without popover actions for:",
-    article.id,
-  );
   return <ArticleTooltip article={article}>{marker}</ArticleTooltip>;
 }
