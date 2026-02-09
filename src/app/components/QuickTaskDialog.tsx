@@ -296,7 +296,7 @@ export function QuickTaskDialog({ open, onOpenChange }: QuickTaskDialogProps) {
         } catch (uploadError) {
           console.error("Erreur upload documents:", uploadError);
           toast.warning(
-            "Tâche créée mais erreur lors de l'upload des documents"
+            "Tâche créée mais erreur lors de l'upload des documents",
           );
         }
       }
@@ -305,7 +305,7 @@ export function QuickTaskDialog({ open, onOpenChange }: QuickTaskDialogProps) {
 
       // Rediriger vers la tâche créée
       router.push(
-        `/dashboard/objet/${formData.objetId}/secteur/${formData.sectorId}/article/${formData.articleId}/task/${newTask.id}`
+        `/dashboard/objet/${formData.objetId}/secteur/${formData.sectorId}/article/${formData.articleId}/task/${newTask.id}`,
       );
 
       onOpenChange(false);
@@ -374,7 +374,7 @@ export function QuickTaskDialog({ open, onOpenChange }: QuickTaskDialogProps) {
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Choisir..." />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-[300px] overflow-y-auto">
                       {objets.map((objet) => (
                         <SelectItem key={objet.id} value={objet.id}>
                           {objet.name}
@@ -397,7 +397,7 @@ export function QuickTaskDialog({ open, onOpenChange }: QuickTaskDialogProps) {
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Choisir..." />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-[300px] overflow-y-auto">
                       {sectors.map((sector) => (
                         <SelectItem key={sector.id} value={sector.id}>
                           {sector.name}
@@ -422,7 +422,7 @@ export function QuickTaskDialog({ open, onOpenChange }: QuickTaskDialogProps) {
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Choisir..." />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-[300px] overflow-y-auto">
                       {articles.map((article) => (
                         <SelectItem key={article.id} value={article.id}>
                           {article.title}
@@ -492,7 +492,7 @@ export function QuickTaskDialog({ open, onOpenChange }: QuickTaskDialogProps) {
                         <SelectTrigger className="mt-1">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="max-h-[300px] overflow-y-auto">
                           <SelectItem value="pending">À faire</SelectItem>
                           <SelectItem value="in_progress">En cours</SelectItem>
                           <SelectItem value="completed">Terminée</SelectItem>
@@ -514,7 +514,7 @@ export function QuickTaskDialog({ open, onOpenChange }: QuickTaskDialogProps) {
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder="Sélectionner" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="max-h-[300px] overflow-y-auto">
                           {users.map((user) => (
                             <SelectItem key={user.id} value={user.id}>
                               {user.name}
@@ -652,7 +652,7 @@ export function QuickTaskDialog({ open, onOpenChange }: QuickTaskDialogProps) {
                           <SelectTrigger className="mt-1">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="max-h-[300px] overflow-y-auto">
                             <SelectItem value="daily">Quotidienne</SelectItem>
                             <SelectItem value="weekly">Hebdomadaire</SelectItem>
                             <SelectItem value="monthly">Mensuelle</SelectItem>
