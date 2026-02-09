@@ -13,7 +13,11 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Get the authentication status from cookies
-  const isAuthenticated = request.cookies.has("session");
+  // Better Auth utilise "better-auth.session_token" par défaut
+  const isAuthenticated =
+    request.cookies.has("session") ||
+    request.cookies.has("better-auth.session_token") ||
+    request.cookies.has("better_auth.session_token");
 
   // If user is on the landing page (root) but is authenticated, redirect to dashboard
   if (pathname === "/" && isAuthenticated) {
@@ -46,16 +50,16 @@ export function middleware(request: NextRequest) {
   // Définir les en-têtes CORS appropriés
   response.headers.set(
     "Access-Control-Allow-Origin",
-    isDev ? "http://localhost:3000" : request.headers.get("Origin") || "*"
+    isDev ? "http://localhost:3000" : request.headers.get("Origin") || "*",
   );
   response.headers.set("Access-Control-Allow-Credentials", "true");
   response.headers.set(
     "Access-Control-Allow-Methods",
-    "GET, POST, OPTIONS, PUT, DELETE, PATCH"
+    "GET, POST, OPTIONS, PUT, DELETE, PATCH",
   );
   response.headers.set(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Requested-With, Cookie"
+    "Content-Type, Authorization, X-Requested-With, Cookie",
   );
 
   return response;

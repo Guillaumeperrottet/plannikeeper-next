@@ -187,8 +187,8 @@ export const auth = betterAuth({
     defaultCookieAttributes: {
       sameSite: isDev ? "lax" : "none",
       secure: !isDev,
-      domain: isDev ? "localhost" : undefined,
-      maxAge: 60 * 60 * 4,
+      domain: isDev ? undefined : undefined, // Pas de domain en dev pour éviter les problèmes
+      maxAge: 60 * 60 * 24 * 7, // 7 jours au lieu de 4h
       httpOnly: true,
       path: "/",
     },
@@ -274,7 +274,7 @@ function extractUserMetadata(metadata: unknown) {
 async function finalizeRegularUserSetup(
   user: { id: string; email: string; name?: string },
   organizationId: string,
-  metadata: { planType?: string }
+  metadata: { planType?: string },
 ) {
   // S'assurer que l'association OrganizationUser existe
   const existingOrgUser = await prisma.organizationUser.findFirst({
@@ -330,7 +330,7 @@ async function createDefaultOrganization(user: {
 // Créer abonnement si nécessaire
 async function createSubscriptionIfNeeded(
   organizationId: string,
-  planType: string
+  planType: string,
 ) {
   const existingSubscription = await prisma.subscription.findFirst({
     where: { organizationId },
@@ -375,7 +375,7 @@ async function sendWelcomeEmail(user: {
     if (userWithOrg?.Organization) {
       await EmailService.sendWelcomeEmail(
         userWithOrg,
-        userWithOrg.Organization.name
+        userWithOrg.Organization.name,
       );
     }
   } catch {
