@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import NextImage from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -53,6 +53,31 @@ export default function DocumentPreview({
     setPosition({ x: 0, y: 0 });
   }, [document?.id]);
 
+  const navigateToPrevious = useCallback(() => {
+    if (currentIndex > 0 && onNavigate) {
+      onNavigate(currentIndex - 1);
+    }
+  }, [currentIndex, onNavigate]);
+
+  const navigateToNext = useCallback(() => {
+    if (currentIndex < documents.length - 1 && onNavigate) {
+      onNavigate(currentIndex + 1);
+    }
+  }, [currentIndex, documents.length, onNavigate]);
+
+  const handleZoomIn = useCallback(
+    () => setZoom((prev) => Math.min(prev + 0.5, 5)),
+    [],
+  );
+  const handleZoomOut = useCallback(
+    () => setZoom((prev) => Math.max(prev - 0.5, 0.5)),
+    [],
+  );
+  const resetZoom = useCallback(() => {
+    setZoom(1);
+    setPosition({ x: 0, y: 0 });
+  }, []);
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -65,26 +90,14 @@ export default function DocumentPreview({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentIndex, documents.length]);
-
-  const navigateToPrevious = () => {
-    if (currentIndex > 0 && onNavigate) {
-      onNavigate(currentIndex - 1);
-    }
-  };
-
-  const navigateToNext = () => {
-    if (currentIndex < documents.length - 1 && onNavigate) {
-      onNavigate(currentIndex + 1);
-    }
-  };
-
-  const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.5, 5));
-  const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.5, 0.5));
-  const resetZoom = () => {
-    setZoom(1);
-    setPosition({ x: 0, y: 0 });
-  };
+  }, [
+    navigateToNext,
+    navigateToPrevious,
+    onClose,
+    handleZoomIn,
+    handleZoomOut,
+    resetZoom,
+  ]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (zoom > 1) {
@@ -125,7 +138,7 @@ export default function DocumentPreview({
       const touch2 = e.touches[1];
       const distance = Math.hypot(
         touch2.clientX - touch1.clientX,
-        touch2.clientY - touch1.clientY
+        touch2.clientY - touch1.clientY,
       );
       touchStartRef.current = { x: 0, y: 0, distance };
     } else if (e.touches.length === 1) {
@@ -146,7 +159,7 @@ export default function DocumentPreview({
       const touch2 = e.touches[1];
       const distance = Math.hypot(
         touch2.clientX - touch1.clientX,
-        touch2.clientY - touch1.clientY
+        touch2.clientY - touch1.clientY,
       );
       const scale = distance / touchStartRef.current.distance;
       setZoom((prev) => Math.max(0.5, Math.min(5, prev * scale)));
@@ -358,7 +371,7 @@ export default function DocumentPreview({
                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
                   {images.map((img) => {
                     const imgIndex = documents.findIndex(
-                      (d) => d.id === img.id
+                      (d) => d.id === img.id,
                     );
                     return (
                       <button

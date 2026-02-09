@@ -74,20 +74,20 @@ export function ArticleTooltip({
       <Popover open={open} onOpenChange={onOpenChange}>
         <PopoverTrigger asChild>{children}</PopoverTrigger>
         <PopoverContent
-          className="w-[calc(100vw-2rem)] max-w-sm p-4 shadow-xl"
+          className="w-80 max-w-[calc(100vw-2rem)] p-3 shadow-lg"
           side="top"
           align="center"
-          sideOffset={12}
+          sideOffset={8}
         >
-          <div className="space-y-3">
+          <div className="space-y-2">
             {/* Titre */}
-            <h4 className="font-semibold text-lg leading-tight">
+            <h4 className="font-semibold text-sm leading-tight">
               {article.title}
             </h4>
 
             {/* Description */}
             {article.description && (
-              <p className="text-base text-muted-foreground leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed">
                 {article.description}
               </p>
             )}
@@ -95,7 +95,7 @@ export function ArticleTooltip({
             {/* Bouton CTA principal */}
             {onArticleClick && (
               <button
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-4 py-3 font-medium text-base transition-colors"
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-3 py-2 font-medium text-sm transition-colors"
                 onClick={() => {
                   onArticleClick(article.id);
                   onOpenChange?.(false);
@@ -104,9 +104,6 @@ export function ArticleTooltip({
                 Ouvrir l&apos;article
               </button>
             )}
-
-            {/* Actions supplémentaires (éditer, supprimer, etc.) */}
-            {actions && <div className="pt-2 border-t">{actions}</div>}
           </div>
         </PopoverContent>
       </Popover>

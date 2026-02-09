@@ -116,7 +116,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
         (article) =>
           article.title.toLowerCase().includes(lowerSearchTerm) ||
           (article.description &&
-            article.description.toLowerCase().includes(lowerSearchTerm))
+            article.description.toLowerCase().includes(lowerSearchTerm)),
       );
     }
 
@@ -217,18 +217,21 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
     setHoveredArticleId(articleId);
   };
 
-  const handleArticleUpdate = async (articleId: string, updates: { title: string; description: string }) => {
+  const handleArticleUpdate = async (
+    articleId: string,
+    updates: { title: string; description: string },
+  ) => {
     try {
       // Trouver l'article existant pour conserver ses autres propriétés
-      const existingArticle = articles.find(a => a.id === articleId);
+      const existingArticle = articles.find((a) => a.id === articleId);
       if (!existingArticle) {
-        throw new Error('Article non trouvé');
+        throw new Error("Article non trouvé");
       }
 
       const response = await fetch(`/api/articles/${articleId}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           title: updates.title,
@@ -241,7 +244,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
       });
 
       if (!response.ok) {
-        throw new Error('Erreur lors de la mise à jour de l\'article');
+        throw new Error("Erreur lors de la mise à jour de l'article");
       }
 
       // Recharger les articles pour refléter les changements
@@ -249,23 +252,31 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
         await fetchArticles(selectedSector.id);
       }
     } catch (error) {
-      console.error('Erreur lors de la mise à jour de l\'article:', error);
+      console.error("Erreur lors de la mise à jour de l'article:", error);
       throw error; // Re-throw pour que le composant puisse gérer l'erreur
     }
   };
 
-  const handleArticlePositionUpdate = async (articleId: string, updates: { positionX: number; positionY: number; width: number; height: number }) => {
+  const handleArticlePositionUpdate = async (
+    articleId: string,
+    updates: {
+      positionX: number;
+      positionY: number;
+      width: number;
+      height: number;
+    },
+  ) => {
     try {
       // Trouver l'article existant pour conserver ses autres propriétés
-      const existingArticle = articles.find(a => a.id === articleId);
+      const existingArticle = articles.find((a) => a.id === articleId);
       if (!existingArticle) {
-        throw new Error('Article non trouvé');
+        throw new Error("Article non trouvé");
       }
 
       const response = await fetch(`/api/articles/${articleId}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           title: existingArticle.title,
@@ -278,7 +289,9 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
       });
 
       if (!response.ok) {
-        throw new Error('Erreur lors de la mise à jour de la position de l\'article');
+        throw new Error(
+          "Erreur lors de la mise à jour de la position de l'article",
+        );
       }
 
       // Recharger les articles pour refléter les changements
@@ -286,7 +299,10 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
         await fetchArticles(selectedSector.id);
       }
     } catch (error) {
-      console.error('Erreur lors de la mise à jour de la position de l\'article:', error);
+      console.error(
+        "Erreur lors de la mise à jour de la position de l'article:",
+        error,
+      );
       throw error; // Re-throw pour que le composant puisse gérer l'erreur
     }
   };
@@ -294,11 +310,11 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
   const handleArticleDelete = async (articleId: string) => {
     try {
       const response = await fetch(`/api/articles/${articleId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (!response.ok) {
-        throw new Error('Erreur lors de la suppression de l\'article');
+        throw new Error("Erreur lors de la suppression de l'article");
       }
 
       // Recharger les articles pour refléter les changements
@@ -307,24 +323,31 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
       }
 
       // Afficher un message de succès
-      toast.success('Article supprimé avec succès');
+      toast.success("Article supprimé avec succès");
     } catch (error) {
-      console.error('Erreur lors de la suppression de l\'article:', error);
-      toast.error('Erreur lors de la suppression de l\'article');
+      console.error("Erreur lors de la suppression de l'article:", error);
+      toast.error("Erreur lors de la suppression de l'article");
       throw error; // Re-throw pour que le composant puisse gérer l'erreur
     }
   };
 
-  const handleArticleCreate = async (articleData: { title: string; description: string; positionX: number; positionY: number; width: number; height: number }) => {
+  const handleArticleCreate = async (articleData: {
+    title: string;
+    description: string;
+    positionX: number;
+    positionY: number;
+    width: number;
+    height: number;
+  }) => {
     try {
       if (!selectedSector) {
-        throw new Error('Aucun secteur sélectionné');
+        throw new Error("Aucun secteur sélectionné");
       }
 
-      const response = await fetch('/api/articles', {
-        method: 'POST',
+      const response = await fetch("/api/articles", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           title: articleData.title,
@@ -338,17 +361,17 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
       });
 
       if (!response.ok) {
-        throw new Error('Erreur lors de la création de l\'article');
+        throw new Error("Erreur lors de la création de l'article");
       }
 
       // Recharger les articles pour refléter les changements
       await fetchArticles(selectedSector.id);
 
       // Afficher un message de succès
-      toast.success('Article créé avec succès');
+      toast.success("Article créé avec succès");
     } catch (error) {
-      console.error('Erreur lors de la création de l\'article:', error);
-      toast.error('Erreur lors de la création de l\'article');
+      console.error("Erreur lors de la création de l'article:", error);
+      toast.error("Erreur lors de la création de l'article");
       throw error; // Re-throw pour que le composant puisse gérer l'erreur
     }
   };
@@ -457,7 +480,9 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
               }}
               className="w-full sm:w-[280px] bg-background border border-input shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
             >
-              <option value="" disabled>Sélectionner un secteur</option>
+              <option value="" disabled>
+                Sélectionner un secteur
+              </option>
               {sectors.map((sector) => (
                 <option key={sector.id} value={sector.id}>
                   {sector.name}
@@ -471,8 +496,8 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                 <Button
                   onClick={() => setCreateMode(!createMode)}
                   className={`flex items-center gap-2 px-3 py-2 ${
-                    createMode 
-                      ? "bg-purple-600 hover:bg-purple-700 text-white" 
+                    createMode
+                      ? "bg-purple-600 hover:bg-purple-700 text-white"
                       : "border border-input hover:bg-accent hover:text-accent-foreground"
                   }`}
                   variant={createMode ? "default" : "outline"}
@@ -481,120 +506,127 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                   <Plus size={16} />
                   Créer un article
                 </Button>
-                
+
                 <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                  <SheetTrigger {...({ asChild: true } as React.ComponentProps<typeof SheetTrigger>)}>
+                  <SheetTrigger
+                    {...({ asChild: true } as React.ComponentProps<
+                      typeof SheetTrigger
+                    >)}
+                  >
                     <button className="flex items-center gap-2 px-3 py-2 border border-input rounded-md hover:bg-accent hover:text-accent-foreground">
                       <ListFilter size={16} />
                       Articles
                     </button>
                   </SheetTrigger>
-                <SheetContent side="right" className="w-[400px] sm:w-[540px]">
-                  <SheetHeader>
-                    <h2 className="text-lg font-semibold">
-                      Articles ({filteredArticles.length})
-                    </h2>
-                    <div className="text-sm text-muted-foreground">
-                      Liste des articles du secteur &quot;{selectedSector.name}
-                      &quot;
-                    </div>
-                  </SheetHeader>
+                  <SheetContent side="right" className="w-[400px] sm:w-[540px]">
+                    <SheetHeader>
+                      <h2 className="text-lg font-semibold">
+                        Articles ({filteredArticles.length})
+                      </h2>
+                      <div className="text-sm text-muted-foreground">
+                        Liste des articles du secteur &quot;
+                        {selectedSector.name}
+                        &quot;
+                      </div>
+                    </SheetHeader>
 
-                  {/* Contenu de la Sheet */}
-                  <div className="flex flex-col h-full mt-6">
-                    {/* Barre de recherche et tri */}
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="relative flex-1">
-                        <Search
-                          size={16}
-                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
-                        />
-                        <input
-                          ref={searchInputRef}
-                          type="text"
-                          placeholder="Rechercher un article..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="w-full py-2 pl-10 pr-8 border border-input rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-ring bg-background"
-                        />
-                        {searchTerm && (
-                          <button
-                            onClick={clearSearch}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                          >
-                            <XCircle size={16} />
-                          </button>
+                    {/* Contenu de la Sheet */}
+                    <div className="flex flex-col h-full mt-6">
+                      {/* Barre de recherche et tri */}
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="relative flex-1">
+                          <Search
+                            size={16}
+                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
+                          />
+                          <input
+                            ref={searchInputRef}
+                            type="text"
+                            placeholder="Rechercher un article..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full py-2 pl-10 pr-8 border border-input rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-ring bg-background"
+                          />
+                          {searchTerm && (
+                            <button
+                              onClick={clearSearch}
+                              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            >
+                              <XCircle size={16} />
+                            </button>
+                          )}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={toggleSortDirection}
+                          className="flex items-center gap-1"
+                          title={
+                            sortDirection === "asc" ? "Tri A-Z" : "Tri Z-A"
+                          }
+                        >
+                          {sortDirection === "asc" ? (
+                            <ArrowUp size={16} />
+                          ) : (
+                            <ArrowDown size={16} />
+                          )}
+                        </Button>
+                      </div>
+
+                      {/* Liste des articles */}
+                      <div className="flex-1 overflow-y-auto">
+                        {filteredArticles.length === 0 ? (
+                          <div className="text-center py-8 text-muted-foreground">
+                            {articles.length === 0
+                              ? "Aucun article disponible pour ce secteur"
+                              : "Aucun article ne correspond à votre recherche"}
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {filteredArticles.map((article) => (
+                              <div
+                                key={article.id}
+                                className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                                  hoveredArticleId === article.id ||
+                                  selectedArticleId === article.id
+                                    ? "bg-amber-50 border-amber-200"
+                                    : "hover:bg-muted/50"
+                                }`}
+                                onClick={() => handleArticleClick(article.id)}
+                                onMouseEnter={() =>
+                                  handleArticleHover(article.id)
+                                }
+                                onMouseLeave={() => handleArticleHover(null)}
+                              >
+                                <div className="flex justify-between items-start">
+                                  <h4 className="font-medium mb-1">
+                                    {article.title}
+                                  </h4>
+                                  <ExternalLink
+                                    size={14}
+                                    className="text-muted-foreground mt-1"
+                                  />
+                                </div>
+                                {article.description && (
+                                  <p
+                                    className="text-sm text-muted-foreground overflow-hidden text-ellipsis"
+                                    style={{
+                                      display: "-webkit-box",
+                                      WebkitLineClamp: 2,
+                                      WebkitBoxOrient: "vertical" as const,
+                                    }}
+                                  >
+                                    {article.description}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         )}
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={toggleSortDirection}
-                        className="flex items-center gap-1"
-                        title={sortDirection === "asc" ? "Tri A-Z" : "Tri Z-A"}
-                      >
-                        {sortDirection === "asc" ? (
-                          <ArrowUp size={16} />
-                        ) : (
-                          <ArrowDown size={16} />
-                        )}
-                      </Button>
                     </div>
-
-                    {/* Liste des articles */}
-                    <div className="flex-1 overflow-y-auto">
-                      {filteredArticles.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                          {articles.length === 0
-                            ? "Aucun article disponible pour ce secteur"
-                            : "Aucun article ne correspond à votre recherche"}
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          {filteredArticles.map((article) => (
-                            <div
-                              key={article.id}
-                              className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                                hoveredArticleId === article.id ||
-                                selectedArticleId === article.id
-                                  ? "bg-amber-50 border-amber-200"
-                                  : "hover:bg-muted/50"
-                              }`}
-                              onClick={() => handleArticleClick(article.id)}
-                              onMouseEnter={() =>
-                                handleArticleHover(article.id)
-                              }
-                              onMouseLeave={() => handleArticleHover(null)}
-                            >
-                              <div className="flex justify-between items-start">
-                                <h4 className="font-medium mb-1">
-                                  {article.title}
-                                </h4>
-                                <ExternalLink
-                                  size={14}
-                                  className="text-muted-foreground mt-1"
-                                />
-                              </div>
-                              {article.description && (
-                                <p
-                                  className="text-sm text-muted-foreground overflow-hidden text-ellipsis"
-                                  style={{
-                                    display: "-webkit-box",
-                                    WebkitLineClamp: 2,
-                                    WebkitBoxOrient: "vertical" as const,
-                                  }}
-                                >
-                                  {article.description}
-                                </p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </SheetContent>
-              </Sheet>
+                  </SheetContent>
+                </Sheet>
               </div>
             )}
           </div>
@@ -652,6 +684,7 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                     onArticleHover={handleArticleHover}
                     hoveredArticleId={hoveredArticleId}
                     selectedArticleId={selectedArticleId}
+                    isEditable={true}
                     onArticleMove={(articleId: string) => {
                       // Rediriger vers la page d'édition avec l'article sélectionné
                       window.location.href = `/dashboard/objet/${objetId}/secteur/${selectedSector.id}/edit?selectedArticle=${articleId}&mode=move`;
@@ -709,7 +742,11 @@ export default function SectorViewer({ sectors, objetId }: SectorViewerProps) {
                   {/* Sheet pour mobile */}
                   <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
                     {/* Bouton flottant pour ouvrir la liste */}
-                    <SheetTrigger {...({ asChild: true } as React.ComponentProps<typeof SheetTrigger>)}>
+                    <SheetTrigger
+                      {...({ asChild: true } as React.ComponentProps<
+                        typeof SheetTrigger
+                      >)}
+                    >
                       <button className="fixed bottom-20 left-4 z-[9] flex items-center gap-1 bg-primary text-primary-foreground rounded-full shadow-lg px-3 py-3 hover:scale-105 transition-transform">
                         <ListFilter size={18} />
                         <span className="ml-1 text-sm font-medium">

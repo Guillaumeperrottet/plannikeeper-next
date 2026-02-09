@@ -7,12 +7,12 @@ import { normalizeDate } from "../utils/dateHelpers";
 
 export const useAgendaTasks = (
   initialSelectedObjectId: string | null,
-  refreshKey: number
+  refreshKey: number,
 ) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [objects, setObjects] = useState<AppObject[]>([]);
   const [selectedId, setSelectedId] = useState<string>(
-    initialSelectedObjectId || ""
+    initialSelectedObjectId || "",
   );
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -21,7 +21,7 @@ export const useAgendaTasks = (
     if (initialSelectedObjectId && initialSelectedObjectId !== selectedId) {
       setSelectedId(initialSelectedObjectId);
     }
-  }, [initialSelectedObjectId]);
+  }, [initialSelectedObjectId, selectedId]);
 
   // Récupération des objets
   useEffect(() => {
