@@ -54,6 +54,7 @@ export async function GET(req: NextRequest) {
     const tasks = await prisma.task.findMany({
       where: {
         archived: false,
+        status: { not: "completed" }, // Exclure les tâches terminées
         article: {
           sector: {
             object: {
@@ -130,6 +131,7 @@ export async function GET(req: NextRequest) {
         : await prisma.task.count({
             where: {
               archived: false,
+              status: { not: "completed" }, // Exclure les tâches terminées du comptage
               article: {
                 sector: {
                   object: {

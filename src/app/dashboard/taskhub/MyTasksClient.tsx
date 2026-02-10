@@ -96,8 +96,8 @@ interface Task {
       };
     };
   };
-  documents: TaskDocument[];
-  comments: Comment[];
+  documents?: TaskDocument[];
+  comments?: Comment[];
 }
 
 interface MyTasksClientProps {
@@ -198,6 +198,11 @@ export function MyTasksClient({}: MyTasksClientProps) {
   const toggleTaskDone = async (task: Task, e: React.MouseEvent) => {
     e.stopPropagation();
 
+    // Empêcher de dé-terminer une tâche déjà terminée
+    if (task.done || task.status === "completed") {
+      return;
+    }
+
     // Ouvrir la modal de confirmation
     setTaskToComplete(task);
     setIsConfirmModalOpen(true);
@@ -242,16 +247,15 @@ export function MyTasksClient({}: MyTasksClientProps) {
         if (!commentResponse.ok) console.warn("Commentaire non ajouté");
       }
 
-      // Mettre à jour localement (la tâche va disparaître car filtrée)
+      // Retirer la tâche de la liste locale (elle est maintenant filtrée par l'API)
       setTasks((prevTasks) =>
-        prevTasks.map((t) =>
-          t.id === taskToComplete.id
-            ? { ...t, done: true, status: "completed" }
-            : t,
-        ),
+        prevTasks.filter((t) => t.id !== taskToComplete.id),
       );
 
-      toast.success("Tâche terminée avec succès !", { id: toastId });
+      toast.success(
+        "Tâche terminée ! Elle sera archivée automatiquement dans 24h",
+        { id: toastId },
+      );
 
       // Fermer la modal et réinitialiser
       setIsConfirmModalOpen(false);
@@ -449,7 +453,7 @@ export function MyTasksClient({}: MyTasksClientProps) {
                       )}
 
                       {/* Photos et Documents */}
-                      {task.documents.length > 0 && (
+                      {task.documents && task.documents.length > 0 && (
                         <div>
                           {(() => {
                             const images = task.documents.filter((doc) =>
@@ -536,7 +540,7 @@ export function MyTasksClient({}: MyTasksClientProps) {
                       )}
 
                       {/* Commentaires récents */}
-                      {task.comments.length > 0 && (
+                      {task.comments && task.comments.length > 0 && (
                         <div>
                           <h4 className="font-medium text-sm mb-2">
                             Commentaires récents
