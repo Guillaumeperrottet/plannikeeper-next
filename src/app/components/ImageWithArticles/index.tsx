@@ -180,16 +180,24 @@ export default function ImageWithArticles({
         return;
       }
 
-      // En mode édition, ne pas naviguer vers l'article
-      if (isEditable) {
+      // En mode spécial (drag/resize/create), ne pas naviguer vers l'article
+      if (dragMode || resizeMode || createMode) {
         return;
       }
 
+      // Sinon, toujours rediriger vers la page de l'article (même en mode éditable)
       if (onArticleClick) {
         onArticleClick(article.id);
       }
     },
-    [isMobile, isEditable, onArticleClick, onArticleHover],
+    [
+      isMobile,
+      dragMode,
+      resizeMode,
+      createMode,
+      onArticleClick,
+      onArticleHover,
+    ],
   );
 
   const handleArticleMouseEnter = useCallback(
