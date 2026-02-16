@@ -281,27 +281,56 @@ export function QuickTaskDialog({ open, onOpenChange }: QuickTaskDialogProps) {
 
       const newTask = await response.json();
 
-      // Uploader les documents si présents
+      // Uploader les documents si présents (un par un)
       if (documents.length > 0) {
-        const formDataUpload = new FormData();
-        documents.forEach((file) => {
-          formDataUpload.append("files", file);
-        });
+        let uploadSuccess = 0;
+        let uploadFailed = 0;
 
-        try {
-          await fetch(`/api/tasks/${newTask.id}/documents`, {
-            method: "POST",
-            body: formDataUpload,
-          });
-        } catch (uploadError) {
-          console.error("Erreur upload documents:", uploadError);
+        for (const file of documents) {
+          const formDataUpload = new FormData();
+          formDataUpload.append("file", file); // "file" au singulier (API attend ce nom)
+
+          try {
+            const uploadResponse = await fetch(
+              `/api/tasks/${newTask.id}/documents`,
+              {
+                method: "POST",
+                body: formDataUpload,
+              },
+            );
+
+            if (uploadResponse.ok) {
+              uploadSuccess++;
+            } else {
+              uploadFailed++;
+              console.error(
+                `Échec upload de ${file.name}:`,
+                uploadResponse.statusText,
+              );
+            }
+          } catch (uploadError) {
+            uploadFailed++;
+            console.error(`Erreur upload de ${file.name}:`, uploadError);
+          }
+        }
+
+        // Message de feedback selon les résultats
+        if (uploadFailed === 0) {
+          toast.success(
+            `Tâche créée avec ${uploadSuccess} document${uploadSuccess > 1 ? "s" : ""}`,
+          );
+        } else if (uploadSuccess > 0) {
           toast.warning(
-            "Tâche créée mais erreur lors de l'upload des documents",
+            `Tâche créée. ${uploadSuccess} document${uploadSuccess > 1 ? "s" : ""} uploadé${uploadSuccess > 1 ? "s" : ""}, ${uploadFailed} échec${uploadFailed > 1 ? "s" : ""}`,
+          );
+        } else {
+          toast.error(
+            `Tâche créée mais échec de l'upload des ${uploadFailed} document${uploadFailed > 1 ? "s" : ""}`,
           );
         }
+      } else {
+        toast.success("Tâche créée avec succès");
       }
-
-      toast.success("Tâche créée avec succès");
 
       // Rediriger vers la tâche créée
       router.push(
